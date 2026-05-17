@@ -1,0 +1,591 @@
+{
+  "threads": [
+    {
+      "threadId": 1,
+      "courseId": 2,
+      "title": "Chiến lược học React chuyên sâu: lộ trình dự án thực tế kết hợp TypeScript, State Management nâng cao và testing end-to-end để vào nghề",
+      "content": "Mình đã nắm được cơ bản React (functional components, hooks như useState/useEffect, và biết cách tổ chức component). Mình muốn lên kế hoạch học tiếp theo theo hướng công nghiệp: làm sao để từ dự án học tập nhỏ tiến thành các project portfolio thực tế, thể hiện được kỹ năng TypeScript, quản lý state phức tạp (global + server state), tối ưu performance, và có test coverage hợp lý. Cụ thể mình cần gợi ý:\n\n1) Các project thực tế phù hợp (khoảng 1–3 tháng làm): ví dụ E-commerce với giỏ hàng đa trạng thái, quản lý cache/sync với server; app quản lý task kiểu Trello hỗ trợ drag&drop, real-time sync; chat app dùng WebSocket với auth & pagination.\n2) Kiến trúc front-end: cách tách containers vs presentational components, folder structure cho TypeScript + React Query + Zustand (hoặc RTK Query), pattern separation of concerns, dependency injection ở front-end nếu cần.\n3) Testing & CI: unit tests (Jest + React Testing Library), E2E (Cypress/Playwright), cách viết test cho async data, mock API, và cấu hình CI pipeline (GitHub Actions) để chạy test/linters.\n4) Tiêu chí chấm điểm portfolio: có thể đưa ra mock requirements để mình build sao cho vừa đẹp UI/UX vừa thể hiện kỹ năng kỹ thuật (i18n, accessibility, error handling, observability).\n\nMong nhận được roadmap, danh sách công cụ + lib gợi ý, ví dụ cấu trúc thư mục, và checklist features nên có cho mỗi dự án để đưa vào portfolio.",
+      "createdBy": 7,
+      "author": "Trang",
+      "createdAt": "2025-10-19T08:30:00Z",
+      "reactions": {
+        "like": 17,
+        "heart": 14,
+        "sad": 6,
+        "remove:heart": 6,
+        "remove:like": 3,
+        "remove:sad": 3
+      },
+      "replies": [
+        {
+          "replyId": 301,
+          "threadId": 1,
+          "content": "Làm todo list nâng cao (auth, persist, filter).",
+          "createdBy": 21,
+          "author": "Nam",
+          "createdAt": "2025-10-19T09:00:00Z",
+          "reactions": {
+            "like": 1,
+            "heart": 1,
+            "sad": 1
+          }
+        },
+        {
+          "replyId": 302,
+          "threadId": 1,
+          "content": "Clone một trang blog nhỏ, có admin tạo bài. Bạn có thể thêm phần WYSIWYG editor, upload ảnh, tagging, pagination — đủ để demo SSR/CSR và testing.",
+          "createdBy": 22,
+          "author": "Hải",
+          "createdAt": "2025-10-19T09:25:00Z",
+          "reactions": {
+            "like": 2,
+            "heart": 0,
+            "sad": 0
+          }
+        },
+        {
+          "replyId": 303,
+          "threadId": 1,
+          "content": "App ghi chú có sync với localStorage + markdown. Thêm offline support (service worker) và export/import JSON sẽ rất ấn tượng trong portfolio.",
+          "createdBy": 23,
+          "author": "Oanh",
+          "createdAt": "2025-10-19T10:10:00Z",
+          "reactions": {
+            "like": 0,
+            "heart": 1,
+            "sad": 0
+          }
+        },
+        {
+          "replyId": 304,
+          "threadId": 1,
+          "content": "Thêm TypeScript vào sẽ giúp bạn hiểu types & interfaces; bổ sung test bằng Jest/RTL cho component then logic để chứng minh code quality.",
+          "createdBy": 24,
+          "author": "Dũng",
+          "createdAt": "2025-10-19T11:00:00Z",
+          "reactions": {
+            "like": 3,
+            "heart": 2,
+            "sad": 0
+          }
+        },
+        {
+          "replyId": 305,
+          "threadId": 1,
+          "content": "jhabfdksav",
+          "createdBy": 0,
+          "author": "",
+          "createdAt": "2025-11-17T07:52:41.224Z"
+        }
+      ]
+    },
+    {
+      "threadId": 2,
+      "courseId": 2,
+      "title": "ReactJS: Redux còn phù hợp không? So sánh Redux Toolkit, Zustand, Recoil và Context API cho dự án thực tế",
+      "content": "Trong nhiều bài tutorial cũ, Redux là giải pháp mặc định để quản lý global state. Nhưng gần đây có nhiều lựa chọn nhẹ hơn (Zustand, Jotai, Recoil). Mình đang thiết kế một ứng dụng quản lý (dashboard) với nhiều widget tương tác — cần shared state, undo/redo, và caching data từ server. Muốn hỏi cộng đồng:\n\n- Khi nào nên chọn Redux (với Redux Toolkit) thay vì các state lib mới? Những trade-off về performance, debugability và developer experience?\n- Nếu dùng Zustand hoặc Recoil, pattern nào để tránh re-render không cần thiết? Có best practice về selector hoặc split store không?\n- Có ví dụ cấu trúc folder & typescript typing cho cả hai approach (RTK + React Query vs Zustand + React Query)?",
+      "createdBy": 3,
+      "author": "Huy",
+      "createdAt": "2025-10-25T09:00:00Z",
+      "reactions": {
+        "like": 12,
+        "heart": 8
+      },
+      "replies": [
+        {
+          "replyId": 201,
+          "threadId": 2,
+          "content": "Redux Toolkit giúp code gọn hơn thật, nhưng nếu app nhỏ, Context + useReducer là đủ rồi.",
+          "createdBy": 6,
+          "author": "Phương",
+          "createdAt": "2025-10-25T10:15:00Z",
+          "reactions": {
+            "like": 4,
+            "heart": 2,
+            "sad": 0
+          }
+        },
+        {
+          "replyId": 202,
+          "threadId": 2,
+          "content": "Team mình vẫn dùng Redux cho project lớn vì dễ quản lý data flow, dễ debug với Redux DevTools.",
+          "createdBy": 8,
+          "author": "Tuấn",
+          "createdAt": "2025-10-25T10:45:00Z",
+          "reactions": {
+            "like": 3,
+            "heart": 2,
+            "sad": 0
+          }
+        },
+        {
+          "replyId": 203,
+          "threadId": 2,
+          "content": "Recoil nhẹ hơn và không cần setup phức tạp như Redux, thích hợp cho startup nhỏ.",
+          "createdBy": 10,
+          "author": "Thảo",
+          "createdAt": "2025-10-25T11:10:00Z",
+          "reactions": {
+            "like": 2,
+            "heart": 1,
+            "sad": 0
+          }
+        },
+        {
+          "replyId": 204,
+          "threadId": 2,
+          "content": "Redux vẫn là chuẩn công nghiệp, đặc biệt khi làm việc với API phức tạp hoặc cần caching.",
+          "createdBy": 11,
+          "author": "Bình",
+          "createdAt": "2025-10-25T11:45:00Z",
+          "reactions": {
+            "like": 3,
+            "heart": 3,
+            "sad": 1
+          }
+        }
+      ]
+    },
+    {
+      "threadId": 3,
+      "courseId": 3,
+      "title": "Node.js: Khi nào dùng Callback, Promise hay Async/Await — patterns để xử lý IO, error-handling và performance tuning trong production",
+      "content": "Em mới học Node.js và thấy nhiều style code khác nhau: callbacks truyền thống, Promise chaining, và async/await. Muốn rành mạch về:\n\n- Trade-offs: readability vs performance; callback có overhead gì so với Promise/async? Có nên tránh callback để đồng nhất codebase?\n- Error handling: patterns tốt để catch lỗi ở nhiều tầng async (ví dụ global error handler cho Express, async wrapper cho route handlers).\n- Concurrency: khi có nhiều I/O bất đồng bộ, nên dùng Promise.all/Promise.allSettled hay stream? Ví dụ xử lý hàng loạt file hoặc gọi nhiều API cùng lúc—làm sao giới hạn concurrency (p-limit) để tránh tràn tài nguyên?\n- Best practices cho codebase production: standardized async utilities, đo lường latency, retry/backoff patterns.",
+      "createdBy": 4,
+      "author": "Minh",
+      "createdAt": "2025-10-26T07:30:00Z",
+      "reactions": {
+        "like": 20,
+        "heart": 10
+      },
+      "replies": [
+        {
+          "replyId": 301,
+          "threadId": 3,
+          "content": "Async/Await dễ debug và maintain hơn nhiều, gần như tiêu chuẩn hiện nay.",
+          "createdBy": 5,
+          "author": "Khang",
+          "createdAt": "2025-10-26T08:10:00Z",
+          "reactions": {
+            "like": 6,
+            "heart": 2,
+            "sad": 0
+          }
+        },
+        {
+          "replyId": 302,
+          "threadId": 3,
+          "content": "Callback vẫn tồn tại trong API cũ, ví dụ fs.readFile, nhưng nên bọc bằng Promise để dễ dùng.",
+          "createdBy": 9,
+          "author": "Trang",
+          "createdAt": "2025-10-26T08:30:00Z",
+          "reactions": {
+            "like": 2,
+            "heart": 1,
+            "sad": 0
+          }
+        },
+        {
+          "replyId": 303,
+          "threadId": 3,
+          "content": "Nếu app có nhiều I/O operations song song, Promise.all() giúp tăng hiệu năng đáng kể.",
+          "createdBy": 12,
+          "author": "Hiếu",
+          "createdAt": "2025-10-26T08:50:00Z",
+          "reactions": {
+            "like": 3,
+            "heart": 0,
+            "sad": 0
+          }
+        },
+        {
+          "replyId": 304,
+          "threadId": 3,
+          "content": "Callback hell chủ yếu do code nesting quá sâu, có thể tách ra function riêng để dễ quản lý.",
+          "createdBy": 13,
+          "author": "Lan",
+          "createdAt": "2025-10-26T09:15:00Z",
+          "reactions": {
+            "like": 1,
+            "heart": 0,
+            "sad": 0
+          }
+        }
+      ]
+    },
+    {
+      "threadId": 4,
+      "courseId": 4,
+      "title": "C++ cơ bản đến nâng cao: chiến lược học, quản lý bộ nhớ, smart pointers và design patterns thực tế cho project",
+      "content": "Mình mới bắt đầu học C++ và thấy nhiều khái niệm phức tạp: pointer, reference, RAII, smart pointers (unique_ptr/shared_ptr/weak_ptr), template, và STL. Mình muốn một lộ trình thực tế từ dễ đến khó, ví dụ các bài tập/mini-projects để luyện từng chủ đề, và đặc biệt:\n\n- Khi nào dùng unique_ptr vs shared_ptr vs weak_ptr? Ví dụ thiết kế ResourceManager hoặc Graph/Tree data structure cần chia sẻ ownership như thế nào để tránh circular reference?\n- Best practices tránh memory leak và undefined behavior (valgrind, sanitizer, RAII pattern).\n- Pattern & idioms: Pimpl, Rule of Five, move semantics, use of std::move, template basics.\n\nMong các bạn có kinh nghiệm cho ví dụ code ngắn minh hoạ và đề xuất bài tập theo tuần cho 1–2 tháng học.",
+      "createdBy": 5,
+      "author": "An",
+      "createdAt": "2025-10-26T09:00:00Z",
+      "reactions": {
+        "like": 18
+      },
+      "replies": [
+        {
+          "replyId": 401,
+          "threadId": 4,
+          "content": "unique_ptr là lựa chọn mặc định khi bạn không cần chia sẻ ownership.",
+          "createdBy": 9,
+          "author": "Bảo",
+          "createdAt": "2025-10-26T09:20:00Z",
+          "reactions": {
+            "like": 2,
+            "heart": 0,
+            "sad": 0
+          }
+        },
+        {
+          "replyId": 402,
+          "threadId": 4,
+          "content": "shared_ptr tiện nhưng tốn tài nguyên, vì phải quản lý ref count.",
+          "createdBy": 10,
+          "author": "Tú",
+          "createdAt": "2025-10-26T09:35:00Z",
+          "reactions": {
+            "like": 3,
+            "heart": 1,
+            "sad": 0
+          }
+        },
+        {
+          "replyId": 403,
+          "threadId": 4,
+          "content": "Tránh dùng shared_ptr lồng nhau, rất dễ tạo circular reference. weak_ptr giải quyết vấn đề circular reference khi cần.",
+          "createdBy": 14,
+          "author": "Dũng",
+          "createdAt": "2025-10-26T10:00:00Z",
+          "reactions": {
+            "like": 1,
+            "heart": 0,
+            "sad": 0
+          }
+        }
+      ]
+    },
+    {
+      "threadId": 6,
+      "courseId": 6,
+      "title": "TypeScript trong dự án lớn: giảm bug, tăng maintainability hay chỉ làm dev đau đầu? Kinh nghiệm migration JS → TS",
+      "content": "Công ty mình quyết định migrate một SPA React codebase lớn từ JavaScript sang TypeScript. Mình muốn hỏi:\n\n- Lộ trình migrate an toàn (step-by-step) cho project >100k LOC: bật `noImplicitAny` ngay hay gradual? Dùng `// @ts-ignore` tạm chỗ nào hợp lý?\n- Những pitfall phổ biến: types cho third-party libs, generic types phức tạp, typing asynchronous return types, và cách viết declaration file (.d.ts).\n- Công cụ & config: tsconfig best-practices cho monorepo, eslint + typescript rules, cách tích hợp build + CI để catch type errors sớm.\n\nAi từng migrate share checklist và kinh nghiệm rollback khi xảy ra regressions với types.",
+      "createdBy": 7,
+      "author": "Quân",
+      "createdAt": "2025-10-26T13:00:00Z",
+      "reactions": {
+        "like": 30
+      },
+      "replies": [
+        {
+          "replyId": 601,
+          "threadId": 6,
+          "content": "TS bắt lỗi ngay khi compile, rất hữu ích cho project lớn.",
+          "createdBy": 9,
+          "author": "Tú",
+          "createdAt": "2025-10-26T13:20:00Z",
+          "reactions": {
+            "like": 4,
+            "heart": 2,
+            "sad": 0
+          }
+        },
+        {
+          "replyId": 602,
+          "threadId": 6,
+          "content": "Ban đầu hơi mệt, nhưng khi team đông người sẽ thấy TS cực kỳ đáng giá.",
+          "createdBy": 15,
+          "author": "Linh",
+          "createdAt": "2025-10-26T13:50:00Z",
+          "reactions": {
+            "like": 3,
+            "heart": 1,
+            "sad": 0
+          }
+        },
+        {
+          "replyId": 603,
+          "threadId": 6,
+          "content": "Props trong React nếu khai báo chuẩn với interface thì không lỗi vặt vãnh nữa.",
+          "createdBy": 16,
+          "author": "Khoa",
+          "createdAt": "2025-10-26T14:10:00Z",
+          "reactions": {
+            "like": 2,
+            "heart": 0,
+            "sad": 0
+          }
+        }
+      ]
+    },
+    {
+      "threadId": 7,
+      "courseId": 7,
+      "title": "JVM / JDK / JRE: kiến thức cần biết cho developer — build, deploy, runtime tuning và impacts lên ứng dụng Spring Boot",
+      "content": "Mình thường nghe 'cài JDK' hoặc 'chạy bằng JRE' nhưng vẫn chưa rõ khác biệt trong thực tế deploy production: \n\n- Khi build ứng dụng Java (Spring Boot), cần JDK hay chỉ JRE? Khi nào phải cài JDK trên server (ví dụ để chạy native image hoặc attach debugger)?\n- Có lưu ý về phiên bản (Java 8 vs 11 vs 17) cho performance và long-term support?\n- Tuning memory (Xms/Xmx), GC options cho ứng dụng Spring Boot và cách profiling memory/cpu để debug memory leak.\n\nMong kinh nghiệm từ các bạn đã deploy microservices trên JVM thực tế.",
+      "createdBy": 8,
+      "author": "Hải",
+      "createdAt": "2025-10-27T09:00:00Z",
+      "reactions": {
+        "like": 17
+      },
+      "replies": [
+        {
+          "replyId": 701,
+          "threadId": 7,
+          "content": "JVM là phần chạy bytecode, JRE chứa JVM + thư viện chuẩn, JDK thì thêm compiler và tools cho dev.",
+          "createdBy": 10,
+          "author": "Duy",
+          "createdAt": "2025-10-27T09:30:00Z",
+          "reactions": {
+            "like": 2,
+            "heart": 0,
+            "sad": 0
+          }
+        },
+        {
+          "replyId": 702,
+          "threadId": 7,
+          "content": "Từ Java 11 trở lên, JRE tách riêng không còn phổ biến, JDK bao gồm cả runtime.",
+          "createdBy": 12,
+          "author": "Trang",
+          "createdAt": "2025-10-27T10:00:00Z",
+          "reactions": {
+            "like": 1,
+            "heart": 1,
+            "sad": 0
+          }
+        },
+        {
+          "replyId": 703,
+          "threadId": 7,
+          "content": "Spring Boot khi chạy jar thì cần JVM, nên JDK là lựa chọn an toàn nhất.",
+          "createdBy": 13,
+          "author": "Hoàng",
+          "createdAt": "2025-10-27T10:30:00Z",
+          "reactions": {
+            "like": 2,
+            "heart": 0,
+            "sad": 0
+          }
+        }
+      ]
+    },
+    {
+      "threadId": 8,
+      "courseId": 8,
+      "title": "Database choice: So sánh MySQL vs PostgreSQL cho enterprise app — JSON support, performance, extensibility và migration strategy",
+      "content": "Mình đang thiết kế backend cho hệ thống quản lý có nhiều query phức tạp (reporting), JSON payloads, và yêu cầu ACID. Muốn tham khảo:\n\n- Trường hợp nên chọn PostgreSQL (advanced SQL features, JSONB, CTEs, window functions) so với MySQL (replication, hosting phổ biến).\n- Migration path: khi cần chuyển schema lớn từ MySQL → Postgres thì lưu ý gì? Tools nào giúp migrate data và maintain downtime thấp?\n- Indexing & performance: partial index, GIN for JSONB, VACUUM/Autovacuum tuning, và khi nào cần partitioning.\n\nAi có case study share performance tuning tip cho Postgres đề nghị phần config và monitoring tool (pg_stat_statements, pgbadger...).",
+      "createdBy": 9,
+      "author": "Hiếu",
+      "createdAt": "2025-10-27T10:00:00Z",
+      "reactions": {
+        "like": 23,
+        "heart": 8
+      },
+      "replies": [
+        {
+          "replyId": 801,
+          "threadId": 8,
+          "content": "PostgreSQL mạnh hơn về tính năng, MySQL phổ biến và dễ host hơn.",
+          "createdBy": 11,
+          "author": "Loan",
+          "createdAt": "2025-10-27T10:20:00Z",
+          "reactions": {
+            "like": 3,
+            "heart": 1,
+            "sad": 0
+          }
+        },
+        {
+          "replyId": 802,
+          "threadId": 8,
+          "content": "Nếu bạn dùng ORM như Prisma hoặc Sequelize, cả hai đều support tốt.",
+          "createdBy": 13,
+          "author": "Nam",
+          "createdAt": "2025-10-27T10:40:00Z",
+          "reactions": {
+            "like": 2,
+            "heart": 0,
+            "sad": 0
+          }
+        },
+        {
+          "replyId": 803,
+          "threadId": 8,
+          "content": "Postgres chạy chậm hơn chút nếu config không đúng, nhưng ổn định hơn lâu dài.",
+          "createdBy": 15,
+          "author": "Vy",
+          "createdAt": "2025-10-27T11:00:00Z",
+          "reactions": {
+            "like": 1,
+            "heart": 0,
+            "sad": 0
+          }
+        }
+      ]
+    },
+    {
+      "threadId": 9,
+      "courseId": 9,
+      "title": "API design cho startup: chọn REST hay GraphQL? so sánh về speed to market, caching, security và maintainability",
+      "content": "Nhóm mình đang phân vân chọn API kiểu REST truyền thống hay GraphQL cho sản phẩm MVP. Yêu cầu: nhanh ra thị trường, dễ maintain, support mobile clients có nhiều screens cần data khác nhau. Vấn đề mình băn khoăn:\n\n- GraphQL có thực sự giảm số lượng round-trips cho frontend không? Những trade-offs về caching (HTTP caching dễ cho REST, nhưng với GraphQL cần caching layer khác).\n- Bảo mật: rate-limiting, depth limiting, query complexity—làm sao ngăn abuse với GraphQL?\n- Maintenance: versioning API (REST) vs evolving schema (GraphQL). Những công cụ/approaches giúp migrate/monitor API hiệu quả?\n\nXin những trải nghiệm thực tế kèm công cụ (Apollo, Hasura, DataLoader) và patterns để tránh common pitfalls.",
+      "createdBy": 10,
+      "author": "Vy",
+      "createdAt": "2025-10-27T11:30:00Z",
+      "reactions": {
+        "like": 21
+      },
+      "replies": [
+        {
+          "replyId": 901,
+          "threadId": 9,
+          "content": "GraphQL mạnh với frontend phức tạp, nhưng backend setup và bảo mật cần cẩn thận hơn REST.",
+          "createdBy": 12,
+          "author": "Hùng",
+          "createdAt": "2025-10-27T12:00:00Z",
+          "reactions": {
+            "like": 4,
+            "heart": 1,
+            "sad": 0
+          }
+        },
+        {
+          "replyId": 902,
+          "threadId": 9,
+          "content": "REST vẫn dễ maintain hơn, nhất là khi backend chưa quá phức tạp.",
+          "createdBy": 13,
+          "author": "Lan",
+          "createdAt": "2025-10-27T12:30:00Z",
+          "reactions": {
+            "like": 2,
+            "heart": 0,
+            "sad": 0
+          }
+        },
+        {
+          "replyId": 903,
+          "threadId": 9,
+          "content": "Cẩn thận bảo mật với GraphQL nhé, vì query có thể bị lạm dụng.",
+          "createdBy": 14,
+          "author": "Trung",
+          "createdAt": "2025-10-27T13:00:00Z",
+          "reactions": {
+            "like": 1,
+            "heart": 0,
+            "sad": 0
+          }
+        }
+      ]
+    },
+    {
+      "threadId": 10,
+      "courseId": 10,
+      "title": "Docker cho frontend dev: có nên containerize React/Next.js? lợi ích trong CI/CD và environment parity",
+      "content": "Mình làm frontend (React/Next) và phân vân có nên spend time học Docker. Các câu hỏi cụ thể:\n\n- Containerize frontend giúp gì ngoài consistent Node version? Có lợi cho CI/CD, preview environment, hoặc test e2e?\n- Patterns: multi-stage Dockerfile cho build & static serve; dùng nginx vs serve for production; caching static assets và setting headers.\n- Khi làm team fullstack, container orchestration (docker-compose hoặc k8s) giúp gì cho local dev experience?\n\nMong ví dụ Dockerfile tối ưu cho Next.js và kinh nghiệm deploy frontend vào CDN từ container.",
+      "createdBy": 11,
+      "author": "Nam",
+      "createdAt": "2025-10-27T14:00:00Z",
+      "reactions": {
+        "like": 19,
+        "heart": 7
+      },
+      "replies": [
+        {
+          "replyId": 1001,
+          "threadId": 10,
+          "content": "Có chứ, Docker giúp bạn build consistent giữa các môi trường dev/test/prod.",
+          "createdBy": 13,
+          "author": "Khánh",
+          "createdAt": "2025-10-27T14:15:00Z",
+          "reactions": {
+            "like": 5,
+            "heart": 2,
+            "sad": 0
+          }
+        },
+        {
+          "replyId": 1002,
+          "threadId": 10,
+          "content": "Frontend có thể không cần Docker, nhưng hiểu nó giúp phối hợp tốt với backend hơn.",
+          "createdBy": 14,
+          "author": "Hà",
+          "createdAt": "2025-10-27T14:30:00Z",
+          "reactions": {
+            "like": 2,
+            "heart": 1,
+            "sad": 0
+          }
+        },
+        {
+          "replyId": 1003,
+          "threadId": 10,
+          "content": "Mình build React app trong container để đảm bảo node version luôn khớp.",
+          "createdBy": 15,
+          "author": "Phong",
+          "createdAt": "2025-10-27T15:00:00Z",
+          "reactions": {
+            "like": 3,
+            "heart": 0,
+            "sad": 0
+          }
+        }
+      ]
+    },
+    {
+      "threadId": 11,
+      "courseId": 11,
+      "title": "AI/ML cho dev web: bắt đầu thế nào khi toán ít, mục tiêu build prototype và deploy model đơn giản?",
+      "content": "Mình là web developer, chưa mạnh toán nhưng muốn nhảy sang ML để build prototype (chatbot nhỏ / classification). Cần lộ trình thực tế: học Python basics, understanding data pipeline, simple models, và cách deploy model (Flask/FastAPI, containerize). Cụ thể:\n\n- Tài liệu & khóa học thực hành (tập trung bài tập hơn lý thuyết).\n- Lộ trình học toán tối thiểu (đại số tuyến tính, xác suất) và bao giờ cần học sâu hơn.\n- Công cụ & workflow: scikit-learn cho baseline, chuyển sang PyTorch/TensorFlow nếu cần, và deploy model nhẹ trên Heroku/Vercel/AWS Lambda.\n\nAi từng chuyển từ web dev sang ML share roadmap 3–6 tháng và project mẫu để bắt đầu.",
+      "createdBy": 12,
+      "author": "Phát",
+      "createdAt": "2025-10-28T08:00:00Z",
+      "reactions": {
+        "like": 30,
+        "heart": 15
+      },
+      "replies": [
+        {
+          "replyId": 1101,
+          "threadId": 11,
+          "content": "Có thể học thực hành trước, hiểu toán sau. Bắt đầu với Scikit-learn là ổn.",
+          "createdBy": 14,
+          "author": "My",
+          "createdAt": "2025-10-28T08:40:00Z",
+          "reactions": {
+            "like": 6,
+            "heart": 2,
+            "sad": 0
+          }
+        },
+        {
+          "replyId": 1102,
+          "threadId": 11,
+          "content": "Học toán cơ bản giúp bạn hiểu mô hình hoạt động, tránh dùng ML như 'hộp đen'.",
+          "createdBy": 15,
+          "author": "Khang",
+          "createdAt": "2025-10-28T09:00:00Z",
+          "reactions": {
+            "like": 4,
+            "heart": 1,
+            "sad": 0
+          }
+        },
+        {
+          "replyId": 1103,
+          "threadId": 11,
+          "content": "Bắt đầu với project nhỏ như phân loại ảnh hoặc spam detection là hợp lý.",
+          "createdBy": 17,
+          "author": "Ngọc",
+          "createdAt": "2025-10-28T09:15:00Z",
+          "reactions": {
+            "like": 3,
+            "heart": 1,
+            "sad": 0
+          }
+        }
+      ]
+    }
+  ]
+}

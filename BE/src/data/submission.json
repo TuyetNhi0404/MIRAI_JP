@@ -1,0 +1,90 @@
+[
+  {
+    "submissionId": "S001",
+    "assignmentId": "2",
+    "assignmentTitle": "Assignment 2",
+    "courseId": "C001",
+    "course": "Web Development",
+    "studentId": "ST01",
+    "studentName": "Nguyen Van A",
+    "submittedAt": "2025-10-31T20:15:00Z",
+    "status": "late",
+    "note": "Em gửi bài hơi trễ do lỗi máy tính ạ.",
+    "files": [
+      {
+        "id": "F001",
+        "name": "submission-report.docx",
+        "size": 124000,
+        "type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "url": "https://example.com/submissions/S001/report.docx"
+      }
+    ],
+    "score": 88,
+    "feedback": "Thiết kế khá tốt, tuy nhiên cần tối ưu thêm phần quan hệ nhiều-nhiều.",
+    "gradedAt": "2025-11-02T14:20:00Z"
+  },
+  {
+    "submissionId": "S002",
+    "assignmentId": "1761478348675",
+    "assignmentTitle": "Git and Scrum",
+    "courseId": "C001",
+    "course": "Web Development",
+    "studentId": "ST02",
+    "studentName": "Tran Thi B",
+    "submittedAt": "2025-10-21T09:45:00Z",
+    "status": "submitted",
+    "note": "Hoàn thành đúng hạn.",
+    "files": [
+      {
+        "id": "F002",
+        "name": "git-scrum-practice.pdf",
+        "size": 180000,
+        "type": "application/pdf",
+        "url": "https://example.com/submissions/S002/git-scrum-practice.pdf"
+      }
+    ],
+    "score": 95,
+    "feedback": "Rất tốt, trình bày rõ ràng và đúng quy trình Scrum.",
+    "gradedAt": "2025-10-23T10:00:00Z"
+  },
+  {
+    "submissionId": "S003",
+    "assignmentId": "1761549294286",
+    "assignmentTitle": "Test assignment",
+    "courseId": "C001",
+    "course": "Web Development",
+    "studentId": "ST03",
+    "studentName": "Le Van C",
+    "submittedAt": "2025-10-15T07:30:00Z",
+    "status": "submitted",
+    "note": "Em nộp bài sớm để được góp ý sớm ạ.",
+    "files": [
+      {
+        "id": "F003",
+        "name": "early-submission.zip",
+        "size": 255000,
+        "type": "application/zip",
+        "url": "https://example.com/submissions/S003/early-submission.zip"
+      }
+    ],
+    "score": 100,
+    "feedback": "Xuất sắc, bài làm hoàn chỉnh và chi tiết.",
+    "gradedAt": "2025-10-16T09:10:00Z"
+  },
+  {
+    "submissionId": "S004",
+    "assignmentId": "1761555335156",
+    "assignmentTitle": "test ABC",
+    "courseId": "C001",
+    "course": "Web Development",
+    "studentId": "ST01",
+    "studentName": "Nguyen Van A",
+    "submittedAt": null,
+    "status": "not_submitted",
+    "note": "",
+    "files": [],
+    "score": null,
+    "feedback": "",
+    "gradedAt": null
+  }
+]

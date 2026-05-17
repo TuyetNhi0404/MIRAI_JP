@@ -1,0 +1,162 @@
+[
+  {
+    "userId": 1,
+    "name": "Nguyễn Văn A",
+    "email": "abc@gmail.com",
+    "role": "student",
+    "status": "active",
+    "createdAt": "2025-05-28T00:00:00.000Z"
+  },
+  {
+    "userId": 2,
+    "name": "Nguyễn Văn B",
+    "email": "abc@gmail.com",
+    "role": "student",
+    "status": "active",
+    "createdAt": "2025-05-28T00:00:00.000Z"
+  },
+  {
+    "userId": 3,
+    "name": "Nguyễn Văn C",
+    "email": "abc@gmail.com",
+    "role": "student",
+    "status": "inactive",
+    "createdAt": "2025-05-28T00:00:00.000Z"
+  },
+  {
+    "userId": 4,
+    "name": "Nguyễn Văn D",
+    "email": "abc@gmail.com",
+    "role": "student",
+    "status": "active",
+    "createdAt": "2025-05-28T00:00:00.000Z"
+  },
+  {
+    "userId": 5,
+    "name": "Nguyễn Văn E",
+    "email": "abc@gmail.com",
+    "role": "student",
+    "status": "active",
+    "createdAt": "2025-05-28T00:00:00.000Z"
+  },
+  {
+    "userId": 6,
+    "name": "Nguyễn Văn F",
+    "email": "abc@gmail.com",
+    "role": "student",
+    "status": "inactive",
+    "createdAt": "2025-05-28T00:00:00.000Z"
+  },
+  {
+    "userId": 7,
+    "name": "Nguyễn Văn G",
+    "email": "abc@gmail.com",
+    "role": "student",
+    "status": "active",
+    "createdAt": "2025-05-28T00:00:00.000Z"
+  },
+  {
+    "userId": 8,
+    "name": "Nguyễn Văn H",
+    "email": "abc@gmail.com",
+    "role": "student",
+    "status": "active",
+    "createdAt": "2025-05-28T00:00:00.000Z"
+  },
+  {
+    "userId": 13,
+    "name": "Trương Thị M",
+    "email": "student9@gmail.com",
+    "role": "student",
+    "status": "active",
+    "createdAt": "2025-05-25T00:00:00.000Z"
+  },
+  {
+    "userId": 14,
+    "name": "Đặng Văn N",
+    "email": "student10@gmail.com",
+    "role": "student",
+    "status": "active",
+    "createdAt": "2025-05-25T00:00:00.000Z"
+  },
+  {
+    "userId": 15,
+    "name": "Vũ Thị O",
+    "email": "student11@gmail.com",
+    "role": "student",
+    "status": "inactive",
+    "createdAt": "2025-05-25T00:00:00.000Z"
+  },
+  {
+    "userId": 16,
+    "name": "Bùi Văn P",
+    "email": "student12@gmail.com",
+    "role": "student",
+    "status": "active",
+    "createdAt": "2025-05-25T00:00:00.000Z"
+  },
+  {
+    "userId": 17,
+    "name": "Lý Thị Q",
+    "email": "student13@gmail.com",
+    "role": "student",
+    "status": "active",
+    "createdAt": "2025-05-25T00:00:00.000Z"
+  },
+  {
+    "userId": 18,
+    "name": "Tô Văn R",
+    "email": "student14@gmail.com",
+    "role": "student",
+    "status": "active",
+    "createdAt": "2025-05-25T00:00:00.000Z"
+  },
+  {
+    "userId": 19,
+    "name": "Hồ Thị S",
+    "email": "student15@gmail.com",
+    "role": "student",
+    "status": "inactive",
+    "createdAt": "2025-05-25T00:00:00.000Z"
+  },
+  {
+    "userId": 20,
+    "name": "Cao Văn T",
+    "email": "student16@gmail.com",
+    "role": "student",
+    "status": "active",
+    "createdAt": "2025-05-25T00:00:00.000Z"
+  },
+  {
+    "userId": 9,
+    "name": "Trần Thị I",
+    "email": "teacher1@gmail.com",
+    "role": "teacher",
+    "status": "active",
+    "createdAt": "2025-05-20T00:00:00.000Z"
+  },
+  {
+    "userId": 10,
+    "name": "Lê Văn J",
+    "email": "teacher2@gmail.com",
+    "role": "teacher",
+    "status": "active",
+    "createdAt": "2025-05-20T00:00:00.000Z"
+  },
+  {
+    "userId": 11,
+    "name": "Phạm Văn K",
+    "email": "admin@gmail.com",
+    "role": "admin",
+    "status": "active",
+    "createdAt": "2025-05-01T00:00:00.000Z"
+  },
+  {
+    "userId": 12,
+    "name": "Hoàng Thị L",
+    "email": "admin2@gmail.com",
+    "role": "admin",
+    "status": "active",
+    "createdAt": "2025-05-01T00:00:00.000Z"
+  }
+]

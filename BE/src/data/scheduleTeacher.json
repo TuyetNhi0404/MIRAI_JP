@@ -1,0 +1,246 @@
+{
+  "courses": [
+    {
+      "courseId": 1,
+      "courseName": "Lập trình Web Frontend",
+      "description": "Khóa học về HTML, CSS, JavaScript và React",
+      "status": "active",
+      "createdBy": 1,
+      "createdAt": "2024-09-01T08:00:00.000Z"
+    },
+    {
+      "courseId": 2,
+      "courseName": "Lập trình Backend với Node.js",
+      "description": "Khóa học về Node.js, Express và Database",
+      "status": "active",
+      "createdBy": 1,
+      "createdAt": "2024-09-01T08:00:00.000Z"
+    },
+    {
+      "courseId": 3,
+      "courseName": "Tiếng Anh Giao Tiếp",
+      "description": "Khóa học tiếng Anh cơ bản đến nâng cao",
+      "status": "active",
+      "createdBy": 2,
+      "createdAt": "2024-09-05T08:00:00.000Z"
+    },
+    {
+      "courseId": 4,
+      "courseName": "Database Design",
+      "description": "Thiết kế cơ sở dữ liệu SQL và NoSQL",
+      "status": "active",
+      "createdBy": 1,
+      "createdAt": "2024-09-10T08:00:00.000Z"
+    }
+  ],
+  "sessions": [
+    {
+      "sessionId": 1,
+      "sessionName": "Morning",
+      "startTime": "08:00",
+      "endTime": "12:00"
+    },
+    {
+      "sessionId": 2,
+      "sessionName": "Afternoon",
+      "startTime": "13:00",
+      "endTime": "17:00"
+    }
+  ],
+  "courseCalendar": [
+    {
+      "calendarId": 1,
+      "courseId": 1,
+      "date": "2025-10-28",
+      "sessionId": 1,
+      "teacherId": 1,
+      "status": "completed"
+    },
+    {
+      "calendarId": 2,
+      "courseId": 2,
+      "date": "2025-10-29",
+      "sessionId": 1,
+      "teacherId": 1,
+      "status": "completed"
+    },
+    {
+      "calendarId": 3,
+      "courseId": 1,
+      "date": "2025-10-30",
+      "sessionId": 1,
+      "teacherId": 1,
+      "status": "cancelled"
+    },
+    {
+      "calendarId": 4,
+      "courseId": 2,
+      "date": "2025-10-31",
+      "sessionId": 1,
+      "teacherId": 1,
+      "status": "completed"
+    },
+    {
+      "calendarId": 5,
+      "courseId": 1,
+      "date": "2025-11-01",
+      "sessionId": 1,
+      "teacherId": 1,
+      "status": "completed"
+    },
+    {
+      "calendarId": 6,
+      "courseId": 1,
+      "date": "2025-11-03",
+      "sessionId": 1,
+      "teacherId": 1,
+      "status": "completed"
+    },
+    {
+      "calendarId": 7,
+      "courseId": 2,
+      "date": "2025-11-04",
+      "sessionId": 1,
+      "teacherId": 1,
+      "status": "scheduled"
+    },
+    {
+      "calendarId": 8,
+      "courseId": 1,
+      "date": "2025-11-05",
+      "sessionId": 1,
+      "teacherId": 1,
+      "status": "scheduled"
+    },
+    {
+      "calendarId": 9,
+      "courseId": 2,
+      "date": "2025-11-06",
+      "sessionId": 1,
+      "teacherId": 1,
+      "status": "scheduled"
+    },
+    {
+      "calendarId": 10,
+      "courseId": 1,
+      "date": "2025-11-06",
+      "sessionId": 2,
+      "teacherId": 1,
+      "status": "scheduled"
+    },
+    {
+      "calendarId": 11,
+      "courseId": 4,
+      "date": "2025-11-07",
+      "sessionId": 1,
+      "teacherId": 1,
+      "status": "scheduled"
+    },
+    {
+      "calendarId": 12,
+      "courseId": 2,
+      "date": "2025-11-10",
+      "sessionId": 1,
+      "teacherId": 1,
+      "status": "scheduled"
+    },
+    {
+      "calendarId": 14,
+      "courseId": 1,
+      "date": "2025-11-11",
+      "sessionId": 1,
+      "teacherId": 1,
+      "status": "scheduled"
+    },
+    {
+      "calendarId": 15,
+      "courseId": 1,
+      "date": "2025-11-12",
+      "sessionId": 1,
+      "teacherId": 1,
+      "status": "scheduled"
+    },
+    {
+      "calendarId": 16,
+      "courseId": 4,
+      "date": "2025-11-13",
+      "sessionId": 1,
+      "teacherId": 1,
+      "status": "scheduled"
+    },
+    {
+      "calendarId": 17,
+      "courseId": 1,
+      "date": "2025-11-14",
+      "sessionId": 1,
+      "teacherId": 1,
+      "status": "scheduled"
+    },
+    {
+      "calendarId": 18,
+      "courseId": 2,
+      "date": "2025-11-17",
+      "sessionId": 1,
+      "teacherId": 1,
+      "status": "scheduled"
+    },
+    {
+      "calendarId": 19,
+      "courseId": 4,
+      "date": "2025-11-18",
+      "sessionId": 2,
+      "teacherId": 1,
+      "status": "scheduled"
+    },
+    {
+      "calendarId": 20,
+      "courseId": 1,
+      "date": "2025-11-19",
+      "sessionId": 1,
+      "teacherId": 1,
+      "status": "scheduled"
+    }
+  ],
+  "requestSchedule": [
+    {
+      "requestId": 1,
+      "calendarId": 3,
+      "reason": "Có việc gia đình đột xuất cần giải quyết",
+      "status": "accepted",
+      "createdBy": 1,
+      "createdAt": "2025-10-28T10:00:00.000Z"
+    },
+    {
+      "requestId": 2,
+      "calendarId": 12,
+      "reason": "Phải tham gia hội nghị khoa học",
+      "status": "pending",
+      "createdBy": 1,
+      "createdAt": "2025-11-02T14:30:00.000Z"
+    },
+    {
+      "requestId": 3,
+      "calendarId": 8,
+      "reason": "Muốn nghỉ phép để đi du lịch",
+      "status": "rejected",
+      "createdBy": 1,
+      "createdAt": "2025-11-01T09:00:00.000Z"
+    },
+    {
+      "requestId": 4,
+      "calendarId": 15,
+      "reason": "Có lịch khám bệnh định kỳ",
+      "status": "pending",
+      "createdBy": 1,
+      "createdAt": "2025-11-05T08:00:00.000Z"
+    },
+    {
+      "requestId": 5,
+      "calendarId": 17,
+      "reason": "Tham dự đám cưới người thân",
+      "status": "accepted",
+      "createdBy": 1,
+      "createdAt": "2025-11-07T16:00:00.000Z"
+    }
+  ]
+}

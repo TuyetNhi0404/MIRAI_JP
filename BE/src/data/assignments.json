@@ -1,0 +1,95 @@
+[
+  {
+    "id": "2",
+    "title": "Assignment 2",
+    "course": "Web Development",
+    "courseId": "C001",
+    "description": "Design a relational schema for an online bookstore and provide ER diagrams.",
+    "dueDate": "2025-11-01",
+    "maxScore": 100,
+    "status": "closed",
+    "teacherId": "T02",
+    "teacherName": "Tran Thi B",
+    "totalStudents": 25,
+    "attachments": [
+      {
+        "id": "A2-1",
+        "name": "schema-requirements.docx",
+        "size": 187500,
+        "type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "url": "https://example.com/files/schema-requirements.docx",
+        "uploadDate": "2025-10-14"
+      },
+      {
+        "id": 1761555231646.6965,
+        "name": "diagram.docx",
+        "size": 93273,
+        "type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "uploadDate": "2025-10-27T08:53:51.646Z"
+      }
+    ],
+    "createdAt": "2025-10-12T09:15:00Z",
+    "updatedAt": "2025-10-27T08:53:54.063Z"
+  },
+  {
+    "id": "1761478348675",
+    "title": "Git and Scrum",
+    "courseId": "C001",
+    "course": "Web Development",
+    "description": "Make a course",
+    "dueDate": "2025-10-21",
+    "maxScore": 100,
+    "status": "active",
+    "attachments": [
+      {
+        "id": 1761478331203.7166,
+        "name": "diagram.docx",
+        "size": 93273,
+        "type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "uploadDate": "2025-10-26T11:32:11.203Z"
+      }
+    ],
+    "teacherId": "68fb468112c7925a02e8883b",
+    "teacherName": "Unknown",
+    "createdAt": "2025-10-26T11:32:28.676Z",
+    "updatedAt": "2025-10-26T11:32:28.676Z"
+  },
+  {
+    "id": "1761549294286",
+    "title": "Test assignment",
+    "courseId": "C001",
+    "course": "Web Development",
+    "description": "vjdbsjvbjsdv",
+    "dueDate": "2025-10-14",
+    "maxScore": 100,
+    "status": "active",
+    "attachments": [],
+    "teacherId": "68fb468112c7925a02e8883b",
+    "teacherName": "Unknown",
+    "createdAt": "2025-10-27T07:14:54.286Z",
+    "updatedAt": "2025-10-27T07:14:54.286Z"
+  },
+  {
+    "id": "1761555335156",
+    "title": "test ABC",
+    "courseId": "C001",
+    "course": "Web Development",
+    "description": "dsvd",
+    "dueDate": "2025-10-15",
+    "maxScore": 100,
+    "status": "draft",
+    "attachments": [
+      {
+        "id": 1761555326878.1772,
+        "name": "diagram.docx",
+        "size": 93273,
+        "type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "uploadDate": "2025-10-27T08:55:26.878Z"
+      }
+    ],
+    "teacherId": "68fb468112c7925a02e8883b",
+    "teacherName": "Unknown",
+    "createdAt": "2025-10-27T08:55:35.156Z",
+    "updatedAt": "2025-10-27T08:55:35.156Z"
+  }
+]

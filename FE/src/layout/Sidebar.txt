@@ -1,0 +1,110 @@
+// src/layout/Sidebar.tsx
+import { Home, BookOpen, Users, Settings } from 'lucide-react';
+
+interface MenuItem {
+  id: string;
+  label: string;
+  icon: any;
+}
+
+interface SidebarProps {
+  isOpen: boolean;
+  activeMenu: string;
+  onMenuClick: (menuId: string) => void;
+  userRole?: 'student' | 'teacher' | 'admin';
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ 
+  isOpen, 
+  activeMenu, 
+  onMenuClick,
+  userRole = 'student'
+}) => {
+  const getMenuItems = (): MenuItem[] => {
+    const commonItems = [
+      { id: 'dashboard', label: 'Dashboard', icon: Home },
+      { id: 'courses', label: 'Courses', icon: BookOpen },
+    ];
+
+    const roleSpecificItems = {
+      student: [
+        { id: 'my-courses', label: 'My Courses', icon: BookOpen },
+        { id: 'progress', label: 'Progress', icon: Home },
+      ],
+      teacher: [
+        { id: 'my-classes', label: 'My Classes', icon: Users },
+        { id: 'students', label: 'Students', icon: Users },
+        { id: 'materials', label: 'Materials', icon: BookOpen },
+      ],
+      admin: [
+        { id: 'users', label: 'User Management', icon: Users },
+        { id: 'courses-manage', label: 'Course Management', icon: BookOpen },
+        { id: 'reports', label: 'Reports', icon: Home },
+      ]
+    };
+
+    return [...commonItems, ...roleSpecificItems[userRole], { id: 'settings', label: 'Settings', icon: Settings }];
+  };
+
+  const menuItems = getMenuItems();
+
+  return (
+    <aside style={{
+      width: isOpen ? '260px' : '0',
+      backgroundColor: 'white',
+      borderRight: '2px solid #EC7510',
+      transition: 'width 0.3s ease',
+      overflow: 'hidden',
+      position: 'fixed',
+      left: 0,
+      top: '70px',
+      bottom: '60px',
+      zIndex: 900
+    }}>
+      <nav style={{ padding: '20px 0' }}>
+        {menuItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = activeMenu === item.id;
+          
+          return (
+            <button
+              key={item.id}
+              onClick={() => onMenuClick(item.id)}
+              style={{
+                width: '100%',
+                padding: '15px 25px',
+                border: 'none',
+                background: isActive ? '#FFF5E6' : 'transparent',
+                textAlign: 'left',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '15px',
+                fontSize: '15px',
+                color: isActive ? '#EC7510' : '#666',
+                borderLeft: isActive ? '4px solid #EC7510' : '4px solid transparent',
+                transition: 'all 0.2s',
+                fontWeight: isActive ? 'bold' : 'normal'
+              }}
+              onMouseEnter={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.backgroundColor = '#f9f9f9';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }
+              }}
+            >
+              <Icon size={20} />
+              {item.label}
+            </button>
+          );
+        })}
+      </nav>
+    </aside>
+  );
+};
+
+export default Sidebar;
