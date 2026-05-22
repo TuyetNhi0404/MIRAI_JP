@@ -1,17 +1,59 @@
-import React, { useState } from 'react';
-import { Box, Typography, Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, Typography, Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, Skeleton, Alert, Snackbar } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { mockListeningContents } from '../mockData';
+import listeningService from '../../../services/listeningService';
+import type { ListeningContent } from '../types';
 
 const ListeningManagePage = () => {
   const navigate = useNavigate();
-  // Using mock data for UI preview
-  const [contents, setContents] = useState(mockListeningContents);
+  const [contents, setContents] = useState<ListeningContent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Notification states
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
 
-  const handleDelete = (id: string) => {
+  const loadData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await listeningService.getAll({ limit: 100 });
+      setContents(res.contents);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Failed to load listening contents');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this content?')) {
-      setContents(contents.filter(c => c._id !== id));
+      try {
+        await listeningService.delete(id);
+        setContents(prev => prev.filter(c => c._id !== id));
+        setSnackbar({
+          open: true,
+          message: 'Content deleted successfully!',
+          severity: 'success',
+        });
+      } catch (err: any) {
+        console.error(err);
+        setSnackbar({
+          open: true,
+          message: err.message || 'Failed to delete content',
+          severity: 'error',
+        });
+      }
     }
   };
 
@@ -38,6 +80,12 @@ const ListeningManagePage = () => {
         </Button>
       </Box>
 
+      {error && (
+        <Alert severity="error" sx={{ mb: 3, borderRadius: '12px' }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+
       <TableContainer component={Paper} sx={{ borderRadius: '16px', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.05)' }}>
         <Table>
           <TableHead sx={{ bgcolor: '#f9f9f9' }}>
@@ -50,7 +98,22 @@ const ListeningManagePage = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {contents.map((content) => (
+            {loading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton variant="text" width="60%" /></TableCell>
+                  <TableCell><Skeleton variant="rectangular" width={80} height={24} sx={{ borderRadius: '4px' }} /></TableCell>
+                  <TableCell><Skeleton variant="rectangular" width={50} height={24} sx={{ borderRadius: '4px' }} /></TableCell>
+                  <TableCell><Skeleton variant="rectangular" width={70} height={24} sx={{ borderRadius: '4px' }} /></TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex' }}>
+                      <Skeleton variant="circular" width={30} height={30} sx={{ mr: 1 }} />
+                      <Skeleton variant="circular" width={30} height={30} />
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : contents.map((content) => (
               <TableRow key={content._id} hover>
                 <TableCell>{content.title}</TableCell>
                 <TableCell>
@@ -60,7 +123,7 @@ const ListeningManagePage = () => {
                   <Chip label={content.level} size="small" sx={{ bgcolor: '#fecaca', color: '#B90000', fontWeight: 'bold' }} />
                 </TableCell>
                 <TableCell>
-                  <Chip label={content.audioSource.toUpperCase()} size="small" variant="outlined" />
+                  <Chip label={content.audioSource?.toUpperCase()} size="small" variant="outlined" />
                 </TableCell>
                 <TableCell>
                   <IconButton onClick={() => navigate(`/dashboard/admin/listening/${content._id}/edit`)} sx={{ color: 'primary.main', mr: 1 }}>
@@ -72,7 +135,7 @@ const ListeningManagePage = () => {
                 </TableCell>
               </TableRow>
             ))}
-            {contents.length === 0 && (
+            {!loading && contents.length === 0 && (
               <TableRow>
                 <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
                   No listening content found. Click "Add New Content" to create one.
@@ -82,6 +145,13 @@ const ListeningManagePage = () => {
           </TableBody>
         </Table>
       </TableContainer>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+        message={snackbar.message}
+      />
     </Box>
   );
 };

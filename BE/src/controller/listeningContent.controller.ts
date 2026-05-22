@@ -8,13 +8,13 @@ export const createContent = async (req: Request, res: Response): Promise<void> 
   try {
     const { title, description, topic, level, audioSource, audioUrl, transcript } = req.body;
     // Assuming req.user is set by auth middleware
-    const createdBy = (req as any).user?._id; 
-    
+    const createdBy = (req as any).user?.id || (req as any).id; console.log('req.user:', (req as any).user, 'req.id:', (req as any).id, 'createdBy:', createdBy);
+
     if (!createdBy) {
-      res.status(401).json({ message: 'Unauthorized' });
+      res.status(401).json({ message: 'Unauthorized', debug: { user: (req as any).user, id: (req as any).id, createdBy } });
       return;
     }
-
+    console.log(req.body)
     const newContent = await ListeningContent.create({
       title,
       description,
@@ -58,7 +58,7 @@ export const getContentById = async (req: Request, res: Response): Promise<void>
   try {
     const { id } = req.params;
     const content = await ListeningContent.findById(id).populate('exercises');
-    
+
     if (!content) {
       res.status(404).json({ message: 'Content not found' });
       return;
@@ -78,7 +78,7 @@ export const updateContent = async (req: Request, res: Response): Promise<void> 
   try {
     const { id } = req.params;
     const updatedContent = await ListeningContent.findByIdAndUpdate(id, req.body, { new: true });
-    
+
     if (!updatedContent) {
       res.status(404).json({ message: 'Content not found' });
       return;
@@ -94,7 +94,7 @@ export const deleteContent = async (req: Request, res: Response): Promise<void> 
   try {
     const { id } = req.params;
     const deletedContent = await ListeningContent.findByIdAndDelete(id);
-    
+
     if (!deletedContent) {
       res.status(404).json({ message: 'Content not found' });
       return;
@@ -137,7 +137,7 @@ export const addExercise = async (req: Request, res: Response): Promise<void> =>
     const exerciseData = { ...req.body, contentId: id };
 
     const newExercise = await ListeningExercise.create(exerciseData);
-    
+
     await ListeningContent.findByIdAndUpdate(id, {
       $push: { exercises: newExercise._id }
     });
@@ -152,11 +152,11 @@ export const submitAnswers = async (req: Request, res: Response): Promise<void> 
   try {
     const { id } = req.params; // contentId
     const { answers, timeSpent } = req.body;
-    const studentId = (req as any).user?._id;
+    const studentId = (req as any).user?.id || (req as any).id;
 
     if (!studentId) {
-       res.status(401).json({ message: 'Unauthorized' });
-       return;
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
     }
 
     let totalScore = 0;
@@ -180,11 +180,11 @@ export const submitAnswers = async (req: Request, res: Response): Promise<void> 
           score = 1;
         }
       } else if (exercise.type === 'dictation') {
-         // Placeholder for dictation logic (Phase 2 Levenshtein)
-         if (exercise.targetText === ans.studentAnswer) {
-           isCorrect = true;
-           score = 1;
-         }
+        // Placeholder for dictation logic (Phase 2 Levenshtein)
+        if (exercise.targetText === ans.studentAnswer) {
+          isCorrect = true;
+          score = 1;
+        }
       }
 
       totalScore += score;

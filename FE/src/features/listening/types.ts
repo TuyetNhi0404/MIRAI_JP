@@ -10,6 +10,7 @@ export interface ListeningContent {
   duration: number;
   thumbnailUrl: string;
   playCount: number;
+  exercises?: ListeningExercise[];
   createdAt: string;
   updatedAt: string;
 }
@@ -18,29 +19,32 @@ export type ListeningExerciseType = 'quiz' | 'fill_blank' | 'dictation';
 
 export interface QuizExercise {
   id: string;
+  _id?: string;
   type: 'quiz';
   question: string;
-  options: { A: string; B: string; C: string; D: string };
-  correctAnswer: 'A' | 'B' | 'C' | 'D';
+  options: string[];
+  correctAnswer: string;
   explanation?: string;
 }
 
 export interface FillBlankExercise {
-  id: string;
+  id?: string;
+  _id?: string;
   type: 'fill_blank';
   question: string;
-  template: string;
+  textWithBlanks: string;
   answers: string[];
   hints?: string[];
 }
 
 export interface DictationExercise {
-  id: string;
+  id?: string;
+  _id?: string;
   type: 'dictation';
   question: string;
-  startTime: number;
-  endTime: number;
-  correctText: string;
+  audioSegmentStart?: number;
+  audioSegmentEnd?: number;
+  targetText: string;
   acceptableVariants?: string[];
 }
 
