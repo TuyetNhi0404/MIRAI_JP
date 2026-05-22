@@ -44,6 +44,8 @@ import AdminLeaderboard from "./pages/Admin/AdminLeaderboard";
 import KanaPracticePage from "./pages/Student/KanaPracticePage";
 import TeacherCoursesPage from "./pages/Teacher/TeacherCoursesPage";
 import TeacherCourseStudentsPage from "./pages/Teacher/TeacherCourseStudentsPage";
+import VocabularyManagement from "./pages/Admin/VocabularyManagement";
+import VocabularyPracticePage from "./pages/Student/VocabularyPracticePage";
 
 const AppRouter = () => {
   const user = useSelector((state: RootState) => state.auth.user);
@@ -97,6 +99,7 @@ const AppRouter = () => {
           <Route path="admin/courses/:id/students" element={<EnrolledStudentsPage />} />
           <Route path="admin/request-management" element={<RequestSchedulePage />} />
           <Route path="admin/banned-users" element={<BannedUsersPage />} />
+          <Route path="admin/vocabulary" element={<VocabularyManagement />} />
 
           {/* Teacher routes */}
           <Route path="teacher" element={<TeacherDashboard />} />
@@ -120,6 +123,7 @@ const AppRouter = () => {
           <Route path="student/statistics" element={<StudentStatisticsDashboard />} />
           <Route path="student/leaderboard" element={<Leaderboard />} />
           <Route path="student/kana-practice" element={<KanaPracticePage />} />
+          <Route path="student/vocabulary-practice" element={<VocabularyPracticePage />} />
           {/* Default redirect */}
           <Route index element={<Navigate to="/dashboard/student" replace />} />
         </Route>
