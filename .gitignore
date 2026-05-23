@@ -50,3 +50,15 @@ lerna-debug.log*
 .settings/
 .DS_Store
 Thumbs.db
+
+listening_knowledge.html
+summary.html
+ke-hoach-tich-hop-api-listening.txt
+BE/design_system_output.md
+BE/plan.md
+FE/agent
+
+/agents
+/rules
+/docs
+log.txt

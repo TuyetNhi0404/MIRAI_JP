@@ -62,7 +62,7 @@ class AuthController {
 
   async refreshToken(req: Request, res: Response): Promise<Response> {
     try {
-      const oldRefreshToken = req.cookies.refreshToken as string | undefined;
+      const oldRefreshToken = (req.cookies.refreshToken || req.body.refreshToken) as string | undefined;
       const { accessToken, refreshToken } = await authService.refreshToken(
         oldRefreshToken as string
       );

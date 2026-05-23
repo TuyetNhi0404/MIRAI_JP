@@ -13,7 +13,8 @@ import {
   MenuBook, 
   EmojiEvents, 
   TrackChanges, 
-  AutoAwesome 
+  AutoAwesome,
+  Headset
 } from '@mui/icons-material';
 
 const StudentDashboard = () => {
@@ -139,6 +140,42 @@ const StudentDashboard = () => {
                     sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
                   >
                     Learning
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={3}>
+                <Box 
+                  onClick={() => navigate('/dashboard/student/listening')}
+                  sx={{ 
+                    textAlign: 'center', 
+                    cursor: 'pointer',
+                    '&:hover .MuiAvatar-root': {
+                      transform: 'scale(1.1)',
+                      boxShadow: '0 8px 20px rgba(156, 39, 176, 0.2)'
+                    },
+                    transition: 'all 0.3s'
+                  }}
+                >
+                  <Avatar
+                    sx={{
+                      width: { xs: 45, sm: 50, md: 55 },
+                      height: { xs: 45, sm: 50, md: 55 },
+                      margin: '0 auto',
+                      mb: { xs: 1, sm: 1.5 },
+                      bgcolor: '#f3e5f5',
+                      color: '#9c27b0',
+                      transition: 'all 0.3s'
+                    }}
+                  >
+                    <Headset sx={{ fontSize: { xs: 22, sm: 25, md: 28 } }} />
+                  </Avatar>
+                  <Typography 
+                    variant="body2" 
+                    fontWeight={600} 
+                    color="text.primary"
+                    sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+                  >
+                    Listening
                   </Typography>
                 </Box>
               </Grid>

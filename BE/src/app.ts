@@ -134,6 +134,6 @@ app.post("/api/forum/threads/:id/reactions", (req, res) => {
 // ✅ start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`✅ Mock API running on http://localhost:${PORT}`);
-  console.log(`✅ CORS enabled for ${FRONTEND_URL}`);
+  console.log(` Mock API running on http://localhost:${PORT}`);
+  console.log(` CORS enabled for ${FRONTEND_URL}`);
 });

@@ -1,7 +1,7 @@
 // src/layouts/StudentSidebar.tsx
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { BarChart3, BookOpen, ChartLine, ClipboardList, Trophy, FileQuestion, Home, PenLine } from "lucide-react";
+import { BarChart3, BookOpen, ChartLine, ClipboardList, Trophy, FileQuestion, Home, PenLine, Headphones } from "lucide-react";
 
 import {
   Drawer,
@@ -41,6 +41,7 @@ const StudentSidebar: React.FC<SidebarProps> = ({ isOpen }) => {
     { id: "leaderboard", label: "Bảng xếp hạng", icon: Trophy, path: "/dashboard/student/leaderboard" },
     { id: "Audit Practice", label: "Luyện nói với AI", icon: BarChart3, path: "/dashboard/student/audit-practice" },
     { id: "kana-practice", label: "Học bảng chữ cái", icon: PenLine, path: "/dashboard/student/kana-practice" },
+    { id: "listening", label: "Luyện nghe", icon: Headphones, path: "/dashboard/student/listening" },
   ];
 
   const handleMenuClick = (path: string) => {
