@@ -62,3 +62,9 @@ FE/agent
 /rules
 /docs
 log.txt
+
+# Python speaking service
+services/speaking-practice/venv/
+services/speaking-practice/.venv/
+services/speaking-practice/uploads/*
+!services/speaking-practice/uploads/.gitkeep

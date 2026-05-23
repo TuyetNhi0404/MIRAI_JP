@@ -6,6 +6,7 @@
     "build": "tsc",
     "start": "node dist/app.js",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "dev:speaking": "cd ../services/speaking-practice && python3 -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload",
     "test": "cross-env NODE_ENV=test jest --runInBand",
     "format": "prettier --write .",
     "prepare": "husky install"
@@ -43,6 +44,7 @@
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "google-auth-library": "^10.4.1",
+    "http-proxy-middleware": "^4.0.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.548.0",
     "mammoth": "^1.11.0",
