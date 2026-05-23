@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, TextField, Button, Paper, Grid, MenuItem, Select, FormControl, InputLabel, CircularProgress, Skeleton, Alert, Snackbar } from '@mui/material';
+import { Box, Typography, TextField, Button, Paper, Grid, MenuItem, Select, FormControl, InputLabel, CircularProgress, Skeleton, Alert, Snackbar, Switch, FormControlLabel } from '@mui/material';
 import { ArrowBack, Save } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import listeningService from '../../../services/listeningService';
@@ -17,6 +17,7 @@ const ListeningFormPage = () => {
     audioSource: 'upload' as 'upload' | 'tts',
     audioUrl: '',
     transcript: '',
+    isPublished: true,
   });
 
   const [audioFile, setAudioFile] = useState<File | null>(null);
@@ -41,6 +42,7 @@ const ListeningFormPage = () => {
             audioSource: (data.audioSource || 'upload') as 'upload' | 'tts',
             audioUrl: data.audioUrl || '',
             transcript: data.transcript || '',
+            isPublished: data.isPublished !== undefined ? data.isPublished : true,
           });
         } catch (err: any) {
           console.error(err);
@@ -77,6 +79,7 @@ const ListeningFormPage = () => {
         audioSource: formData.audioSource,
         audioUrl: formData.audioSource === 'tts' ? formData.audioUrl.trim() : undefined,
         transcript: formData.transcript.trim() || undefined,
+        isPublished: formData.isPublished,
       };
 
       let savedContentId = id;
@@ -277,6 +280,19 @@ const ListeningFormPage = () => {
               onChange={handleChange}
               variant="outlined"
               disabled={saving || uploading}
+            />
+          </Grid>
+
+          <Grid item xs={12}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData.isPublished}
+                  onChange={(e) => setFormData(prev => ({ ...prev, isPublished: e.target.checked }))}
+                  disabled={saving || uploading}
+                />
+              }
+              label="Publish (visible to students and teachers)"
             />
           </Grid>
 

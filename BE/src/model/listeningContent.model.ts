@@ -34,7 +34,7 @@ const listeningContentSchema: Schema = new Schema(
     thumbnailUrl: { type: String },
     exercises: [{ type: Schema.Types.ObjectId, ref: 'ListeningExercise' }],
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    isPublished: { type: Boolean, default: false },
+    isPublished: { type: Boolean, default: true },
     playCount: { type: Number, default: 0 },
   },
   { timestamps: true }

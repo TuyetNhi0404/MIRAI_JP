@@ -115,6 +115,8 @@ const AppRouter = () => {
           <Route path="teacher/questions/:chapterId" element={<ChapterQuestionsPage />} />
           <Route path="teacher/quizzes" element={<QuizzesPage />} />
           <Route path="teacher/submissions" element={<TeacherSubmissionsPage />} />
+          <Route path="teacher/listening" element={<ListeningListPage />} />
+          <Route path="teacher/listening/:id" element={<ListeningDetailPage />} />
 
           {/* Student routes */}
           <Route path="student" element={<StudentDashboard />} />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, Skeleton, Alert, Snackbar } from '@mui/material';
+import { Box, Typography, Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, IconButton, Skeleton, Alert, Snackbar, Switch } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import listeningService from '../../../services/listeningService';
@@ -57,6 +57,27 @@ const ListeningManagePage = () => {
     }
   };
 
+  const handleTogglePublish = async (id: string, currentStatus: boolean) => {
+    try {
+      await listeningService.update(id, { isPublished: !currentStatus });
+      setContents(prev =>
+        prev.map(c => c._id === id ? { ...c, isPublished: !currentStatus } : c)
+      );
+      setSnackbar({
+        open: true,
+        message: `Content ${!currentStatus ? 'published' : 'unpublished'} successfully!`,
+        severity: 'success',
+      });
+    } catch (err: any) {
+      console.error(err);
+      setSnackbar({
+        open: true,
+        message: err.message || 'Failed to update content',
+        severity: 'error',
+      });
+    }
+  };
+
   return (
     <Box sx={{ p: 4 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
@@ -94,6 +115,7 @@ const ListeningManagePage = () => {
               <TableCell sx={{ fontWeight: 'bold' }}>Topic</TableCell>
               <TableCell sx={{ fontWeight: 'bold' }}>Level</TableCell>
               <TableCell sx={{ fontWeight: 'bold' }}>Source</TableCell>
+              <TableCell sx={{ fontWeight: 'bold', textAlign: 'center' }}>Published</TableCell>
               <TableCell sx={{ fontWeight: 'bold' }}>Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -105,6 +127,7 @@ const ListeningManagePage = () => {
                   <TableCell><Skeleton variant="rectangular" width={80} height={24} sx={{ borderRadius: '4px' }} /></TableCell>
                   <TableCell><Skeleton variant="rectangular" width={50} height={24} sx={{ borderRadius: '4px' }} /></TableCell>
                   <TableCell><Skeleton variant="rectangular" width={70} height={24} sx={{ borderRadius: '4px' }} /></TableCell>
+                  <TableCell sx={{ textAlign: 'center' }}><Skeleton variant="rectangular" width={50} height={24} sx={{ borderRadius: '4px', mx: 'auto' }} /></TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex' }}>
                       <Skeleton variant="circular" width={30} height={30} sx={{ mr: 1 }} />
@@ -125,6 +148,13 @@ const ListeningManagePage = () => {
                 <TableCell>
                   <Chip label={content.audioSource?.toUpperCase()} size="small" variant="outlined" />
                 </TableCell>
+                <TableCell sx={{ textAlign: 'center' }}>
+                  <Switch
+                    checked={content.isPublished || false}
+                    onChange={() => handleTogglePublish(content._id, content.isPublished || false)}
+                    color="primary"
+                  />
+                </TableCell>
                 <TableCell>
                   <IconButton onClick={() => navigate(`/dashboard/admin/listening/${content._id}/edit`)} sx={{ color: 'primary.main', mr: 1 }}>
                     <Edit />
@@ -137,7 +167,7 @@ const ListeningManagePage = () => {
             ))}
             {!loading && contents.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
+                <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
                   No listening content found. Click "Add New Content" to create one.
                 </TableCell>
               </TableRow>
