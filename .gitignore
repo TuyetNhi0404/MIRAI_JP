@@ -62,6 +62,7 @@ FE/agent
 /rules
 /docs
 log.txt
+/ui-ux-pro-max-skill
 
 # Python speaking service
 services/speaking-practice/venv/
