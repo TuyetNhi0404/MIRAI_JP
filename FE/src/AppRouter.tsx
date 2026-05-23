@@ -48,6 +48,8 @@ import AdminLeaderboard from "./pages/Admin/AdminLeaderboard";
 import KanaPracticePage from "./pages/Student/KanaPracticePage";
 import TeacherCoursesPage from "./pages/Teacher/TeacherCoursesPage";
 import TeacherCourseStudentsPage from "./pages/Teacher/TeacherCourseStudentsPage";
+import VocabularyManagement from "./pages/Admin/VocabularyManagement";
+import VocabularyPracticePage from "./pages/Student/VocabularyPracticePage";
 
 const AppRouter = () => {
   const user = useSelector((state: RootState) => state.auth.user);
@@ -101,6 +103,7 @@ const AppRouter = () => {
           <Route path="admin/courses/:id/students" element={<EnrolledStudentsPage />} />
           <Route path="admin/request-management" element={<RequestSchedulePage />} />
           <Route path="admin/banned-users" element={<BannedUsersPage />} />
+          <Route path="admin/vocabulary" element={<VocabularyManagement />} />
           <Route path="admin/listening" element={<ListeningManagePage />} />
           <Route path="admin/listening/new" element={<ListeningFormPage />} />
           <Route path="admin/listening/:id/edit" element={<ListeningFormPage />} />
@@ -127,6 +130,7 @@ const AppRouter = () => {
           <Route path="student/statistics" element={<StudentStatisticsDashboard />} />
           <Route path="student/leaderboard" element={<Leaderboard />} />
           <Route path="student/kana-practice" element={<KanaPracticePage />} />
+          <Route path="student/vocabulary-practice" element={<VocabularyPracticePage />} />
           <Route path="student/listening" element={<ListeningListPage />} />
           <Route path="student/listening/:id" element={<ListeningDetailPage />} />
           {/* Default redirect */}

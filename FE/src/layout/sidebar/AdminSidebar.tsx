@@ -11,7 +11,7 @@ import {
   Box,
   useMediaQuery,
 } from "@mui/material";
-import { BookOpen, Users, Trophy, ClipboardCheck, CalendarCog, ClipboardList, FileClock, Ban, Headphones } from "lucide-react";
+import { BookOpen, Users, Trophy, ClipboardCheck, CalendarCog, ClipboardList, FileClock, Ban, BookMarked , Headphones} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 
@@ -42,6 +42,7 @@ const AdminSidebar: React.FC<SidebarProps> = ({ isOpen }) => {
     { id: "request-management", label: "Request Schedule", icon: ClipboardList, path: "/dashboard/admin/request-management" },
     { id: "requests", label: "Enrollment Requests", icon: FileClock, path: "/dashboard/admin/requests" },
     { id: "banned-users", label: "Banned Users", icon: Ban, path: "/dashboard/admin/banned-users" },
+    { id: "vocabulary", label: "Từ vựng JLPT", icon: BookMarked, path: "/dashboard/admin/vocabulary" },
     { id: "listening-manage", label: "Listening Manage", icon: Headphones, path: "/dashboard/admin/listening" },
   ];
 
