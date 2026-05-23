@@ -1,12 +1,16 @@
 import {
   Alert,
   Box,
+  Chip,
   FormControl,
   MenuItem,
   Select,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { Mic, Zap } from "lucide-react";
+import SpeakingCircle from "../../components/AI_animated/SpeakingCircle";
 import { useSpeakingPractice } from "./useSpeakingPractice";
 import type { InteractionMode } from "./useSpeakingPractice";
 
@@ -18,7 +22,13 @@ const LEVELS = [
   { value: "N1", label: "N1 (Advanced)" },
 ];
 
+const BRAND = "#c83c3c";
+const AI_CIRCLE = "#ffb0b0";
+
 const SpeakingPracticePage = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
   const {
     enabled,
     messages,
@@ -53,6 +63,9 @@ const SpeakingPracticePage = () => {
     );
   }
 
+  const circleActive = isUserSpeaking || isRecording;
+  const circleSize = isMobile ? 200 : 240;
+
   const recordBtnClass = [
     sessionActive ? "session-active" : "",
     isRecording && mode === "stream" ? "recording" : "",
@@ -66,149 +79,279 @@ const SpeakingPracticePage = () => {
     <Box
       sx={{
         display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        minHeight: "calc(100vh - 140px)",
-        py: 2,
-        px: 1,
-        bgcolor: "#FFF5F7",
+        flexDirection: "column",
+        height: { xs: "calc(100vh - 180px)", sm: "calc(100vh - 200px)" },
+        minHeight: 520,
+        maxWidth: 720,
+        mx: "auto",
+        width: "100%",
       }}
     >
+      {/* Page header */}
+      <Box sx={{ textAlign: "center", mb: { xs: 1.5, sm: 2 }, flexShrink: 0 }}>
+        <Typography
+          variant="h5"
+          fontWeight={800}
+          sx={{
+            background: "linear-gradient(45deg, #B90000, #ff4d4d)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            fontSize: { xs: "1.35rem", sm: "1.6rem" },
+          }}
+        >
+          AI Japanese Tutor
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          Personalized Speaking Coach
+        </Typography>
+      </Box>
+
+      {(serviceUnavailable || lastError) && (
+        <Alert severity="warning" sx={{ mb: 1.5, flexShrink: 0, borderRadius: 2 }}>
+          {lastError ||
+            "Service chưa chạy — chạy uvicorn port 8000 và restart BE (ENABLE_SPEAKING_PRACTICE=true)."}
+        </Alert>
+      )}
+
+      {/* Centered voice orb */}
       <Box
-        className="speaking-app"
         sx={{
-          width: "100%",
-          maxWidth: 440,
-          height: { xs: "calc(100vh - 160px)", sm: "94vh" },
-          maxHeight: 720,
-          bgcolor: "#fff",
-          borderRadius: "28px",
-          boxShadow: "0 10px 40px rgba(255, 123, 156, 0.06)",
-          border: "1px solid rgba(255, 123, 156, 0.1)",
           display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
+          justifyContent: "center",
+          alignItems: "center",
+          flexShrink: 0,
+          py: { xs: 1, sm: 2 },
+          position: "relative",
         }}
       >
-        {/* Header */}
         <Box
           sx={{
-            textAlign: "center",
-            py: 2,
-            px: 2.5,
-            borderBottom: "1px solid rgba(255, 123, 156, 0.15)",
-          }}
-        >
-          <Typography
-            sx={{ fontSize: "1.35rem", fontWeight: 700, color: "#FF5E85" }}
-          >
-            AI Japanese Tutor
-          </Typography>
-          <Typography sx={{ fontSize: "0.8rem", color: "#636E72", mt: 0.5 }}>
-            Personalized Japanese Speaking Coach
-          </Typography>
-        </Box>
-
-        {/* Status bar */}
-        <Box
-          sx={{
-            bgcolor: "#FFFDFE",
-            px: 2.25,
-            py: 1.5,
-            borderBottom: "1px solid rgba(255, 123, 156, 0.15)",
+            position: "relative",
+            width: circleSize + 24,
+            height: circleSize + 24,
             display: "flex",
-            flexDirection: "column",
-            gap: 1.25,
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
-          {(serviceUnavailable || lastError) && (
-            <Alert severity="warning" sx={{ py: 0 }}>
-              {lastError ||
-                "Service chưa chạy — chạy uvicorn port 8000 và restart BE (ENABLE_SPEAKING_PRACTICE=true)."}
-            </Alert>
-          )}
-
-          {/* Mode toggle */}
           <Box
             sx={{
+              position: "absolute",
+              inset: 0,
+              borderRadius: "50%",
+              bgcolor: circleActive ? "rgba(185,0,0,0.06)" : "rgba(185,0,0,0.03)",
+              transform: circleActive ? "scale(1.04)" : "scale(1)",
+              transition: "transform 0.35s ease, background-color 0.35s ease",
+            }}
+          />
+          <SpeakingCircle isSpeaking={circleActive} size={circleSize} color={AI_CIRCLE} />
+          {isRecording && (
+            <Box
+              sx={{
+                position: "absolute",
+                bottom: 12,
+                right: 12,
+                width: 10,
+                height: 10,
+                borderRadius: "50%",
+                bgcolor: "#EF4444",
+                border: "2px solid #fff",
+                animation: "micPulse 1.2s infinite",
+                "@keyframes micPulse": {
+                  "0%, 100%": { opacity: 1, transform: "scale(1)" },
+                  "50%": { opacity: 0.5, transform: "scale(1.35)" },
+                },
+              }}
+            />
+          )}
+        </Box>
+      </Box>
+
+      {/* Chat transcript */}
+      <Box
+        component="section"
+        aria-label="Conversation"
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: "auto",
+          px: { xs: 0.5, sm: 1 },
+          py: 1,
+          display: "flex",
+          flexDirection: "column",
+          gap: 1.25,
+          borderTop: "1px solid rgba(185,0,0,0.08)",
+          borderBottom: "1px solid rgba(185,0,0,0.08)",
+          "&::-webkit-scrollbar": { width: 5 },
+          "&::-webkit-scrollbar-thumb": {
+            bgcolor: "rgba(185,0,0,0.18)",
+            borderRadius: 3,
+          },
+        }}
+      >
+        {messages.map((msg) => (
+          <Box
+            key={msg.id}
+            sx={{
               display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              pb: 0.5,
-              borderBottom: "1px dashed rgba(255, 123, 156, 0.1)",
+              maxWidth: "85%",
+              alignSelf: msg.sender === "user" ? "flex-end" : "flex-start",
+              animation: "fadeIn 0.3s ease forwards",
+              "@keyframes fadeIn": {
+                from: { opacity: 0, transform: "translateY(6px)" },
+                to: { opacity: 1, transform: "translateY(0)" },
+              },
             }}
           >
-            <Typography sx={{ fontSize: "0.85rem", fontWeight: 600, color: "#636E72" }}>
-              Mode:
-            </Typography>
+            <Box
+              sx={{
+                px: 2,
+                py: 1.25,
+                borderRadius: 2.5,
+                fontSize: "0.9rem",
+                lineHeight: 1.5,
+                fontFamily: '"Noto Sans JP", "Inter", sans-serif',
+                ...(msg.sender === "user"
+                  ? {
+                      bgcolor: msg.partial ? "rgba(255,240,240,0.6)" : "#FFF0F0",
+                      color: msg.partial ? "text.secondary" : "#4A1515",
+                      borderBottomRightRadius: 4,
+                      border: msg.partial
+                        ? "1.5px dashed rgba(185,0,0,0.35)"
+                        : "1px solid rgba(185,0,0,0.1)",
+                      fontStyle: msg.partial ? "italic" : "normal",
+                      opacity: msg.partial ? 0.9 : 1,
+                    }
+                  : {
+                      bgcolor: "#F8F9FA",
+                      color: "text.primary",
+                      borderBottomLeftRadius: 4,
+                      border: "1px solid rgba(0,0,0,0.05)",
+                    }),
+              }}
+            >
+              {msg.text}
+            </Box>
+          </Box>
+        ))}
+
+        {typingVisible && (
+          <Box sx={{ alignSelf: "flex-start" }}>
             <Box
               sx={{
                 display: "flex",
+                alignItems: "center",
+                gap: 0.75,
+                px: 2.25,
+                py: 1.5,
+                borderRadius: 2.5,
                 bgcolor: "#F8F9FA",
-                p: "3px",
-                borderRadius: "10px",
                 border: "1px solid rgba(0,0,0,0.04)",
               }}
             >
-              {(
-                [
-                  { value: "request" as InteractionMode, label: "Hold to talk" },
-                  { value: "stream" as InteractionMode, label: "Streaming ⚡" },
-                ] as const
-              ).map((opt) => (
+              {[0, 0.2, 0.4].map((delay) => (
                 <Box
-                  key={opt.value}
-                  component="button"
-                  type="button"
-                  onClick={() => setMode(opt.value)}
+                  key={delay}
                   sx={{
-                    border: "none",
-                    cursor: "pointer",
-                    px: 1.5,
-                    py: 0.75,
-                    borderRadius: "8px",
-                    fontSize: "0.8rem",
-                    fontWeight: 600,
-                    bgcolor: mode === opt.value ? "#FF7B9C" : "transparent",
-                    color: mode === opt.value ? "#fff" : "#636E72",
-                    boxShadow:
-                      mode === opt.value
-                        ? "0 2px 8px rgba(255, 123, 156, 0.25)"
-                        : "none",
-                    transition: "all 0.25s ease",
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    bgcolor: "rgba(185,0,0,0.35)",
+                    animation: "bounce 1.4s infinite ease-in-out",
+                    animationDelay: `${delay}s`,
+                    "@keyframes bounce": {
+                      "0%, 60%, 100%": { transform: "translateY(0)" },
+                      "30%": { transform: "translateY(-4px)" },
+                    },
                   }}
-                >
-                  {opt.label}
-                </Box>
+                />
               ))}
             </Box>
           </Box>
+        )}
+      </Box>
 
-          {/* Level */}
+      {/* Bottom voice panel */}
+      <Box
+        component="footer"
+        sx={{
+          flexShrink: 0,
+          pt: 2,
+          pb: 0.5,
+          display: "flex",
+          flexDirection: "column",
+          gap: 1.5,
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 1,
+          }}
+        >
           <Box
             sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              fontSize: "0.85rem",
+              display: "inline-flex",
+              bgcolor: "#F8F9FA",
+              p: "3px",
+              borderRadius: 1.25,
+              border: "1px solid rgba(0,0,0,0.05)",
             }}
           >
-            <Typography sx={{ fontWeight: 500, color: "#636E72" }}>
-              Set Start Level:
-            </Typography>
+            {(
+              [
+                { value: "request" as InteractionMode, label: "Hold" },
+                { value: "stream" as InteractionMode, label: "Stream" },
+              ] as const
+            ).map((opt) => (
+              <Box
+                key={opt.value}
+                component="button"
+                type="button"
+                onClick={() => setMode(opt.value)}
+                sx={{
+                  border: "none",
+                  cursor: "pointer",
+                  px: 1.5,
+                  py: 0.65,
+                  borderRadius: 1,
+                  fontSize: "0.78rem",
+                  fontWeight: 600,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.5,
+                  bgcolor: mode === opt.value ? BRAND : "transparent",
+                  color: mode === opt.value ? "#fff" : "text.secondary",
+                  boxShadow:
+                    mode === opt.value ? "0 2px 8px rgba(185,0,0,0.22)" : "none",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                {opt.value === "stream" && <Zap size={14} />}
+                {opt.label}
+              </Box>
+            ))}
+          </Box>
+
+          <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
             <FormControl size="small" variant="standard">
               <Select
                 value={level}
                 onChange={(e) => onLevelChange(e.target.value)}
                 disableUnderline
                 sx={{
-                  fontSize: "0.85rem",
+                  fontSize: "0.78rem",
                   fontWeight: 600,
-                  border: "1px solid rgba(255, 123, 156, 0.15)",
-                  borderRadius: "8px",
-                  px: 1.5,
-                  py: 0.5,
+                  color: BRAND,
+                  border: "1px solid rgba(185,0,0,0.15)",
+                  borderRadius: 1,
+                  px: 1,
+                  py: 0.35,
                   bgcolor: "#fff",
+                  "& .MuiSelect-icon": { color: BRAND },
                 }}
               >
                 {LEVELS.map((lv) => (
@@ -218,266 +361,121 @@ const SpeakingPracticePage = () => {
                 ))}
               </Select>
             </FormControl>
-          </Box>
-
-          {/* Stats */}
-          <Box sx={{ display: "flex", gap: 1.25 }}>
-            <Box
+            <Chip
+              label={`Score: ${score}`}
+              size="small"
               sx={{
-                flex: 1,
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                bgcolor: "#FFF0F3",
-                px: 1.75,
-                py: 1,
-                borderRadius: "12px",
-                border: "1px solid rgba(255, 123, 156, 0.08)",
+                fontWeight: 600,
+                color: BRAND,
+                bgcolor: "#FFF0F0",
+                border: "1px solid rgba(185,0,0,0.12)",
               }}
-            >
-              <Typography sx={{ fontSize: "0.85rem", color: "#636E72" }}>
-                Coach Level:
-              </Typography>
-              <Typography sx={{ fontWeight: 700, color: "#FF6288" }}>{level}</Typography>
-            </Box>
-            <Box
-              sx={{
-                flex: 1,
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                bgcolor: "#F0F6FF",
-                px: 1.75,
-                py: 1,
-                borderRadius: "12px",
-                border: "1px solid rgba(74, 144, 226, 0.1)",
-              }}
-            >
-              <Typography sx={{ fontSize: "0.85rem", color: "#636E72" }}>
-                Score:
-              </Typography>
-              <Typography sx={{ fontWeight: 700, color: "#4A90E2" }}>{score}</Typography>
-            </Box>
+            />
           </Box>
         </Box>
 
-        {/* Chat */}
-        <Box
-          component="main"
-          sx={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            p: 2.5,
-            overflow: "hidden",
-            bgcolor: "#FAFAFB",
-          }}
-        >
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
           <Box
+            component="button"
+            type="button"
+            disabled={recordDisabled}
+            className={recordBtnClass}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              void onRecordPointerDown();
+            }}
+            onMouseUp={onRecordPointerUp}
+            onMouseLeave={onRecordPointerLeave}
+            onTouchStart={(e) => {
+              e.preventDefault();
+              void onRecordPointerDown();
+            }}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              onRecordPointerUp();
+            }}
             sx={{
-              flex: 1,
-              overflowY: "auto",
+              border: "none",
+              borderRadius: "50px",
+              px: 4,
+              py: 1.5,
+              fontSize: "0.95rem",
+              fontWeight: 600,
+              cursor: recordDisabled ? "not-allowed" : "pointer",
               display: "flex",
-              flexDirection: "column",
-              gap: 2,
-              pb: 2.5,
+              alignItems: "center",
+              gap: 1,
+              color: "#fff",
+              userSelect: "none",
+              transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+              bgcolor: BRAND,
+              boxShadow: "0 6px 20px rgba(185,0,0,0.28)",
+              opacity: recordDisabled ? 0.55 : 1,
+              width: "100%",
+              maxWidth: 320,
+              justifyContent: "center",
+              "&:active:not(:disabled)": {
+                transform: "scale(0.97)",
+                bgcolor: "#990000",
+              },
+              "&.session-active": {
+                bgcolor: "#3B3B3B",
+                boxShadow: "0 6px 20px rgba(0, 0, 0, 0.12)",
+              },
+              "&.session-active.recording, &.recording": {
+                bgcolor: BRAND,
+                animation: "pulseBrand 1.5s infinite cubic-bezier(0.66, 0, 0, 1)",
+                "@keyframes pulseBrand": {
+                  to: { boxShadow: "0 0 0 16px rgba(185,0,0,0)" },
+                },
+              },
+              "&.user-speaking": {
+                bgcolor: "#2ED573",
+                animation: "pulseGreen 1.2s infinite cubic-bezier(0.66, 0, 0, 1)",
+                "@keyframes pulseGreen": {
+                  to: { boxShadow: "0 0 0 16px rgba(46, 213, 115, 0)" },
+                },
+              },
             }}
           >
-            {messages.map((msg) => (
-              <Box
-                key={msg.id}
-                sx={{
-                  display: "flex",
-                  maxWidth: "85%",
-                  alignSelf: msg.sender === "user" ? "flex-end" : "flex-start",
-                  animation: "fadeIn 0.3s ease forwards",
-                  "@keyframes fadeIn": {
-                    from: { opacity: 0, transform: "translateY(8px)" },
-                    to: { opacity: 1, transform: "translateY(0)" },
-                  },
-                }}
-              >
-                <Box
-                  sx={{
-                    px: 2.25,
-                    py: 1.5,
-                    borderRadius: "18px",
-                    fontSize: "0.95rem",
-                    lineHeight: 1.45,
-                    fontFamily: '"Noto Sans JP", "Inter", sans-serif',
-                    ...(msg.sender === "user"
-                      ? {
-                          bgcolor: msg.partial ? "rgba(255,255,255,0.5)" : "#FFE4EA",
-                          color: msg.partial ? "#636E72" : "#4A1521",
-                          borderBottomRightRadius: "4px",
-                          border: msg.partial
-                            ? "1.5px dashed rgba(255, 123, 156, 0.45)"
-                            : "1px solid rgba(255, 123, 156, 0.1)",
-                          fontStyle: msg.partial ? "italic" : "normal",
-                          opacity: msg.partial ? 0.85 : 1,
-                        }
-                      : {
-                          bgcolor: "#fff",
-                          color: "#2D3436",
-                          borderBottomLeftRadius: "4px",
-                          border: "1px solid rgba(0,0,0,0.04)",
-                        }),
-                  }}
-                >
-                  {msg.text}
-                </Box>
-              </Box>
-            ))}
-
-            {typingVisible && (
-              <Box sx={{ alignSelf: "flex-start", maxWidth: "85%" }}>
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 0.75,
-                    px: 2.5,
-                    py: 1.75,
-                    borderRadius: "18px",
-                    bgcolor: "#fff",
-                    border: "1px solid rgba(0,0,0,0.03)",
-                  }}
-                >
-                  {[0, 0.2, 0.4].map((delay) => (
-                    <Box
-                      key={delay}
-                      sx={{
-                        width: 7,
-                        height: 7,
-                        borderRadius: "50%",
-                        bgcolor: "#B2BEC3",
-                        animation: "bounce 1.4s infinite ease-in-out",
-                        animationDelay: `${delay}s`,
-                        "@keyframes bounce": {
-                          "0%, 60%, 100%": { transform: "translateY(0)" },
-                          "30%": { transform: "translateY(-5px)" },
-                        },
-                      }}
-                    />
-                  ))}
-                </Box>
-              </Box>
-            )}
+            {mode === "stream" && sessionActive ? <Zap size={18} /> : <Mic size={18} />}
+            <span>{recordLabel}</span>
           </Box>
 
-          {/* Controls */}
-          <Box
-            sx={{
-              pt: 2,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 1.5,
-              borderTop: "1px solid rgba(0,0,0,0.03)",
-            }}
-          >
+          {loading && (
             <Box
-              component="button"
-              type="button"
-              disabled={recordDisabled}
-              className={recordBtnClass}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                void onRecordPointerDown();
-              }}
-              onMouseUp={onRecordPointerUp}
-              onMouseLeave={onRecordPointerLeave}
-              onTouchStart={(e) => {
-                e.preventDefault();
-                void onRecordPointerDown();
-              }}
-              onTouchEnd={(e) => {
-                e.preventDefault();
-                onRecordPointerUp();
-              }}
               sx={{
-                border: "none",
-                borderRadius: "30px",
-                px: 3.5,
-                py: 1.75,
-                fontSize: "1rem",
-                fontWeight: 600,
-                cursor: recordDisabled ? "not-allowed" : "pointer",
                 display: "flex",
                 alignItems: "center",
-                gap: 1.25,
-                color: "#fff",
-                userSelect: "none",
-                transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
-                bgcolor: "#FF7B9C",
-                boxShadow: "0 6px 20px rgba(255, 123, 156, 0.35)",
-                opacity: recordDisabled ? 0.55 : 1,
-                "&:active:not(:disabled)": {
-                  transform: "scale(0.96)",
-                  bgcolor: "#FF6288",
-                },
-                "&.session-active": {
-                  bgcolor: "#3B3B3B",
-                  boxShadow: "0 6px 20px rgba(0, 0, 0, 0.15)",
-                },
-                "&.session-active.recording, &.recording": {
-                  bgcolor: "#FF5E85",
-                  animation: "pulseSakura 1.5s infinite cubic-bezier(0.66, 0, 0, 1)",
-                  "@keyframes pulseSakura": {
-                    to: { boxShadow: "0 0 0 18px rgba(255, 94, 133, 0)" },
-                  },
-                },
-                "&.user-speaking": {
-                  bgcolor: "#2ED573",
-                  animation: "pulseGreen 1.2s infinite cubic-bezier(0.66, 0, 0, 1)",
-                  "@keyframes pulseGreen": {
-                    to: { boxShadow: "0 0 0 18px rgba(46, 213, 115, 0)" },
-                  },
-                },
+                gap: 1,
+                fontSize: "0.85rem",
+                color: "text.secondary",
               }}
             >
-              {mode === "stream" && sessionActive ? (
-                <Zap size={20} />
-              ) : (
-                <Mic size={20} />
-              )}
-              <span>{recordLabel}</span>
-            </Box>
-
-            {loading && (
               <Box
                 sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                  fontSize: "0.85rem",
-                  color: "#636E72",
+                  width: 16,
+                  height: 16,
+                  border: "2px solid rgba(0,0,0,0.06)",
+                  borderTopColor: BRAND,
+                  borderRadius: "50%",
+                  animation: "spin 0.8s linear infinite",
+                  "@keyframes spin": { to: { transform: "rotate(360deg)" } },
                 }}
-              >
-                <Box
-                  sx={{
-                    width: 18,
-                    height: 18,
-                    border: "2px solid rgba(0,0,0,0.06)",
-                    borderTopColor: "#FF7B9C",
-                    borderRadius: "50%",
-                    animation: "spin 0.8s linear infinite",
-                    "@keyframes spin": { to: { transform: "rotate(360deg)" } },
-                  }}
-                />
-                <span>{loadingText}</span>
-              </Box>
-            )}
+              />
+              <span>{loadingText}</span>
+            </Box>
+          )}
 
-            <Typography
-              variant="caption"
-              sx={{ color: "#636E72", textAlign: "center", maxWidth: 320 }}
-            >
-              {mode === "request"
-                ? "Giữ nút mic để nói, thả ra để gửi (STT → AI → TTS)."
-                : "Bấm Start Session: nói tự do, im lặng ~0.8s để Mirai trả lời realtime."}
-            </Typography>
-          </Box>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ textAlign: "center", maxWidth: 400, lineHeight: 1.45 }}
+          >
+            {mode === "request"
+              ? "Giữ nút mic để nói, thả ra để gửi (STT → AI → TTS)."
+              : "Bấm Start Session: nói tự do, im lặng ~0.8s để Mirai trả lời realtime."}
+          </Typography>
         </Box>
       </Box>
     </Box>
