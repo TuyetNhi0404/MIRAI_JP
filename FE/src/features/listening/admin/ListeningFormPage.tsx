@@ -71,7 +71,7 @@ const ListeningFormPage = () => {
       // 1. Lưu metadata trước (không có audioUrl nếu đang upload file)
       const payload = {
         title: formData.title.trim(),
-        description: formData.description.trim() || undefined,
+        description: formData.description.trim() || '',
         topic: formData.topic,
         level: formData.level,
         audioSource: formData.audioSource,
@@ -79,38 +79,52 @@ const ListeningFormPage = () => {
         transcript: formData.transcript.trim() || undefined,
       };
 
-      console.log('payload', payload);
       let savedContentId = id;
 
       if (isEditMode && id) {
         await listeningService.update(id, payload);
       } else {
         const created = await listeningService.create(payload);
-        savedContentId = created._id;
+        savedContentId = created._id ?? (created as { id?: string }).id;
       }
 
-      // 2. Upload file âm thanh nếu audioSource là upload và có chọn file mới
-      if (formData.audioSource === 'upload' && audioFile && savedContentId) {
+      if (formData.audioSource === 'upload' && audioFile) {
+        if (!savedContentId) {
+          throw new Error('Không lấy được ID bài nghe sau khi lưu.');
+        }
         setUploading(true);
         try {
-          const uploadRes = await listeningService.uploadAudio(savedContentId, audioFile);
-          // Cập nhật lại URL nhận được từ Cloudinary vào bài nghe
-          await listeningService.update(savedContentId, { audioUrl: uploadRes.audioUrl });
-        } catch (uploadErr: any) {
-          console.error('Lỗi upload file:', uploadErr);
-          throw new Error('Lưu bài nghe thành công nhưng upload file âm thanh thất bại: ' + (uploadErr.message || 'Lỗi server'));
+          await listeningService.uploadAudio(savedContentId, audioFile);
+        } catch (uploadErr: unknown) {
+          const msg =
+            uploadErr && typeof uploadErr === 'object' && 'response' in uploadErr
+              ? (uploadErr as { response?: { data?: { message?: string } } }).response?.data?.message
+              : uploadErr instanceof Error
+                ? uploadErr.message
+                : 'Lỗi server';
+          throw new Error(
+            'Đã lưu thông tin bài nghe nhưng upload âm thanh lên Cloudinary thất bại: ' + msg
+          );
         } finally {
           setUploading(false);
         }
+      } else if (formData.audioSource === 'upload' && !audioFile && !isEditMode) {
+        throw new Error('Vui lòng chọn file âm thanh để upload.');
       }
 
       setSnackbarMessage(isEditMode ? 'Cập nhật bài nghe thành công!' : 'Tạo mới bài nghe thành công!');
       setTimeout(() => {
         navigate('/dashboard/admin/listening');
       }, 1000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.message || 'Lưu bài nghe thất bại. Vui lòng thử lại.');
+      const apiMessage =
+        err && typeof err === 'object' && 'response' in err
+          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          : undefined;
+      const message =
+        err instanceof Error ? err.message : apiMessage || 'Lưu bài nghe thất bại. Vui lòng thử lại.';
+      setError(message);
     } finally {
       setSaving(false);
     }

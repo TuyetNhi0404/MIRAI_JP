@@ -1,3 +1,4 @@
+import '../config/cloudinary';
 import { v2 as cloudinary } from 'cloudinary';
 import streamifier from 'streamifier';
 

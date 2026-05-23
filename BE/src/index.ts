@@ -34,10 +34,10 @@ if (process.env.NODE_ENV !== "test") {
   connect();
   import("./config/cron")
     .then(() => {
-      console.log("✅ Cron jobs initialized");
+      console.log(" Cron jobs initialized");
     })
     .catch((err) => {
-      console.error("❌ Failed to initialize cron jobs:", err);
+      console.error(" Failed to initialize cron jobs:", err);
     });
 }
 
@@ -54,7 +54,7 @@ routes(app);
 if (process.env.NODE_ENV !== "test") {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
-    console.log(`🚀 Server running at http://localhost:${PORT}`);
+    console.log(` Server running at http://localhost:${PORT}`);
   });
 }
 

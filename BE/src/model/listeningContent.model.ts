@@ -19,7 +19,7 @@ export interface IListeningContent extends Document {
 const listeningContentSchema: Schema = new Schema(
   {
     title: { type: String, required: true },
-    description: { type: String, required: true },
+    description: { type: String, default: '' },
     topic: { 
       type: String, 
       enum: ['daily_life', 'travel', 'business', 'culture', 'school', 'shopping', 'weather', 'health', 'food', 'news', 'other'],
@@ -27,7 +27,8 @@ const listeningContentSchema: Schema = new Schema(
     },
     level: { type: String, enum: ['N5', 'N4', 'N3', 'N2', 'N1'], required: true },
     audioSource: { type: String, enum: ['upload', 'tts'], required: true },
-    audioUrl: { type: String, required: true },
+    // Empty until file is uploaded to Cloudinary (audioSource === 'upload')
+    audioUrl: { type: String, default: '' },
     transcript: { type: String },
     duration: { type: Number },
     thumbnailUrl: { type: String },

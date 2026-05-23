@@ -98,11 +98,14 @@ export const listeningService = {
   // POST /api/listening/contents/:id/upload-audio
   uploadAudio: async (id: string, audioFile: File): Promise<{ audioUrl: string }> => {
     const formData = new FormData();
-    formData.append('audio', audioFile);
+    formData.append('audio', audioFile, audioFile.name);
     const response = await axiosInstance.post(
       `/listening/contents/${id}/upload-audio`,
       formData,
-      { headers: { 'Content-Type': 'multipart/form-data' } }
+      {
+        headers: { 'Content-Type': undefined },
+        timeout: 120000,
+      }
     );
     return response.data;
   },

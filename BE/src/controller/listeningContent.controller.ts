@@ -7,23 +7,31 @@ import { uploadAudioToCloudinary } from '../service/cloudinaryAudio.service';
 export const createContent = async (req: Request, res: Response): Promise<void> => {
   try {
     const { title, description, topic, level, audioSource, audioUrl, transcript } = req.body;
-    // Assuming req.user is set by auth middleware
-    const createdBy = (req as any).user?.id || (req as any).id; console.log('req.user:', (req as any).user, 'req.id:', (req as any).id, 'createdBy:', createdBy);
+    const createdBy = (req as any).user?.id || (req as any).id;
 
     if (!createdBy) {
-      res.status(401).json({ message: 'Unauthorized', debug: { user: (req as any).user, id: (req as any).id, createdBy } });
+      res.status(401).json({ message: 'Unauthorized' });
       return;
     }
-    console.log(req.body)
+
+    const source = audioSource === 'tts' ? 'tts' : 'upload';
+    const resolvedAudioUrl =
+      typeof audioUrl === 'string' ? audioUrl.trim() : '';
+
+    if (source === 'tts' && !resolvedAudioUrl) {
+      res.status(400).json({ message: 'audioUrl is required when audio source is TTS' });
+      return;
+    }
+
     const newContent = await ListeningContent.create({
       title,
-      description,
+      description: description ?? '',
       topic,
       level,
-      audioSource,
-      audioUrl,
+      audioSource: source,
+      audioUrl: source === 'upload' ? '' : resolvedAudioUrl,
       transcript,
-      createdBy
+      createdBy,
     });
 
     res.status(201).json(newContent);
@@ -112,22 +120,34 @@ export const deleteContent = async (req: Request, res: Response): Promise<void> 
 export const uploadAudio = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    if (!req.file) {
-      res.status(400).json({ message: 'No audio file provided' });
+    const file = req.file;
+    if (!file?.buffer?.length) {
+      res.status(400).json({
+        message: 'No audio file provided',
+        hint: 'Send multipart field name "audio" with the file body',
+      });
       return;
     }
 
-    const audioUrl = await uploadAudioToCloudinary(req.file.buffer);
-    const updatedContent = await ListeningContent.findByIdAndUpdate(id, { audioUrl }, { new: true });
-
-    if (!updatedContent) {
+    const content = await ListeningContent.findById(id);
+    if (!content) {
       res.status(404).json({ message: 'Content not found' });
       return;
     }
 
-    res.status(200).json({ message: 'Audio uploaded successfully', audioUrl, content: updatedContent });
+    const audioUrl = await uploadAudioToCloudinary(file.buffer);
+    content.audioUrl = audioUrl;
+    content.audioSource = 'upload';
+    await content.save();
+
+    res.status(200).json({
+      message: 'Audio uploaded successfully',
+      audioUrl,
+      content,
+    });
   } catch (error: any) {
-    res.status(500).json({ message: error.message });
+    console.error('uploadAudio error:', error);
+    res.status(500).json({ message: error.message || 'Failed to upload audio to Cloudinary' });
   }
 };
 
