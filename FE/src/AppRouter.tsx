@@ -16,6 +16,8 @@ import SubmissionPage from "./pages/Student/SubmissionPage";
 import StudentQuizzesPage from "./pages/Student/StudentQuizzesPage";
 import TakeQuizPage from "./pages/Student/TakeQuizPage";
 import ViewResultPage from "./pages/Student/ViewResultPage";
+import ListeningListPage from "./features/listening/pages/ListeningListPage";
+import ListeningDetailPage from "./features/listening/pages/ListeningDetailPage";
 
 // 🌿 Admin pages
 import AccountManagement from "./pages/Admin/AccountManagement";
@@ -26,6 +28,8 @@ import EnrollmentRequestsPage from "./pages/Admin/EnrollmentRequestsPage";
 import ForumListPage from "./pages/ForumListPage";
 import RequestSchedulePage from "./pages/Admin/RequestSchedulePage";
 import BannedUsersPage from "./pages/Admin/BannedUsersPage";
+import ListeningManagePage from "./features/listening/admin/ListeningManagePage";
+import ListeningFormPage from "./features/listening/admin/ListeningFormPage";
 
 // 🌿 Teacher pages
 import AssignmentsPage from "./pages/Teacher/AssignmentsPage";
@@ -97,6 +101,9 @@ const AppRouter = () => {
           <Route path="admin/courses/:id/students" element={<EnrolledStudentsPage />} />
           <Route path="admin/request-management" element={<RequestSchedulePage />} />
           <Route path="admin/banned-users" element={<BannedUsersPage />} />
+          <Route path="admin/listening" element={<ListeningManagePage />} />
+          <Route path="admin/listening/new" element={<ListeningFormPage />} />
+          <Route path="admin/listening/:id/edit" element={<ListeningFormPage />} />
 
           {/* Teacher routes */}
           <Route path="teacher" element={<TeacherDashboard />} />
@@ -120,6 +127,8 @@ const AppRouter = () => {
           <Route path="student/statistics" element={<StudentStatisticsDashboard />} />
           <Route path="student/leaderboard" element={<Leaderboard />} />
           <Route path="student/kana-practice" element={<KanaPracticePage />} />
+          <Route path="student/listening" element={<ListeningListPage />} />
+          <Route path="student/listening/:id" element={<ListeningDetailPage />} />
           {/* Default redirect */}
           <Route index element={<Navigate to="/dashboard/student" replace />} />
         </Route>
