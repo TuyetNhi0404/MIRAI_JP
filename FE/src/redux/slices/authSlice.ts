@@ -1,7 +1,6 @@
 // src/redux/slices/authSlice.ts
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
-import Cookies from "js-cookie";
 import authService from "../../services/auth.service";
 import type {
   AuthState,
@@ -10,10 +9,11 @@ import type {
   RegisterCredentials,
 } from "../../types/auth.types";
 
-// Initialize state from cookies
-const initialUser = Cookies.get("user") ? JSON.parse(Cookies.get("user")!) : null;
-const initialAccessToken = Cookies.get("accessToken") || null;
-const initialRefreshToken = Cookies.get("refreshToken") || null;
+// Initialize state from localStorage
+const storedUser = localStorage.getItem("user");
+const initialUser = storedUser ? JSON.parse(storedUser) : null;
+const initialAccessToken = localStorage.getItem("accessToken") || null;
+const initialRefreshToken = localStorage.getItem("refreshToken") || null;
 
 const initialState: AuthState = {
   user: initialUser,
@@ -127,7 +127,7 @@ const authSlice = createSlice({
   reducers: {
     setUser: (state, action: PayloadAction<User>) => {
       state.user = action.payload;
-      Cookies.set("user", JSON.stringify(action.payload), { expires: 7 });
+      localStorage.setItem("user", JSON.stringify(action.payload));
     },
     clearError: (state) => {
       state.error = null;
@@ -137,9 +137,9 @@ const authSlice = createSlice({
       state.accessToken = null;
       state.refreshToken = null;
       state.error = null;
-      Cookies.remove("user");
-      Cookies.remove("accessToken");
-      Cookies.remove("refreshToken");
+      localStorage.removeItem("user");
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
     },
   },
   extraReducers: (builder) => {
@@ -171,10 +171,10 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = null;
 
-        // Save to cookies
-        Cookies.set("user", JSON.stringify(user), { expires: 7 });
-        Cookies.set("accessToken", accessToken, { expires: 1 }); // 1 day
-        Cookies.set("refreshToken", refreshToken, { expires: 7 }); // 7 days
+        // Save to cookies (now localStorage)
+        localStorage.setItem("user", JSON.stringify(user));
+        localStorage.setItem("accessToken", accessToken); 
+        localStorage.setItem("refreshToken", refreshToken); 
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
@@ -194,10 +194,10 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = null;
 
-        // Save to cookies
-        Cookies.set("user", JSON.stringify(user), { expires: 7 });
-        Cookies.set("accessToken", accessToken, { expires: 1 });
-        Cookies.set("refreshToken", refreshToken, { expires: 7 });
+        // Save to cookies (now localStorage)
+        localStorage.setItem("user", JSON.stringify(user));
+        localStorage.setItem("accessToken", accessToken);
+        localStorage.setItem("refreshToken", refreshToken);
       })
       .addCase(googleLoginUser.rejected, (state, action) => {
         state.loading = false;
@@ -209,7 +209,7 @@ const authSlice = createSlice({
       .addCase(refreshAccessToken.fulfilled, (state, action) => {
         state.accessToken = action.payload.accessToken;
         state.error = null;
-        Cookies.set("accessToken", action.payload.accessToken, { expires: 1 });
+        localStorage.setItem("accessToken", action.payload.accessToken);
       })
       .addCase(refreshAccessToken.rejected, (state, action) => {
         console.error("Refresh token failed:", action.payload);
@@ -218,9 +218,9 @@ const authSlice = createSlice({
         state.accessToken = null;
         state.refreshToken = null;
         state.error = action.payload as string;
-        Cookies.remove("user");
-        Cookies.remove("accessToken");
-        Cookies.remove("refreshToken");
+        localStorage.removeItem("user");
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
       })
 
       // Logout
@@ -235,10 +235,10 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = null;
 
-        // Clear cookies
-        Cookies.remove("user");
-        Cookies.remove("accessToken");
-        Cookies.remove("refreshToken");
+        // Clear cookies (now localStorage)
+        localStorage.removeItem("user");
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
       })
       .addCase(logoutUser.rejected, (state, action) => {
         state.loading = false;
@@ -248,9 +248,9 @@ const authSlice = createSlice({
         state.user = null;
         state.accessToken = null;
         state.refreshToken = null;
-        Cookies.remove("user");
-        Cookies.remove("accessToken");
-        Cookies.remove("refreshToken");
+        localStorage.removeItem("user");
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
       });
   },
 });
