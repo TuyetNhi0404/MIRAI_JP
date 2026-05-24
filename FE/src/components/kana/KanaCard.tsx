@@ -1,6 +1,6 @@
-// src/components/kana/KanaCard.tsx
+
 import React from 'react';
-import type { KanaChar } from './kanaData';
+import type { KanaChar } from '../../types/kanaData';
 
 interface KanaCardProps {
   char: KanaChar;
@@ -53,7 +53,7 @@ const KanaCard: React.FC<KanaCardProps> = ({ char, onClick, isSelected }) => {
         }
       }}
     >
-      {/* Decorative background circle for selected state */}
+     
       {isSelected && (
         <div style={{
           position: 'absolute',
@@ -68,13 +68,14 @@ const KanaCard: React.FC<KanaCardProps> = ({ char, onClick, isSelected }) => {
       )}
 
       <span style={{
-        fontSize: '2.2rem',
+        fontSize: char.kana.length > 1 ? '1.8rem' : '2.2rem',
         fontWeight: 400,
         color: isSelected ? '#B90000' : '#1a1a2e',
         lineHeight: 1.1,
         transition: 'color 0.2s',
         fontFamily: '"Noto Serif JP", serif',
         zIndex: 1,
+        whiteSpace: 'nowrap',
       }}>
         {char.kana}
       </span>
