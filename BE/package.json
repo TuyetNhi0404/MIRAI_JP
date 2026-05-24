@@ -6,7 +6,7 @@
     "build": "tsc",
     "start": "node dist/app.js",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-    "dev:speaking": "cd ../services/speaking-practice && python3 -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload",
+    "dev:speaking": "node ../scripts/run-speaking.mjs",
     "test": "cross-env NODE_ENV=test jest --runInBand",
     "format": "prettier --write .",
     "prepare": "husky install"

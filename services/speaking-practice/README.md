@@ -11,7 +11,14 @@ cp .env.example .env       # điền API keys
 uvicorn main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-Hoặc từ `BE/`: `npm run dev:speaking`
+Từ thư mục gốc repo (không cần Python cài sẵn):
+
+```bash
+npm run run          # lần đầu: tải Python + cài deps
+npm run dev:fe       # terminal 1
+npm run dev:be       # terminal 2
+npm run dev:speaking # terminal 3
+```
 
 ## MIRAI integration
 

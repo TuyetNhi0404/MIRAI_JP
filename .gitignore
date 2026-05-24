@@ -64,6 +64,9 @@ FE/agent
 log.txt
 /ui-ux-pro-max-skill
 
+# Local tooling (uv + portable Python)
+.mirai/
+
 # Python speaking service
 services/speaking-practice/venv/
 services/speaking-practice/.venv/
