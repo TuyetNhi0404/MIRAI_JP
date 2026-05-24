@@ -1,10 +1,13 @@
+import { useState } from "react";
 import {
   Alert,
+  Badge,
   Box,
   Chip,
   FormControl,
   MenuItem,
   Select,
+  Snackbar,
   Typography,
   useMediaQuery,
   useTheme,
@@ -12,8 +15,14 @@ import {
 import { Mic, Zap } from "lucide-react";
 import SpeakingCircle from "../../components/AI_animated/SpeakingCircle";
 import { TranslatableMessageBubble } from "./TranslatableMessageBubble";
+import { CoachSuggestionBubble } from "./CoachSuggestionBubble";
+import { GrammarNotesTab } from "./GrammarNotesTab";
+import { NotePracticeDialog } from "./NotePracticeDialog";
 import { useSpeakingPractice } from "./useSpeakingPractice";
 import type { InteractionMode } from "./useSpeakingPractice";
+import { useAutoTurnCoach } from "./useAutoTurnCoach";
+import { useGrammarNotes } from "./useGrammarNotes";
+import type { GrammarNote } from "./types";
 
 const LEVELS = [
   { value: "N5", label: "N5 (Beginner)" },
@@ -25,10 +34,10 @@ const LEVELS = [
 
 const BRAND = "#c83c3c";
 const AI_CIRCLE = "#fa9d9d";
-/** Khoảng cách giữa orb canvas và viền ngoài */
 const ORB_GAP = 2;
-/** Độ dày viền ngoài (px) */
 const ORB_RING = 0.6;
+
+type MainTab = "chat" | "notes";
 
 const SpeakingPracticePage = () => {
   const theme = useTheme();
@@ -36,6 +45,7 @@ const SpeakingPracticePage = () => {
 
   const {
     enabled,
+    sessionId,
     messages,
     level,
     score,
@@ -56,6 +66,13 @@ const SpeakingPracticePage = () => {
     onRecordPointerUp,
     onRecordPointerLeave,
   } = useSpeakingPractice();
+
+  const grammarNotes = useGrammarNotes(enabled);
+  const autoCoach = useAutoTurnCoach(enabled, messages, level, sessionId, grammarNotes);
+
+  const [mainTab, setMainTab] = useState<MainTab>("chat");
+  const [snack, setSnack] = useState<string | null>(null);
+  const [practiceNote, setPracticeNote] = useState<GrammarNote | null>(null);
 
   if (!enabled) {
     return (
@@ -92,8 +109,7 @@ const SpeakingPracticePage = () => {
         width: "100%",
       }}
     >
-      {/* Page header */}
-      <Box sx={{ textAlign: "center", mb: { xs: 1.5, sm: 2 }, flexShrink: 0 }}>
+      <Box sx={{ textAlign: "center", mb: { xs: 1, sm: 1.5 }, flexShrink: 0 }}>
         <Typography
           variant="h5"
           fontWeight={800}
@@ -107,180 +123,189 @@ const SpeakingPracticePage = () => {
           AI Japanese Tutor
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-          Personalized Speaking Coach
+          Free talk — Mirai tự gợi ý sửa khi bạn nói sai
         </Typography>
       </Box>
 
       {(serviceUnavailable || lastError) && (
-        <Alert severity="warning" sx={{ mb: 1.5, flexShrink: 0, borderRadius: 2 }}>
-          {lastError ||
-            "Service chưa chạy — chạy uvicorn port 8000 và restart BE (ENABLE_SPEAKING_PRACTICE=true)."}
+        <Alert severity="warning" sx={{ mb: 1, flexShrink: 0, borderRadius: 2 }}>
+          {lastError ??
+            (serviceUnavailable
+              ? "Không kết nối được speaking service — kiểm tra uvicorn :8000, BE :5000, ENABLE_SPEAKING_PRACTICE=true."
+              : "")}
         </Alert>
       )}
 
-      {/* Centered voice orb */}
+      {/* Tabs: Hội thoại | Lỗi gặp phải */}
       <Box
         sx={{
           display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
+          gap: 0.5,
+          mb: 1,
           flexShrink: 0,
-          py: { xs: 1, sm: 2 },
-          position: "relative",
+          bgcolor: "#F8F9FA",
+          p: "3px",
+          borderRadius: 1.25,
+          border: "1px solid rgba(0,0,0,0.05)",
         }}
       >
-        <Box
-          sx={{
-            position: "relative",
-            boxSizing: "content-box",
-            width: circleSize,
-            height: circleSize,
-            padding: `${ORB_GAP}px`,
-            borderRadius: "50%",
-            border: `${ORB_RING}px solid`,
-            borderColor: circleActive
-              ? "rgba(255, 176, 176, 0.55)"
-              : "rgba(255, 176, 176, 0.35)",
-            bgcolor: "transparent",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            transition: "border-color 0.35s ease",
-          }}
-        >
-          <SpeakingCircle isSpeaking={circleActive} size={circleSize} color={AI_CIRCLE} />
-          {isRecording && (
-            <Box
-              sx={{
-                position: "absolute",
-                bottom: 4,
-                right: 4,
-                width: 10,
-                height: 10,
-                borderRadius: "50%",
-                bgcolor: "#EF4444",
-                border: "2px solid #fff",
-                animation: "micPulse 1.2s infinite",
-                "@keyframes micPulse": {
-                  "0%, 100%": { opacity: 1, transform: "scale(1)" },
-                  "50%": { opacity: 0.5, transform: "scale(1.35)" },
-                },
-              }}
-            />
-          )}
-        </Box>
-      </Box>
-
-      {/* Chat transcript */}
-      <Box
-        component="section"
-        aria-label="Conversation"
-        sx={{
-          flex: 1,
-          minHeight: 0,
-          overflowY: "auto",
-          px: { xs: 0.5, sm: 1 },
-          py: 1,
-          display: "flex",
-          flexDirection: "column",
-          gap: 1.25,
-          borderTop: "1px solid rgba(185,0,0,0.08)",
-          borderBottom: "1px solid rgba(185,0,0,0.08)",
-          "&::-webkit-scrollbar": { width: 5 },
-          "&::-webkit-scrollbar-thumb": {
-            bgcolor: "rgba(185,0,0,0.18)",
-            borderRadius: 3,
-          },
-        }}
-      >
-        {messages.map((msg) => (
+        {(
+          [
+            { id: "chat" as MainTab, label: "Hội thoại" },
+            { id: "notes" as MainTab, label: "Lỗi gặp phải" },
+          ] as const
+        ).map((tab) => (
           <Box
-            key={msg.id}
+            key={tab.id}
+            component="button"
+            type="button"
+            onClick={() => setMainTab(tab.id)}
             sx={{
-              display: "flex",
-              maxWidth: "85%",
-              alignSelf: msg.sender === "user" ? "flex-end" : "flex-start",
-              animation: "fadeIn 0.3s ease forwards",
-              "@keyframes fadeIn": {
-                from: { opacity: 0, transform: "translateY(6px)" },
-                to: { opacity: 1, transform: "translateY(0)" },
-              },
+              flex: 1,
+              border: "none",
+              cursor: "pointer",
+              py: 0.65,
+              borderRadius: 1,
+              fontSize: "0.78rem",
+              fontWeight: 600,
+              bgcolor: mainTab === tab.id ? BRAND : "transparent",
+              color: mainTab === tab.id ? "#fff" : "text.secondary",
             }}
           >
-            <TranslatableMessageBubble
-              text={msg.text}
-              variant={msg.sender === "user" ? "user" : "system"}
-              partial={msg.partial}
-            />
+            {tab.id === "notes" ? (
+              <Badge
+                badgeContent={grammarNotes.issueCount || undefined}
+                color="error"
+                sx={{ "& .MuiBadge-badge": { fontSize: "0.65rem", minWidth: 16, height: 16 } }}
+              >
+                <span style={{ paddingRight: grammarNotes.issueCount ? 8 : 0 }}>{tab.label}</span>
+              </Badge>
+            ) : (
+              tab.label
+            )}
           </Box>
         ))}
-
-        {typingVisible && (
-          <Box sx={{ alignSelf: "flex-start" }}>
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 0.75,
-                px: 2.25,
-                py: 1.5,
-                borderRadius: 2.5,
-                bgcolor: "#F8F9FA",
-                border: "1px solid rgba(0,0,0,0.04)",
-              }}
-            >
-              {[0, 0.2, 0.4].map((delay) => (
-                <Box
-                  key={delay}
-                  sx={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: "50%",
-                    bgcolor: "rgba(185,0,0,0.35)",
-                    animation: "bounce 1.4s infinite ease-in-out",
-                    animationDelay: `${delay}s`,
-                    "@keyframes bounce": {
-                      "0%, 60%, 100%": { transform: "translateY(0)" },
-                      "30%": { transform: "translateY(-4px)" },
-                    },
-                  }}
-                />
-              ))}
-            </Box>
-          </Box>
-        )}
       </Box>
 
-      {/* Bottom voice panel */}
-      <Box
-        component="footer"
-        sx={{
-          flexShrink: 0,
-          pt: 2,
-          pb: 0.5,
-          display: "flex",
-          flexDirection: "column",
-          gap: 1.5,
-        }}
-      >
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: 1,
-          }}
-        >
+      {mainTab === "notes" ? (
+        <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", px: 0.5 }}>
+          <GrammarNotesTab
+            notes={grammarNotes.notes.filter(
+              (n) => n.corrected && n.corrected.trim() !== n.original.trim(),
+            )}
+            loading={grammarNotes.loading}
+            error={grammarNotes.error}
+            onStatusChange={(id, status) => void grammarNotes.setStatus(id, status)}
+            onDelete={(id) => void grammarNotes.removeNote(id)}
+            onPractice={(note) => setPracticeNote(note)}
+          />
+        </Box>
+      ) : (
+        <>
           <Box
             sx={{
-              display: "inline-flex",
-              bgcolor: "#F8F9FA",
-              p: "3px",
-              borderRadius: 1.25,
-              border: "1px solid rgba(0,0,0,0.05)",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              flexShrink: 0,
+              py: { xs: 0.5, sm: 1 },
             }}
           >
+            <Box
+              sx={{
+                position: "relative",
+                boxSizing: "content-box",
+                width: circleSize,
+                height: circleSize,
+                padding: `${ORB_GAP}px`,
+                borderRadius: "50%",
+                border: `${ORB_RING}px solid`,
+                borderColor: circleActive
+                  ? "rgba(255, 176, 176, 0.55)"
+                  : "rgba(255, 176, 176, 0.35)",
+                bgcolor: "transparent",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <SpeakingCircle isSpeaking={circleActive} size={circleSize} color={AI_CIRCLE} />
+              {isRecording && (
+                <Box
+                  sx={{
+                    position: "absolute",
+                    bottom: 4,
+                    right: 4,
+                    width: 10,
+                    height: 10,
+                    borderRadius: "50%",
+                    bgcolor: "#EF4444",
+                    border: "2px solid #fff",
+                  }}
+                />
+              )}
+            </Box>
+          </Box>
+
+          <Box
+            component="section"
+            aria-label="Conversation"
+            sx={{
+              flex: 1,
+              minHeight: 0,
+              overflowY: "auto",
+              px: { xs: 0.5, sm: 1 },
+              py: 1,
+              display: "flex",
+              flexDirection: "column",
+              gap: 1.25,
+              borderTop: "1px solid rgba(185,0,0,0.08)",
+              borderBottom: "1px solid rgba(185,0,0,0.08)",
+            }}
+          >
+            {messages.map((msg) => (
+              <Box
+                key={msg.id}
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  maxWidth: "85%",
+                  alignSelf: msg.sender === "user" ? "flex-end" : "flex-start",
+                }}
+              >
+                <TranslatableMessageBubble
+                  text={msg.text}
+                  variant={msg.sender === "user" ? "user" : "system"}
+                  partial={msg.partial}
+                />
+                {msg.sender === "user" && !msg.partial && msg.turnId && (
+                  <CoachSuggestionBubble
+                    loading={autoCoach.getEntry(msg.turnId)?.loading}
+                    review={autoCoach.getEntry(msg.turnId)?.review}
+                    error={autoCoach.getEntry(msg.turnId)?.error}
+                    onViewErrors={() => setMainTab("notes")}
+                  />
+                )}
+              </Box>
+            ))}
+
+            {typingVisible && (
+              <Box sx={{ alignSelf: "flex-start", px: 2, py: 1.5, bgcolor: "#F8F9FA", borderRadius: 2 }}>
+                <Typography variant="caption" color="text.secondary">
+                  Mirai đang suy nghĩ...
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        </>
+      )}
+
+      <Box
+        component="footer"
+        sx={{ flexShrink: 0, pt: 1.5, pb: 0.5, display: "flex", flexDirection: "column", gap: 1 }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 1 }}>
+          <Box sx={{ display: "inline-flex", bgcolor: "#F8F9FA", p: "3px", borderRadius: 1.25, border: "1px solid rgba(0,0,0,0.05)" }}>
             {(
               [
                 { value: "request" as InteractionMode, label: "Hold" },
@@ -300,14 +325,8 @@ const SpeakingPracticePage = () => {
                   borderRadius: 1,
                   fontSize: "0.78rem",
                   fontWeight: 600,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 0.5,
                   bgcolor: mode === opt.value ? BRAND : "transparent",
                   color: mode === opt.value ? "#fff" : "text.secondary",
-                  boxShadow:
-                    mode === opt.value ? "0 2px 8px rgba(185,0,0,0.22)" : "none",
-                  transition: "all 0.2s ease",
                 }}
               >
                 {opt.value === "stream" && <Zap size={14} />}
@@ -315,25 +334,9 @@ const SpeakingPracticePage = () => {
               </Box>
             ))}
           </Box>
-
           <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
             <FormControl size="small" variant="standard">
-              <Select
-                value={level}
-                onChange={(e) => onLevelChange(e.target.value)}
-                disableUnderline
-                sx={{
-                  fontSize: "0.78rem",
-                  fontWeight: 600,
-                  color: BRAND,
-                  border: "1px solid rgba(185,0,0,0.15)",
-                  borderRadius: 1,
-                  px: 1,
-                  py: 0.35,
-                  bgcolor: "#fff",
-                  "& .MuiSelect-icon": { color: BRAND },
-                }}
-              >
+              <Select value={level} onChange={(e) => onLevelChange(e.target.value)} disableUnderline sx={{ fontSize: "0.78rem", fontWeight: 600, color: BRAND }}>
                 {LEVELS.map((lv) => (
                   <MenuItem key={lv.value} value={lv.value}>
                     {lv.label}
@@ -341,16 +344,7 @@ const SpeakingPracticePage = () => {
                 ))}
               </Select>
             </FormControl>
-            <Chip
-              label={`Score: ${score}`}
-              size="small"
-              sx={{
-                fontWeight: 600,
-                color: BRAND,
-                bgcolor: "#FFF0F0",
-                border: "1px solid rgba(185,0,0,0.12)",
-              }}
-            />
+            <Chip label={`Score: ${score}`} size="small" sx={{ fontWeight: 600, color: BRAND, bgcolor: "#FFF0F0" }} />
           </Box>
         </Box>
 
@@ -386,78 +380,40 @@ const SpeakingPracticePage = () => {
               alignItems: "center",
               gap: 1,
               color: "#fff",
-              userSelect: "none",
-              transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
               bgcolor: BRAND,
-              boxShadow: "0 6px 20px rgba(185,0,0,0.28)",
               opacity: recordDisabled ? 0.55 : 1,
               width: "100%",
               maxWidth: 320,
               justifyContent: "center",
-              "&:active:not(:disabled)": {
-                transform: "scale(0.97)",
-                bgcolor: "#990000",
-              },
-              "&.session-active": {
-                bgcolor: "#3B3B3B",
-                boxShadow: "0 6px 20px rgba(0, 0, 0, 0.12)",
-              },
-              "&.session-active.recording, &.recording": {
-                bgcolor: BRAND,
-                animation: "pulseBrand 1.5s infinite cubic-bezier(0.66, 0, 0, 1)",
-                "@keyframes pulseBrand": {
-                  to: { boxShadow: "0 0 0 16px rgba(185,0,0,0)" },
-                },
-              },
-              "&.user-speaking": {
-                bgcolor: "#2ED573",
-                animation: "pulseGreen 1.2s infinite cubic-bezier(0.66, 0, 0, 1)",
-                "@keyframes pulseGreen": {
-                  to: { boxShadow: "0 0 0 16px rgba(46, 213, 115, 0)" },
-                },
-              },
             }}
           >
             {mode === "stream" && sessionActive ? <Zap size={18} /> : <Mic size={18} />}
             <span>{recordLabel}</span>
           </Box>
-
-          {loading && (
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-                fontSize: "0.85rem",
-                color: "text.secondary",
-              }}
-            >
-              <Box
-                sx={{
-                  width: 16,
-                  height: 16,
-                  border: "2px solid rgba(0,0,0,0.06)",
-                  borderTopColor: BRAND,
-                  borderRadius: "50%",
-                  animation: "spin 0.8s linear infinite",
-                  "@keyframes spin": { to: { transform: "rotate(360deg)" } },
-                }}
-              />
-              <span>{loadingText}</span>
-            </Box>
-          )}
-
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ textAlign: "center", maxWidth: 400, lineHeight: 1.45 }}
-          >
-            {mode === "request"
-              ? "Giữ nút mic để nói, thả ra để gửi (STT → AI → TTS)."
-              : "Bấm Start Session: nói tự do, im lặng ~0.8s để Mirai trả lời realtime."}
+          {loading && <Typography variant="caption">{loadingText}</Typography>}
+          <Typography variant="caption" color="text.secondary" sx={{ textAlign: "center" }}>
+            Hover tin nhắn để dịch · Sai ngữ pháp sẽ có gợi ý sửa ngay bên dưới
           </Typography>
         </Box>
       </Box>
+
+      <NotePracticeDialog
+        note={practiceNote}
+        open={!!practiceNote}
+        onClose={() => setPracticeNote(null)}
+        onMastered={(id) => {
+          void grammarNotes.setStatus(id, "mastered");
+          setSnack("Chúc mừng! Đã đánh dấu thuần.");
+        }}
+      />
+
+      <Snackbar
+        open={!!snack}
+        autoHideDuration={3000}
+        onClose={() => setSnack(null)}
+        message={snack}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      />
     </Box>
   );
 };

@@ -12,6 +12,8 @@ export type ChatMessage = {
   text: string;
   sender: "user" | "system";
   partial?: boolean;
+  /** ID lượt nói (tin user final) — dùng cho sổ lỗi / coach */
+  turnId?: string;
 };
 
 export type InteractionMode = "request" | "stream";
@@ -59,15 +61,24 @@ export function useSpeakingPractice() {
   const micRestartPendingRef = useRef(false);
   const isAwaitingAiRef = useRef(false);
   const micRestartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sessionIdRef = useRef(
+    `sp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+  );
 
   const syncModeRef = (m: InteractionMode) => {
     modeRef.current = m;
   };
 
   const appendMessage = useCallback((text: string, sender: "user" | "system") => {
+    const id = `${Date.now()}-${Math.random()}`;
     setMessages((prev) => [
       ...prev,
-      { id: `${Date.now()}-${Math.random()}`, text, sender },
+      {
+        id,
+        text,
+        sender,
+        ...(sender === "user" ? { turnId: id } : {}),
+      },
     ]);
   }, []);
 
@@ -489,21 +500,15 @@ export function useSpeakingPractice() {
     micReadyRef.current = true;
   }, [setupMediaRecorder]);
 
+  /** Chỉ ping session — mic xin quyền khi user bấm ghi (tránh lỗi giả "service chưa chạy"). */
   useEffect(() => {
     if (!isSpeakingPracticeEnabled) return;
-    void (async () => {
-      try {
-        await initMic();
-        await resetSession("N5");
-      } catch {
-        setServiceUnavailable(true);
-      }
-    })();
+    void resetSession("N5");
     return () => {
       stopStreamingSession();
       micStreamRef.current?.getTracks().forEach((t) => t.stop());
     };
-  }, [initMic, resetSession, stopStreamingSession]);
+  }, [resetSession, stopStreamingSession]);
 
   const setMode = useCallback(
     (next: InteractionMode) => {
@@ -527,8 +532,15 @@ export function useSpeakingPractice() {
     if (recordDisabled) return;
     try {
       if (!micReadyRef.current) await initMic();
-    } catch {
-      setServiceUnavailable(true);
+    } catch (err) {
+      const msg =
+        err instanceof Error && err.name === "NotAllowedError"
+          ? "Cần quyền micro — cho phép truy cập mic trên trình duyệt rồi thử lại."
+          : err instanceof Error
+            ? err.message
+            : "Không mở được micro.";
+      setLastError(msg);
+      setServiceUnavailable(false);
       return;
     }
 
@@ -564,6 +576,7 @@ export function useSpeakingPractice() {
 
   return {
     enabled: isSpeakingPracticeEnabled,
+    sessionId: sessionIdRef.current,
     messages,
     level,
     score,

@@ -25,3 +25,5 @@ npm run dev:speaking # terminal 3
 - BE: `ENABLE_SPEAKING_PRACTICE=true`, `SPEAKING_INTERNAL_KEY` khớp với Python `.env`
 - FE: `VITE_ENABLE_SPEAKING_PRACTICE=true`
 - Route: `/dashboard/student/speaking-practice` → proxy `/api/speaking/*`
+- Coach: `POST /coach/review-turn` — grammar review (JSON)
+- Grammar notes: `GET/POST /api/speaking-notes` (Node BE + MongoDB)

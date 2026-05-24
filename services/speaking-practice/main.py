@@ -1,4 +1,4 @@
-from fastapi import Depends, FastAPI, File, UploadFile, Form, WebSocket, WebSocketDisconnect
+from fastapi import Depends, FastAPI, File, UploadFile, Form, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 import shutil
@@ -11,6 +11,7 @@ from auth import authenticate_websocket, get_current_user_id
 from sessions import get_session, reset_user_session
 from stt import transcribe_audio
 from llm import get_ai_reply, get_ai_reply_stream, translate_japanese_to_vietnamese
+from coach import review_user_turn
 from tts import generate_audio
 
 app = FastAPI(title="MIRAI Speaking Practice")
@@ -383,6 +384,30 @@ class ReplyRequest(BaseModel):
 
 class TranslateRequest(BaseModel):
     text: str
+
+
+class ReviewTurnRequest(BaseModel):
+    transcript: str
+    level: str = "N5"
+    history: list[str] | None = None
+
+
+@app.post("/coach/review-turn")
+async def coach_review_turn(
+    req: ReviewTurnRequest,
+    user_id: str = Depends(get_current_user_id),
+):
+    del user_id
+    transcript = (req.transcript or "").strip()
+    if not transcript:
+        raise HTTPException(status_code=400, detail="transcript is required")
+    if len(transcript) > 500:
+        raise HTTPException(status_code=400, detail="transcript too long")
+    level = (req.level or "N5").upper()
+    if level not in ("N5", "N4", "N3", "N2", "N1"):
+        level = "N5"
+    review = review_user_turn(transcript, level=level, history=req.history)
+    return review
 
 
 @app.post("/translate")
