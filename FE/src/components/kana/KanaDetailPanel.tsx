@@ -1,7 +1,7 @@
-// src/components/kana/KanaDetailPanel.tsx
+
 import React from 'react';
-import type { KanaChar } from './kanaData';
-import { strokeInstructions } from './kanaData';
+import type { KanaChar } from '../../types/kanaData';
+import { strokeInstructions } from '../../types/kanaData';
 import KanaWritingCanvas from './KanaWritingCanvas';
 
 interface KanaDetailPanelProps {
@@ -23,7 +23,7 @@ const KanaDetailPanel: React.FC<KanaDetailPanelProps> = ({ selectedChar, kanaTyp
         padding: '40px 20px',
         textAlign: 'center',
       }}>
-        {/* Placeholder animation */}
+    
         <div style={{
           width: '120px',
           height: '120px',
@@ -79,12 +79,14 @@ const KanaDetailPanel: React.FC<KanaDetailPanelProps> = ({ selectedChar, kanaTyp
         border: '1.5px solid #f5d0d0',
         boxShadow: '0 4px 16px rgba(185,0,0,0.07)',
       }}>
-        {/* Big character display */}
+      
         <div 
           onClick={playPronunciation}
           style={{
-            width: '80px',
+            width: selectedChar.kana.length > 1 ? 'auto' : '80px',
+            minWidth: '80px',
             height: '80px',
+            padding: selectedChar.kana.length > 1 ? '0 12px' : '0',
             borderRadius: '16px',
             background: 'linear-gradient(135deg, #B90000, #E53935)',
             display: 'flex',
@@ -94,15 +96,17 @@ const KanaDetailPanel: React.FC<KanaDetailPanelProps> = ({ selectedChar, kanaTyp
             flexShrink: 0,
             cursor: 'pointer',
             transition: 'transform 0.2s',
+            position: 'relative',
           }}
           onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
           onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
         >
           <span style={{
-            fontSize: '2.8rem',
+            fontSize: selectedChar.kana.length > 1 ? '2.2rem' : '2.8rem',
             color: '#fff',
             fontFamily: '"Noto Serif JP", serif',
             lineHeight: 1,
+            whiteSpace: 'nowrap',
           }}>
             {selectedChar.kana}
           </span>
@@ -172,7 +176,7 @@ const KanaDetailPanel: React.FC<KanaDetailPanelProps> = ({ selectedChar, kanaTyp
         </div>
       </div>
 
-      {/* Stroke instructions */}
+    
       {instructions.length > 0 && (
         <div style={{
           background: '#fff',
@@ -229,7 +233,7 @@ const KanaDetailPanel: React.FC<KanaDetailPanelProps> = ({ selectedChar, kanaTyp
         </div>
       )}
 
-      {/* Writing canvas section */}
+   
       <div style={{
         background: '#fff',
         borderRadius: '14px',
