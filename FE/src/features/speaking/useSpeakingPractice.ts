@@ -34,7 +34,7 @@ export function useSpeakingPractice() {
   const [mode, setModeState] = useState<InteractionMode>("request");
   const [loading, setLoading] = useState(false);
   const [loadingText, setLoadingText] = useState("");
-  const [recordLabel, setRecordLabel] = useState("Hold to talk");
+  const [recordLabel, setRecordLabel] = useState("Nhấn giữ để nói");
   const [sessionActive, setSessionActive] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isUserSpeaking, setIsUserSpeaking] = useState(false);
@@ -115,7 +115,7 @@ export function useSpeakingPractice() {
       isSpeakingRef.current = false;
       setIsUserSpeaking(false);
       clearPartial();
-      setRecordLabel("Speak now...");
+      setRecordLabel("Hãy nói ngay...");
       setIsRecording(true);
 
       try {
@@ -266,7 +266,7 @@ export function useSpeakingPractice() {
       } finally {
         setLoading(false);
         setRecordDisabled(false);
-        setRecordLabel("Hold to talk");
+        setRecordLabel("Nhấn giữ để nói");
         setIsRecording(false);
       }
     },
@@ -283,7 +283,7 @@ export function useSpeakingPractice() {
       silenceTimeoutRef.current = null;
     }
     isAwaitingAiRef.current = true;
-    setRecordLabel("Thinking...");
+    setRecordLabel("Đang suy nghĩ...");
     setIsRecording(false);
     setTypingVisible(true);
     const mr = mediaRecorderRef.current;
@@ -323,7 +323,7 @@ export function useSpeakingPractice() {
         if (!isSpeakingRef.current && mr?.state === "recording") {
           isSpeakingRef.current = true;
           setIsUserSpeaking(true);
-          setRecordLabel("Listening...");
+          setRecordLabel("Đang lắng nghe...");
         }
         if (silenceTimeoutRef.current) {
           clearTimeout(silenceTimeoutRef.current);
@@ -364,7 +364,7 @@ export function useSpeakingPractice() {
     wsRef.current = null;
     audioQueueRef.current = [];
     isPlayingRef.current = false;
-    setRecordLabel(modeRef.current === "request" ? "Hold to talk" : "Start Session");
+    setRecordLabel(modeRef.current === "request" ? "Nhấn giữ để nói" : "Bắt đầu phiên");
     setLoading(false);
     clearPartial();
   }, [clearPartial]);
@@ -444,7 +444,7 @@ export function useSpeakingPractice() {
       isSessionActiveRef.current = true;
       setSessionActive(true);
       setIsRecording(true);
-      setRecordLabel("Speak now...");
+      setRecordLabel("Hãy nói ngay...");
       await startSilenceDetection();
       mediaRecorderRef.current?.start(250);
     } catch {
@@ -517,7 +517,7 @@ export function useSpeakingPractice() {
       setModeState(next);
       setIsRecording(false);
       setIsUserSpeaking(false);
-      setRecordLabel(next === "request" ? "Hold to talk" : "Start Session");
+      setRecordLabel(next === "request" ? "Nhấn giữ để nói" : "Bắt đầu phiên");
     },
     [stopStreamingSession],
   );
@@ -550,7 +550,7 @@ export function useSpeakingPractice() {
       audioChunksRef.current = [];
       mr.start();
       setIsRecording(true);
-      setRecordLabel("Recording...");
+      setRecordLabel("Đang ghi âm...");
       return;
     }
 
@@ -567,7 +567,7 @@ export function useSpeakingPractice() {
     if (!mr || mr.state !== "recording") return;
     mr.stop();
     setIsRecording(false);
-    setRecordLabel("Processing...");
+    setRecordLabel("Đang xử lý...");
   };
 
   const onRecordPointerLeave = () => {
