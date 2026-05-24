@@ -1,7 +1,5 @@
 import { Request, Response } from 'express';
 import ListeningContent from '../model/listeningContent.model';
-import ListeningExercise from '../model/listeningExercise.model';
-import ListeningResult from '../model/listeningResult.model';
 import { uploadAudioToCloudinary } from '../service/cloudinaryAudio.service';
 
 export const createContent = async (req: Request, res: Response): Promise<void> => {
@@ -70,7 +68,7 @@ export const getAllContents = async (req: Request, res: Response): Promise<void>
 export const getContentById = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const content = await ListeningContent.findById(id).populate('exercises');
+    const content = await ListeningContent.findById(id);
 
     if (!content) {
       res.status(404).json({ message: 'Content not found' });
@@ -113,9 +111,6 @@ export const deleteContent = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    // Also delete associated exercises
-    await ListeningExercise.deleteMany({ contentId: id });
-
     res.status(200).json({ message: 'Deleted successfully' });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -153,85 +148,5 @@ export const uploadAudio = async (req: Request, res: Response): Promise<void> =>
   } catch (error: any) {
     console.error('uploadAudio error:', error);
     res.status(500).json({ message: error.message || 'Failed to upload audio to Cloudinary' });
-  }
-};
-
-export const addExercise = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { id } = req.params; // contentId
-    const exerciseData = { ...req.body, contentId: id };
-
-    const newExercise = await ListeningExercise.create(exerciseData);
-
-    await ListeningContent.findByIdAndUpdate(id, {
-      $push: { exercises: newExercise._id }
-    });
-
-    res.status(201).json(newExercise);
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-export const submitAnswers = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { id } = req.params; // contentId
-    const { answers, timeSpent } = req.body;
-    const studentId = (req as any).user?.id || (req as any).id;
-
-    if (!studentId) {
-      res.status(401).json({ message: 'Unauthorized' });
-      return;
-    }
-
-    let totalScore = 0;
-    const evaluatedAnswers = [];
-
-    // Evaluate answers
-    for (const ans of answers) {
-      const exercise = await ListeningExercise.findById(ans.exerciseId);
-      if (!exercise) continue;
-
-      let isCorrect = false;
-      let score = 0;
-
-      if (exercise.type === 'quiz' && exercise.correctAnswer === ans.studentAnswer) {
-        isCorrect = true;
-        score = 1;
-      } else if (exercise.type === 'fill_blank') {
-        // Simple logic for fill blank, assuming studentAnswer is comma separated or exact match
-        if (exercise.answers?.join(',') === ans.studentAnswer) {
-          isCorrect = true;
-          score = 1;
-        }
-      } else if (exercise.type === 'dictation') {
-        // Placeholder for dictation logic (Phase 2 Levenshtein)
-        if (exercise.targetText === ans.studentAnswer) {
-          isCorrect = true;
-          score = 1;
-        }
-      }
-
-      totalScore += score;
-      evaluatedAnswers.push({
-        exerciseId: exercise._id,
-        studentAnswer: ans.studentAnswer,
-        isCorrect,
-        score
-      });
-    }
-
-    const result = await ListeningResult.create({
-      studentId,
-      contentId: id,
-      answers: evaluatedAnswers,
-      totalScore,
-      maxScore: answers.length,
-      timeSpent
-    });
-
-    res.status(201).json(result);
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
   }
 };
