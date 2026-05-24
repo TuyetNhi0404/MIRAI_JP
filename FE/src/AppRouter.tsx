@@ -41,7 +41,6 @@ import ChapterQuestionsPage from "./pages/Teacher/ChapterQuestionsPage";
 import TeacherSubmissionsPage from "./pages/Teacher/TeacherSubmissionsPage";
 import ManageScheduleWithAttendance from "./pages/Admin/AttendanceManagement";
 import QuizzesPage from "./pages/Teacher/QuizzesPage";
-import InterviewPractice from "./components/AIAudit/interviewPractice";
 import StudentStatisticsDashboard from "./pages/Student/StudentStatistics";
 import { Leaderboard } from "./pages/Student/CourseLeaderboard";
 import AdminLeaderboard from "./pages/Admin/AdminLeaderboard";
@@ -50,6 +49,7 @@ import TeacherCoursesPage from "./pages/Teacher/TeacherCoursesPage";
 import TeacherCourseStudentsPage from "./pages/Teacher/TeacherCourseStudentsPage";
 import VocabularyManagement from "./pages/Admin/VocabularyManagement";
 import VocabularyPracticePage from "./pages/Student/VocabularyPracticePage";
+import SpeakingPracticePage from "./features/speaking/SpeakingPracticePage";
 
 const AppRouter = () => {
   const user = useSelector((state: RootState) => state.auth.user);
@@ -128,7 +128,11 @@ const AppRouter = () => {
           <Route path="student/quizzes" element={<StudentQuizzesPage />} />
           <Route path="student/quiz/:quizId" element={<TakeQuizPage />} />
           <Route path="student/quiz/result/:attemptId" element={<ViewResultPage />} />
-          <Route path="student/audit-practice" element={<InterviewPractice />} />
+          <Route path="student/speaking-practice" element={<SpeakingPracticePage />} />
+          <Route
+            path="student/audit-practice"
+            element={<Navigate to="/dashboard/student/speaking-practice" replace />}
+          />
           <Route path="student/statistics" element={<StudentStatisticsDashboard />} />
           <Route path="student/leaderboard" element={<Leaderboard />} />
           <Route path="student/kana-practice" element={<KanaPracticePage />} />

@@ -23,6 +23,7 @@ import auditRouter from "./audit.routes";
 import leaderboardRouter from "./leaderboard.routes";
 import vocabularyRouter from "./vocabulary.routes";
 import listeningRoutes from "./listening.routes";
+import grammarNotesRoutes from "./grammar-notes.routes";
 
 
 export default function route(app: Application): void {
@@ -49,8 +50,8 @@ export default function route(app: Application): void {
   app.use("/api/leaderboards", leaderboardRouter);
   app.use("/api/vocabulary", vocabularyRouter);
   app.use("/api/listening", listeningRoutes);
+  app.use("/api/speaking-notes", grammarNotesRoutes);
 
-  
   // app.use("/api/forum", forumRouter);
   app.use("/api/notifications", notificationRoutes);
 }
