@@ -238,6 +238,25 @@ def get_ai_reply(messages: list[dict]) -> str:
         return "Lỗi khi kết nối AI. Vui lòng thử lại sau."
 
 
+def translate_japanese_to_vietnamese(text: str) -> str:
+    """Dịch câu tiếng Nhật sang tiếng Việt (chỉ dùng cho hover tooltip)."""
+    cleaned = (text or "").strip()
+    if not cleaned:
+        return ""
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "You are a Japanese-to-Vietnamese translator. "
+                "Translate the user's Japanese into natural, concise Vietnamese. "
+                "Output ONLY the Vietnamese translation — no quotes, labels, or explanations."
+            ),
+        },
+        {"role": "user", "content": cleaned},
+    ]
+    return get_ai_reply(messages)
+
+
 def get_ai_reply_stream(messages: list[dict]) -> Generator[str, None, None]:
     """
     Streaming reply.

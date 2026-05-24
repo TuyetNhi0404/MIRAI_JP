@@ -164,12 +164,12 @@ function SpeakingCircle({
 
       if (formation > 0.85) {
         ctx.save();
-        ctx.shadowColor = rgbaFromColor(color, speaking ? 0.3 : 0.12);
-        ctx.shadowBlur = speaking ? 14 : 8;
+        ctx.shadowColor = rgbaFromColor(color, speaking ? 0.18 : 0.08);
+        ctx.shadowBlur = speaking ? 10 : 6;
         ctx.beginPath();
         ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-        ctx.strokeStyle = rgbaFromColor(color, speaking ? 0.2 : 0.09);
-        ctx.lineWidth = speaking ? 1.5 : 0.8;
+        ctx.strokeStyle = rgbaFromColor(color, speaking ? 0.12 : 0.06);
+        ctx.lineWidth = speaking ? 0.6 : 0.4;
         ctx.stroke();
         ctx.restore();
       }

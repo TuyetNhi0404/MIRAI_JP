@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from auth import authenticate_websocket, get_current_user_id
 from sessions import get_session, reset_user_session
 from stt import transcribe_audio
-from llm import get_ai_reply, get_ai_reply_stream
+from llm import get_ai_reply, get_ai_reply_stream, translate_japanese_to_vietnamese
 from tts import generate_audio
 
 app = FastAPI(title="MIRAI Speaking Practice")
@@ -379,6 +379,21 @@ async def conversation(
 
 class ReplyRequest(BaseModel):
     transcript: str
+
+
+class TranslateRequest(BaseModel):
+    text: str
+
+
+@app.post("/translate")
+async def translate(
+    req: TranslateRequest,
+    user_id: str = Depends(get_current_user_id),
+):
+    del user_id  # auth gate only
+    translation = translate_japanese_to_vietnamese(req.text)
+    return {"translation": translation.strip()}
+
 
 @app.post("/transcribe")
 async def transcribe(

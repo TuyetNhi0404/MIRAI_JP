@@ -11,6 +11,7 @@ import {
 } from "@mui/material";
 import { Mic, Zap } from "lucide-react";
 import SpeakingCircle from "../../components/AI_animated/SpeakingCircle";
+import { TranslatableMessageBubble } from "./TranslatableMessageBubble";
 import { useSpeakingPractice } from "./useSpeakingPractice";
 import type { InteractionMode } from "./useSpeakingPractice";
 
@@ -23,7 +24,11 @@ const LEVELS = [
 ];
 
 const BRAND = "#c83c3c";
-const AI_CIRCLE = "#ffb0b0";
+const AI_CIRCLE = "#fa9d9d";
+/** Khoảng cách giữa orb canvas và viền ngoài */
+const ORB_GAP = 2;
+/** Độ dày viền ngoài (px) */
+const ORB_RING = 0.6;
 
 const SpeakingPracticePage = () => {
   const theme = useTheme();
@@ -127,30 +132,29 @@ const SpeakingPracticePage = () => {
         <Box
           sx={{
             position: "relative",
-            width: circleSize + 24,
-            height: circleSize + 24,
+            boxSizing: "content-box",
+            width: circleSize,
+            height: circleSize,
+            padding: `${ORB_GAP}px`,
+            borderRadius: "50%",
+            border: `${ORB_RING}px solid`,
+            borderColor: circleActive
+              ? "rgba(255, 176, 176, 0.55)"
+              : "rgba(255, 176, 176, 0.35)",
+            bgcolor: "transparent",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            transition: "border-color 0.35s ease",
           }}
         >
-          <Box
-            sx={{
-              position: "absolute",
-              inset: 0,
-              borderRadius: "50%",
-              bgcolor: circleActive ? "rgba(185,0,0,0.06)" : "rgba(185,0,0,0.03)",
-              transform: circleActive ? "scale(1.04)" : "scale(1)",
-              transition: "transform 0.35s ease, background-color 0.35s ease",
-            }}
-          />
           <SpeakingCircle isSpeaking={circleActive} size={circleSize} color={AI_CIRCLE} />
           {isRecording && (
             <Box
               sx={{
                 position: "absolute",
-                bottom: 12,
-                right: 12,
+                bottom: 4,
+                right: 4,
                 width: 10,
                 height: 10,
                 borderRadius: "50%",
@@ -203,35 +207,11 @@ const SpeakingPracticePage = () => {
               },
             }}
           >
-            <Box
-              sx={{
-                px: 2,
-                py: 1.25,
-                borderRadius: 2.5,
-                fontSize: "0.9rem",
-                lineHeight: 1.5,
-                fontFamily: '"Noto Sans JP", "Inter", sans-serif',
-                ...(msg.sender === "user"
-                  ? {
-                      bgcolor: msg.partial ? "rgba(255,240,240,0.6)" : "#FFF0F0",
-                      color: msg.partial ? "text.secondary" : "#4A1515",
-                      borderBottomRightRadius: 4,
-                      border: msg.partial
-                        ? "1.5px dashed rgba(185,0,0,0.35)"
-                        : "1px solid rgba(185,0,0,0.1)",
-                      fontStyle: msg.partial ? "italic" : "normal",
-                      opacity: msg.partial ? 0.9 : 1,
-                    }
-                  : {
-                      bgcolor: "#F8F9FA",
-                      color: "text.primary",
-                      borderBottomLeftRadius: 4,
-                      border: "1px solid rgba(0,0,0,0.05)",
-                    }),
-              }}
-            >
-              {msg.text}
-            </Box>
+            <TranslatableMessageBubble
+              text={msg.text}
+              variant={msg.sender === "user" ? "user" : "system"}
+              partial={msg.partial}
+            />
           </Box>
         ))}
 
