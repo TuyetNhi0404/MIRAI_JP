@@ -1,10 +1,42 @@
-// src/components/kana/KanaWritingCanvas.tsx
 import React, { useRef, useEffect, useState, useCallback } from 'react';
+import kanaStrokesData from '../../data/kanaStrokes.json';
+import { matchStroke } from '../../utils/strokeMatching';
+import type { StrokeTransform } from '../../utils/strokeMatching';
 
 interface Point {
   x: number;
   y: number;
 }
+
+interface PathData {
+  points: Point[];
+  color: string;
+}
+
+export interface StrokeInfo {
+  pathStr: string;
+  transform: StrokeTransform;
+}
+
+const kanaStrokes: Record<string, string[]> = kanaStrokesData as any;
+
+const getStandardStrokes = (charStr: string): StrokeInfo[] => {
+  if (charStr.length === 1) {
+    const strokes = kanaStrokes[charStr[0]] || [];
+    return strokes.map(s => ({ pathStr: s, transform: { scale: 1, offsetX: 0, offsetY: 0 } }));
+  } else if (charStr.length === 2) {
+    const strokes1 = kanaStrokes[charStr[0]] || [];
+    const strokes2 = kanaStrokes[charStr[1]] || [];
+ 
+    const t1 = { scale: 0.55, offsetX: 6, offsetY: 24 };
+    const t2 = { scale: 0.55, offsetX: 52, offsetY: 36 };
+    return [
+      ...strokes1.map(s => ({ pathStr: s, transform: t1 })),
+      ...strokes2.map(s => ({ pathStr: s, transform: t2 }))
+    ];
+  }
+  return [];
+};
 
 interface KanaWritingCanvasProps {
   guidanceChar: string;
@@ -13,45 +45,89 @@ interface KanaWritingCanvasProps {
 const KanaWritingCanvas: React.FC<KanaWritingCanvasProps> = ({ guidanceChar }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [paths, setPaths] = useState<Point[][]>([]);
+  const [paths, setPaths] = useState<PathData[]>([]);
+  const [feedback, setFeedback] = useState<{msg: string, type: 'error' | 'success'} | null>(null);
   const currentPath = useRef<Point[]>([]);
   const animationRef = useRef<number | null>(null);
 
-  // Draw grid lines and ghost character
+  useEffect(() => {
+    const styleId = 'kana-canvas-styles';
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.innerHTML = `
+        @keyframes fadeInOut {
+          0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
+          10% { opacity: 1; transform: translateX(-50%) translateY(0); }
+          90% { opacity: 1; transform: translateX(-50%) translateY(0); }
+          100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }, []);
+
+
   const drawBackground = useCallback((ctx: CanvasRenderingContext2D, w: number, h: number) => {
     ctx.clearRect(0, 0, w, h);
 
-    // Background
+ 
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, w, h);
 
-    // Grid lines (cross)
+
     ctx.strokeStyle = 'rgba(185, 0, 0, 0.08)';
     ctx.lineWidth = 1;
     ctx.setLineDash([8, 8]);
     
-    // Vertical center
+    
     ctx.beginPath();
     ctx.moveTo(w / 2, 0);
     ctx.lineTo(w / 2, h);
     ctx.stroke();
     
-    // Horizontal center
+    
     ctx.beginPath();
     ctx.moveTo(0, h / 2);
     ctx.lineTo(w, h / 2);
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Ghost character (guidance)
-    ctx.font = `bold ${w * 0.65}px "Noto Serif JP", serif`;
-    ctx.fillStyle = 'rgba(185, 0, 0, 0.05)';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(guidanceChar, w / 2, h / 2 + w * 0.04);
+  
+    const standardStrokes = getStandardStrokes(guidanceChar);
+
+    if (standardStrokes && standardStrokes.length > 0) {
+      const scaleX = w / 109;
+      const scaleY = h / 109;
+      
+      standardStrokes.forEach(strokeInfo => {
+        ctx.save();
+        ctx.scale(scaleX, scaleY);
+      
+        ctx.translate(strokeInfo.transform.offsetX, strokeInfo.transform.offsetY);
+        ctx.scale(strokeInfo.transform.scale, strokeInfo.transform.scale);
+        
+        ctx.strokeStyle = 'rgba(185, 0, 0, 0.06)';
+       
+        ctx.lineWidth = 16 / strokeInfo.transform.scale;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        
+        const p = new Path2D(strokeInfo.pathStr);
+        ctx.stroke(p);
+        ctx.restore();
+      });
+    } else {
+      const fontSize = guidanceChar.length > 1 ? w * 0.45 : w * 0.65;
+      ctx.font = `bold ${fontSize}px "Noto Serif JP", serif`;
+      ctx.fillStyle = 'rgba(185, 0, 0, 0.05)';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(guidanceChar, w / 2, h / 2 + w * 0.04);
+    }
   }, [guidanceChar]);
 
-  // Redraw all strokes
+
   const redraw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -61,11 +137,12 @@ const KanaWritingCanvas: React.FC<KanaWritingCanvasProps> = ({ guidanceChar }) =
 
     drawBackground(ctx, w, h);
 
-    // Draw all saved strokes
-    paths.forEach((path, idx) => {
+  
+    paths.forEach((pathData, idx) => {
+      const { points: path, color } = pathData;
       if (path.length < 2) return;
-      const hue = (idx * 50) % 360;
-      ctx.strokeStyle = `hsl(${hue}, 70%, 40%)`;
+      
+      ctx.strokeStyle = color;
       ctx.lineWidth = 6;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
@@ -76,9 +153,9 @@ const KanaWritingCanvas: React.FC<KanaWritingCanvasProps> = ({ guidanceChar }) =
       }
       ctx.stroke();
 
-      // Draw stroke number badge at start
+      
       const start = path[0];
-      ctx.fillStyle = `hsl(${hue}, 70%, 40%)`;
+      ctx.fillStyle = color;
       ctx.beginPath();
       ctx.arc(start.x, start.y, 11, 0, Math.PI * 2);
       ctx.fill();
@@ -89,7 +166,7 @@ const KanaWritingCanvas: React.FC<KanaWritingCanvasProps> = ({ guidanceChar }) =
       ctx.fillText(String(idx + 1), start.x, start.y);
     });
 
-    // Draw current live path
+  
     const cp = currentPath.current;
     if (isDrawing && cp.length > 1) {
       ctx.strokeStyle = '#B90000';
@@ -105,7 +182,7 @@ const KanaWritingCanvas: React.FC<KanaWritingCanvasProps> = ({ guidanceChar }) =
     }
   }, [paths, drawBackground, isDrawing]);
 
-  // Initialize canvas
+ 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -113,15 +190,28 @@ const KanaWritingCanvas: React.FC<KanaWritingCanvasProps> = ({ guidanceChar }) =
     if (!ctx) return;
     drawBackground(ctx, canvas.width, canvas.height);
     
+
+    setPaths([]);
+    setFeedback(null);
+    currentPath.current = [];
+
     return () => {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
   }, [guidanceChar, drawBackground]);
 
-  // Redraw when paths change
+ 
   useEffect(() => {
     redraw();
   }, [paths, redraw]);
+
+ 
+  useEffect(() => {
+    if (feedback) {
+      const timer = setTimeout(() => setFeedback(null), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [feedback]);
 
   const getPos = (e: React.MouseEvent | React.TouchEvent): Point => {
     const canvas = canvasRef.current!;
@@ -164,17 +254,63 @@ const KanaWritingCanvas: React.FC<KanaWritingCanvasProps> = ({ guidanceChar }) =
     if (!isDrawing) return;
     setIsDrawing(false);
     
-    // Fix: Capture path before clearing currentPath.current
     const finishedPath = [...currentPath.current];
-    if (finishedPath.length > 1) {
-      setPaths(prev => [...prev, finishedPath]);
-    }
     currentPath.current = [];
+    
+    if (finishedPath.length > 1) {
+    
+      const standardStrokes = getStandardStrokes(guidanceChar);
+      
+      if (!standardStrokes || standardStrokes.length === 0) {
+    
+        setPaths(prev => [...prev, { points: finishedPath, color: '#4CAF50' }]);
+        return;
+      }
+
+      const expectedStrokeIdx = paths.filter(p => p.color === '#4CAF50').length;
+      
+      if (expectedStrokeIdx >= standardStrokes.length) {
+        setFeedback({ msg: 'Bạn đã vẽ xong chữ này rồi!', type: 'success' });
+        return;
+      }
+
+      const strokeInfo = standardStrokes[expectedStrokeIdx];
+      const canvas = canvasRef.current!;
+      
+      const matchResult = matchStroke(
+        finishedPath, 
+        strokeInfo.pathStr, 
+        canvas.width, 
+        canvas.height,
+        strokeInfo.transform
+      );
+
+      if (matchResult.isCorrect) {
+        setPaths(prev => [...prev, { points: finishedPath, color: '#4CAF50' }]); 
+        if (expectedStrokeIdx + 1 === standardStrokes.length) {
+          setFeedback({ msg: 'Tuyệt vời! Bạn đã vẽ đúng chữ.', type: 'success' });
+        }
+      } else {
+        if (matchResult.isReversed) {
+          setFeedback({ msg: 'Sai chiều! Hãy vẽ lại đúng chiều mũi tên.', type: 'error' });
+        } else {
+          setFeedback({ msg: 'Nét chưa chuẩn hoặc sai thứ tự!', type: 'error' });
+        }
+        
+       
+        const tempPath = { points: finishedPath, color: '#f44336' };
+        setPaths(prev => [...prev, tempPath]);
+        setTimeout(() => {
+          setPaths(prev => prev.filter(p => p !== tempPath));
+        }, 600);
+      }
+    }
   };
 
   const clearCanvas = () => {
     currentPath.current = [];
     setPaths([]);
+    setFeedback(null);
   };
 
   return (
@@ -210,8 +346,28 @@ const KanaWritingCanvas: React.FC<KanaWritingCanvasProps> = ({ guidanceChar }) =
           }}
         />
 
-        {/* Drawing hint */}
-        {paths.length === 0 && !isDrawing && (
+        {/* Drawing hint or Feedback */}
+        {feedback ? (
+          <div style={{
+            position: 'absolute',
+            bottom: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: feedback.type === 'error' ? 'rgba(220, 38, 38, 0.9)' : 'rgba(16, 185, 129, 0.9)',
+            color: '#fff',
+            borderRadius: '30px',
+            padding: '6px 20px',
+            fontSize: '0.9rem',
+            fontWeight: 600,
+            whiteSpace: 'nowrap',
+            pointerEvents: 'none',
+            backdropFilter: 'blur(4px)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            animation: 'fadeInOut 0.3s ease-out'
+          }}>
+            {feedback.msg}
+          </div>
+        ) : paths.length === 0 && !isDrawing && (
           <div style={{
             position: 'absolute',
             bottom: '20px',

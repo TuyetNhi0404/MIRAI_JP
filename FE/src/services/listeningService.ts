@@ -26,6 +26,7 @@ export interface ListeningContentPayload {
   audioSource: 'upload' | 'tts';
   audioUrl?: string;
   transcript?: string;
+  isPublished?: boolean;
 }
 
 // Payload submit bài làm của Student

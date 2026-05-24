@@ -43,10 +43,15 @@ export const createContent = async (req: Request, res: Response): Promise<void> 
 export const getAllContents = async (req: Request, res: Response): Promise<void> => {
   try {
     const { topic, level, page = 1, limit = 10 } = req.query;
+    const userRole = (req as any).user?.role;
     const query: any = {};
+
     if (topic) query.topic = topic;
     if (level) query.level = level;
-    // For students, maybe we only want to show published ones, but for now we'll fetch all matching query
+
+    if (userRole !== 'admin') {
+      query.isPublished = true;
+    }
 
     const contents = await ListeningContent.find(query)
       .populate('createdBy', 'name email')

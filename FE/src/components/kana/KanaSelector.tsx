@@ -1,6 +1,6 @@
-// src/components/kana/KanaSelector.tsx
+
 import React from 'react';
-import type { KanaType } from './kanaData';
+import type { KanaType } from '../../types/kanaData';
 
 interface KanaSelectorProps {
   selectedType: KanaType;

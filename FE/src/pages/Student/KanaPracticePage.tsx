@@ -1,7 +1,7 @@
 // src/pages/Student/KanaPracticePage.tsx
 import React, { useState } from 'react';
-import type { KanaChar, KanaType } from '../../components/kana/kanaData';
-import { getKanaData } from '../../components/kana/kanaData';
+import type { KanaChar, KanaType } from '../../types/kanaData';
+import { getKanaData } from '../../types/kanaData';
 import KanaSelector from '../../components/kana/KanaSelector';
 import KanaGrid from '../../components/kana/KanaGrid';
 import KanaDetailPanel from '../../components/kana/KanaDetailPanel';
@@ -14,7 +14,7 @@ const KanaPracticePage: React.FC = () => {
 
   const handleTypeChange = (type: KanaType) => {
     setKanaType(type);
-    setSelectedChar(null); // Reset selection when switching type
+    setSelectedChar(null); 
   };
 
   const handleCharSelect = (char: KanaChar) => {

@@ -10,6 +10,7 @@ export interface ListeningContent {
   duration: number;
   thumbnailUrl: string;
   playCount: number;
+  isPublished?: boolean;
   exercises?: ListeningExercise[];
   createdAt: string;
   updatedAt: string;
