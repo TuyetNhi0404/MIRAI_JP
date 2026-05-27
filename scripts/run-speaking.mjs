@@ -14,7 +14,12 @@ async function main() {
   const child = spawn(
     python,
     ["-m", "uvicorn", "main:app", "--host", "127.0.0.1", "--port", "8000", "--reload"],
-    { cwd: speakingDir, stdio: "inherit", shell: process.platform === "win32" },
+    { 
+      cwd: speakingDir, 
+      stdio: "inherit", 
+      shell: process.platform === "win32",
+      env: { ...process.env, PYTHONIOENCODING: "utf-8" }
+    },
   );
 
   child.on("exit", (code) => process.exit(code ?? 1));

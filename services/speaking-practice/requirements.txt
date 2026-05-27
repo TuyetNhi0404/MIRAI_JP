@@ -7,3 +7,6 @@ python-dotenv
 websockets
 httpx
 google-genai
+pypdf
+PyMuPDF
+easyocr

@@ -677,10 +677,9 @@ const autoUpdateReopenedAssignments = async () => {
   }
 };
 
-//Chạy mỗi 5 phút một lần (300000 ms)
+// Chạy mỗi 5 phút một lần (300000 ms)
 setInterval(() => {
   autoUpdateExpiredAssignments();
-  autoUpdateReopenedAssignments()
-    ;
-}, 1000);
+  autoUpdateReopenedAssignments();
+}, 300000);
 

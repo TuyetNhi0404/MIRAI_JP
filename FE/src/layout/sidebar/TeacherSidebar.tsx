@@ -27,6 +27,7 @@ const TeacherSidebar: React.FC<SidebarProps> = ({ isOpen }) => {
     { id: "assignments", label: "Assignments", icon: NotebookText, path: "/dashboard/teacher/assignments" },
     { id: "questions", label: "Questions", icon: FileQuestion, path: "/dashboard/teacher/questions" },
     { id: "quizzes", label: "Quizzes", icon: CircleHelp, path: "/dashboard/teacher/quizzes" },
+    { id: "grammar-mcq", label: "Tạo Quiz Ngữ pháp", icon: FileQuestion, path: "/dashboard/teacher/grammar" },
     { id: "listening", label: "Listening", icon: Headphones, path: "/dashboard/teacher/listening" },
   ];
 

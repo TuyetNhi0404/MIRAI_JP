@@ -72,3 +72,4 @@ services/speaking-practice/venv/
 services/speaking-practice/.venv/
 services/speaking-practice/uploads/*
 !services/speaking-practice/uploads/.gitkeep
+services/speaking-practice/.hf_cache/

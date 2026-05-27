@@ -8,6 +8,7 @@ import GoogleIcon from "@mui/icons-material/Google";
 import { useGoogleAuth } from "../hooks/useGoogleAuth";
 import type { User } from "../types/auth.types";
 
+
 const Alert = (props: AlertProps) => {
   return <MuiAlert elevation={6} variant="filled" {...props} />;
 };
@@ -31,6 +32,8 @@ const GoogleLoginButton = ({ onSuccess, onError }: GoogleLoginButtonProps) => {
     message: "",
     severity: "success" as "success" | "error",
   });
+
+
 
   // Get Google OAuth config from environment
   const googleConfig = {
@@ -179,13 +182,18 @@ const GoogleLoginButton = ({ onSuccess, onError }: GoogleLoginButtonProps) => {
     }
   };
 
+
+
   return (
     <>
       <Box 
         display="flex" 
         justifyContent="flex-start"
+        alignItems="center"
+        gap={1}
         sx={{
           width: isMobile ? '100%' : 'auto',
+          flexDirection: isMobile ? 'column' : 'row'
         }}
       >
         <Button
@@ -198,6 +206,8 @@ const GoogleLoginButton = ({ onSuccess, onError }: GoogleLoginButtonProps) => {
         >
           {loading ? "Logging in..." : "Login"}
         </Button>
+
+
       </Box>
 
       {/* Snackbar for notifications */}

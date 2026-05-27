@@ -47,6 +47,7 @@ const StudentSidebar: React.FC<SidebarProps> = ({ isOpen }) => {
     },
     { id: "kana-practice", label: "Học bảng chữ cái", icon: PenLine, path: "/dashboard/student/kana-practice" },
     { id: "vocabulary-practice", label: "Ôn từ vựng", icon: BookMarked, path: "/dashboard/student/vocabulary-practice" },
+    { id: "grammar-practice", label: "Ôn ngữ pháp", icon: BookOpen, path: "/dashboard/student/grammar-practice" },
     { id: "listening", label: "Luyện nghe", icon: Headphones, path: "/dashboard/student/listening" },
   ];
 

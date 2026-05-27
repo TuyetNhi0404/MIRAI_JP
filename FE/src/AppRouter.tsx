@@ -50,6 +50,9 @@ import TeacherCourseStudentsPage from "./pages/Teacher/TeacherCourseStudentsPage
 import VocabularyManagement from "./pages/Admin/VocabularyManagement";
 import VocabularyPracticePage from "./pages/Student/VocabularyPracticePage";
 import SpeakingPracticePage from "./features/speaking/SpeakingPracticePage";
+import AdminGrammarManagement from "./pages/Admin/AdminGrammarManagement";
+import StudentGrammarPractice from "./pages/Student/StudentGrammarPractice";
+import TeacherQuizManagement from "./pages/Teacher/TeacherQuizManagement";
 
 const AppRouter = () => {
   const user = useSelector((state: RootState) => state.auth.user);
@@ -102,8 +105,9 @@ const AppRouter = () => {
           </Route>
           <Route path="admin/courses/:id/students" element={<EnrolledStudentsPage />} />
           <Route path="admin/request-management" element={<RequestSchedulePage />} />
-          <Route path="admin/banned-users" element={<BannedUsersPage />} />
+           <Route path="admin/banned-users" element={<BannedUsersPage />} />
           <Route path="admin/vocabulary" element={<VocabularyManagement />} />
+          <Route path="admin/grammar" element={<AdminGrammarManagement />} />
           <Route path="admin/listening" element={<ListeningManagePage />} />
           <Route path="admin/listening/new" element={<ListeningFormPage />} />
           <Route path="admin/listening/:id/edit" element={<ListeningFormPage />} />
@@ -117,6 +121,7 @@ const AppRouter = () => {
           <Route path="teacher/questions" element={<QuestionBankPage />} />
           <Route path="teacher/questions/:chapterId" element={<ChapterQuestionsPage />} />
           <Route path="teacher/quizzes" element={<QuizzesPage />} />
+          <Route path="teacher/grammar" element={<TeacherQuizManagement />} />
           <Route path="teacher/submissions" element={<TeacherSubmissionsPage />} />
           <Route path="teacher/listening" element={<ListeningListPage />} />
           <Route path="teacher/listening/:id" element={<ListeningDetailPage />} />
@@ -137,6 +142,7 @@ const AppRouter = () => {
           <Route path="student/leaderboard" element={<Leaderboard />} />
           <Route path="student/kana-practice" element={<KanaPracticePage />} />
           <Route path="student/vocabulary-practice" element={<VocabularyPracticePage />} />
+          <Route path="student/grammar-practice" element={<StudentGrammarPractice />} />
           <Route path="student/listening" element={<ListeningListPage />} />
           <Route path="student/listening/:id" element={<ListeningDetailPage />} />
           {/* Default redirect */}
