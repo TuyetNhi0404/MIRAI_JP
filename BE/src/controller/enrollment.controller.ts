@@ -6,7 +6,7 @@ import { extractInfoFromCV } from "../service/ai.service";
 import { CVInfo } from "../types/cv.types.js";
 import { uploadToCloudinary } from "../service/cloundinary.service";
 import { User } from "../model/user.model";
-import { CourseMember } from "../model/courseMember.model";
+import { CourseService } from "../service/course.service";
 import NotificationService from "../service/notification.service";
 import { sendApprovalEmail, sendRejectionEmail } from "../service/email.service";
 import { FinalScore, ScoreComponent } from "../model/score.model";
@@ -143,51 +143,13 @@ export const approveEnrollment = async (req: Request, res: Response) => {
       });
     }
 
-    // ✅ Auto add vào CourseMember
-    const existed = await CourseMember.findOne({
-      courseId: enrollment.courseId,
-      userId: user._id,
-    });
-
-    if (!existed) {
-      await CourseMember.create({
-        courseId: enrollment.courseId,
-        userId: user._id,
-        role: "student",
-        enrolledAt: new Date(),
-      });
-    }
-    //tạo bản ghi score
-    const scoreExists = await ScoreComponent.findOne({
-      courseId: enrollment.courseId,
-      studentId: user._id,
-    });
-
-    if (!scoreExists) {
-      await ScoreComponent.create({
-        courseId: enrollment.courseId,
-        studentId: user._id,
-        studentName:user.name,
-        attendanceScore: 0,
-        assignmentScore: 0,
-        quizScore: 0,
-      });
-    }
-
-    // Tạo Final Score
-    const finalExists = await FinalScore.findOne({
-      courseId: enrollment.courseId,
-      studentId: user._id,
-    });
-
-    if (!finalExists) {
-      await FinalScore.create({
-        courseId: enrollment.courseId,
-        studentId: user._id,
-        midterm: 0,
-        final: 0,
-        overall: 0,
-      });
+    // ✅ Auto add vào CourseMember and create Score
+    try {
+      await CourseService.addMember(enrollment.courseId.toString(), (user as any)._id.toString(), "student");
+    } catch (err: any) {
+      if (err.message !== "User already in course") {
+        console.error("Error adding student to course:", err);
+      }
     }
 
     try {

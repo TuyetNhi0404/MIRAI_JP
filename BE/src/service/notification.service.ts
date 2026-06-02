@@ -1,6 +1,5 @@
 import Notification, { INotification } from "../model/notification.model";
 import Enrollment from "../model/enrollment.model";
-import { CourseMember } from "../model/courseMember.model";
 import mongoose from "mongoose";
 
 interface CreateNotificationData {
@@ -105,44 +104,7 @@ class NotificationService {
         }
     }
 
-    // Create a notification for a forum comment
-    async notifyForumComment(data: {
-        recipientId: string;
-        recipientRole: "student" | "teacher" | "admin";
-        postId: string;
-        postTitle: string;
-        commenterId: string;
-        commenterName: string;
-    }): Promise<void> {
-        try {
-            const {
-                recipientId,
-                recipientRole,
-                postId,
-                postTitle,
-                commenterId,
-                commenterName,
-            } = data;
 
-            const message = `${commenterName} commented on your post "${postTitle}"`;
-
-            await Notification.create({
-                recipientId,
-                recipientRole,
-                type: "forum_comment",
-                title: "Forum Activity",
-                message,
-                relatedEntityType: "forum",
-                relatedEntityId: postId,
-                courseId: null,
-                isRead: false,
-                readBy: [],
-                createdBy: commenterId,
-            });
-        } catch (err: any) {
-            throw new Error(`Error creating forum comment notification: ${err.message}`);
-        }
-    }
 
     // Get user notifications with filters and pagination
     async getUserNotifications(
@@ -360,7 +322,7 @@ class NotificationService {
         try {
             // Import User model dynamically to avoid circular dependency
             const User = require("../model/user.model").default || require("../model/user.model").User;
-            const CourseMember = require("../model/courseMember.model").CourseMember;
+            const Course = require("../model/course.model").Course;
 
             let recipientIds: string[] = [];  // ← Changed from userIds to recipientIds
 
@@ -370,12 +332,17 @@ class NotificationService {
                 const courseObjectIds = data.courseIds.map((id: string) => new mongoose.Types.ObjectId(id));
 
                 // Get all users (teachers and students) enrolled in the selected courses
-                const courseMembers = await CourseMember.find({
-                    courseId: { $in: courseObjectIds },
-                    deletedAt: null // Only active members
-                }).select("userId");
+                const courses = await Course.find({
+                    _id: { $in: courseObjectIds },
+                }).select("members");
 
-                recipientIds = Array.from(new Set(courseMembers.map((cm: any) => cm.userId.toString()))) as string[];
+                const users = new Set<string>();
+                courses.forEach((c: any) => {
+                    c.members?.filter((m: any) => !m.deletedAt)
+                             .forEach((m: any) => users.add(m.userId.toString()));
+                });
+
+                recipientIds = Array.from(users);
 
                 if (recipientIds.length === 0) {
                     console.warn("⚠️ No users found in selected courses");
@@ -454,34 +421,7 @@ class NotificationService {
             throw err;
         }
     }
-    // Notify comment owner when someone reacts to their comment
-    async notifyCommentReaction(data: {
-        recipientId: string;
-        recipientRole: string;
-        reactorName: string;
-        reactionType: "like" | "dislike";
-        postTitle: string;
-        commentId: string;
-    }): Promise<void> {
-        try {
-            const message = data.reactionType === "like"
-                ? `${data.reactorName} liked your comment on "${data.postTitle}"`
-                : `${data.reactorName} disliked your comment on "${data.postTitle}"`;
 
-            await Notification.create({
-                recipientId: data.recipientId,
-                recipientRole: data.recipientRole,
-                type: "forum_comment",
-                title: "Comment Reaction",
-                message: message,
-                relatedEntityType: "forum",
-                relatedEntityId: data.commentId,
-                isRead: false,
-            });
-        } catch (err: any) {
-            throw new Error(`Error creating comment reaction notification: ${err.message}`);
-        }
-    }
 
     // Notify admin when teacher creates schedule change request
     async notifyScheduleRequest(data: {
@@ -614,62 +554,7 @@ class NotificationService {
             throw new Error(`Error creating enrollment response notification: ${err.message}`);
         }
     }
-    // Notify post author when admin approves/rejects their forum post
-    async notifyPostResponse(data: {
-        authorId: string;
-        authorRole: string;
-        postTitle: string;
-        status: "approved" | "rejected";
-        rejectReason?: string;
-        banInfo?: {
-            count: number;
-            blocked: boolean;
-            permanent: boolean;
-            bannedUntil: Date | null;
-            banMessage: string;
-            reason: string;
-        };
-        postId: string;
-    }): Promise<void> {
-        try {
-            let message: string;
 
-            if (data.status === "approved") {
-                message = `Your forum post "${data.postTitle}" has been approved and is now visible to everyone!`;
-            } else {
-                // Build rejection message with 3 parts
-                let messageParts: string[] = [];
-
-                // Part 1: Post title
-                messageParts.push(`Your forum post "${data.postTitle}" was rejected.`);
-
-                // Part 2: Admin's rejection reason
-                if (data.rejectReason) {
-                    messageParts.push(`Reason: ${data.rejectReason}`);
-                }
-
-                // Part 3: Ban status
-                if (data.banInfo) {
-                    messageParts.push(`Ban Status: ${data.banInfo.reason}`);
-                }
-
-                message = messageParts.join("\n");
-            }
-
-            await Notification.create({
-                recipientId: new mongoose.Types.ObjectId(data.authorId),
-                recipientRole: data.authorRole,
-                type: data.status === "approved" ? "forum_post_approved" : "forum_post_rejected",
-                title: data.status === "approved" ? "Forum Post Approved" : "Forum Post Rejected",
-                message: message,
-                relatedEntityType: "forum",
-                relatedEntityId: new mongoose.Types.ObjectId(data.postId),
-                isRead: false,
-            });
-        } catch (err: any) {
-            throw new Error(`Error creating post response notification: ${err.message}`);
-        }
-    }
     // Notify students in a course about a new quiz
     async notifyNewQuiz({
         courseId,
@@ -683,14 +568,12 @@ class NotificationService {
         dueDate?: Date;
     }): Promise<void> {
         try {
-            // 1️⃣ Get all active students in this course from CourseMember
-            const members = await CourseMember.find({
-                courseId: new mongoose.Types.ObjectId(courseId),
-                role: "student",
-                deletedAt: null, // Only active members
-            }).select("userId");
-
-            const studentIds = members.map((m: any) => m.userId.toString());
+            // 1️⃣ Get all active students in this course from Course
+            const Course = require("../model/course.model").Course;
+            const course = await Course.findById(courseId).select("members").lean();
+            const studentIds = (course?.members || [])
+                .filter((m: any) => m.role === "student" && !m.deletedAt)
+                .map((m: any) => m.userId.toString());
 
             if (studentIds.length === 0) {
                 console.warn(`⚠️ No active students found in course ${courseId} for quiz notification`);
@@ -703,7 +586,7 @@ class NotificationService {
                 : `A new quiz "${quizTitle}" has been created.`;
 
             // 3️⃣ Create notifications for each student
-            const notifications = studentIds.map(studentId => ({
+            const notifications = studentIds.map((studentId: string) => ({
                 recipientId: studentId,
                 recipientRole: "student" as const,
                 type: "quiz_created",
@@ -722,43 +605,7 @@ class NotificationService {
             throw error;
         }
     }
-    // Notify reply to comment in forum
-    async notifyReplyToComment({
-        recipientId,
-        recipientRole,
-        reactorName,
-        postTitle,
-        commentId,
-        replyId,
-        postId
-    }: {
-        recipientId: string;
-        recipientRole: "student" | "teacher" | "admin";
-        reactorName: string;
-        postTitle: string;
-        commentId: string;
-        replyId: string;
-        postId: string;
-    }) {
-        try {
-            await Notification.create({
-                recipientId: new mongoose.Types.ObjectId(recipientId),
-                recipientRole,
-                type: "reply_comment",
-                title: "New Reply to Your Comment",
-                message: `${reactorName} replied to your comment in post "${postTitle}".`,
-                relatedEntityType: "forum",
-                relatedEntityId: new mongoose.Types.ObjectId(postId),
-                metadata: {
-                    commentId,
-                    replyId
-                }
-            });
-        } catch (error) {
-            console.error("❌ Error notifying reply to comment:", error);
-            throw error;
-        }
-    }
+
     // Send notification to specific user (Admin)
     async sendNotificationToUser(data: {
         userId: string;
@@ -838,79 +685,7 @@ class NotificationService {
             throw new Error(`Error fetching admin notifications: ${err.message}`);
         }
     }
-    // Notify admin when a new post is pending approval
-    async notifyPendingPost(params: {
-        adminId: string;
-        postId: string;
-        postTitle: string;
-        authorName: string;
-        authorId: string;
-    }) {
-        const { adminId, postId, postTitle, authorName, authorId } = params;
 
-        try {
-            await Notification.create({
-                recipientId: new mongoose.Types.ObjectId(adminId),
-                recipientRole: "admin",
-                type: "forum_post_pending",
-                title: "New Pending Post",
-                message: `${authorName} created a new post pending approval: "${postTitle}"`,
-                relatedEntityId: new mongoose.Types.ObjectId(postId),
-                relatedEntityType: "forum",
-                metadata: {
-                    postId,
-                    postTitle,
-                    authorName,
-                    authorId,
-                },
-                isRead: false,
-            });
-
-            console.log(`✅ Admin ${adminId} notified about pending post: ${postTitle}`);
-        } catch (error) {
-            console.error("❌ Error creating pending post notification:", error);
-            throw error;
-        }
-    }
-    // Notify post author when someone likes/dislikes their post
-    async notifyPostReaction(params: {
-        recipientId: string;
-        recipientRole: "student" | "teacher" | "admin";
-        reactorName: string;
-        reactionType: "like" | "dislike";
-        postTitle: string;
-        postId: string;
-    }) {
-        const { recipientId, recipientRole, reactorName, reactionType, postTitle, postId } = params;
-
-        try {
-            const message = reactionType === "like"
-                ? `${reactorName} liked your post: "${postTitle}"`
-                : `${reactorName} disliked your post: "${postTitle}"`;
-
-            await Notification.create({
-                recipientId: new mongoose.Types.ObjectId(recipientId),
-                recipientRole: recipientRole,
-                type: reactionType === "like" ? "forum_post_like" : "forum_post_dislike",
-                title: reactionType === "like" ? "Post Liked" : "Post Disliked",
-                message: message,
-                relatedEntityId: new mongoose.Types.ObjectId(postId),
-                relatedEntityType: "forum",
-                metadata: {
-                    postId,
-                    postTitle,
-                    reactorName,
-                    reactionType,
-                },
-                isRead: false,
-            });
-
-            console.log(`✅ Post author ${recipientId} notified about ${reactionType} from ${reactorName}`);
-        } catch (error) {
-            console.error(`❌ Error creating post ${reactionType} notification:`, error);
-            throw error;
-        }
-    }
 }
 
 export default new NotificationService();

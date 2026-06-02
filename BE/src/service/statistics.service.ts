@@ -1,9 +1,9 @@
 import mongoose from "mongoose";
 import { Assignment, IAssignment } from "../model/assignment.model";
 import { Submission, ISubmission } from "../model/submission.model";
-import { Attendance, AttendanceStatus, IAttendance } from "../model/attendance.model";
+import { AttendanceStatus } from "../model/calendar.model";
 import { CourseCalendar } from "../model/calendar.model";
-import { CourseMember } from "../model/courseMember.model";
+
 import { Course } from "../model/course.model";
 import { User } from "../model/user.model";
 import { Quiz, QuizAttempt, IQuiz, IQuizAttempt } from "../model/quiz.model";
@@ -115,7 +115,7 @@ export class StatisticsService {
     );
   }
 
-  private static buildAttendanceDetails(totalSessions: number, attendanceRecords: IAttendance[]) {
+  private static buildAttendanceDetails(totalSessions: number, attendanceRecords: { status: AttendanceStatus }[]) {
     if (!totalSessions) {
       return {
         score: 0,
@@ -153,22 +153,22 @@ export class StatisticsService {
     const calendars = await CourseCalendar.find({
       courseId: courseObjectId,
     })
-      .select("_id")
+      .select("_id attendances")
       .lean();
 
     const totalSessions = calendars.length;
-    const calendarIds = calendars.map((calendar) => calendar._id);
-
-    const attendanceRecords = calendarIds.length
-      ? await Attendance.find({
-          calendarId: { $in: calendarIds },
-          userId: new mongoose.Types.ObjectId(studentId),
-        }).lean()
-      : [];
+    const attendanceRecords: { status: AttendanceStatus }[] = [];
+    
+    calendars.forEach((calendar: any) => {
+      const record = calendar.attendances?.find((a: any) => a.userId.toString() === studentId);
+      if (record) {
+        attendanceRecords.push({ status: record.status as AttendanceStatus });
+      }
+    });
 
     return this.buildAttendanceDetails(
       totalSessions,
-      attendanceRecords as unknown as IAttendance[]
+      attendanceRecords
     );
   }
 
@@ -513,24 +513,22 @@ export class StatisticsService {
       throw new Error("Access denied");
     }
 
-    const enrollment = await CourseMember.findOne({
-      courseId: new mongoose.Types.ObjectId(courseId),
-      userId: new mongoose.Types.ObjectId(studentId),
-      role: "student",
-      deletedAt: null,
-    });
+    const course = await Course.findById(courseId).select("name members").lean();
+    
+    if (!course) {
+      throw new Error("Student or course data not found.");
+    }
+
+    const enrollment = course.members?.find((m) => m.userId.toString() === studentId && m.role === "student" && !m.deletedAt);
 
     if (!enrollment) {
       throw new Error("Student is not enrolled in this course.");
     }
 
-    const [student, course] = await Promise.all([
-      User.findById(studentId).select("name email").lean(),
-      Course.findById(courseId).select("name").lean(),
-    ]);
+    const student = await User.findById(studentId).select("name email").lean();
 
-    if (!student || !course) {
-      throw new Error("Student or course data not found.");
+    if (!student) {
+      throw new Error("Student data not found.");
     }
 
     const { scoreComponent, finalScore } = await this.refreshStudentScores(courseId, studentId);
@@ -603,7 +601,7 @@ export class StatisticsService {
         score: submission?.score ?? null,
         submittedAt: submission?.submittedAt ?? null,
         files: submission?.files ?? [],
-        feedback: submission?.feedback ?? null,
+        feedbacks: submission?.feedbacks ?? [],
       };
     });
 
@@ -620,18 +618,13 @@ export class StatisticsService {
     }
 
     const courseObjectId = new mongoose.Types.ObjectId(courseId);
-    const enrollments = await CourseMember.find({
-      courseId: courseObjectId,
-      role: "student",
-      deletedAt: null,
-    })
-      .populate("userId", "name email")
-      .lean();
-
-    const course = await Course.findById(courseId).select("name").lean();
+    
+    const course = await Course.findById(courseId).select("name members").populate("members.userId", "name email").lean();
     if (!course) {
       throw new Error("Course not found.");
     }
+
+    const enrollments = course.members?.filter(m => m.role === "student" && !m.deletedAt) || [];
 
     const statistics = await Promise.all(
       enrollments.map(async (enrollment) => {
@@ -692,13 +685,8 @@ export class StatisticsService {
     }
 
     const courseId = (assignment.courseId as any)._id.toString();
-    const enrollments = await CourseMember.find({
-      courseId: new mongoose.Types.ObjectId(courseId),
-      role: "student",
-      deletedAt: null,
-    })
-      .populate("userId", "name email")
-      .lean();
+    const course = await Course.findById(courseId).select("members").populate("members.userId", "name email").lean();
+    const enrollments = course?.members?.filter(m => m.role === "student" && !m.deletedAt) || [];
 
     const studentIds = enrollments.map((enrollment) => (enrollment.userId as any)._id);
     const submissions = await Submission.find({
@@ -736,7 +724,7 @@ export class StatisticsService {
         score: submission?.score ?? null,
         submittedAt: submission?.submittedAt ?? null,
         files: submission?.files ?? [],
-        feedback: submission?.feedback ?? null,
+        feedbacks: submission?.feedbacks ?? [],
       };
     });
 

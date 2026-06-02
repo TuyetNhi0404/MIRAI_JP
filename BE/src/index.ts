@@ -16,7 +16,7 @@ import {
 // Import các route FE riêng
 import assignmentRoutes from "./routes/FE/assignment.routes";
 import accountsRouter from "./routes/FE/accounts.routes";
-import forumRoutes from "./routes/FE/forum.routes";
+
 const app: Application = express();
 
 // ✅ 1. Cấu hình CORS (đặt trước mọi middleware khác)
@@ -54,7 +54,6 @@ if (process.env.NODE_ENV !== "test") {
 // ✅ 5. Đăng ký routes FE cụ thể
 app.use("/api/assignments", assignmentRoutes);
 app.use("/api/accounts", accountsRouter);
-app.use("/api/forum", forumRoutes);
 // app.use("/api/accounts", accountsRouter);
 
 // ✅ 6. Đăng ký routes backend tổng hợp

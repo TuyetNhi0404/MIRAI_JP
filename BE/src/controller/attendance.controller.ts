@@ -26,14 +26,15 @@ export const getStudentsForCalendar = async (req: Request, res: Response) => {
 
 export const updateAttendanceStatus = async (req: Request, res: Response) => {
   try {
-    const attendanceId = req.params.attendanceId as string;
+    const { calendarId, userId } = req.params;
     const { status } = req.body as { status: string };
 
     const userRole = (req as any).user?.role;
     const teacherId = (req as any).user?.id;
 
     const updated = await AttendanceService.updateAttendance(
-      attendanceId,
+      calendarId,
+      userId,
       status,
       userRole,
       teacherId

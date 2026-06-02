@@ -13,6 +13,10 @@ export interface IQuiz extends Document {
   dueDate?: Date;
   isActive: boolean;
   createdBy: mongoose.Types.ObjectId;
+  questions: {
+    questionId: mongoose.Types.ObjectId;
+    questionOrder: number;
+  }[];
 }
 
 export interface IQuizAttempt extends Document {
@@ -40,6 +44,12 @@ const quizSchema = new Schema<IQuiz>(
     dueDate: Date,
     isActive: { type: Boolean, default: true },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    questions: [
+      {
+        questionId: { type: Schema.Types.ObjectId, ref: "Question", required: true },
+        questionOrder: { type: Number, required: true },
+      },
+    ],
   },
   { timestamps: true }
 );
