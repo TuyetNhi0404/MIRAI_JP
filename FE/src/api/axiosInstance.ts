@@ -2,7 +2,6 @@
 import axios from "axios";
 import { getStore } from "../redux/storeRef";
 import { forceLogout } from "../redux/slices/authSlice";
-import Cookies from "js-cookie";
 
 const axiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_URL 
@@ -36,11 +35,31 @@ const processQueue = (error: any = null) => {
 // Request interceptor 
 axiosInstance.interceptors.request.use(
   (config) => {
-    // ✅ Lấy token từ cookie thay vì localStorage 
-    const token = Cookies.get("accessToken");
+    // Lấy token từ Redux (để support hot-reload) hoặc localStorage
+    let token = null;
+    try {
+      token = getStore().getState().auth.accessToken;
+    } catch (e) {
+      // Bỏ qua nếu store chưa khởi tạo
+    }
+    
+    if (!token) {
+      token = localStorage.getItem("accessToken");
+    }
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // FormData must not use application/json — browser/axios needs multipart boundary
+    if (typeof FormData !== "undefined" && config.data instanceof FormData) {
+      if (config.headers && typeof config.headers.delete === "function") {
+        config.headers.delete("Content-Type");
+      } else if (config.headers) {
+        delete (config.headers as Record<string, string>)["Content-Type"];
+      }
+    }
+
     return config;
   },
   (error) => {
@@ -90,20 +109,38 @@ axiosInstance.interceptors.response.use(
 
       try {
         // ✅ Gọi API refresh token
+        const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+        let refreshTokenVal = null;
+        try {
+          refreshTokenVal = getStore().getState().auth.refreshToken;
+        } catch(e) {}
+        if (!refreshTokenVal) {
+          refreshTokenVal = localStorage.getItem("refreshToken");
+        }
+        
         const response = await axios.post(
-          `${import.meta.env.VITE_API_URL}/api/auth/refresh-token`,
-          {},
+          `${apiUrl}/api/auth/refresh-token`,
+          { refreshToken: refreshTokenVal },
           {
             withCredentials: true, // Gửi refreshToken cookie
           }
         );
 
         if (response.data?.accessToken) {
-          // ✅ Token mới đã được lưu vào cookie từ BE
+          const newToken = response.data.accessToken;
+          // ✅ Lưu token mới vào localStorage và Redux
+          localStorage.setItem("accessToken", newToken);
+          try {
+            getStore().dispatch({ type: 'auth/refreshAccessToken/fulfilled', payload: { accessToken: newToken } });
+          } catch (e) {}
+
           processQueue(null);
           isRefreshing = false;
 
-          // ✅ Retry request ban đầu với token mới
+          // ✅ Gắn token mới vào request bị lỗi
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+
+          // ✅ Retry request ban đầu
           return axiosInstance(originalRequest);
         }
       } catch (refreshError) {
@@ -131,14 +168,13 @@ axiosInstance.interceptors.response.use(
 function handleLogout() {
   console.error("❌ Session expired - Logging out");
   
-  const store = getStore();
-  
-  // Clear cookies
-  Cookies.remove("accessToken");
-  Cookies.remove("refreshToken");
-  Cookies.remove("user");
+  // Clear localStorage
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("refreshToken");
+  localStorage.removeItem("user");
   
   try {
+    const store = getStore();
     store.dispatch(forceLogout());
   } catch (e) {
     console.error("Redux dispatch error:", e);

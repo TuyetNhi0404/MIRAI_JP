@@ -97,4 +97,4 @@ cron.schedule("* * * * *", async () => {
     }
 });
 
-console.log("⏰ Deadline reminder cron job started - running every minute");
+console.log(" Deadline reminder cron job started - running every minute");

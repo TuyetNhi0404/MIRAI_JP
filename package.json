@@ -1,0 +1,15 @@
+{
+  "name": "mirai-jp",
+  "private": true,
+  "version": "1.0.0",
+  "description": "MIRAI JP — local dev orchestration",
+  "scripts": {
+    "run": "node scripts/run.mjs",
+    "dev:fe": "npm run dev --prefix FE",
+    "dev:be": "npm run dev --prefix BE",
+    "dev:speaking": "node scripts/run-speaking.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

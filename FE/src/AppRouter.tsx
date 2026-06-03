@@ -16,6 +16,8 @@ import SubmissionPage from "./pages/Student/SubmissionPage";
 import StudentQuizzesPage from "./pages/Student/StudentQuizzesPage";
 import TakeQuizPage from "./pages/Student/TakeQuizPage";
 import ViewResultPage from "./pages/Student/ViewResultPage";
+import ListeningListPage from "./features/listening/pages/ListeningListPage";
+import ListeningDetailPage from "./features/listening/pages/ListeningDetailPage";
 
 // 🌿 Admin pages
 import AccountManagement from "./pages/Admin/AccountManagement";
@@ -26,6 +28,8 @@ import EnrollmentRequestsPage from "./pages/Admin/EnrollmentRequestsPage";
 import ForumListPage from "./pages/ForumListPage";
 import RequestSchedulePage from "./pages/Admin/RequestSchedulePage";
 import BannedUsersPage from "./pages/Admin/BannedUsersPage";
+import ListeningManagePage from "./features/listening/admin/ListeningManagePage";
+import ListeningFormPage from "./features/listening/admin/ListeningFormPage";
 
 // 🌿 Teacher pages
 import AssignmentsPage from "./pages/Teacher/AssignmentsPage";
@@ -37,13 +41,15 @@ import ChapterQuestionsPage from "./pages/Teacher/ChapterQuestionsPage";
 import TeacherSubmissionsPage from "./pages/Teacher/TeacherSubmissionsPage";
 import ManageScheduleWithAttendance from "./pages/Admin/AttendanceManagement";
 import QuizzesPage from "./pages/Teacher/QuizzesPage";
-import InterviewPractice from "./components/AIAudit/interviewPractice";
 import StudentStatisticsDashboard from "./pages/Student/StudentStatistics";
 import { Leaderboard } from "./pages/Student/CourseLeaderboard";
 import AdminLeaderboard from "./pages/Admin/AdminLeaderboard";
 import KanaPracticePage from "./pages/Student/KanaPracticePage";
 import TeacherCoursesPage from "./pages/Teacher/TeacherCoursesPage";
 import TeacherCourseStudentsPage from "./pages/Teacher/TeacherCourseStudentsPage";
+import VocabularyManagement from "./pages/Admin/VocabularyManagement";
+import VocabularyPracticePage from "./pages/Student/VocabularyPracticePage";
+import SpeakingPracticePage from "./features/speaking/SpeakingPracticePage";
 
 const AppRouter = () => {
   const user = useSelector((state: RootState) => state.auth.user);
@@ -97,6 +103,10 @@ const AppRouter = () => {
           <Route path="admin/courses/:id/students" element={<EnrolledStudentsPage />} />
           <Route path="admin/request-management" element={<RequestSchedulePage />} />
           <Route path="admin/banned-users" element={<BannedUsersPage />} />
+          <Route path="admin/vocabulary" element={<VocabularyManagement />} />
+          <Route path="admin/listening" element={<ListeningManagePage />} />
+          <Route path="admin/listening/new" element={<ListeningFormPage />} />
+          <Route path="admin/listening/:id/edit" element={<ListeningFormPage />} />
 
           {/* Teacher routes */}
           <Route path="teacher" element={<TeacherDashboard />} />
@@ -108,6 +118,8 @@ const AppRouter = () => {
           <Route path="teacher/questions/:chapterId" element={<ChapterQuestionsPage />} />
           <Route path="teacher/quizzes" element={<QuizzesPage />} />
           <Route path="teacher/submissions" element={<TeacherSubmissionsPage />} />
+          <Route path="teacher/listening" element={<ListeningListPage />} />
+          <Route path="teacher/listening/:id" element={<ListeningDetailPage />} />
 
           {/* Student routes */}
           <Route path="student" element={<StudentDashboard />} />
@@ -116,10 +128,17 @@ const AppRouter = () => {
           <Route path="student/quizzes" element={<StudentQuizzesPage />} />
           <Route path="student/quiz/:quizId" element={<TakeQuizPage />} />
           <Route path="student/quiz/result/:attemptId" element={<ViewResultPage />} />
-          <Route path="student/audit-practice" element={<InterviewPractice />} />
+          <Route path="student/speaking-practice" element={<SpeakingPracticePage />} />
+          <Route
+            path="student/audit-practice"
+            element={<Navigate to="/dashboard/student/speaking-practice" replace />}
+          />
           <Route path="student/statistics" element={<StudentStatisticsDashboard />} />
           <Route path="student/leaderboard" element={<Leaderboard />} />
           <Route path="student/kana-practice" element={<KanaPracticePage />} />
+          <Route path="student/vocabulary-practice" element={<VocabularyPracticePage />} />
+          <Route path="student/listening" element={<ListeningListPage />} />
+          <Route path="student/listening/:id" element={<ListeningDetailPage />} />
           {/* Default redirect */}
           <Route index element={<Navigate to="/dashboard/student" replace />} />
         </Route>

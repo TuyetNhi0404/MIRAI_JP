@@ -50,3 +50,25 @@ lerna-debug.log*
 .settings/
 .DS_Store
 Thumbs.db
+
+listening_knowledge.html
+summary.html
+ke-hoach-tich-hop-api-listening.txt
+BE/design_system_output.md
+BE/plan.md
+FE/agent
+
+/agents
+/rules
+/docs
+log.txt
+/ui-ux-pro-max-skill
+
+# Local tooling (uv + portable Python)
+.mirai/
+
+# Python speaking service
+services/speaking-practice/venv/
+services/speaking-practice/.venv/
+services/speaking-practice/uploads/*
+!services/speaking-practice/uploads/.gitkeep

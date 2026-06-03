@@ -1,7 +1,7 @@
-// src/components/kana/KanaGrid.tsx
+
 import React from 'react';
-import type { KanaChar } from './kanaData';
-import { groupLabels } from './kanaData';
+import type { KanaChar } from '../../types/kanaData';
+import { groupLabels } from '../../types/kanaData';
 import KanaCard from './KanaCard';
 
 interface KanaGridProps {
@@ -11,14 +11,14 @@ interface KanaGridProps {
 }
 
 const KanaGrid: React.FC<KanaGridProps> = ({ chars, selectedChar, onSelect }) => {
-  // Group chars by their group property
+  
   const grouped: Record<string, KanaChar[]> = {};
   chars.forEach((c) => {
     if (!grouped[c.group]) grouped[c.group] = [];
     grouped[c.group].push(c);
   });
 
-  const groupOrder = ['vowel', 'k', 's', 't', 'n', 'h', 'm', 'y', 'r', 'w', 'special'];
+  const groupOrder = ['vowel', 'k', 's', 't', 'n', 'h', 'm', 'y', 'r', 'w', 'special', 'g', 'z', 'd', 'b', 'p', 'yoon'];
 
   return (
     <div style={{ width: '100%' }}>
@@ -58,7 +58,6 @@ const KanaGrid: React.FC<KanaGridProps> = ({ chars, selectedChar, onSelect }) =>
               }} />
             </div>
 
-            {/* Grid of kana cards */}
             <div style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))',
