@@ -2,11 +2,9 @@ import { Request, Response } from "express";
 import GrammarDocument, { GrammarDocumentScope } from "../model/grammarDocument.model";
 import GrammarChunk from "../model/grammarChunk.model";
 import GrammarCard from "../model/grammarCard.model";
-// import { CourseMember } from "../model/courseMember.model";
 import { Course } from "../model/course.model";
 import { Question } from "../model/question.model";
 import { Quiz, QuizAttempt } from "../model/quiz.model";
-// import { QuizQuestion } from "../model/quizQuestion.model";
 import { GrammarService } from "../service/grammar.service";
 import mongoose from "mongoose";
 import { saveUploadFile, deleteUploadArtifacts } from "../utils/uploadStorage";
@@ -480,23 +478,27 @@ class GrammarController {
         return res.status(401).json({ success: false, message: "Chưa xác thực người dùng." });
       }
 
-      // 1. Tìm tất cả các lớp học hoạt động mà học sinh này đang tham gia
-      const enrolledCourses = await CourseMember.find({
-        userId: new mongoose.Types.ObjectId(userId),
-        role: "student",
-        deletedAt: null
-      }).populate("courseId");
+      // 1. Tìm các khóa học mà học sinh đang tham gia (members nhúng trong Course)
+      const enrolledCourses = await Course.find({
+        members: {
+          $elemMatch: {
+            userId: new mongoose.Types.ObjectId(userId),
+            role: "student",
+            deletedAt: null,
+          },
+        },
+      }).select("name");
 
       if (enrolledCourses.length === 0) {
         return res.json({ success: true, levels: [], cards: [] });
       }
 
-      // 2. Trích xuất các levels từ các khóa học đó
+      // 2. Suy ra JLPT level từ tên khóa (vd. "Lớp N4 buổi tối")
       const levelsSet = new Set<string>();
-      enrolledCourses.forEach((member: any) => {
-        if (member.courseId && member.courseId.level) {
-          levelsSet.add(member.courseId.level);
-        }
+      const levelPattern = /\bN[1-5]\b/i;
+      enrolledCourses.forEach((course) => {
+        const match = course.name?.match(levelPattern);
+        if (match) levelsSet.add(match[0].toUpperCase());
       });
       const activeLevels = Array.from(levelsSet);
 
@@ -566,24 +568,19 @@ class GrammarController {
         createdQuestionIds.push(questionDoc._id as mongoose.Types.ObjectId);
       }
 
-      // 2. Tạo Quiz mới
+      // 2. Tạo Quiz với questions nhúng (schema quiz.model)
       const quiz = await Quiz.create({
         title,
         courseId: new mongoose.Types.ObjectId(courseId),
         totalQuestions: createdQuestionIds.length,
         durationMinutes: durationMinutes || 15,
         isActive: true,
-        createdBy: new mongoose.Types.ObjectId(userId)
+        createdBy: new mongoose.Types.ObjectId(userId),
+        questions: createdQuestionIds.map((questionId, index) => ({
+          questionId,
+          questionOrder: index + 1,
+        })),
       });
-
-      // 3. Tạo ánh xạ câu hỏi vào Quiz qua QuizQuestion map
-      for (let index = 0; index < createdQuestionIds.length; index++) {
-        await QuizQuestion.create({
-          quizId: quiz._id,
-          questionId: createdQuestionIds[index],
-          questionOrder: index + 1
-        });
-      }
 
       res.status(201).json({
         success: true,
