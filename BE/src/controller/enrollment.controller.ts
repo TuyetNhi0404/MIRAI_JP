@@ -1,38 +1,18 @@
 import { Request, Response } from "express";
 import Enrollment from "../model/enrollment.model";
 import { Course } from "../model/course.model";
-import { extractTextFromFile } from "../service/file.service";
-import { extractInfoFromCV } from "../service/ai.service";
-import { CVInfo } from "../types/cv.types.js";
-import { uploadToCloudinary } from "../service/cloundinary.service";
 import { User } from "../model/user.model";
 import { CourseService } from "../service/course.service";
 import NotificationService from "../service/notification.service";
 import { sendApprovalEmail, sendRejectionEmail } from "../service/email.service";
 import { FinalScore, ScoreComponent } from "../model/score.model";
 
-export const uploadCV = async (req: Request, res: Response) => {
-  try {
-    const file = req.file;
-    if (!file) return res.status(400).json({ error: "No file uploaded" });
-
-    const text = await extractTextFromFile(file);
-    const info: CVInfo = await extractInfoFromCV(text);
-
-    res.json({ success: true, data: info });
-  } catch (error: any) {
-    console.error("Error:", error);
-    res.status(500).json({ error: error.message });
-  }
-};
-
 // 🎯 Student đăng ký khóa học
 export const enrollCourse = async (req: Request, res: Response) => {
   try {
-    const { courseId, cvInfo } = req.body;
-    const file = req.file;
+    const { courseId, studentName, studentEmail } = req.body;
 
-    if (!courseId || !cvInfo) {
+    if (!courseId || !studentName || !studentEmail) {
       return res.status(400).json({ message: "Missing necessary information." });
     }
 
@@ -41,54 +21,28 @@ export const enrollCourse = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Course not found." });
     }
 
-    let parsedCV;
-    try {
-      parsedCV = typeof cvInfo === "string" ? JSON.parse(cvInfo) : cvInfo;
-    } catch {
-      return res.status(400).json({ message: "Invalid cvInfo." });
-    }
-
-    const { name, email } = parsedCV;
-    if (!name || !email) {
-      return res.status(400).json({ message: "CV must have name and email." });
-    }
-
-    const enrollmentExisted = await Enrollment.findOne({ studentEmail: email});
+    const enrollmentExisted = await Enrollment.findOne({ studentEmail });
     if (enrollmentExisted) {
       return res.status(400).json({ message: "You cannot register twice." });
     }
 
-    const accountExisted = await User.findOne({ email });
+    const accountExisted = await User.findOne({ email: studentEmail });
     if (accountExisted) {
       return res.status(400).json({ message: "Email đã được sử dụng để tạo tài khoản." });
     }
 
-    let fileUrl = "";
-    if (file) {
-      const urls = await uploadToCloudinary(file);
-      fileUrl = urls[0] as string;
-    }
-
     const enrollment = await Enrollment.create({
-      studentName: name,
-      studentEmail: email,
+      studentName,
+      studentEmail,
       courseId,
-      cvBirthday: parsedCV.birthday,
-      cvPhone: parsedCV.phone,
-      cvEducation: parsedCV.education,
-      cvExperience: parsedCV.experience,
-      cvSkills: parsedCV.skills,
-      cvCertifications: parsedCV.certifications,
-      cvProjects: parsedCV.projects,
-      cvFileUrl: fileUrl,
       status: "pending",
     });
 
     // Notify all admins about new enrollment request
     try {
       await NotificationService.notifyEnrollmentRequest({
-        studentName: name,
-        studentEmail: email,
+        studentName,
+        studentEmail,
         courseName: course.name,
         enrollmentId: (enrollment._id as any).toString(),
       });

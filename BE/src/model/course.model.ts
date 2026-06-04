@@ -2,6 +2,8 @@ import mongoose, { Document, Schema } from "mongoose";
 
 export type CourseStatus = "not_yet" | "in_progress" | "complete";
 
+export type JLPTLevel = "N5" | "N4" | "N3" | "N2" | "N1";
+
 export interface ICourse extends Document {
   name: string;
   description?: string;

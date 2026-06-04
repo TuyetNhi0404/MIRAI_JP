@@ -2,47 +2,16 @@
 import axiosInstance from "../api/axiosInstance";
 import type {
   EnrollmentRequest,
-  CVUploadAPIResponse,
   EnrollmentAPIResponse,
-  EnrollmentsListAPIResponse
+  EnrollmentsListAPIResponse,
 } from "../types/enrollment.types";
 
 export const enrollmentService = {
-  // Upload CV và trích xuất thông tin
-  async uploadCV(file: File): Promise<CVUploadAPIResponse> {
-    const formData = new FormData();
-    formData.append("file", file);
-
-    const response = await axiosInstance.post<CVUploadAPIResponse>(
-      "/enrollments/upload-cv",
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }
-    );
-    return response.data;
-  },
-
   // Đăng ký khóa học
   async enrollCourse(data: EnrollmentRequest): Promise<EnrollmentAPIResponse> {
-    const formData = new FormData();
-    formData.append("courseId", data.courseId);
-    formData.append("cvInfo", JSON.stringify(data.cvInfo));
-
-    if (data.file) {
-      formData.append("file", data.file);
-    }
-
     const response = await axiosInstance.post<EnrollmentAPIResponse>(
       "/enrollments",
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }
+      data
     );
     return response.data;
   },

@@ -1,7 +1,7 @@
 // src/layouts/TeacherSidebar.tsx
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import {Home, School, CalendarClock, CircleHelp, NotebookText, FileQuestion, Headphones} from "lucide-react";
+import {Home, School, CalendarClock, CircleHelp, NotebookText, FileQuestion, Headphones, BookOpen} from "lucide-react";
 import { Drawer, List, ListItemButton, ListItemIcon,ListItemText, Typography, Box, useMediaQuery,} from "@mui/material";
 
 interface MenuItem {
@@ -27,6 +27,8 @@ const TeacherSidebar: React.FC<SidebarProps> = ({ isOpen }) => {
     { id: "assignments", label: "Assignments", icon: NotebookText, path: "/dashboard/teacher/assignments" },
     { id: "questions", label: "Questions", icon: FileQuestion, path: "/dashboard/teacher/questions" },
     { id: "quizzes", label: "Quizzes", icon: CircleHelp, path: "/dashboard/teacher/quizzes" },
+    { id: "grammar-mcq", label: "Tạo Quiz Ngữ pháp", icon: FileQuestion, path: "/dashboard/teacher/grammar" },
+    { id: "grammar-materials", label: "Tài liệu Ngữ pháp", icon: BookOpen, path: "/dashboard/teacher/grammar-materials" },
     { id: "listening", label: "Listening", icon: Headphones, path: "/dashboard/teacher/listening" },
   ];
 

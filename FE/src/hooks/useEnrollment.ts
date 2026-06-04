@@ -2,43 +2,23 @@
 import { useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "./hooks";
 import {
-  uploadCV,
   enrollCourse,
   fetchEnrollments,
   approveEnrollment,
   rejectEnrollment,
-  clearUploadedCV,
   clearError,
 } from "../redux/slices/enrollmentSlice";
-import type { CVInfo } from "../types/enrollment.types";
+import type { EnrollmentRequest } from "../types/enrollment.types";
 
 export const useEnrollment = () => {
   const dispatch = useAppDispatch();
-  const {
-    enrollments,
-    loading,
-    error,
-    uploadedCV,
-    uploadLoading
-  } = useAppSelector((state) => state.enrollment);
-
-  // Upload CV và quét bằng AI
-  const handleUploadCV = useCallback(
-    async (file: File) => {
-      try {
-        const result = await dispatch(uploadCV(file)).unwrap();
-        return { success: true, data: result };
-      } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : "Upload failed";
-        return { success: false, error: errorMessage };
-      }
-    },
-    [dispatch]
+  const { enrollments, loading, error } = useAppSelector(
+    (state) => state.enrollment
   );
 
   // Đăng ký khóa học
   const handleEnrollCourse = useCallback(
-    async (data: { courseId: string; cvInfo: CVInfo; file?: File }) => {
+    async (data: EnrollmentRequest) => {
       try {
         const result = await dispatch(enrollCourse(data)).unwrap();
         return { success: true, data: result };
@@ -92,11 +72,6 @@ export const useEnrollment = () => {
     [dispatch]
   );
 
-  // Clear uploaded CV data
-  const handleClearUploadedCV = useCallback(() => {
-    dispatch(clearUploadedCV());
-  }, [dispatch]);
-
   // Clear error message
   const handleClearError = useCallback(() => {
     dispatch(clearError());
@@ -107,16 +82,12 @@ export const useEnrollment = () => {
     enrollments,
     loading,
     error,
-    uploadedCV,
-    uploadLoading,
 
     // Actions
-    uploadCV: handleUploadCV,
     enrollCourse: handleEnrollCourse,
     fetchEnrollments: handleFetchEnrollments,
     approveEnrollment: handleApproveEnrollment,
     rejectEnrollment: handleRejectEnrollment,
-    clearUploadedCV: handleClearUploadedCV,
     clearError: handleClearError,
   };
 };
