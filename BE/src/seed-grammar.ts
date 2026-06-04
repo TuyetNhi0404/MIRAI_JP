@@ -8,7 +8,6 @@ dotenv.config();
 
 import { User } from "./model/user.model";
 import { Course } from "./model/course.model";
-import { CourseMember } from "./model/courseMember.model";
 import GrammarCard from "./model/grammarCard.model";
 
 const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://tuyetnhi:QZVbuSpxZgUj7pPa@cluster0.ooawiph.mongodb.net/?appName=Cluster0";
@@ -86,7 +85,7 @@ async function main() {
   console.log("Student account:", student.email, student._id);
 
   // 4. Check or Create N5 Course
-  let course: any = await Course.findOne({ level: "N5" });
+  let course: any = await Course.findOne({ name: /N5/i });
   if (!course) {
     console.log("Creating N5 Course...");
     course = await Course.create({
@@ -100,8 +99,11 @@ async function main() {
       homeroomTeacher: teacher.name,
       capacity: 30,
       session: 24,
-      enrolledCount: 1,
-      level: "N5"
+      enrolledCount: 2,
+      members: [
+        { userId: student._id, role: "student", enrolledAt: new Date(), deletedAt: null, deletedBy: null },
+        { userId: teacher._id, role: "teacher", enrolledAt: new Date(), deletedAt: null, deletedBy: null },
+      ],
     });
   } else {
     console.log("Updating N5 Course...");
@@ -111,42 +113,34 @@ async function main() {
   }
   console.log("N5 Course:", course.name, "ID:", course._id);
 
-  // 5. Enroll Student and Teacher in Course
-  let studentEnrollment = await CourseMember.findOne({
-    userId: student._id,
-    courseId: course._id,
-    role: "student"
-  });
+  // 5. Enroll Student and Teacher in Course (embedded members)
+  const ensureMember = (userId: mongoose.Types.ObjectId, role: "student" | "teacher") => {
+    const members = course.members ?? [];
+    const existing = members.find(
+      (m: { userId: mongoose.Types.ObjectId; role: string }) =>
+        String(m.userId) === String(userId) && m.role === role
+    );
+    if (existing) {
+      existing.deletedAt = null;
+      existing.deletedBy = null;
+    } else {
+      members.push({
+        userId,
+        role,
+        enrolledAt: new Date(),
+        deletedAt: null,
+        deletedBy: null,
+      });
+    }
+    course.members = members;
+    course.enrolledCount = members.filter(
+      (m: { role: string; deletedAt?: Date | null }) => m.role === "student" && !m.deletedAt
+    ).length;
+  };
 
-  if (!studentEnrollment) {
-    console.log("Enrolling student into N5 Course...");
-    studentEnrollment = await CourseMember.create({
-      userId: student._id,
-      courseId: course._id,
-      role: "student"
-    });
-  } else {
-    studentEnrollment.deletedAt = null;
-    await studentEnrollment.save();
-  }
-
-  let teacherEnrollment = await CourseMember.findOne({
-    userId: teacher._id,
-    courseId: course._id,
-    role: "teacher"
-  });
-
-  if (!teacherEnrollment) {
-    console.log("Enrolling teacher into N5 Course...");
-    teacherEnrollment = await CourseMember.create({
-      userId: teacher._id,
-      courseId: course._id,
-      role: "teacher"
-    });
-  } else {
-    teacherEnrollment.deletedAt = null;
-    await teacherEnrollment.save();
-  }
+  ensureMember(student._id, "student");
+  ensureMember(teacher._id, "teacher");
+  await course.save();
   console.log("Enrollments updated.");
 
   // 6. Delete old mock GrammarCards and insert new ones
