@@ -1,9 +1,9 @@
 import { Quiz, QuizAttempt, IQuiz } from "../model/quiz.model";
 import mongoose, { FilterQuery } from "mongoose";
 import { Question } from "../model/question.model";
-import { QuizQuestion } from "../model/quizQuestion.model";
+
 import { UserAnswer } from "../model/userAnswer.model";
-import { CourseMember } from "../model/courseMember.model";
+import { Course } from "../model/course.model";
 import { StatisticsService } from "./statistics.service";
 
 class QuizService {
@@ -26,12 +26,13 @@ class QuizService {
       ? courseIdValue
       : new mongoose.Types.ObjectId(courseIdValue);
 
-    const courseMember = await CourseMember.findOne({
-      userId: new mongoose.Types.ObjectId(studentId),
-      courseId: courseObjectId,
-      role: "student",
-      deletedAt: null,
-    });
+    const course = await Course.findById(courseObjectId).select("members").lean();
+    if (!course) {
+      throw new Error("Course not found.");
+    }
+    const courseMember = course.members?.find(
+      (m) => m.userId.toString() === studentId.toString() && m.role === "student" && !m.deletedAt
+    );
 
     if (!courseMember) {
       throw new Error("You are not enrolled in this course. Please register for the course before attempting the quiz.");
@@ -40,51 +41,47 @@ class QuizService {
 
   // Helper method: Lấy studentId từ userId và courseId trong bảng CourseMember
   async getStudentIdByUserId(userId: string, courseId: string): Promise<mongoose.Types.ObjectId | null> {
-    const courseMember = await CourseMember.findOne({
-      userId: new mongoose.Types.ObjectId(userId),
-      courseId: new mongoose.Types.ObjectId(courseId),
-      role: "student",
-      deletedAt: null,
-    }).select("userId");
+    const course = await Course.findById(courseId).select("members").lean();
+    if (!course) return null;
+    const courseMember = course.members?.find(
+      (m) => m.userId.toString() === userId.toString() && m.role === "student" && !m.deletedAt
+    );
 
-    return courseMember ? (courseMember.userId as mongoose.Types.ObjectId) : null;
+    return courseMember ? (courseMember.userId as unknown as mongoose.Types.ObjectId) : null;
   }
 
   // Helper method: Lấy danh sách studentIds (userIds) từ một course
   async getStudentIdsByCourse(courseId: string): Promise<mongoose.Types.ObjectId[]> {
-    const courseMembers = await CourseMember.find({
-      courseId: new mongoose.Types.ObjectId(courseId),
-      role: "student",
-      deletedAt: null,
-    }).select("userId");
-
-    return courseMembers.map((cm) => cm.userId as mongoose.Types.ObjectId);
+    const course = await Course.findById(courseId).select("members").lean();
+    if (!course) return [];
+    
+    return (course.members || [])
+      .filter(m => m.role === "student" && !m.deletedAt)
+      .map(m => m.userId as unknown as mongoose.Types.ObjectId);
   }
 
   // Helper method: Lấy danh sách courseIds mà user tham gia với vai trò student
   async getCourseIdsByStudentId(userId: string): Promise<mongoose.Types.ObjectId[]> {
-    const courseMembers = await CourseMember.find({
-      userId: new mongoose.Types.ObjectId(userId),
-      role: "student",
-      deletedAt: null,
-    }).select("courseId");
-
-    return courseMembers.map((cm) => cm.courseId as mongoose.Types.ObjectId);
+    const courses = await Course.find({ "members.userId": new mongoose.Types.ObjectId(userId), "members.role": "student", "members.deletedAt": null }).select("_id").lean();
+    return courses.map((c) => c._id as mongoose.Types.ObjectId);
   }
 
   // Helper method: Lấy CourseMember record dựa vào userId (để lấy studentId)
-  async getStudentMemberByUserId(userId: string, courseId?: string) {
-    const filter: any = {
-      userId: new mongoose.Types.ObjectId(userId),
-      role: "student",
-      deletedAt: null,
-    };
-
+  async getCourseMembersByUserId(userId: string, courseId?: string) {
     if (courseId) {
-      filter.courseId = new mongoose.Types.ObjectId(courseId);
+      const course = await Course.findById(courseId).select("members").lean();
+      if (!course) return [];
+      return (course.members || []).filter(
+        (m) => m.userId.toString() === userId.toString() && m.role === "student" && !m.deletedAt
+      );
     }
-
-    return CourseMember.find(filter);
+    const courses = await Course.find({ "members.userId": new mongoose.Types.ObjectId(userId), "members.role": "student", "members.deletedAt": null }).select("members").lean();
+    const members: any[] = [];
+    courses.forEach(c => {
+      const m = c.members?.find(mem => mem.userId.toString() === userId.toString() && mem.role === "student" && !mem.deletedAt);
+      if (m) members.push({ ...m, courseId: c._id });
+    });
+    return members;
   }
 
   // Tạo quiz mới từ ngân hàng câu hỏi theo chapter
@@ -144,18 +141,11 @@ class QuizService {
       durationMinutes: quizData.durationMinutes,
       dueDate: quizData.dueDate,
       createdBy: new mongoose.Types.ObjectId(createdBy),
-      isActive: true,
+      questions: selected.map((q, idx) => ({
+        questionId: q._id,
+        questionOrder: idx + 1,
+      })),
     }).save();
-
-    await Promise.all(
-      selected.map((q, idx) =>
-        new QuizQuestion({
-          quizId: quiz._id,
-          questionId: q._id,
-          questionOrder: idx + 1,
-        }).save()
-      )
-    );
 
     return quiz;
   }
@@ -188,17 +178,17 @@ class QuizService {
   // Lấy danh sách quiz của các course mà student đã tham gia
   async getQuizzesForStudent(studentId: string) {
     // Lấy danh sách course mà student đã tham gia
-    const courseMembers = await CourseMember.find({
-      userId: new mongoose.Types.ObjectId(studentId),
-      role: "student",
-      deletedAt: null,
-    });
+    const courses = await Course.find({
+      "members.userId": new mongoose.Types.ObjectId(studentId),
+      "members.role": "student",
+      "members.deletedAt": null,
+    }).select("_id").lean();
 
-    if (courseMembers.length === 0) {
+    if (courses.length === 0) {
       return [];
     }
 
-    const courseIds = courseMembers.map((cm) => cm.courseId);
+    const courseIds = courses.map((c) => c._id);
 
     await this.deactivateExpiredQuizzes({ courseId: { $in: courseIds } });
 
@@ -280,12 +270,14 @@ class QuizService {
       throw new Error("Quiz does not exist");
     }
 
-    const mappings = await QuizQuestion.find({ quizId: quiz._id })
-      .sort({ questionOrder: 1 })
-      .populate("questionId");
+    const mappings = (quiz.questions || []).sort((a, b) => a.questionOrder - b.questionOrder);
+    const questionIds = mappings.map((m) => m.questionId);
+    const populatedQuestions = await Question.find({ _id: { $in: questionIds } }).lean();
+    const qMap = new Map(populatedQuestions.map(q => [q._id.toString(), q]));
 
     const questions = mappings.map((mapping) => {
-      const question = mapping.questionId as any;
+      const question = qMap.get(mapping.questionId.toString()) as any;
+      if (!question) return null;
       const base = {
         questionId: question._id,
         chapterId: question.chapterId,
@@ -296,7 +288,7 @@ class QuizService {
       return includeCorrectAnswers
         ? { ...base, correctAnswer: question.correctAnswer }
         : base;
-    });
+    }).filter(Boolean);
 
     return {
       quiz: {
@@ -344,7 +336,7 @@ class QuizService {
       throw new Error("You have already taken this quiz. Each student is allowed to take the quiz only once.");
     }
 
-    const mappings = await QuizQuestion.find({ quizId: quiz._id }).sort({ questionOrder: 1 });
+    const mappings = (quiz.questions || []).sort((a, b) => a.questionOrder - b.questionOrder);
     const questionIds = mappings.map((m) => m.questionId);
     const questions = await Question.find({ _id: { $in: questionIds } });
 
@@ -388,7 +380,7 @@ class QuizService {
       throw new Error("You have already submitted this quiz. Each student is allowed to submit the quiz only once.");
     }
 
-    const mappings = await QuizQuestion.find({ quizId: quiz._id }).sort({ questionOrder: 1 });
+    const mappings = (quiz.questions || []).sort((a, b) => a.questionOrder - b.questionOrder);
     const questionIds = mappings.map((m) => m.questionId);
     const questions = await Question.find({ _id: { $in: questionIds } });
     const questionMap = new Map(
@@ -500,7 +492,9 @@ class QuizService {
         await this.checkStudentInCourse(studentId, quizDoc.courseId);
       }
     }
-    const mappings = await QuizQuestion.find({ quizId: quiz._id }).sort({ questionOrder: 1 });
+    const quizDocForQuestions = await Quiz.findById(quiz._id).lean();
+    if (!quizDocForQuestions) throw new Error("Quiz not found");
+    const mappings = (quizDocForQuestions.questions || []).sort((a, b) => a.questionOrder - b.questionOrder);
     const questionIds = mappings.map((m) => m.questionId);
     const questions = await Question.find({ _id: { $in: questionIds } });
     const qMap = new Map(

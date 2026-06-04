@@ -16,7 +16,13 @@ export interface ICourse extends Document {
   session: number;
   capacity: number;
   enrolledCount: number;
-  level: JLPTLevel;
+  members: {
+    userId: Schema.Types.ObjectId;
+    role: "student" | "teacher";
+    enrolledAt: Date;
+    deletedAt?: Date | null;
+    deletedBy?: string | null;
+  }[];
 }
 
 const courseSchema = new Schema<ICourse>(
@@ -39,12 +45,15 @@ const courseSchema = new Schema<ICourse>(
     capacity: { type: Number, default: 0, min: 0, required: true },
     session: { type: Number, default: 0, min: 0, required: true },
     enrolledCount: { type: Number, default: 0, min: 0, required: true },
-    level: {
-      type: String,
-      enum: ["N5", "N4", "N3", "N2", "N1"],
-      required: true,
-      default: "N5"
-    }
+    members: [
+      {
+        userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+        role: { type: String, enum: ["student", "teacher"], required: true },
+        enrolledAt: { type: Date, default: Date.now },
+        deletedAt: { type: Date, default: null },
+        deletedBy: { type: String, default: null },
+      }
+    ],
   },
   { timestamps: true }
 );

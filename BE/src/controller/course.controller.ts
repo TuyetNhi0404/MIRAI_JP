@@ -1,11 +1,12 @@
 import { Request, Response } from "express";
 import { Course } from "../model/course.model";
 import { User } from "../model/user.model";
-import { CourseMember } from "../model/courseMember.model";
-import mongoose from "mongoose";
-import { CourseCalendar } from "../model/calendar.model";
 import { Session } from "../model/session.model";
 import Enrollment from "../model/enrollment.model";
+import { CourseService } from "../service/course.service";
+import mongoose from "mongoose";
+import { CourseCalendar } from "../model/calendar.model";
+
 // TẠO KHÓA HỌC (Teacher/Admin)
 
 async function updateCourseStatus(courseId: string) {
@@ -133,15 +134,10 @@ export async function createCourse(req: Request, res: Response) {
     }
 
     const course = await Course.create(payload);
-    const enrolledCount = await CourseMember.countDocuments({
-      courseId: course._id,
-      role: "student",
-      deletedAt: null,
-    });
 
     return res.status(201).json({
       message: "Course created successfully",
-      data: { ...course.toObject(), enrolledCount },
+      data: course,
     });
   } catch (err: any) {
     console.error("Create course error:", err);
@@ -188,18 +184,7 @@ export async function listCourses(_req: Request, res: Response) {
       .select(projection)
       .sort({ createdAt: -1 });
 
-    const items = await Promise.all(
-      updatedCourses.map(async (course) => {
-        const enrolledCount = await CourseMember.countDocuments({
-          courseId: course._id,
-          role: "student",
-          deletedAt: null,
-        });
-        return { ...course.toObject(), enrolledCount };
-      })
-    );
-
-    return res.json({ data: items, total: items.length });
+    return res.json({ data: updatedCourses, total: updatedCourses.length });
   } catch (err: any) {
     console.error("List courses error:", err);
     return res.status(500).json({
@@ -244,18 +229,7 @@ export async function listAvailableCourses(req: Request, res: Response) {
 
     const total = await Course.countDocuments(filter);
 
-    const items = await Promise.all(
-      courses.map(async (course) => {
-        const enrolledCount = await CourseMember.countDocuments({
-          courseId: course._id,
-          role: "student",
-          deletedAt: null,
-        });
-        return { ...course.toObject(), enrolledCount };
-      })
-    );
-
-    const availableItems = items.filter((course) => course.enrolledCount < course.capacity);
+    const availableItems = courses.filter((course) => course.enrolledCount < course.capacity);
 
     return res.json({
       data: availableItems,
@@ -298,14 +272,7 @@ export async function getCourse(req: Request, res: Response) {
       });
     }
 
-    const enrolledCount = await CourseMember.countDocuments({
-      courseId: updatedCourse._id,
-      role: "student",
-      deletedAt: null,
-    });
-
-    const courseWithCount = { ...updatedCourse.toObject(), enrolledCount };
-    return res.json({ data: courseWithCount });
+    return res.json({ data: updatedCourse });
   } catch (err: any) {
     console.error("Get course error:", err);
     return res.status(500).json({
@@ -383,16 +350,10 @@ export async function updateCourse(req: Request, res: Response) {
         });
       }
 
-      const enrolledCount = await CourseMember.countDocuments({
-        courseId: id,
-        role: "student",
-        deletedAt: null,
-      });
-
-      if (payload.capacity < enrolledCount) {
+      if (payload.capacity < courseCheck.enrolledCount) {
         return res.status(400).json({
           error: "Invalid capacity",
-          message: `Capacity must be >= ${enrolledCount} (current enrolled students)`,
+          message: `Capacity must be >= ${courseCheck.enrolledCount} (current enrolled students)`,
         });
       }
     }
@@ -449,15 +410,9 @@ export async function updateCourse(req: Request, res: Response) {
       });
     }
 
-    const enrolledCount = await CourseMember.countDocuments({
-      courseId: course._id,
-      role: "student",
-      deletedAt: null,
-    });
-
     return res.json({
       message: "Course updated successfully",
-      data: { ...course.toObject(), enrolledCount },
+      data: course,
     });
   } catch (error: any) {
     console.error("Update course error:", error);
@@ -482,20 +437,15 @@ export async function getStudentCourse(req: Request, res: Response) {
     }
 
     // Check enrollment
-    const membership = await CourseMember.findOne({
-      userId: new mongoose.Types.ObjectId(studentId),
-      courseId: new mongoose.Types.ObjectId(courseId),
-      role: "student",
-      deletedAt: null,
-    });
+    const courseCheck = await Course.findById(courseId);
+    if (!courseCheck) {
+      return res.status(404).json({ error: "Not found", message: "Course not found" });
+    }
+    
+    const membership = courseCheck.members?.find((m: any) => m.userId.toString() === studentId && m.role === "student" && !m.deletedAt);
 
     if (!membership) {
       return res.status(403).json({ error: "forbidden", message: "You are not enrolled in this course." });
-    }
-
-    const course = await Course.findById(courseId);
-    if (!course) {
-      return res.status(404).json({ error: "Not found", message: "Course not found" });
     }
 
     // Ensure status up-to-date
@@ -505,13 +455,7 @@ export async function getStudentCourse(req: Request, res: Response) {
     if (!updatedCourse) {
       return res.status(404).json({ error: "Not found", message: "Course not found" });
     }
-    const enrolledCount = await CourseMember.countDocuments({
-      courseId: updatedCourse._id,
-      role: "student",
-      deletedAt: null,
-    });
-
-    return res.status(200).json({ data: { ...updatedCourse.toObject(), enrolledCount } });
+    return res.status(200).json({ data: updatedCourse });
   } catch (err: any) {
     console.error("Get student course error:", err);
     return res.status(500).json({ error: "Server error", details: err.message });
@@ -542,21 +486,13 @@ export async function deleteCourse(req: Request, res: Response) {
       });
     }
 
-    const courseMembers = await CourseMember.find({ courseId });
-    const userIds = courseMembers.map(member => member.userId);
-
     // Xóa enrollment requests liên quan đến course này
     await Enrollment.deleteMany({ courseId });
     await Course.findByIdAndDelete(courseId);
-    await CourseMember.deleteMany({ courseId });
 
-    if (userIds.length > 0) {
-      await User.deleteMany({ _id: { $in: userIds } });
-    }
-
-    return res.json({
+    return res.status(200).json({
       message: "Course deleted successfully",
-      details: `Deleted ${courseMembers.length} members, their accounts, and enrollment requests`
+      details: `Deleted course, members' accounts, and enrollment requests`
     });
   } catch (err: any) {
     console.error("Delete course error:", err);
@@ -576,13 +512,8 @@ export async function listStudentCourses(req: Request, res: Response) {
 
     const objectStudentId = new mongoose.Types.ObjectId(studentId);
 
-    const memberships = await CourseMember.find({
-      userId: objectStudentId,
-      role: "student",
-      deletedAt: null,
-    }).select("courseId");
-
-    const courseIds = memberships.map((m) => m.courseId);
+    const coursesAll = await Course.find({ "members.userId": objectStudentId, "members.role": "student", "members.deletedAt": null }).select("_id");
+    const courseIds = coursesAll.map((c) => c._id);
 
     if (courseIds.length === 0) {
       return res.status(200).json({
@@ -608,20 +539,9 @@ export async function listStudentCourses(req: Request, res: Response) {
       .select(projection)
       .sort({ startDate: 1 });
 
-    const items = await Promise.all(
-      updatedCourses.map(async (course) => {
-        const enrolledCount = await CourseMember.countDocuments({
-          courseId: course._id,
-          role: "student",
-          deletedAt: null,
-        });
-        return { ...course.toObject(), enrolledCount };
-      })
-    );
-
     return res.status(200).json({
-      data: items,
-      total: items.length,
+      data: updatedCourses,
+      total: updatedCourses.length,
     });
   } catch (err: any) {
     console.error("List student courses error:", err);
@@ -662,20 +582,9 @@ export async function listTeacherCourses(req: Request, res: Response) {
       .select(projection)
       .sort({ createdAt: -1 });
 
-    const items = await Promise.all(
-      updatedCourses.map(async (course) => {
-        const enrolledCount = await CourseMember.countDocuments({
-          courseId: course._id,
-          role: "student",
-          deletedAt: null,
-        });
-        return { ...course.toObject(), enrolledCount };
-      })
-    );
-
     return res.status(200).json({
-      data: items,
-      total: items.length,
+      data: updatedCourses,
+      total: updatedCourses.length,
     });
   } catch (err: any) {
     console.error("List teacher courses error:", err);
@@ -722,16 +631,12 @@ export async function getClassMembers(req: Request, res: Response) {
     }
 
     // Lấy danh sách sinh viên trong lớp
-    const members = await CourseMember.find({
-      courseId: new mongoose.Types.ObjectId(courseId),
-      role: "student",
-      deletedAt: null,
-    }).select("userId");
-
-    const userIds = members.map((m) => m.userId);
+    const studentsArr = course.members
+      .filter((m) => m.role === "student" && !m.deletedAt)
+      .map((m) => m.userId);
 
     const students = await User.find({
-      _id: { $in: userIds },
+      _id: { $in: studentsArr },
     }).select("_id name email role createdAt");
 
     return res.status(200).json({
@@ -753,3 +658,113 @@ export async function getClassMembers(req: Request, res: Response) {
     });
   }
 }
+
+// MEMBER ENDPOINTS
+
+export const getCourseStudents = async (req: Request, res: Response) => {
+  try {
+    const { courseId } = req.params;
+    if (!courseId) return res.status(400).json({ message: "Missing courseId." });
+    const students = await CourseService.getStudentsByCourse(courseId);
+    return res.status(200).json(students);
+  } catch (error) {
+    return res.status(500).json({ message: "Error retrieving student list.", error });
+  }
+};
+
+export const getCourseTeachers = async (req: Request, res: Response) => {
+  try {
+    const { courseId } = req.params;
+    if (!courseId) return res.status(400).json({ message: "Missing courseId." });
+    const teachers = await CourseService.getTeachersByCourse(courseId);
+    return res.status(200).json(teachers);
+  } catch (error) {
+    return res.status(500).json({ message: "Error retrieving teacher list.", error });
+  }
+};
+
+export const addCourseMember = async (req: Request, res: Response) => {
+  try {
+    const { courseId, userId, role } = req.body;
+    const member = await CourseService.addMember(courseId, userId, role);
+    res.status(201).json(member);
+  } catch (error) {
+    res.status(500).json({ message: "Error while add member.", error });
+  }
+};
+
+export const deleteCourseMember = async (req: Request, res: Response) => {
+  try {
+    const { courseId, memberId } = req.params;
+    const deletedById = req.id;
+    if (!deletedById) return res.status(401).json({ message: "Please log in." });
+
+    const course = await Course.findById(courseId);
+    if (!course) return res.status(404).json({ message: "Course not found." });
+
+    const user = await User.findById(memberId);
+    if (!user) return res.status(404).json({ message: "User not found." });
+
+    if (user.role === "student") {
+      const emailFilter = user.email || null;
+      const deleteFilter: any = {
+        $or: [{ userId: memberId }, { studentId: memberId }],
+      };
+      if (emailFilter) deleteFilter.$or.push({ studentEmail: emailFilter });
+      await Enrollment.deleteMany(deleteFilter);
+
+      if (course.status === "not_yet") {
+        await User.findByIdAndDelete(memberId);
+      }
+    } else if (course.status === "in_progress") {
+      await User.findByIdAndUpdate(memberId, { status: "locked" });
+    } else if (course.status === "complete") {
+      return res.status(400).json({ message: "Cannot remove member from completed course." });
+    }
+
+    const result = await CourseService.deleteCourseMember(courseId, memberId, deletedById);
+    return res.status(200).json({
+      message: "Member removed successfully.",
+      data: result,
+      userAction: course.status === "not_yet" ? "deleted" : "locked"
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Error removing member.", error });
+  }
+};
+
+export const getDeletedCourseStudents = async (req: Request, res: Response) => {
+  try {
+    const { courseId } = req.params;
+    if (!courseId) return res.status(400).json({ message: "Missing courseId." });
+    const deletedStudents = await CourseService.getDeletedStudentsByCourse(courseId);
+    return res.status(200).json(deletedStudents);
+  } catch (error) {
+    return res.status(500).json({ message: "Error retrieving deleted students list.", error });
+  }
+};
+
+export const transferStudent = async (req: Request, res: Response) => {
+  try {
+    const { fromCourseId, toCourseId } = req.body;
+    const { studentId } = req.params;
+    const transferredBy = req.id;
+    
+    if (!studentId || !fromCourseId || !toCourseId) {
+      return res.status(400).json({ message: "Missing parameters." });
+    }
+    if (!transferredBy) return res.status(401).json({ message: "Please log in." });
+    if (fromCourseId === toCourseId) return res.status(400).json({ message: "Same course." });
+
+    const fromCourse = await Course.findById(fromCourseId);
+    if (!fromCourse || fromCourse.status !== "not_yet") return res.status(400).json({ message: "Invalid source course." });
+
+    const toCourse = await Course.findById(toCourseId);
+    if (!toCourse || toCourse.status !== "not_yet") return res.status(400).json({ message: "Invalid destination course." });
+
+    const result = await CourseService.transferStudent(studentId, fromCourseId, toCourseId, transferredBy);
+    return res.status(200).json({ message: "Student transferred successfully.", data: result });
+  } catch (error) {
+    return res.status(500).json({ message: "An error occurred while transferring the student.", error });
+  }
+};

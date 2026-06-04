@@ -61,8 +61,8 @@ export const attendanceService = {
     attendanceServiceAPI.get<GetStudentsResponse>(`/attendances/${calendarId}/students`),
 
   // Update attendance status
-  updateAttendanceStatus: (attendanceId: string, data: UpdateAttendancePayload) => 
-    attendanceServiceAPI.put<UpdateAttendanceResponse>(`/attendances/${attendanceId}`, data),
+  updateAttendanceStatus: (calendarId: string, userId: string, data: UpdateAttendancePayload) => 
+    attendanceServiceAPI.put<UpdateAttendanceResponse>(`/attendances/calendar/${calendarId}/user/${userId}`, data),
 
   // Get student's attendance history
   getStudentAttendance: (studentId: string) => 

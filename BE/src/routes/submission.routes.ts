@@ -1,6 +1,15 @@
 import express from "express";
 import multer from "multer";
-import { submitAssignment, getMySubmission, gradeSubmission, getSubmissionsInCourseController, getAllSubmissionsOfAssignment, updateSubmission } from "../controller/submission.controller";
+import { 
+  submitAssignment, 
+  getMySubmission, 
+  gradeSubmission, 
+  getSubmissionsInCourseController, 
+  getAllSubmissionsOfAssignment, 
+  updateSubmission,
+  addFeedbackToSubmission,
+  replyFeedbackOnSubmission
+} from "../controller/submission.controller";
 import { authorizeRoles, verifyToken } from "../middleware/auth.middleware";
 
 const router = express.Router();
@@ -20,4 +29,11 @@ router.get("/courses/:courseId/submissions", getSubmissionsInCourseController);
 router.get("/assignment/:assignmentId", verifyToken, getAllSubmissionsOfAssignment);
 //Update submission
 router.put("/update/:submissionId", verifyToken, authorizeRoles("student"), upload.array("files"), updateSubmission);
+
+// Thêm phản hồi vào bài nộp
+router.post("/:submissionId/feedback", verifyToken, authorizeRoles("student"), addFeedbackToSubmission);
+
+// Trả lời phản hồi
+router.put("/:submissionId/feedback/:feedbackId/reply", verifyToken, authorizeRoles("teacher"), replyFeedbackOnSubmission);
+
 export default router;

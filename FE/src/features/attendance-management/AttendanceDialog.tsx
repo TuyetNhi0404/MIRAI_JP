@@ -58,7 +58,7 @@ const isSessionActive = (date: Date, startTime?: string, endTime?: string): bool
 
   const now = new Date();
   const sessionDate = new Date(date);
-  
+
   if (sessionDate.toDateString() !== now.toDateString()) {
     console.log('📅 Different day - session not active');
     return false;
@@ -164,17 +164,17 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  
+
   const { students, loading, error, fetchStudents, updateStatus, updating } = useAttendanceData();
   const [updateError, setUpdateError] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string>('');
 
-  const session = calendar?.sessionId && typeof calendar.sessionId === 'object' 
-    ? calendar.sessionId 
+  const session = calendar?.sessionId && typeof calendar.sessionId === 'object'
+    ? calendar.sessionId
     : calendar?.session;
-  
-  const course = calendar?.courseId && typeof calendar.courseId === 'object' 
-    ? calendar.courseId 
+
+  const course = calendar?.courseId && typeof calendar.courseId === 'object'
+    ? calendar.courseId
     : calendar?.course;
 
   const sessionDate = calendar?.date ? new Date(calendar.date) : new Date();
@@ -186,7 +186,7 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
       } else {
         console.error('❌ Calendar ID is missing!');
       }
-      
+
       setUpdateError('');
       setSuccessMessage('');
     }
@@ -202,15 +202,16 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
 
   console.log('🔐 Permissions:', { canEdit, isActive });
 
-  const handleStatusUpdate = async (attendanceId: string, newStatus: AttendanceStatus) => {
+  const handleStatusUpdate = async (userId: string, newStatus: AttendanceStatus) => {
     try {
+      if (!calendar?._id) return;
       setUpdateError('');
       setSuccessMessage('');
-      
-      console.log('🔄 Updating status:', { attendanceId, newStatus });
-      
-      await updateStatus(attendanceId, newStatus);
-      
+
+      console.log('🔄 Updating status:', { calendarId: calendar._id, userId, newStatus });
+
+      await updateStatus(calendar._id, userId, newStatus);
+
       setSuccessMessage('Attendance updated successfully');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
@@ -223,9 +224,9 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
   const renderMobileView = () => (
     <Box sx={{ pb: 2 }}>
       {students.map((student: AttendanceRecord) => (
-        <Card 
-          key={student.attendanceId} 
-          sx={{ 
+        <Card
+          key={student.attendanceId}
+          sx={{
             mb: 2,
             border: 1,
             borderColor: 'divider',
@@ -248,10 +249,10 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
                 )}
               </Box>
 
-              <Box 
-                sx={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
                   alignItems: 'center',
                   bgcolor: 'grey.50',
                   p: 1.5,
@@ -278,7 +279,7 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
                     size="medium"
                     fullWidth
                     startIcon={<CheckCircle size={18} />}
-                    onClick={() => handleStatusUpdate(student.attendanceId, AttendanceStatus.PRESENT)}
+                    onClick={() => handleStatusUpdate(student.userId._id, AttendanceStatus.PRESENT)}
                     disabled={updating}
                     sx={{
                       py: 1,
@@ -293,7 +294,7 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
                     size="medium"
                     fullWidth
                     startIcon={<XCircle size={18} />}
-                    onClick={() => handleStatusUpdate(student.attendanceId, AttendanceStatus.ABSENT)}
+                    onClick={() => handleStatusUpdate(student.userId._id, AttendanceStatus.ABSENT)}
                     disabled={updating}
                     sx={{
                       py: 1,
@@ -345,7 +346,7 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
                     <IconButton
                       size="small"
                       color="success"
-                      onClick={() => handleStatusUpdate(student.attendanceId, AttendanceStatus.PRESENT)}
+                      onClick={() => handleStatusUpdate(student.userId._id, AttendanceStatus.PRESENT)}
                       disabled={updating || student.status === AttendanceStatus.PRESENT}
                       sx={{
                         bgcolor: student.status === AttendanceStatus.PRESENT ? 'success.main' : 'transparent',
@@ -360,7 +361,7 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
                     <IconButton
                       size="small"
                       color="error"
-                      onClick={() => handleStatusUpdate(student.attendanceId, AttendanceStatus.ABSENT)}
+                      onClick={() => handleStatusUpdate(student.userId._id, AttendanceStatus.ABSENT)}
                       disabled={updating || student.status === AttendanceStatus.ABSENT}
                       sx={{
                         bgcolor: student.status === AttendanceStatus.ABSENT ? 'error.main' : 'transparent',
@@ -396,7 +397,7 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
             display="flex"
             alignItems="center"
             justifyContent="center"
-            sx={{ 
+            sx={{
               bgcolor: 'primary.50',
               borderRadius: 2,
               p: 1,
@@ -422,18 +423,18 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
 
       <DialogContent sx={{ pt: isMobile ? 2 : 3, px: isMobile ? 2 : 3 }}>
         {/* Session Info */}
-        <Paper 
-          sx={{ 
-            p: isMobile ? 2 : 2.5, 
-            mb: 3, 
+        <Paper
+          sx={{
+            p: isMobile ? 2 : 2.5,
+            mb: 3,
             bgcolor: isActive ? 'success.50' : 'grey.50',
             border: 1,
             borderColor: isActive ? 'success.200' : 'divider',
           }}
         >
-          <Stack 
-            direction={isMobile ? 'column' : 'row'} 
-            spacing={isMobile ? 2 : 3} 
+          <Stack
+            direction={isMobile ? 'column' : 'row'}
+            spacing={isMobile ? 2 : 3}
             justifyContent="space-between"
           >
             <Box flex={1}>
@@ -459,11 +460,11 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
                 DATE
               </Typography>
               <Typography variant="body1" fontWeight={600} sx={{ mt: 0.5 }}>
-                {sessionDate.toLocaleDateString('en-US', { 
-                  weekday: 'short', 
-                  year: 'numeric', 
-                  month: 'short', 
-                  day: 'numeric' 
+                {sessionDate.toLocaleDateString('en-US', {
+                  weekday: 'short',
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric'
                 })}
               </Typography>
             </Box>
@@ -487,7 +488,7 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
           <Alert severity="warning" sx={{ mb: 3 }}>
             {!session?.startTime || !session?.endTime
               ? '⚠️ Session time data is missing. Cannot determine edit permission.'
-              : sessionDate > new Date() 
+              : sessionDate > new Date()
                 ? 'This session has not started yet. Attendance can only be taken during or within 24 hours after the session.'
                 : 'More than 24 hours have passed since this session. Attendance can no longer be edited.'}
           </Alert>
@@ -527,10 +528,10 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
             {isMobile ? renderMobileView() : renderDesktopView()}
 
             {/* Summary */}
-            <Paper 
-              sx={{ 
-                p: isMobile ? 2.5 : 3, 
-                mt: 3, 
+            <Paper
+              sx={{
+                p: isMobile ? 2.5 : 3,
+                mt: 3,
                 bgcolor: 'grey.50',
                 border: 1,
                 borderColor: 'divider',
@@ -539,9 +540,9 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
               <Typography variant="body2" color="text.secondary" fontWeight={600} sx={{ mb: 2, textAlign: 'center' }}>
                 ATTENDANCE SUMMARY
               </Typography>
-              <Stack 
-                direction="row" 
-                spacing={isMobile ? 2 : 4} 
+              <Stack
+                direction="row"
+                spacing={isMobile ? 2 : 4}
                 justifyContent="center"
                 divider={<Box sx={{ width: 1, bgcolor: 'divider' }} />}
               >
@@ -576,12 +577,12 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
       </DialogContent>
 
       <DialogActions sx={{ p: isMobile ? 2 : 3, pt: 0 }}>
-        <Button 
-          onClick={onClose} 
-          variant="contained" 
+        <Button
+          onClick={onClose}
+          variant="contained"
           fullWidth={isMobile}
           size="large"
-          sx={{ 
+          sx={{
             bgcolor: '#f59e0b',
             '&:hover': { bgcolor: '#d97706' },
             minWidth: isMobile ? '100%' : 120,

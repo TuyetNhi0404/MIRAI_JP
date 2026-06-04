@@ -4,10 +4,10 @@ export interface INotification extends Document {
     recipientId?: mongoose.Types.ObjectId; // For individual notifications
     recipientIds?: mongoose.Types.ObjectId[]; // For global notifications (array of users)
     recipientRole: "student" | "teacher" | "admin" | "all";
-    type: "assignment_created" | "assignment_deadline" | "assignment_graded" | "quiz_created" | "forum_question" | "forum_comment" | "forum_post_approved" | "forum_post_rejected" | "reply_comment" | "enrollment_request" | "enrollment_response" | "schedule_request" | "schedule_response" | "forum_post_pending" | "forum_post_like" | "forum_post_dislike" | "global_announcement";
+    type: "assignment_created" | "assignment_deadline" | "assignment_graded" | "quiz_created" | "enrollment_request" | "enrollment_response" | "schedule_request" | "schedule_response" | "global_announcement";
     title: string;
     message: string;
-    relatedEntityType?: "assignment" | "course" | "forum" | "global";
+    relatedEntityType?: "assignment" | "course" | "global";
     relatedEntityId?: mongoose.Types.ObjectId;
     courseId?: mongoose.Types.ObjectId;
     isRead: boolean;
@@ -46,18 +46,10 @@ const NotificationSchema: Schema = new Schema(
                 "assignment_deadline",
                 "assignment_graded",
                 "quiz_created",
-                "forum_question",
-                "forum_comment",
-                "forum_post_approved",
-                "forum_post_rejected",
-                "reply_comment",
                 "enrollment_request",
                 "enrollment_response",
                 "schedule_request",
                 "schedule_response",
-                "forum_post_pending",
-                "forum_post_like",
-                "forum_post_dislike",
                 "global_announcement",
             ],
             required: true,
@@ -74,7 +66,7 @@ const NotificationSchema: Schema = new Schema(
         },
         relatedEntityType: {
             type: String,
-            enum: ["assignment", "course", "forum", "global"],
+            enum: ["assignment", "course", "global"],
         },
         relatedEntityId: {
             type: Schema.Types.ObjectId,
