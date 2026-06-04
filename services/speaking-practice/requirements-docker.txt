@@ -1,0 +1,4 @@
+# Docker-only install order (see Dockerfile). Local dev can use requirements.txt + venv.
+# CPU PyTorch + headless OpenCV are installed in Dockerfile before this file.
+
+-r requirements.txt

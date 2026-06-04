@@ -7,6 +7,8 @@ export interface IGrammarChunk extends Document {
   pageNumber: number;
   text: string;
   embedding: number[];
+  embeddingModel: string;
+  embeddingDim: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -30,12 +32,15 @@ const grammarChunkSchema = new Schema<IGrammarChunk>(
         validator: (arr: number[]) => arr.length > 0,
         message: "Embedding cannot be empty"
       }
-    }
+    },
+    embeddingModel: { type: String, default: "gemini-embedding-001" },
+    embeddingDim: { type: Number, default: 768 }
   },
   { timestamps: true }
 );
 
-// Compound index for RAG queries filtered by center and level
 grammarChunkSchema.index({ centerId: 1, level: 1 });
+grammarChunkSchema.index({ documentId: 1, centerId: 1, level: 1 });
+grammarChunkSchema.index({ text: "text" });
 
 export default mongoose.model<IGrammarChunk>("GrammarChunk", grammarChunkSchema);

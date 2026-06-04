@@ -56,7 +56,10 @@ import {
   Cell,
 } from "recharts";
 import { grammarService } from "../../services/grammar.service";
-import type { IGrammarCard, IGeneratedQuestion, IQuizAttempt } from "../../services/grammar.service";
+import type { IGrammarCard, IGeneratedQuestion, IQuizAttempt, JLPTLevel } from "../../services/grammar.service";
+import DateRangeFilter from "../../components/grammar/DateRangeFilter";
+import type { DateRangeValue } from "../../components/grammar/DateRangeFilter";
+import { getAxiosErrorMessage } from "../../utils/axiosError";
 import courseService from "../../services/courseService";
 import type { Course } from "../../services/courseService";
 import { quizService } from "../../services/quiz.service";
@@ -67,10 +70,12 @@ const TeacherQuizManagement: React.FC = () => {
   // General States
   const [courses, setCourses] = useState<Course[]>([]);
   const [selectedCourseId, setSelectedCourseId] = useState("");
-  const [selectedCourseLevel, setSelectedCourseLevel] = useState<any>("N5");
+  const [selectedCourseLevel, setSelectedCourseLevel] = useState<JLPTLevel>("N5");
   const [grammarCards, setGrammarCards] = useState<IGrammarCard[]>([]);
   const [selectedCardIds, setSelectedCardIds] = useState<string[]>([]);
   const [loadingCards, setLoadingCards] = useState(false);
+  const [cardDateFilter, setCardDateFilter] = useState<DateRangeValue>({ sortBy: "createdAt", order: "desc" });
+  const [cardTotalCount, setCardTotalCount] = useState<number | null>(null);
 
   // AI Quiz Generation States
   const [numQuestions, setNumQuestions] = useState(5);
@@ -82,7 +87,7 @@ const TeacherQuizManagement: React.FC = () => {
   const [aiSuccess, setAiSuccess] = useState("");
 
   // Quiz list and score tracking states
-  const [teacherQuizzes, setTeacherQuizzes] = useState<any[]>([]);
+  const [teacherQuizzes, setTeacherQuizzes] = useState<Array<{ _id?: string; id?: string; title?: string }>>([]);
   const [loadingQuizzes, setLoadingQuizzes] = useState(false);
   const [selectedQuizId, setSelectedQuizId] = useState("");
   const [attempts, setAttempts] = useState<IQuizAttempt[]>([]);
@@ -105,7 +110,7 @@ const TeacherQuizManagement: React.FC = () => {
         setCourses(res);
         if (res.length > 0) {
           setSelectedCourseId(res[0]._id || res[0].id || "");
-          setSelectedCourseLevel((res[0] as any).level || "N5");
+          setSelectedCourseLevel((res[0].level as JLPTLevel) || "N5");
         }
       } catch (err) {
         console.error("Lỗi lấy khóa học giáo viên:", err);
@@ -122,10 +127,15 @@ const TeacherQuizManagement: React.FC = () => {
       try {
         const res = await grammarService.getGrammarCards({
           level: selectedCourseLevel,
+          dateFrom: cardDateFilter.dateFrom,
+          dateTo: cardDateFilter.dateTo,
+          sortBy: cardDateFilter.sortBy,
+          order: cardDateFilter.order,
         });
         if (res.success) {
           setGrammarCards(res.cards);
-          setSelectedCardIds([]); // Reset selection
+          if (typeof res.count === "number") setCardTotalCount(res.count);
+          setSelectedCardIds([]);
         }
       } catch (err) {
         console.error(err);
@@ -134,7 +144,7 @@ const TeacherQuizManagement: React.FC = () => {
       }
     };
     fetchCards();
-  }, [selectedCourseLevel]);
+  }, [selectedCourseLevel, cardDateFilter]);
 
   // Fetch teacher's generated quizzes (to track scores)
   const fetchTeacherQuizzes = useCallback(async () => {
@@ -186,7 +196,7 @@ const TeacherQuizManagement: React.FC = () => {
     setSelectedCourseId(courseId);
     const matched = courses.find((c) => (c._id || c.id) === courseId);
     if (matched) {
-      setSelectedCourseLevel((matched as any).level || "N5");
+      setSelectedCourseLevel((matched?.level as JLPTLevel) || "N5");
     }
   };
 
@@ -212,8 +222,8 @@ const TeacherQuizManagement: React.FC = () => {
         setGeneratedQuestions(res.questions);
         setQuizTitle(`Bài kiểm tra Ngữ pháp ${selectedCourseLevel} - ${new Date().toLocaleDateString()}`);
       }
-    } catch (err: any) {
-      setAiError(err.response?.data?.message || "Lỗi AI sinh câu hỏi.");
+    } catch (err: unknown) {
+      setAiError(getAxiosErrorMessage(err, "Lỗi AI sinh câu hỏi."));
     } finally {
       setGeneratingQuestions(false);
     }
@@ -275,8 +285,8 @@ const TeacherQuizManagement: React.FC = () => {
         setSelectedCardIds([]);
         setQuizTitle("");
       }
-    } catch (err: any) {
-      setAiError(err.response?.data?.message || "Lỗi xuất bản Quiz.");
+    } catch (err: unknown) {
+      setAiError(getAxiosErrorMessage(err, "Lỗi xuất bản Quiz."));
     }
   };
 
@@ -327,7 +337,7 @@ const TeacherQuizManagement: React.FC = () => {
                 <Select value={selectedCourseId} onChange={(e) => handleCourseChange(e.target.value)} label="Chọn Lớp học phụ trách">
                   {courses.map((c) => (
                     <MenuItem key={c._id || c.id} value={c._id || c.id}>
-                      {c.name} (JLPT { (c as any).level || "N5" })
+                      {c.name} (JLPT {c.level || "N5"})
                     </MenuItem>
                   ))}
                 </Select>
@@ -364,6 +374,14 @@ const TeacherQuizManagement: React.FC = () => {
                 <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
                   Danh sách ngữ pháp ở cấp độ {selectedCourseLevel} của trung tâm
                 </Typography>
+                <Box sx={{ mb: 2 }}>
+                  <DateRangeFilter value={cardDateFilter} onChange={setCardDateFilter} showSort={false} />
+                  {cardTotalCount !== null && (
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
+                      Tổng: {cardTotalCount} thẻ
+                    </Typography>
+                  )}
+                </Box>
                 <Divider sx={{ mb: 2 }} />
 
                 {loadingCards ? (

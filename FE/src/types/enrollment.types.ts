@@ -1,29 +1,9 @@
 // src/types/enrollment.types.ts
 
-export interface CVInfo {
-  name: string;
-  email: string;
-  birthday?: string;
-  phone?: string;
-  education?: {
-    institution: string;
-    period: string;
-    major: string;
-    gpa: string;
-  };
-  experience?: string;
-  skills?: string[];
-  certifications?: string[];
-  projects?: {
-    name: string;
-    description: string;
-  }[];
-}
-
 export interface EnrollmentRequest {
   courseId: string;
-  cvInfo: CVInfo;
-  file?: File;
+  studentName: string;
+  studentEmail: string;
 }
 
 export interface Enrollment {
@@ -37,22 +17,6 @@ export interface Enrollment {
     startDate?: Date;
     endDate?: Date;
   };
-  cvBirthday?: string;
-  cvPhone?: string;
-  cvEducation?: {
-    institution: string;
-    period: string;
-    major: string;
-    gpa: string;
-  };
-  cvExperience?: string;
-  cvSkills?: string[];
-  cvCertifications?: string[];
-  cvProjects?: {
-    name: string;
-    description: string;
-  }[];
-  cvFileUrl?: string;
   status: "pending" | "approved" | "rejected";
   enrolledAt: Date;
   createdAt: Date;
@@ -91,10 +55,4 @@ export interface EnrollmentsListAPIResponse {
   message: string;
   count: number;
   data: Enrollment[];
-}
-
-export interface CVUploadAPIResponse {
-  success: boolean;
-  message: string;
-  data: CVInfo;
 }

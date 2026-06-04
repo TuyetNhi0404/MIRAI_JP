@@ -2,22 +2,18 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { enrollmentService } from "../../services/enrollment.service";
-import type { Enrollment, CVInfo } from "../../types/enrollment.types";
+import type { Enrollment, EnrollmentRequest } from "../../types/enrollment.types";
 
 interface EnrollmentState {
   enrollments: Enrollment[];
   loading: boolean;
   error: string | null;
-  uploadedCV: CVInfo | null;
-  uploadLoading: boolean;
 }
 
 const initialState: EnrollmentState = {
   enrollments: [],
   loading: false,
   error: null,
-  uploadedCV: null,
-  uploadLoading: false,
 };
 
 // Type guard cho Axios errors
@@ -38,31 +34,10 @@ function isAxiosError(error: unknown): error is AxiosErrorResponse {
   );
 }
 
-// Upload CV và quét bằng AI
-export const uploadCV = createAsyncThunk(
-  "enrollment/uploadCV",
-  async (file: File, { rejectWithValue }) => {
-    try {
-      const response = await enrollmentService.uploadCV(file);
-      return response.data;
-    } catch (error: unknown) {
-      if (isAxiosError(error)) {
-        return rejectWithValue(
-          error.response?.data?.error || "Failed to upload CV"
-        );
-      }
-      return rejectWithValue("Failed to upload CV");
-    }
-  }
-);
-
 // Đăng ký khóa học
 export const enrollCourse = createAsyncThunk(
   "enrollment/enrollCourse",
-  async (
-    data: { courseId: string; cvInfo: CVInfo; file?: File },
-    { rejectWithValue }
-  ) => {
+  async (data: EnrollmentRequest, { rejectWithValue }) => {
     try {
       const response = await enrollmentService.enrollCourse(data);
       return response.data;
@@ -137,28 +112,12 @@ const enrollmentSlice = createSlice({
   name: "enrollment",
   initialState,
   reducers: {
-    clearUploadedCV: (state) => {
-      state.uploadedCV = null;
-    },
     clearError: (state) => {
       state.error = null;
     },
   },
   extraReducers: (builder) => {
     builder
-      // Upload CV
-      .addCase(uploadCV.pending, (state) => {
-        state.uploadLoading = true;
-        state.error = null;
-      })
-      .addCase(uploadCV.fulfilled, (state, action: PayloadAction<CVInfo>) => {
-        state.uploadLoading = false;
-        state.uploadedCV = action.payload;
-      })
-      .addCase(uploadCV.rejected, (state, action) => {
-        state.uploadLoading = false;
-        state.error = action.payload as string;
-      })
       // Enroll course
       .addCase(enrollCourse.pending, (state) => {
         state.loading = true;
@@ -220,5 +179,5 @@ const enrollmentSlice = createSlice({
   },
 });
 
-export const { clearUploadedCV, clearError } = enrollmentSlice.actions;
+export const { clearError } = enrollmentSlice.actions;
 export default enrollmentSlice.reducer;

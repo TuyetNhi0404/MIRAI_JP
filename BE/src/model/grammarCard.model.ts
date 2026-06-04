@@ -48,5 +48,7 @@ const grammarCardSchema = new Schema<IGrammarCard>(
 );
 
 grammarCardSchema.index({ centerId: 1, level: 1 });
+// Phase 6: index theo createdAt cho date filter
+grammarCardSchema.index({ centerId: 1, level: 1, createdAt: -1 });
 
 export default mongoose.model<IGrammarCard>("GrammarCard", grammarCardSchema);

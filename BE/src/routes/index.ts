@@ -25,9 +25,12 @@ import vocabularyRouter from "./vocabulary.routes";
 import listeningRoutes from "./listening.routes";
 import grammarNotesRoutes from "./grammar-notes.routes";
 import grammarRoutes from "./grammar.routes";
+import grammarBoardRoutes from "./grammarBoard.routes";
+import healthRoutes from "./health.routes";
 
 
 export default function route(app: Application): void {
+  app.use("/api", healthRoutes);
   app.use("/api/courses", courseRoutes);
   app.use("/api/enrollments", enrollmentRouter);
   app.use("/api/auth", authRoutes);
@@ -53,6 +56,7 @@ export default function route(app: Application): void {
   app.use("/api/listening", listeningRoutes);
   app.use("/api/speaking-notes", grammarNotesRoutes);
   app.use("/api/grammar", grammarRoutes);
+  app.use("/api/admin/grammar-queues", grammarBoardRoutes);
 
   // app.use("/api/forum", forumRouter);
   app.use("/api/notifications", notificationRoutes);

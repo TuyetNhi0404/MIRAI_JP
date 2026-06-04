@@ -799,7 +799,15 @@ async def process_pdf(
                     
                     if reader_ocr is None:
                         print("[PDF-OCR] Khởi tạo mô hình EasyOCR cho ngôn ngữ ['ja', 'en'] (Lần đầu sẽ tốn vài giây)...")
-                        reader_ocr = easyocr.Reader(['ja', 'en'])
+                        ocr_model_dir = os.environ.get(
+                            "EASYOCR_MODULE_PATH",
+                            os.path.join(os.path.dirname(__file__), ".cache", "easyocr"),
+                        )
+                        reader_ocr = easyocr.Reader(
+                            ["ja", "en"],
+                            gpu=False,
+                            model_storage_directory=ocr_model_dir,
+                        )
                         
                     ocr_result = reader_ocr.readtext(img_data, detail=0)
                     text = " ".join(ocr_result)

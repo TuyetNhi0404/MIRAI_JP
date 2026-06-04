@@ -9,4 +9,5 @@ httpx
 google-genai
 pypdf
 PyMuPDF
+opencv-python-headless
 easyocr

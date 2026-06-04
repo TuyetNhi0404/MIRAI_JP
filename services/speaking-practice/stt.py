@@ -1,10 +1,14 @@
 import os
-# Redirect Hugging Face cache to D: drive (local project folder) due to C: drive out of space
-os.environ["HF_HOME"] = os.path.abspath(os.path.join(os.path.dirname(__file__), ".hf_cache"))
+
+# Local dev: project .hf_cache; Docker: HF_HOME=/app/.cache/huggingface (set in Dockerfile)
+if "HF_HOME" not in os.environ:
+    os.environ["HF_HOME"] = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), ".hf_cache")
+    )
 
 from faster_whisper import WhisperModel
 
-model_size = "small"
+model_size = "base"
 model = WhisperModel(model_size, device="cpu", compute_type="int8")
 
 def transcribe_audio(audio_path: str):

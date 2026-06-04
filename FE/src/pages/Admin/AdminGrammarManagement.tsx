@@ -47,6 +47,10 @@ import {
 } from "lucide-react";
 import { grammarService } from "../../services/grammar.service";
 import type { JLPTLevel, IGrammarDocument, IGrammarCard } from "../../services/grammar.service";
+import DateRangeFilter from "../../components/grammar/DateRangeFilter";
+import type { DateRangeValue } from "../../components/grammar/DateRangeFilter";
+import { getAxiosErrorMessage } from "../../utils/axiosError";
+import { useGrammarDocumentProgress } from "../../hooks/useGrammarDocumentProgress";
 
 const LEVELS: JLPTLevel[] = ["N5", "N4", "N3", "N2", "N1"];
 
@@ -77,6 +81,14 @@ const AdminGrammarManagement: React.FC = () => {
   // Filter states
   const [filterLevel, setFilterLevel] = useState<JLPTLevel | "">("");
   const [searchQuery, setSearchQuery] = useState("");
+  // Phase 6: date + sort filter dùng chung cho cards & documents
+  const [dateFilter, setDateFilter] = useState<DateRangeValue>({ sortBy: "createdAt", order: "desc" });
+
+  // Phase 5: tổng số kết quả sau filter (để hiển thị count)
+  const [totalCount, setTotalCount] = useState<number | null>(null);
+
+  // Phase 5: dropdown chọn document cho RAG (admin có thể scope về 1 tài liệu)
+  const [ragDocumentId, setRagDocumentId] = useState<string>("");
 
   // Upload States
   const [uploadFile, setUploadFile] = useState<File | null>(null);
@@ -86,6 +98,22 @@ const AdminGrammarManagement: React.FC = () => {
   const [uploadError, setUploadError] = useState("");
   const [uploadSuccess, setUploadSuccess] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [trackDocId, setTrackDocId] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  useGrammarDocumentProgress(trackDocId, (msg) => {
+    setUploadProgress(msg.progress);
+    if (msg.processingStage === "done" || msg.status === "completed") {
+      setTrackDocId(null);
+      fetchDocuments();
+      fetchCards();
+    }
+    if (msg.status === "failed") {
+      setTrackDocId(null);
+      setUploadError("Xử lý tài liệu thất bại trên server.");
+      fetchDocuments();
+    }
+  });
 
   // Manual Card Form Dialog
   const [openCardForm, setOpenCardForm] = useState(false);
@@ -116,14 +144,19 @@ const AdminGrammarManagement: React.FC = () => {
     try {
       const res = await grammarService.getDocuments({
         level: filterLevel || undefined,
+        dateFrom: dateFilter.dateFrom,
+        dateTo: dateFilter.dateTo,
+        sortBy: dateFilter.sortBy,
+        order: dateFilter.order,
       });
       if (res.success) {
         setDocuments(res.documents);
+        if (typeof res.count === "number") setTotalCount(res.count);
       }
     } catch (err) {
       console.error(err);
     }
-  }, [filterLevel]);
+  }, [filterLevel, dateFilter]);
 
   const fetchCards = useCallback(async () => {
     setLoading(true);
@@ -131,28 +164,33 @@ const AdminGrammarManagement: React.FC = () => {
       const res = await grammarService.getGrammarCards({
         level: filterLevel || undefined,
         search: searchQuery || undefined,
+        dateFrom: dateFilter.dateFrom,
+        dateTo: dateFilter.dateTo,
+        sortBy: dateFilter.sortBy,
+        order: dateFilter.order,
       });
       if (res.success) {
         setCards(res.cards);
+        if (typeof res.count === "number") setTotalCount(res.count);
       }
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }, [filterLevel, searchQuery]);
+  }, [filterLevel, searchQuery, dateFilter]);
 
   useEffect(() => {
     if (tab === 0) {
       fetchCards();
-    } else if (tab === 1) {
+    } else if (tab === 1 || tab === 2) {
       fetchDocuments();
     }
   }, [tab, fetchCards, fetchDocuments]);
 
   // Tự động tải lại danh sách tài liệu mỗi 5 giây nếu có tài liệu đang xử lý OCR ("processing")
   useEffect(() => {
-    let interval: any = null;
+    let interval: ReturnType<typeof setInterval> | null = null;
     const hasProcessing = documents.some(doc => doc.status === "processing");
 
     if (tab === 1 && hasProcessing) {
@@ -171,7 +209,7 @@ const AdminGrammarManagement: React.FC = () => {
   // Tự động tải lại danh sách thẻ ngữ pháp mỗi 10 giây khi đang có tài liệu processing
   // (để thẻ tự xuất hiện sau khi Gemini trích xuất xong mà không cần F5)
   useEffect(() => {
-    let cardInterval: any = null;
+    let cardInterval: ReturnType<typeof setInterval> | null = null;
     const hasProcessing = documents.some(doc => doc.status === "processing");
 
     if (tab === 0 && hasProcessing) {
@@ -202,13 +240,14 @@ const AdminGrammarManagement: React.FC = () => {
     setUploadSuccess("");
 
     try {
-      await grammarService.uploadDocument(uploadFile, uploadTitle, uploadCenter, uploadLevel);
-      setUploadSuccess("Tài liệu đã tải lên! Hệ thống đang xử lý OCR và phân mảnh nền.");
+      const res = await grammarService.uploadDocument(uploadFile, uploadTitle, uploadCenter, uploadLevel);
+      setUploadSuccess("Tài liệu đã tải lên! Hệ thống đang OCR và phân mảnh nền.");
+      if (res.document?._id) setTrackDocId(res.document._id);
       setUploadTitle("");
       setUploadFile(null);
       fetchDocuments();
-    } catch (err: any) {
-      setUploadError(err.response?.data?.message || "Lỗi khi tải lên tài liệu.");
+    } catch (err: unknown) {
+      setUploadError(getAxiosErrorMessage(err, "Lỗi khi tải lên tài liệu."));
     } finally {
       setUploading(false);
     }
@@ -290,8 +329,8 @@ const AdminGrammarManagement: React.FC = () => {
       }
       setOpenCardForm(false);
       fetchCards();
-    } catch (err: any) {
-      setCardFormError(err.response?.data?.message || "Lỗi lưu thẻ ngữ pháp.");
+    } catch (err: unknown) {
+      setCardFormError(getAxiosErrorMessage(err, "Lỗi lưu thẻ ngữ pháp."));
     } finally {
       setCardFormLoading(false);
     }
@@ -319,12 +358,22 @@ const AdminGrammarManagement: React.FC = () => {
     setRagDrafts([]);
 
     try {
-      const res = await grammarService.generateDraftCards(ragCenter, ragLevel, ragTopic);
+      const res = await grammarService.generateDraftCards(
+        ragCenter,
+        ragLevel,
+        ragTopic,
+        ragDocumentId || undefined
+      );
       if (res.success) {
         setRagDrafts(res.draftCards);
+        if (res.contextChunksFound === 0) {
+          setRagError("Không tìm thấy context liên quan trong tài liệu đã chọn. Hãy thử tài liệu khác hoặc bỏ chọn để dùng toàn bộ tài liệu cùng level.");
+        } else if (res.draftCards.length === 0) {
+          setRagError("AI không sinh được thẻ phù hợp. Hãy thử đổi chủ đề.");
+        }
       }
-    } catch (err: any) {
-      setRagError(err.response?.data?.message || "Lỗi AI sinh bản thảo. Đảm bảo bạn đã upload tài liệu gốc phù hợp.");
+    } catch (err: unknown) {
+      setRagError(getAxiosErrorMessage(err, "Lỗi AI sinh bản thảo. Đảm bảo bạn đã upload tài liệu gốc phù hợp."));
     } finally {
       setRagLoading(false);
     }
@@ -342,8 +391,8 @@ const AdminGrammarManagement: React.FC = () => {
         setRagDrafts(prev => prev.filter((_, idx) => idx !== index));
         fetchCards();
       }
-    } catch (err: any) {
-      alert(err.response?.data?.message || "Lỗi lưu thẻ ngữ pháp được duyệt.");
+    } catch (err: unknown) {
+      alert(getAxiosErrorMessage(err, "Lỗi lưu thẻ ngữ pháp được duyệt."));
     }
   };
 
@@ -393,33 +442,47 @@ const AdminGrammarManagement: React.FC = () => {
 
       {/* Filter and search bar (Visible in Tab 0 and 1) */}
       {tab !== 2 && (
-        <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap", alignItems: "center" }}>
-          {tab === 0 && (
-            <TextField
-              placeholder="Tìm kiếm ngữ pháp..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              size="small"
-              sx={{ minWidth: 260, flex: 1 }}
-              InputProps={{
-                startAdornment: <Search size={16} style={{ marginRight: 8, color: "#999" }} />,
-              }}
-            />
-          )}
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 3 }}>
+          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center" }}>
+            {tab === 0 && (
+              <TextField
+                placeholder="Tìm kiếm ngữ pháp..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                size="small"
+                sx={{ minWidth: 260, flex: 1 }}
+                InputProps={{
+                  startAdornment: <Search size={16} style={{ marginRight: 8, color: "#999" }} />,
+                }}
+              />
+            )}
 
-          <FormControl size="small" sx={{ minWidth: 140 }}>
-            <InputLabel>Cấp độ JLPT</InputLabel>
-            <Select
-              label="Cấp độ JLPT"
-              value={filterLevel}
-              onChange={(e) => setFilterLevel(e.target.value as JLPTLevel | "")}
-            >
-              <MenuItem value="">Tất cả</MenuItem>
-              {LEVELS.map(l => (
-                <MenuItem key={l} value={l}>{l}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+            <FormControl size="small" sx={{ minWidth: 140 }}>
+              <InputLabel>Cấp độ JLPT</InputLabel>
+              <Select
+                label="Cấp độ JLPT"
+                value={filterLevel}
+                onChange={(e) => setFilterLevel(e.target.value as JLPTLevel | "")}
+              >
+                <MenuItem value="">Tất cả</MenuItem>
+                {LEVELS.map(l => (
+                  <MenuItem key={l} value={l}>{l}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+
+          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
+            <DateRangeFilter value={dateFilter} onChange={setDateFilter} />
+            {totalCount !== null && (
+              <Chip
+                size="small"
+                color="default"
+                variant="outlined"
+                label={`Tổng: ${totalCount} ${tab === 0 ? "thẻ" : "tài liệu"}`}
+              />
+            )}
+          </Box>
         </Box>
       )}
 
@@ -495,6 +558,11 @@ const AdminGrammarManagement: React.FC = () => {
                 
                 {uploadError && <Alert severity="error" sx={{ mb: 2 }}>{uploadError}</Alert>}
                 {uploadSuccess && <Alert severity="success" sx={{ mb: 2 }}>{uploadSuccess}</Alert>}
+                {trackDocId && (
+                  <Alert severity="info" sx={{ mb: 2 }}>
+                    Tiến độ xử lý tài liệu: {uploadProgress}%
+                  </Alert>
+                )}
 
                 <Box component="form" onSubmit={handleUpload} sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                   <TextField
@@ -559,13 +627,14 @@ const AdminGrammarManagement: React.FC = () => {
                       <TableCell sx={{ fontWeight: 700 }}>Cấp độ</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Trạng thái</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Số trang</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Chunks</TableCell>
                       <TableCell sx={{ fontWeight: 700 }} align="center">Thao tác</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {documents.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
+                        <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
                           <FileText size={32} color="#ccc" style={{ marginBottom: 8 }} />
                           <Typography color="text.secondary">Chưa có tài liệu PDF nào.</Typography>
                         </TableCell>
@@ -584,6 +653,7 @@ const AdminGrammarManagement: React.FC = () => {
                             {doc.status === "failed" && <Chip label="Thất bại" color="error" size="small" />}
                           </TableCell>
                           <TableCell>{doc.totalPages || "Đang đếm"}</TableCell>
+                          <TableCell>{doc.chunkCount ?? "—"}</TableCell>
                           <TableCell align="center">
                             <IconButton size="small" onClick={() => setDeleteDocTarget(doc)} sx={{ color: "#B90000" }}><Trash2 size={15} /></IconButton>
                           </TableCell>
@@ -645,6 +715,25 @@ const AdminGrammarManagement: React.FC = () => {
                   />
                 </Grid>
                 <Grid item xs={12} md={3}>
+                  <FormControl size="small" fullWidth>
+                    <InputLabel>Nguồn tài liệu</InputLabel>
+                    <Select
+                      label="Nguồn tài liệu"
+                      value={ragDocumentId}
+                      onChange={(e) => setRagDocumentId(e.target.value as string)}
+                    >
+                      <MenuItem value="">Tất cả tài liệu cùng level</MenuItem>
+                      {documents
+                        .filter(d => d.status === "completed" && d.level === ragLevel)
+                        .map(d => (
+                          <MenuItem key={d._id} value={d._id}>
+                            {d.title} {d.scope === "shared" ? "(shared)" : ""}
+                          </MenuItem>
+                        ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12}>
                   <Button
                     variant="contained"
                     fullWidth

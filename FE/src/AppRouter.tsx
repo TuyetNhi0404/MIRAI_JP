@@ -53,6 +53,7 @@ import SpeakingPracticePage from "./features/speaking/SpeakingPracticePage";
 import AdminGrammarManagement from "./pages/Admin/AdminGrammarManagement";
 import StudentGrammarPractice from "./pages/Student/StudentGrammarPractice";
 import TeacherQuizManagement from "./pages/Teacher/TeacherQuizManagement";
+import TeacherGrammarMaterials from "./pages/Teacher/TeacherGrammarMaterials";
 
 const AppRouter = () => {
   const user = useSelector((state: RootState) => state.auth.user);
@@ -122,6 +123,7 @@ const AppRouter = () => {
           <Route path="teacher/questions/:chapterId" element={<ChapterQuestionsPage />} />
           <Route path="teacher/quizzes" element={<QuizzesPage />} />
           <Route path="teacher/grammar" element={<TeacherQuizManagement />} />
+          <Route path="teacher/grammar-materials" element={<TeacherGrammarMaterials />} />
           <Route path="teacher/submissions" element={<TeacherSubmissionsPage />} />
           <Route path="teacher/listening" element={<ListeningListPage />} />
           <Route path="teacher/listening/:id" element={<ListeningDetailPage />} />
