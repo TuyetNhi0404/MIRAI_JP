@@ -1,0 +1,84 @@
+# Virtual environments (local dev — often 5GB+ with CUDA torch)
+venv
+venv/
+.venv
+.venv/
+env
+ENV
+.python-version
+
+# Hugging Face / model caches (download at build or runtime in container)
+.hf_cache
+.hf_cache/
+.cache/
+huggingface/
+**/hub/models--*/
+**/.cache/huggingface/
+
+# Pip / torch caches
+pip-wheel-metadata/
+pip-log.txt
+pip-delete-this-directory.txt
+.torch/
+torch_cache/
+
+# Uploads and runtime data (mounted as volume in compose)
+uploads/*
+!uploads/.gitkeep
+
+# Python bytecode and test tooling
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Local secrets and logs
+.env
+.env.*
+!.env.example
+*.log
+
+# VCS and editor
+.git/
+.gitignore
+.github/
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Docs / meta (not needed in image)
+README.md
+*.md
+!requirements.txt
+
+# Large ML artifacts — never bake into image
+models/
+model/
+checkpoints/
+weights/
+*.pt
+*.pth
+*.onnx
+*.safetensors
+*.bin
+*.ckpt
+datasets/
+data/
+notebooks/
+*.ipynb
+
+# Misc
+node_modules/
+*.wav
+*.mp3
+*.mp4
+.DS_Store

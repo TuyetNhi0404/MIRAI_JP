@@ -739,3 +739,107 @@ async def get_audio(
     if os.path.exists(file_path):
         return FileResponse(file_path, media_type="audio/mpeg")
     return {"error": "File not found"}
+
+
+# ----------------- PDF OCR/PARSING ENDPOINT -----------------
+
+@app.post("/process-pdf")
+async def process_pdf(
+    file: UploadFile = File(...)
+):
+    # Save uploaded file to temp path
+    suffix = os.path.splitext(file.filename or "")[1] or ".pdf"
+    temp_path = os.path.join("uploads", f"temp_{uuid.uuid4().hex}{suffix}")
+    
+    with open(temp_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    pages_data = []
+    doc_fitz = None
+    try:
+        # Try to import pypdf
+        try:
+            import pypdf
+        except ImportError:
+            raise HTTPException(
+                status_code=500,
+                detail="Thư viện 'pypdf' chưa được cài đặt ở môi trường Python. Hãy chạy pip install pypdf."
+            )
+            
+        reader = pypdf.PdfReader(temp_path)
+        total_pages = len(reader.pages)
+        
+        try:
+            import fitz  # PyMuPDF
+            doc_fitz = fitz.open(temp_path)
+            print("[PDF-OCR] Đã mở tài liệu bằng PyMuPDF để chuẩn bị OCR dự phòng.")
+        except ImportError:
+            print("[PDF-OCR] Thư viện PyMuPDF (fitz) chưa được cài đặt. Không thể chạy OCR.")
+
+        reader_ocr = None
+        
+        for page_idx in range(total_pages):
+            page = reader.pages[page_idx]
+            text = (page.extract_text() or "").strip()
+            
+            # If text is empty or very short, try OCR
+            if len(text) < 20 and doc_fitz is not None:
+                try:
+                    try:
+                        import easyocr
+                    except ImportError:
+                        print("[PDF-OCR] Thư viện easyocr chưa được cài đặt. Bỏ qua OCR.")
+                        continue
+                    
+                    print(f"[PDF-OCR] Trang {page_idx + 1}/{total_pages} thiếu text kỹ thuật số. Bắt đầu OCR bằng EasyOCR...")
+                    
+                    fitz_page = doc_fitz[page_idx]
+                    pix = fitz_page.get_pixmap()
+                    img_data = pix.tobytes("png")
+                    
+                    if reader_ocr is None:
+                        print("[PDF-OCR] Khởi tạo mô hình EasyOCR cho ngôn ngữ ['ja', 'en'] (Lần đầu sẽ tốn vài giây)...")
+                        ocr_model_dir = os.environ.get(
+                            "EASYOCR_MODULE_PATH",
+                            os.path.join(os.path.dirname(__file__), ".cache", "easyocr"),
+                        )
+                        reader_ocr = easyocr.Reader(
+                            ["ja", "en"],
+                            gpu=False,
+                            model_storage_directory=ocr_model_dir,
+                        )
+                        
+                    ocr_result = reader_ocr.readtext(img_data, detail=0)
+                    text = " ".join(ocr_result)
+                    print(f"[PDF-OCR] Hoàn thành OCR trang {page_idx + 1}. Kích thước text: {len(text)} ký tự.")
+                except Exception as ocr_err:
+                    print(f"[PDF-OCR] Lỗi chạy OCR cho trang {page_idx + 1}: {ocr_err}")
+            
+            pages_data.append({
+                "page_number": page_idx + 1,
+                "text": text
+            })
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[PDF-OCR] Lỗi phân tích tài liệu PDF: {e}")
+        raise HTTPException(status_code=500, detail=f"Lỗi phân tích cú pháp PDF: {str(e)}")
+    finally:
+        if doc_fitz is not None:
+            try:
+                doc_fitz.close()
+            except Exception:
+                pass
+        if os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+            except Exception:
+                pass
+                
+    return {
+        "filename": file.filename,
+        "total_pages": len(pages_data),
+        "pages": pages_data
+    }
+

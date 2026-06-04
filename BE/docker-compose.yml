@@ -1,0 +1,12 @@
+# Chỉ Redis cho dev local — stack đầy đủ dùng docker-compose.yml ở thư mục gốc repo
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+volumes:
+  redis_data:

@@ -3,10 +3,10 @@ import axios from "axios";
 import { getStore } from "../redux/storeRef";
 import { forceLogout } from "../redux/slices/authSlice";
 
+import { getApiBaseUrl } from "../utils/apiBase";
+
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL 
-    ? `${import.meta.env.VITE_API_URL}/api` 
-    : "http://localhost:5000/api",
+  baseURL: getApiBaseUrl(),
   timeout: 30000,
   headers: {
     "Content-Type": "application/json",
@@ -109,7 +109,7 @@ axiosInstance.interceptors.response.use(
 
       try {
         // ✅ Gọi API refresh token
-        const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+        const apiUrl = getApiOrigin();
         let refreshTokenVal = null;
         try {
           refreshTokenVal = getStore().getState().auth.refreshToken;
