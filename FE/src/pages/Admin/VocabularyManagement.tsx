@@ -24,7 +24,6 @@ import {
   Tooltip,
   Alert,
   CircularProgress,
-  Pagination,
   InputAdornment,
   Divider,
   TablePagination,

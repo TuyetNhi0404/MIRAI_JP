@@ -8,7 +8,7 @@ interface UseAttendanceDataReturn {
   loading: boolean;
   error: string | null;
   fetchStudents: (calendarId: string) => Promise<void>;
-  updateStatus: (attendanceId: string, status: AttendanceStatus) => Promise<void>;
+  updateStatus: (calendarId: string, userId: string, status: AttendanceStatus) => Promise<void>;
   updating: boolean;
 }
 
@@ -54,21 +54,23 @@ export function useAttendanceData(): UseAttendanceDataReturn {
     }
   }, []);
 
-  const updateStatus = useCallback(async (attendanceId: string, status: AttendanceStatus) => {
+  const updateStatus = useCallback(async (calendarId: string, userId: string, status: AttendanceStatus) => {
     try {
       setUpdating(true);
       setError(null);
 
-      console.log('🔄 Updating attendance:', { attendanceId, status });
+      console.log('🔄 Updating attendance:', { calendarId, userId, status });
 
-      await attendanceService.updateAttendanceStatus(attendanceId, { status });
+      await attendanceService.updateAttendanceStatus(calendarId, userId, { status });
 
       setStudents(prev => 
-        prev.map((student: AttendanceRecord) => 
-          student.attendanceId === attendanceId 
+        prev.map((student: AttendanceRecord) => {
+          // Check if userId is just string or an object with _id
+          const currentUserId = typeof student.userId === 'string' ? student.userId : student.userId?._id;
+          return currentUserId === userId 
             ? { ...student, status } 
-            : student
-        )
+            : student;
+        })
       );
     } catch (err) {
       const axiosError = err as AxiosError<ErrorResponse>;

@@ -26,6 +26,12 @@ out/
 bin/
 obj/
 
+# TypeScript build artifacts that tsc emits (must never live in src/)
+src/**/*.js
+src/**/*.js.map
+src/**/*.d.ts
+src/**/*.d.ts.map
+
 # Logs and databases
 logs/
 *.log
@@ -72,3 +78,6 @@ services/speaking-practice/venv/
 services/speaking-practice/.venv/
 services/speaking-practice/uploads/*
 !services/speaking-practice/uploads/.gitkeep
+services/speaking-practice/.hf_cache/
+
+deploy.sh

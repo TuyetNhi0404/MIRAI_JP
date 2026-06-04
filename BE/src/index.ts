@@ -12,17 +12,24 @@ import {
   registerSpeakingPracticeRoutes,
   attachSpeakingWebSocketUpgrade,
 } from "./routes/speaking-practice.routes";
+import { attachGrammarWebSocketUpgrade } from "./routes/grammar.ws";
 
 // Import các route FE riêng
 import assignmentRoutes from "./routes/FE/assignment.routes";
 import accountsRouter from "./routes/FE/accounts.routes";
-import forumRoutes from "./routes/FE/forum.routes";
+
 const app: Application = express();
+app.set("trust proxy", 1);
+
+function parseCorsOrigins(): string[] {
+  const raw = process.env.CORS_ORIGINS || process.env.FRONTEND_URL || "http://localhost:5173";
+  return raw.split(",").map(s => s.trim()).filter(Boolean);
+}
 
 // ✅ 1. Cấu hình CORS (đặt trước mọi middleware khác)
 app.use(
   cors({
-    origin: "http://localhost:5173", // cho phép frontend React chạy local
+    origin: parseCorsOrigins(),
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -39,37 +46,47 @@ registerSpeakingPracticeRoutes(app);
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// ✅ 4. Kết nối Database (bỏ qua khi test)
+// ✅ 4. Kết nối Database + Redis probe (bỏ qua khi test)
+async function initBackgroundJobs(): Promise<void> {
+  const { ensureRedisReady } = await import("./config/redis.config");
+  await ensureRedisReady();
+  const { startGrammarWorker } = await import("./workers/grammar.worker");
+  startGrammarWorker();
+  await import("./config/cron");
+  console.log(" Cron jobs initialized");
+}
+
 if (process.env.NODE_ENV !== "test") {
   connect();
-  import("./config/cron")
-    .then(() => {
-      console.log(" Cron jobs initialized");
-    })
-    .catch((err) => {
-      console.error(" Failed to initialize cron jobs:", err);
-    });
 }
 
 // ✅ 5. Đăng ký routes FE cụ thể
 app.use("/api/assignments", assignmentRoutes);
 app.use("/api/accounts", accountsRouter);
-app.use("/api/forum", forumRoutes);
 // app.use("/api/accounts", accountsRouter);
 
 // ✅ 6. Đăng ký routes backend tổng hợp
 routes(app);
 
-// ✅ 7. Khởi động server
-if (process.env.NODE_ENV !== "test") {
+// ✅ 7. Khởi động server (sau khi probe Redis xong)
+async function startServer(): Promise<void> {
+  await initBackgroundJobs();
   const PORT = process.env.PORT || 5000;
   const server = http.createServer(app);
   attachSpeakingWebSocketUpgrade(server);
+  attachGrammarWebSocketUpgrade(server);
   server.listen(PORT, () => {
     console.log(` Server running at http://localhost:${PORT}`);
     if (process.env.ENABLE_SPEAKING_PRACTICE === "true") {
       console.log(` Speaking practice proxy → ${process.env.SPEAKING_SERVICE_URL || "http://127.0.0.1:8000"}`);
     }
+  });
+}
+
+if (process.env.NODE_ENV !== "test") {
+  startServer().catch(err => {
+    console.error("Server failed to start:", err);
+    process.exit(1);
   });
 }
 

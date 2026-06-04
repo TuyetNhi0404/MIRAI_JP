@@ -8,7 +8,14 @@ export interface ISubmission extends Document {
   submittedAt: Date;
   status: "submitted" | "late" | "not_submitted" | "graded";
   score?: number | null;
-  feedback?: string;
+  feedbacks: {
+    studentId: mongoose.Types.ObjectId;
+    teacherId?: mongoose.Types.ObjectId;
+    message: string;
+    reply?: string;
+    createdAt?: Date;
+    updatedAt?: Date;
+  }[];
   gradedBy?: mongoose.Types.ObjectId | null;
   gradedAt?: Date | null;
   createdAt?: Date;
@@ -41,7 +48,16 @@ const submissionSchema = new Schema<ISubmission>(
       default: "submitted",
     },
     score: { type: Number, default: null },
-    feedback: { type: String, default: "" },
+    feedbacks: [
+      {
+        studentId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+        teacherId: { type: Schema.Types.ObjectId, ref: "User" },
+        message: { type: String, required: true },
+        reply: { type: String },
+        createdAt: { type: Date, default: Date.now },
+        updatedAt: { type: Date, default: Date.now }
+      }
+    ],
     gradedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
     gradedAt: { type: Date, default: null },
   },

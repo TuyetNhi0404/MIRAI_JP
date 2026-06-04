@@ -282,7 +282,15 @@ export const gradeSubmission = async (req: Request, res: Response) => {
 
     // Chấm điểm
     submission.score = score;
-    submission.feedback = feedback;
+    if (feedback) {
+      submission.feedbacks.push({
+        studentId: submission.studentId,
+        teacherId: teacherId,
+        message: feedback,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+    }
     submission.status = "graded";
     submission.gradedBy = teacherId;
     submission.gradedAt = new Date();
@@ -420,5 +428,71 @@ export const updateSubmission = async (req: Request, res: Response) => {
       message: "Error updating submission",
       error: errorMessage,
     });
+  }
+};
+
+// Thêm câu hỏi/feedback từ student
+export const addFeedbackToSubmission = async (req: Request, res: Response) => {
+  try {
+    const { submissionId } = req.params;
+    const { message } = req.body;
+    const studentId = new mongoose.Types.ObjectId(req.id);
+
+    const submission = await Submission.findById(submissionId);
+    if (!submission) {
+      return res.status(404).json({ message: "Submission not found" });
+    }
+
+    const studentIdObj = submission.studentId instanceof mongoose.Types.ObjectId
+      ? submission.studentId
+      : (submission.studentId as { _id: mongoose.Types.ObjectId })._id;
+
+    if (studentIdObj.toString() !== studentId.toString()) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    submission.feedbacks.push({
+      studentId,
+      message,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    await submission.save();
+
+    return res.status(201).json({ success: true, submission });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return res.status(500).json({ message: "Error", error: errorMessage });
+  }
+};
+
+// Teacher reply
+export const replyFeedbackOnSubmission = async (req: Request, res: Response) => {
+  try {
+    const { submissionId, feedbackId } = req.params;
+    const { reply } = req.body;
+    const teacherId = new mongoose.Types.ObjectId(req.id);
+
+    const submission = await Submission.findById(submissionId);
+    if (!submission) {
+      return res.status(404).json({ message: "Submission not found" });
+    }
+
+    const feedbackItem = submission.feedbacks.find(f => (f as any)._id?.toString() === feedbackId);
+    if (!feedbackItem) {
+      return res.status(404).json({ message: "Feedback not found" });
+    }
+
+    feedbackItem.reply = reply;
+    feedbackItem.teacherId = teacherId;
+    feedbackItem.updatedAt = new Date();
+
+    await submission.save();
+
+    return res.json({ success: true, submission });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return res.status(500).json({ message: "Error", error: errorMessage });
   }
 };

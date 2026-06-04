@@ -13,6 +13,12 @@ import {
   getStudentCourse,
   listTeacherCourses,
   getClassMembers,
+  getCourseStudents,
+  getCourseTeachers,
+  addCourseMember,
+  deleteCourseMember,
+  getDeletedCourseStudents,
+  transferStudent,
 } from "../controller/course.controller";
 import { verifyToken, authorizeRoles } from "../middleware/auth.middleware";
 const router = Router();
@@ -42,4 +48,12 @@ router.get("/student/course/:courseId", verifyToken, authorizeRoles("student"), 
 router.get('/teacher/courses', verifyToken, authorizeRoles("teacher"), listTeacherCourses);
 // Teacher xem danh sách các sinh viên có trong khóa học của mình 
 router.get('/teacher/courses/:courseId/members', verifyToken, authorizeRoles("teacher"), getClassMembers);
+// ============= COURSE MEMBER ENDPOINTS =============
+router.get("/:courseId/students", verifyToken, getCourseStudents);
+router.get("/:courseId/teachers", verifyToken, getCourseTeachers);
+router.post("/:courseId/members", verifyToken, authorizeRoles("admin"), addCourseMember);
+router.delete("/:courseId/members/:memberId", verifyToken, authorizeRoles("admin", "teacher"), deleteCourseMember);
+router.get("/:courseId/deleted-students", verifyToken, authorizeRoles("admin", "teacher"), getDeletedCourseStudents);
+router.put("/:studentId/transfer", verifyToken, authorizeRoles("admin", "teacher"), transferStudent);
+
 export default router;

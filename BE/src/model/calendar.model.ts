@@ -6,6 +6,12 @@ export enum CalendarStatus {
   COMPLETED = "completed",
 }
 
+export enum AttendanceStatus {
+  NOT_YET = "not_yet",
+  ABSENT = "absent",
+  PRESENT = "present",
+}
+
 export interface ICourseCalendar extends Document {
   courseId: mongoose.Types.ObjectId;
   sessionId: mongoose.Types.ObjectId;
@@ -13,6 +19,13 @@ export interface ICourseCalendar extends Document {
   date: Date;
   note?: string;
   status: CalendarStatus;
+  createdAt: Date;
+  updatedAt: Date;
+  attendances: {
+    _id?: mongoose.Types.ObjectId;
+    userId: mongoose.Types.ObjectId;
+    status: AttendanceStatus;
+  }[];
 }
 
 const CourseCalendarSchema = new Schema<ICourseCalendar>(
@@ -27,6 +40,16 @@ const CourseCalendarSchema = new Schema<ICourseCalendar>(
       enum: Object.values(CalendarStatus),
       default: CalendarStatus.NOT_YET,
     },
+    attendances: [
+      {
+        userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+        status: {
+          type: String,
+          enum: Object.values(AttendanceStatus),
+          default: AttendanceStatus.NOT_YET,
+        },
+      },
+    ],
   },
   { timestamps: true }
 );
