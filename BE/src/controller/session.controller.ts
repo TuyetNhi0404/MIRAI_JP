@@ -24,7 +24,7 @@ export const createSession = async (req: Request, res: Response) => {
 // GET ALL
 export const getAllSessions = async (req: Request, res: Response) => {
   try {
-    const sessions = await Session.find().populate("sessionName");
+    const sessions = await Session.find().sort({ startTime: 1 });
     res.status(200).json({ message: "Successfully retrieved session list.", data: sessions });
   } catch (error) {
     res.status(500).json({ message: "Server error while retrieving sessions." });
