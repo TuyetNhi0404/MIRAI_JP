@@ -66,7 +66,7 @@ export const RequestDetailModal: React.FC<RequestDetailModalProps> = ({
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+    return new Date(dateString).toLocaleDateString("vi-VN", {
       day: "2-digit",
       month: "short",
       year: "numeric",

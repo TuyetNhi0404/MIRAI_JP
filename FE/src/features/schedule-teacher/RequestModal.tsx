@@ -134,7 +134,7 @@ mb: 2,
               <Typography variant="body2" sx={{ mb: 0.8, display: 'flex' }}>
                 <strong style={{ minWidth: 100 }}>Date:</strong>
                 <span>
-                  {new Date(scheduleItem.dateStr).toLocaleDateString('en-US', {
+                  {new Date(scheduleItem.dateStr).toLocaleDateString('vi-VN', {
                     year: 'numeric',
                     month: 'short',
                     day: 'numeric',

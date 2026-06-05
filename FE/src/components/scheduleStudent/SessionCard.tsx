@@ -273,7 +273,7 @@ const SessionCard: React.FC<Props> = ({
     } catch (e) {
       console.warn("getTeacherName error:", e);
     }
-    return "No Teacher Info";
+    return "Chưa có thông tin giáo viên";
   };
 
   const teacherName = getTeacherName();
@@ -301,12 +301,12 @@ const SessionCard: React.FC<Props> = ({
   const getChipConfig = () => {
     switch (status) {
       case "present":
-        return { label: "PRESENT", bg: "#4caf50", text: "#ffffff" };
+        return { label: "CÓ MẶT", bg: "#4caf50", text: "#ffffff" };
       case "absent":
-        return { label: "ABSENT", bg: "#f44336", text: "#ffffff" };
+        return { label: "VẮNG MẶT", bg: "#f44336", text: "#ffffff" };
       case "not_yet":
       default:
-        return { label: "NOT YET", bg: "#757575", text: "#ffffff" };
+        return { label: "CHƯA HỌC", bg: "#757575", text: "#ffffff" };
     }
   };
   const chipConfig = getChipConfig();
@@ -401,7 +401,7 @@ const SessionCard: React.FC<Props> = ({
                 overflow: "hidden",
               }}
             >
-              {session.courseName ?? "Unknown course"}
+              {session.courseName ?? "Chưa xác định khóa học"}
             </Typography>
 
             <Typography
@@ -495,7 +495,7 @@ const SessionCard: React.FC<Props> = ({
                 textOverflow: "ellipsis",
               }}
             >
-              {session.courseName ?? "Unknown course"}
+              {session.courseName ?? "Chưa xác định khóa học"}
             </Typography>
 
             <Typography

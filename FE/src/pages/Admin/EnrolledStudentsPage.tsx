@@ -898,7 +898,7 @@ const EnrolledStudentsPage: React.FC = () => {
             alignSelf: { xs: 'flex-start', sm: 'center' },
           }}
         >
-          {isMobile ? '' : 'Back'}
+          {isMobile ? '' : 'Quay lại'}
         </Button>
         <Box
           sx={{
@@ -918,11 +918,11 @@ const EnrolledStudentsPage: React.FC = () => {
               margin: 0,
             }}
           >
-            Enrolled Students
+            Học viên ghi danh
           </Typography>
           {courseInfo && (
             <Chip
-              label={`${courseInfo.enrolledCount || 0} students`}
+              label={`${courseInfo.enrolledCount || 0} học viên`}
               sx={{
                 backgroundColor: '#B90000',
                 color: 'white',
@@ -1061,16 +1061,16 @@ const EnrolledStudentsPage: React.FC = () => {
           <Tab
             label={
               isMobile
-                ? `Active (${enrolledStudents.length})`
-                : `Active Students (${enrolledStudents.length})`
+                ? `Đang học (${enrolledStudents.length})`
+                : `Học viên đang học (${enrolledStudents.length})`
             }
             value={0}
           />
           <Tab
             label={
               isMobile
-                ? `Removed (${removedStudents.length})`
-                : `Removed Students (${removedStudents.length})`
+                ? `Đã rời (${removedStudents.length})`
+                : `Học viên đã rời (${removedStudents.length})`
             }
             value={1}
           />
@@ -1098,7 +1098,7 @@ const EnrolledStudentsPage: React.FC = () => {
             }}
           >
             <TextField
-              placeholder="Search by name or email..."
+              placeholder="Tìm theo tên hoặc email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               size="small"
@@ -1142,7 +1142,7 @@ const EnrolledStudentsPage: React.FC = () => {
                 variant="body1"
                 sx={{ color: '#666', fontSize: { xs: '0.875rem', sm: '1rem' } }}
               >
-                Loading students...
+                Đang tải học viên...
               </Typography>
             </Paper>
           ) : filteredStudents.length === 0 ? (
@@ -1202,7 +1202,7 @@ const EnrolledStudentsPage: React.FC = () => {
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
                             Enrolled:{' '}
-                            {new Date(student.enrolledAt).toLocaleDateString('en-US', {
+                            {new Date(student.enrolledAt).toLocaleDateString('vi-VN', {
                               year: 'numeric',
                               month: 'short',
                               day: 'numeric',
@@ -1221,7 +1221,7 @@ const EnrolledStudentsPage: React.FC = () => {
                                 onClick={() => handleTransferClick(student)}
                                 sx={{ flex: 1, minWidth: '120px' }}
                               >
-                                Transfer
+                                Chuyển lớp
                               </Button>
                             )}
                             <Button
@@ -1350,7 +1350,7 @@ const EnrolledStudentsPage: React.FC = () => {
                                 fontSize: { xs: '0.875rem', sm: '1rem' },
                               }}
                             >
-                              {new Date(student.enrolledAt).toLocaleDateString('en-US', {
+                              {new Date(student.enrolledAt).toLocaleDateString('vi-VN', {
                                 year: 'numeric',
                                 month: 'short',
                                 day: 'numeric',
@@ -1464,7 +1464,7 @@ const EnrolledStudentsPage: React.FC = () => {
                 variant="body1"
                 sx={{ color: '#666', fontSize: { xs: '0.875rem', sm: '1rem' } }}
               >
-                Loading removed students...
+                Đang tải danh sách học viên đã rời...
               </Typography>
             </Paper>
           ) : removedStudents.length === 0 ? (
@@ -1493,7 +1493,7 @@ const EnrolledStudentsPage: React.FC = () => {
                 variant="body2"
                 sx={{ color: '#999', fontSize: { xs: '0.875rem', sm: '1rem' } }}
               >
-                There are no removed students for this course.
+                Không có học viên nào đã rời khỏa khóa học này.
               </Typography>
             </Paper>
           ) : isMobile ? (
@@ -1528,7 +1528,7 @@ const EnrolledStudentsPage: React.FC = () => {
                           <Typography variant="caption" color="text.secondary">
                             Removed:{' '}
                             {student.deletedAt
-                              ? new Date(student.deletedAt).toLocaleDateString('en-US', {
+                              ? new Date(student.deletedAt).toLocaleDateString('vi-VN', {
                                   year: 'numeric',
                                   month: 'short',
                                   day: 'numeric',
@@ -1676,7 +1676,7 @@ const EnrolledStudentsPage: React.FC = () => {
                             }}
                           >
                             {student.deletedAt
-                              ? new Date(student.deletedAt).toLocaleDateString('en-US', {
+                              ? new Date(student.deletedAt).toLocaleDateString('vi-VN', {
                                   year: 'numeric',
                                   month: 'short',
                                   day: 'numeric',

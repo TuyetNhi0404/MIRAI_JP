@@ -344,7 +344,7 @@ const StudentStatisticsDashboard: React.FC = () => {
                       }}
                     >
                       Started:{" "}
-                      {new Date(course.startDate).toLocaleDateString("en-US", {
+                      {new Date(course.startDate).toLocaleDateString("vi-VN", {
                         year: "numeric",
                         month: "short",
                         day: "numeric",
@@ -891,7 +891,7 @@ const StudentStatisticsDashboard: React.FC = () => {
         <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: "0.7rem", md: "0.75rem" } }}>
           Last Calculated:{" "}
           {statistics
-            ? new Date(statistics.scoreComponent.lastCalculated).toLocaleString("en-US", {
+            ? new Date(statistics.scoreComponent.lastCalculated).toLocaleString("vi-VN", {
                 year: "numeric",
                 month: "short",
                 day: "numeric",

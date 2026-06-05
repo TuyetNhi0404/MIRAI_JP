@@ -245,7 +245,7 @@ export default function ScheduleCreatorCalendar() {
                 }}
               >
                 <Typography variant="h6" fontWeight={700}>
-                  {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                  {date.toLocaleDateString('vi-VN', { weekday: 'short' })}
                 </Typography>
                 <Typography variant="body2">
                   {formatDateDisplay(date)}
@@ -417,7 +417,7 @@ export default function ScheduleCreatorCalendar() {
                 }}
               >
                 <Typography sx={{ fontWeight: 600, color: isToday ? 'primary.main' : 'text.primary' }}>
-                  {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                  {date.toLocaleDateString('vi-VN', { weekday: 'short' })}
                 </Typography>
                 <Typography variant="body2" sx={{ color: isToday ? 'primary.main' : 'text.secondary' }}>
                   {formatDateDisplay(date)}
@@ -497,7 +497,7 @@ export default function ScheduleCreatorCalendar() {
               <ChevronLeft />
             </IconButton>
             <Typography sx={{ flex: 1, textAlign: 'center', fontWeight: 600, fontSize: isMobile ? '0.875rem' : '1rem' }}>
-              {weekDates[0].getDate()} - {weekDates[6].getDate()} {weekDates[0].toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              {weekDates[0].getDate()} - {weekDates[6].getDate()} {weekDates[0].toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })}
             </Typography>
             <IconButton onClick={handleNext} size="small">
               <ChevronRight />
