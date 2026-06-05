@@ -1,7 +1,8 @@
 import axios, { AxiosError } from "axios";
 import type { RequestSchedule } from "../types/requestSchedule.types";
 
-const API_BASE_URL = "http://localhost:5000/api";
+const BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+const API_BASE_URL = `${BASE}/api`;
 
 interface RefreshConfig {
   _retry?: boolean;

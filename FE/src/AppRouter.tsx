@@ -27,7 +27,7 @@ import EnrolledStudentsPage from "./pages/Admin/EnrolledStudentsPage";
 import EnrollmentRequestsPage from "./pages/Admin/EnrollmentRequestsPage";
 import ForumListPage from "./pages/ForumListPage";
 import RequestSchedulePage from "./pages/Admin/RequestSchedulePage";
-import BannedUsersPage from "./pages/Admin/BannedUsersPage";
+// import BannedUsersPage from "./pages/Admin/BannedUsersPage";
 import ListeningManagePage from "./features/listening/admin/ListeningManagePage";
 import ListeningFormPage from "./features/listening/admin/ListeningFormPage";
 
@@ -106,7 +106,7 @@ const AppRouter = () => {
           </Route>
           <Route path="admin/courses/:id/students" element={<EnrolledStudentsPage />} />
           <Route path="admin/request-management" element={<RequestSchedulePage />} />
-           <Route path="admin/banned-users" element={<BannedUsersPage />} />
+            {/*  <Route path="admin/banned-users" element={<BannedUsersPage />} /> */}
           <Route path="admin/vocabulary" element={<VocabularyManagement />} />
           <Route path="admin/grammar" element={<AdminGrammarManagement />} />
           <Route path="admin/listening" element={<ListeningManagePage />} />
