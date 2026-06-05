@@ -7,8 +7,8 @@ const AdminDashboard = () => {
 
   return (
     <div style={{ padding: '20px' }}>
-      <h2>Welcome to Admin Dashboard</h2>
-      <p>Current user role: {user?.role || 'Not set'}</p>
+      <h2>Chào mừng bạn đến với Trang Quản Trị</h2>
+      <p>Vai trò người dùng hiện tại: {user?.role || 'Chưa thiết lập'}</p>
     </div>
   );
 };

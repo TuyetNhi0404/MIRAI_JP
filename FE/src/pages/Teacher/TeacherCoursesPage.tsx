@@ -66,7 +66,7 @@ const TeacherCoursesPage: React.FC = () => {
       setCourses(response.data.data || []);
     } catch (err) {
       const error = err as { response?: { data?: { message?: string } } };
-      setError(error.response?.data?.message || 'Failed to load courses');
+      setError(error.response?.data?.message || 'Không thể tải danh sách khóa học');
       setCourses([]);
     } finally {
       setLoading(false);
@@ -129,9 +129,9 @@ course.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
   const goNext = () => setPage((p) => Math.min(totalPages, p + 1));
 
   const mapStatus = (s: Course['status']) => {
-    if (s === 'not_yet') return { label: 'Not Started', color: 'error' as const };
-    if (s === 'in_progress') return { label: 'In Progress', color: 'warning' as const };
-    return { label: 'Completed', color: 'success' as const };
+    if (s === 'not_yet') return { label: 'Chưa bắt đầu', color: 'error' as const };
+    if (s === 'in_progress') return { label: 'Đang diễn ra', color: 'warning' as const };
+    return { label: 'Đã hoàn thành', color: 'success' as const };
   };
 
   return (
@@ -146,14 +146,14 @@ course.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             fontSize: { xs: "1.5rem", sm: "2rem" },
           }}
         >
-          MY COURSES
+          KHÓA HỌC CỦA TÔI
         </Typography>
       </Box>
 
       {/* Search + Right actions */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4, flexWrap: { xs: 'nowrap', sm: 'nowrap' } }}>
         <TextField
-          placeholder="Search courses..."
+          placeholder="Tìm kiếm khóa học..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
@@ -225,10 +225,10 @@ borderWidth: '2px'
           <Filter size={18} />
         </IconButton>
         <Menu anchorEl={filterAnchorEl} open={Boolean(filterAnchorEl)} onClose={closeFilterMenu}>
-          <MenuItem selected={filterStatus === 'all'} onClick={() => applyFilter('all')}>All</MenuItem>
-          <MenuItem selected={filterStatus === 'not_yet'} onClick={() => applyFilter('not_yet')}>Not Started</MenuItem>
-          <MenuItem selected={filterStatus === 'in_progress'} onClick={() => applyFilter('in_progress')}>In Progress</MenuItem>
-          <MenuItem selected={filterStatus === 'complete'} onClick={() => applyFilter('complete')}>Completed</MenuItem>
+          <MenuItem selected={filterStatus === 'all'} onClick={() => applyFilter('all')}>Tất cả</MenuItem>
+          <MenuItem selected={filterStatus === 'not_yet'} onClick={() => applyFilter('not_yet')}>Chưa bắt đầu</MenuItem>
+          <MenuItem selected={filterStatus === 'in_progress'} onClick={() => applyFilter('in_progress')}>Đang diễn ra</MenuItem>
+          <MenuItem selected={filterStatus === 'complete'} onClick={() => applyFilter('complete')}>Đã hoàn thành</MenuItem>
         </Menu>
       </Box>
 
@@ -243,14 +243,14 @@ borderWidth: '2px'
       {loading ? (
         <Box sx={{ padding: 8, textAlign: 'center', color: '#6b7280' }}>
           <CircularProgress sx={{ mb: 2, color: '#B90000' }} />
-          <Typography variant="body1" sx={{ fontSize: '0.875rem' }}>Loading courses...</Typography>
+          <Typography variant="body1" sx={{ fontSize: '0.875rem' }}>Đang tải danh sách khóa học...</Typography>
         </Box>
       ) : filteredCourses.length === 0 ? (
         <Box sx={{ padding: 8, textAlign: 'center', color: '#6b7280' }}>
           <Typography variant="body1" sx={{ fontSize: '0.875rem' }}>
             {searchQuery || filterStatus !== 'all'
-              ? 'No courses match your current filters.'
-              : 'You are not assigned as a homeroom teacher for any courses yet'}
+              ? 'Không tìm thấy khóa học nào phù hợp với bộ lọc.'
+              : 'Bạn chưa được phân công làm giáo viên chủ nhiệm cho khóa học nào'}
           </Typography>
         </Box>
       ) : (
@@ -319,7 +319,7 @@ gap: { xs: 1.5, sm: 2, md: 2.5 },
                     {/* Homeroom Teacher */}
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500 }}>
-                        Homeroom Teacher
+                        Giáo viên chủ nhiệm
                       </Typography>
                       <Typography variant="body2" sx={{ color: '#111827', fontSize: '0.875rem', fontWeight: 600, textAlign: 'right', maxWidth: '60%' }}>
                         {course.homeroomTeacher || '-'}
@@ -330,7 +330,7 @@ gap: { xs: 1.5, sm: 2, md: 2.5 },
                     <Box sx={{ display: 'flex', gap: 2 }}>
                       <Box sx={{ flex: 1 }}>
                         <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500, mb: 0.25 }}>
-                          Session
+                          Ca học
 </Typography>
                         <Typography variant="body2" sx={{ color: '#111827', fontSize: '0.875rem', fontWeight: 600 }}>
                           {course.session ?? 0}
@@ -338,7 +338,7 @@ gap: { xs: 1.5, sm: 2, md: 2.5 },
                       </Box>
                       <Box sx={{ flex: 1 }}>
                         <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500, mb: 0.25 }}>
-                          Capacity
+                          Sức chứa
                         </Typography>
                         <Typography variant="body2" sx={{ color: '#111827', fontSize: '0.875rem', fontWeight: 600 }}>
                           {course.capacity}
@@ -355,7 +355,7 @@ gap: { xs: 1.5, sm: 2, md: 2.5 },
                       border: '1px solid #f0f0f0'
                     }}>
                       <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500 }}>
-                        Enrolled
+                        Đã ghi danh
                       </Typography>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Typography
@@ -379,7 +379,7 @@ gap: { xs: 1.5, sm: 2, md: 2.5 },
                       {/* Start Date */}
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexDirection: { xs: 'row', sm: 'row' }, gap: { xs: 1, sm: 0 } }}>
                         <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500 }}>
-                          Start Date
+                          Ngày bắt đầu
                         </Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0, justifyContent: 'flex-end', width: { xs: 160, sm: 180 }, flexShrink: 0 }}>
                           <CalendarDays size={16} color="#6b7280" />
@@ -392,7 +392,7 @@ gap: { xs: 1.5, sm: 2, md: 2.5 },
                       {/* End Date */}
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexDirection: { xs: 'row', sm: 'row' }, gap: { xs: 1, sm: 0 } }}>
                         <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500 }}>
-                          End Date
+                          Ngày kết thúc
                         </Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0, justifyContent: 'flex-end', width: { xs: 160, sm: 180 }, flexShrink: 0 }}>
                           <CalendarDays size={16} color="#6b7280" />
@@ -406,7 +406,7 @@ gap: { xs: 1.5, sm: 2, md: 2.5 },
                     {/* Status */}
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 1 }}>
                       <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500 }}>
-                        Status
+                        Trạng thái
                       </Typography>
                       <Chip
                         label={status.label}

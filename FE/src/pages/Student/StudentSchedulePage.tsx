@@ -179,8 +179,8 @@ const fetchAllCourses = async (): Promise<Map<string, string>> => {
 };
 
 const extractTeacherName = (teacherData: unknown): string => {
-  if (!teacherData) return "Unknown Teacher";
-  if (typeof teacherData === "string") return "Unknown Teacher";
+  if (!teacherData) return "Giáo viên chưa xác định";
+  if (typeof teacherData === "string") return "Giáo viên chưa xác định";
   
   if (typeof teacherData === "object") {
     const teacher = teacherData as TeacherData;
@@ -203,7 +203,7 @@ const extractTeacherName = (teacherData: unknown): string => {
     }
   }
   
-  return "Unknown Teacher";
+  return "Giáo viên chưa xác định";
 };
 
 const fetchMyAttendance = async (): Promise<Map<string, AttendanceStatus>> => {
@@ -336,23 +336,23 @@ const StudentSchedulePage: React.FC = () => {
           const endTime = sessionObj?.endTime ?? it.endTime ?? "00:00";
           const slotNumber = inferSlotNumber(it.slotNumber ?? it.slot ?? null, startTime);
 
-          let courseName = "Unknown Course";
+          let courseName = "Khóa học không xác định";
           let courseId: string | number | null = null;
 
           if (it.courseId) {
             if (typeof it.courseId === "object" && it.courseId !== null) {
               const courseObj = it.courseId as CourseData;
               courseId = courseObj._id || courseObj.id || null;
-              courseName = courseObj.courseName || courseObj.name || "Unknown";
+              courseName = courseObj.courseName || courseObj.name || "Chưa xác định";
 
-              if (courseName === "Unknown" && courseId) {
+              if (courseName === "Chưa xác định" && courseId) {
                 const cachedName = courseMap.get(String(courseId)) || await fetchCourseName(String(courseId));
-                if (cachedName !== "Unknown") courseName = cachedName;
+                if (cachedName !== "Chưa xác định") courseName = cachedName;
               }
             } else if (typeof it.courseId === "string") {
               courseId = it.courseId;
               const cachedName = courseMap.get(courseId) || await fetchCourseName(courseId);
-              if (cachedName !== "Unknown") courseName = cachedName;
+              if (cachedName !== "Chưa xác định") courseName = cachedName;
             }
           }
 
@@ -375,12 +375,12 @@ const StudentSchedulePage: React.FC = () => {
             s: attendanceStatus,
           };
 
-          let teacher: string = "Unknown Teacher";
+          let teacher: string = "Giáo viên chưa xác định";
           if (it.teacherId && typeof it.teacherId === "object") {
             teacher = extractTeacherName(it.teacherId);
           }
 
-          if (teacher === "Unknown Teacher" || teacher.startsWith("Teacher ")) {
+          if (teacher === "Giáo viên chưa xác định" || teacher.startsWith("Teacher ")) {
             const alt = it.teacher || it.teacherName || it.instructor?.name;
             if (alt && typeof alt === "string" && !alt.includes("@")) {
               teacher = alt.trim();
@@ -494,7 +494,7 @@ const StudentSchedulePage: React.FC = () => {
               whiteSpace: "nowrap",
             }}
           >
-            MY SCHEDULE
+            LỊCH HỌC CỦA TÔI
           </Typography>
         </Box>
 
@@ -515,10 +515,10 @@ const StudentSchedulePage: React.FC = () => {
           >
             <Box>
               <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                You are not logged in or your session has expired.
+                Bạn chưa đăng nhập hoặc phiên làm việc đã hết hạn.
               </Typography>
               <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                Please log in to view your schedule.
+                Vui lòng đăng nhập để xem lịch học của bạn.
               </Typography>
             </Box>
             <Box>
@@ -529,7 +529,7 @@ const StudentSchedulePage: React.FC = () => {
                 }}
                 sx={{ backgroundColor: PRIMARY_ORANGE }}
               >
-                Log In
+                Đăng nhập
               </Button>
             </Box>
           </Box>
@@ -540,7 +540,7 @@ const StudentSchedulePage: React.FC = () => {
             variant="body1"
             sx={{ color: "#555", mb: 1, fontWeight: 500, fontSize: { xs: "0.9rem", sm: "1rem" } }}
           >
-            Select Week:
+            Chọn tuần:
           </Typography>
           <Stack
             direction="row"
@@ -641,7 +641,7 @@ const StudentSchedulePage: React.FC = () => {
             <Box display="flex" alignItems="center" justifyContent="center" gap={2} p={{ xs: 3, sm: 6 }}>
               <CircularProgress sx={{ color: PRIMARY_ORANGE }} size={isMobile ? 30 : 40} />
               <Typography variant={isMobile ? "body1" : "h6"} color="text.secondary">
-                Loading schedule...
+                Đang tải lịch học...
               </Typography>
             </Box>
           </Box>
@@ -678,7 +678,7 @@ const StudentSchedulePage: React.FC = () => {
                 }}
               >
                 <Typography variant="h6" color="text.secondary">
-                  No classes scheduled
+                  Chưa có lịch học
                 </Typography>
               </Box>
             )}
@@ -687,7 +687,7 @@ const StudentSchedulePage: React.FC = () => {
 
         <Box sx={{ mt: 3, px: { xs: 2, sm: 0 } }}>
           <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-            Attendance Legend:
+            Chú thích điểm danh:
           </Typography>
           <Box
             component="ul"
@@ -700,17 +700,17 @@ const StudentSchedulePage: React.FC = () => {
           >
             <li>
               <Typography variant="body2" sx={{ color: "#333", lineHeight: 1.6, fontSize: { xs: "0.875rem", sm: "1rem" } }}>
-                <strong style={{ color: "#4caf50" }}>(PRESENT)</strong>: You have attended the class.
+                <strong style={{ color: "#4caf50" }}>(CÓ MẶT)</strong>: Bạn đã tham gia lớp học.
               </Typography>
             </li>
             <li>
               <Typography variant="body2" sx={{ color: "#333", lineHeight: 1.6, fontSize: { xs: "0.875rem", sm: "1rem" } }}>
-                <strong style={{ color: "#f44336" }}>(ABSENT)</strong>: You were absent from the class.
+                <strong style={{ color: "#f44336" }}>(VẮNG MẶT)</strong>: Bạn đã vắng mặt trong lớp học.
               </Typography>
             </li>
             <li>
               <Typography variant="body2" sx={{ color: "#333", lineHeight: 1.6, fontSize: { xs: "0.875rem", sm: "1rem" } }}>
-                <strong style={{ color: "#757575" }}>(NOT YET)</strong>: Attendance has not been recorded yet.
+                <strong style={{ color: "#757575" }}>(CHƯA HỌC)</strong>: Điểm danh chưa được ghi nhận.
               </Typography>
             </li>
           </Box>

@@ -151,7 +151,7 @@ const TeacherQuizzesPage: React.FC = () => {
     try {
       const userId = user?._id || (user as UserWithId)?.id;
       if (!userId) {
-        showNotification('User not logged in or user ID not found!', 'error');
+        showNotification('Người dùng chưa đăng nhập hoặc không tìm thấy ID người dùng!', 'error');
         console.error('❌ User state:', user);
         return;
       }
@@ -167,12 +167,12 @@ const TeacherQuizzesPage: React.FC = () => {
       if (result.type.endsWith('/fulfilled')) {
         setCreateDialogOpen(false);
         setEditQuiz(null);
-        showNotification('Quiz created successfully!', 'success');
+        showNotification('Đã tạo bài kiểm tra thành công!', 'success');
       }
     } catch (err) {
       const error = err as Error;
       console.error("Failed to create quiz:", err);
-      showNotification(error.message || 'Failed to create quiz. Please check the console for details.', 'error');
+      showNotification(error.message || 'Tạo bài kiểm tra thất bại. Vui lòng kiểm tra console để biết chi tiết.', 'error');
     }
   };
 
@@ -189,28 +189,28 @@ const TeacherQuizzesPage: React.FC = () => {
       await updateExistingQuiz(editQuiz._id, updateData);
       setCreateDialogOpen(false);
       setEditQuiz(null);
-      showNotification('Quiz updated successfully!', 'success');
+      showNotification('Đã cập nhật bài kiểm tra thành công!', 'success');
     } catch (err) {
       const error = err as Error;
       console.error("Failed to update quiz:", err);
-      showNotification(error.message || 'Failed to update quiz', 'error');
+      showNotification(error.message || 'Cập nhật bài kiểm tra thất bại', 'error');
     }
   };
 
   const handleDeleteQuiz = async (quizId: string) => {
     showConfirmDialog(
-      'Delete Quiz',
-      'Are you sure you want to delete this quiz? This action cannot be undone.',
+      'Xóa bài kiểm tra',
+      'Bạn có chắc chắn muốn xóa bài kiểm tra này không? Hành động này không thể hoàn tác.',
       async () => {
         try {
           const userId = user?._id || (user as UserWithId)?.id;
           await removeQuiz(quizId, userId);
           closeConfirmDialog();
-          showNotification('✅ Quiz deleted successfully', 'success');
+          showNotification('✅ Đã xóa bài kiểm tra thành công', 'success');
         } catch (err) {
           const error = err as Error;
           console.error("Failed to delete quiz:", err);
-          showNotification(error.message || 'Failed to delete quiz', 'error');
+          showNotification(error.message || 'Xóa bài kiểm tra thất bại', 'error');
         }
       }
     );
@@ -277,7 +277,7 @@ const TeacherQuizzesPage: React.FC = () => {
             fontWeight: 700,
           }}
         >
-          Quiz Management
+          Quản lý bài kiểm tra
         </Typography>
         <Button
           variant="contained"
@@ -295,7 +295,7 @@ const TeacherQuizzesPage: React.FC = () => {
             fontWeight: 600,
           }}
         >
-          Create Quiz
+          Tạo bài kiểm tra
         </Button>
       </Box>
 
@@ -303,13 +303,13 @@ const TeacherQuizzesPage: React.FC = () => {
       <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap" }}>
         <TextField
           select
-          label="Filter by Course"
+          label="Lọc theo khóa học"
           value={filterCourse}
           onChange={(e) => setFilterCourse(e.target.value)}
           sx={{ minWidth: 200 }}
           size="small"
         >
-          <MenuItem value="">All Courses</MenuItem>
+          <MenuItem value="">Tất cả khóa học</MenuItem>
           {courses.map((course) => (
             <MenuItem key={course._id} value={course._id}>
               {course.name}
@@ -319,13 +319,13 @@ const TeacherQuizzesPage: React.FC = () => {
 
         <TextField
           select
-          label="Filter by Chapter"
+          label="Lọc theo chương"
           value={filterChapter}
           onChange={(e) => setFilterChapter(e.target.value)}
           sx={{ minWidth: 200 }}
           size="small"
         >
-          <MenuItem value="">All Chapters</MenuItem>
+          <MenuItem value="">Tất cả chương</MenuItem>
           {chapters.map((chapter) => (
             <MenuItem key={chapter._id} value={chapter._id}>
               {chapter.name}
@@ -492,7 +492,7 @@ const TeacherQuizzesPage: React.FC = () => {
               fontWeight: 500,
             }}
           >
-            Cancel
+            Hủy
           </Button>
           <Button
             onClick={confirmDialog.onConfirm}
@@ -506,7 +506,7 @@ const TeacherQuizzesPage: React.FC = () => {
               fontWeight: 600,
             }}
           >
-            {loading ? <CircularProgress size={20} color="inherit" /> : 'Delete'}
+            {loading ? <CircularProgress size={20} color="inherit" /> : 'Xóa'}
           </Button>
         </DialogActions>
       </Dialog>

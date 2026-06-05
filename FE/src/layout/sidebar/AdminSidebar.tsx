@@ -34,17 +34,16 @@ const AdminSidebar: React.FC<SidebarProps> = ({ isOpen }) => {
   const isDesktop = useMediaQuery("(min-width:900px)");
 
   const menuItems: MenuItem[] = [
-    { id: "leaderboard", label: "Leaderboard", icon: Trophy, path: "/dashboard/admin" },
-    { id: "users", label: "User Management", icon: Users, path: "/dashboard/admin/users" },
-    { id: "schedule-management", label: "Schedule Management", icon: CalendarCog, path: "/dashboard/admin/schedule-management" },
-    { id: "attendance-management", label: "Check Attendance", icon: ClipboardCheck, path: "/dashboard/admin/attendance-management" },
-    { id: "courses-manage", label: "Course Management", icon: BookOpen, path: "/dashboard/admin/courses" },
-    { id: "request-management", label: "Request Schedule", icon: ClipboardList, path: "/dashboard/admin/request-management" },
-    { id: "requests", label: "Enrollment Requests", icon: FileClock, path: "/dashboard/admin/requests" },
-    // { id: "banned-users", label: "Banned Users", icon: Ban, path: "/dashboard/admin/banned-users" },
+    { id: "leaderboard", label: "Bảng xếp hạng", icon: Trophy, path: "/dashboard/admin" },
+    { id: "users", label: "Quản lý người dùng", icon: Users, path: "/dashboard/admin/users" },
+    { id: "schedule-management", label: "Quản lý lịch học", icon: CalendarCog, path: "/dashboard/admin/schedule-management" },
+    { id: "attendance-management", label: "Điểm danh", icon: ClipboardCheck, path: "/dashboard/admin/attendance-management" },
+    { id: "courses-manage", label: "Quản lý khóa học", icon: BookOpen, path: "/dashboard/admin/courses" },
+    { id: "request-management", label: "Yêu cầu lịch học", icon: ClipboardList, path: "/dashboard/admin/request-management" },
+    { id: "requests", label: "Yêu cầu ghi danh", icon: FileClock, path: "/dashboard/admin/requests" },
     { id: "vocabulary", label: "Từ vựng JLPT", icon: BookMarked, path: "/dashboard/admin/vocabulary" },
     { id: "grammar-manage", label: "Ngữ pháp JLPT", icon: BookOpen, path: "/dashboard/admin/grammar" },
-    { id: "listening-manage", label: "Listening Manage", icon: Headphones, path: "/dashboard/admin/listening" },
+    { id: "listening-manage", label: "Bài nghe", icon: Headphones, path: "/dashboard/admin/listening" },
   ];
 
   const handleMenuClick = (path: string) => {

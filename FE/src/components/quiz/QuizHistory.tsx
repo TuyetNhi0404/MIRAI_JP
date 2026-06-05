@@ -48,10 +48,10 @@ const QuizHistory: React.FC<QuizHistoryProps> = ({ attempts }) => {
     return (
       <Box sx={{ textAlign: "center", py: { xs: 4, sm: 8 }, color: "#666" }}>
         <Typography variant={isMobile ? "body1" : "h6"}>
-          No quiz attempts yet
+          Chưa có lượt làm bài nào
         </Typography>
         <Typography variant="body2" sx={{ mt: 1, fontSize: { xs: '0.875rem', sm: '1rem' } }}>
-          Start taking quizzes to see your results here
+          Hãy bắt đầu làm bài kiểm tra để xem kết quả tại đây
         </Typography>
       </Box>
     );
@@ -63,8 +63,8 @@ const QuizHistory: React.FC<QuizHistoryProps> = ({ attempts }) => {
       <Stack spacing={{ xs: 2, sm: 2.5 }}>
         {attempts.map((attempt) => {
           const quizTitle = typeof attempt.quizId === 'string'
-            ? "Unknown Quiz"
-            : attempt.quizId.title || "Unknown Quiz";
+            ? "Bài kiểm tra không xác định"
+            : attempt.quizId.title || "Bài kiểm tra không xác định";
 
           return (
             <Card
@@ -112,7 +112,7 @@ const QuizHistory: React.FC<QuizHistoryProps> = ({ attempts }) => {
                       }}
                     >
                       <CalendarIcon sx={{ fontSize: '0.875rem' }} />
-                      {new Date(attempt.completedAt).toLocaleString('en-US', {
+                      {new Date(attempt.completedAt).toLocaleString('vi-VN', {
                         year: 'numeric',
                         month: 'short',
                         day: 'numeric',
@@ -124,7 +124,7 @@ const QuizHistory: React.FC<QuizHistoryProps> = ({ attempts }) => {
 
                   <Chip
                     icon={attempt.passed ? <PassIcon /> : <FailIcon />}
-                    label={attempt.passed ? "Passed" : "Failed"}
+                    label={attempt.passed ? "Đạt" : "Không đạt"}
                     color={attempt.passed ? "success" : "error"}
                     size="small"
                     sx={{
@@ -158,7 +158,7 @@ const QuizHistory: React.FC<QuizHistoryProps> = ({ attempts }) => {
                       }}
                     >
                       <ScoreIcon sx={{ fontSize: '0.875rem' }} />
-                      Score
+                      Điểm số
                     </Typography>
                     <Typography
                       variant="h6"
@@ -184,7 +184,7 @@ const QuizHistory: React.FC<QuizHistoryProps> = ({ attempts }) => {
                       }}
                     >
                       <QuizIcon sx={{ fontSize: '0.875rem' }} />
-                      Percentage
+                      Tỷ lệ chính xác
                     </Typography>
                     <Typography
                       variant="h6"
@@ -211,7 +211,7 @@ const QuizHistory: React.FC<QuizHistoryProps> = ({ attempts }) => {
                       }}
                     >
                       <TimerIcon sx={{ fontSize: '0.875rem' }} />
-                      Time Spent
+                      Thời gian làm bài
                     </Typography>
                     <Typography
                       variant="h6"
@@ -220,7 +220,7 @@ const QuizHistory: React.FC<QuizHistoryProps> = ({ attempts }) => {
                         fontSize: { xs: '1.125rem', sm: '1.25rem' }
                       }}
                     >
-                      {attempt.timeSpent} mins
+                      {attempt.timeSpent} phút
                     </Typography>
                   </Box>
                 </Box>
@@ -238,7 +238,7 @@ const QuizHistory: React.FC<QuizHistoryProps> = ({ attempts }) => {
                     py: { xs: 0.75, sm: 1 }
                   }}
                 >
-                  View Details
+                  Xem chi tiết
                 </Button>
               </CardContent>
             </Card>
@@ -263,33 +263,33 @@ const QuizHistory: React.FC<QuizHistoryProps> = ({ attempts }) => {
         <TableHead sx={{ backgroundColor: "#FFF5E6" }}>
           <TableRow>
             <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
-              Quiz Title
+              Tên bài kiểm tra
             </TableCell>
             <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem' }} align="center">
-              Score
+              Điểm
             </TableCell>
             <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem' }} align="center">
-              Percentage
+              Tỷ lệ
             </TableCell>
             <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem' }} align="center">
-              Status
+              Trạng thái
             </TableCell>
             <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem' }} align="center">
-              Time Spent
+              Thời gian làm
             </TableCell>
             <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
-              Completed At
+              Nộp lúc
             </TableCell>
             <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem' }} align="center">
-              Actions
+              Thao tác
             </TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
           {attempts.map((attempt) => {
             const quizTitle = typeof attempt.quizId === 'string'
-              ? "Unknown Quiz"
-              : attempt.quizId.title || "Unknown Quiz";
+              ? "Bài kiểm tra không xác định"
+              : attempt.quizId.title || "Bài kiểm tra không xác định";
 
             return (
               <TableRow
@@ -322,14 +322,14 @@ const QuizHistory: React.FC<QuizHistoryProps> = ({ attempts }) => {
                 <TableCell align="center">
                   <Chip
                     icon={attempt.passed ? <PassIcon /> : <FailIcon />}
-                    label={attempt.passed ? "Passed" : "Failed"}
+                    label={attempt.passed ? "Đạt" : "Không đạt"}
                     color={attempt.passed ? "success" : "error"}
                     size="small"
                   />
                 </TableCell>
                 <TableCell align="center">
                   <Typography variant="body2">
-                    {attempt.timeSpent} mins
+                    {attempt.timeSpent} phút
                   </Typography>
                 </TableCell>
                 <TableCell>
@@ -347,7 +347,7 @@ const QuizHistory: React.FC<QuizHistoryProps> = ({ attempts }) => {
                       "&:hover": { backgroundColor: "#FFF5E6" },
                     }}
                   >
-                    View
+                    Xem chi tiết
                   </Button>
                 </TableCell>
               </TableRow>

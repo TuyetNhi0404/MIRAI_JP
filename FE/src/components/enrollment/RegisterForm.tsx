@@ -64,7 +64,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
     const result = await enrollCourse({ courseId, studentName, studentEmail });
 
     if (result.success) {
-      setSuccessMessage("Registration successful! Please wait for admin approval.");
+      setSuccessMessage("Đăng ký thành công! Vui lòng chờ quản trị viên phê duyệt.");
       setTimeout(() => {
         handleClose();
       }, 2000);
@@ -111,7 +111,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
 
       <Box sx={{ flex: 1, p: { xs: 2, sm: 3, md: 4 } }}>
         <Typography variant="h5" fontWeight="bold" color="#023665" mb={3}>
-          Course registration
+          Đăng ký khóa học
         </Typography>
 
         {error && (
@@ -130,14 +130,14 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
           <TextField
             select
             fullWidth
-            label="Choose course"
+            label="Chọn khóa học"
             value={courseId}
             onChange={(e) => setCourseId(e.target.value)}
             disabled={!!selectedCourse}
             required
           >
             {courses.length === 0 ? (
-              <MenuItem disabled>Loading course...</MenuItem>
+              <MenuItem disabled>Đang tải khóa học...</MenuItem>
             ) : (
               courses.map((course) => (
                 <MenuItem key={course._id} value={course._id}>
@@ -149,7 +149,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
 
           <TextField
             fullWidth
-            label="Full name"
+            label="Họ và tên"
             value={studentName}
             onChange={(e) => setStudentName(e.target.value)}
             required
@@ -191,7 +191,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
           {loading ? (
             <CircularProgress size={24} color="inherit" />
           ) : (
-            "Confirm enrollment"
+            "Xác nhận đăng ký"
           )}
         </Button>
       </Box>

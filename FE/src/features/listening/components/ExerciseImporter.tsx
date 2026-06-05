@@ -72,13 +72,17 @@ const ExerciseImporter: React.FC<ExerciseImporterProps> = ({ open, onImport, onC
             id: `quiz_import_${Date.now()}_${i}`,
             type: 'quiz',
             question: String(row.QuestionText),
-            options: {
-              A: String(row.OptionA || ''),
-              B: String(row.OptionB || ''),
-              C: String(row.OptionC || ''),
-              D: String(row.OptionD || ''),
-            },
-            correctAnswer: row.CorrectAnswer as 'A' | 'B' | 'C' | 'D',
+            options: [
+              String(row.OptionA || ''),
+              String(row.OptionB || ''),
+              String(row.OptionC || ''),
+              String(row.OptionD || ''),
+            ],
+            correctAnswer: 
+              row.CorrectAnswer === 'A' ? String(row.OptionA || '') :
+              row.CorrectAnswer === 'B' ? String(row.OptionB || '') :
+              row.CorrectAnswer === 'C' ? String(row.OptionC || '') :
+              String(row.OptionD || ''),
             explanation: row.Explanation ? String(row.Explanation) : undefined,
           });
         });
@@ -113,7 +117,7 @@ const ExerciseImporter: React.FC<ExerciseImporterProps> = ({ open, onImport, onC
             id: `fill_import_${Date.now()}_${i}`,
             type: 'fill_blank',
             question: String(row.QuestionText),
-            template: templateStr,
+            textWithBlanks: templateStr,
             answers,
             hints: hints.length > 0 ? hints : undefined,
           });
@@ -141,9 +145,9 @@ const ExerciseImporter: React.FC<ExerciseImporterProps> = ({ open, onImport, onC
             id: `dictation_import_${Date.now()}_${i}`,
             type: 'dictation',
             question: String(row.QuestionText),
-            startTime: Number(row.StartTime),
-            endTime: Number(row.EndTime),
-            correctText: String(row.CorrectText),
+            audioSegmentStart: Number(row.StartTime),
+            audioSegmentEnd: Number(row.EndTime),
+            targetText: String(row.CorrectText),
             acceptableVariants: variants.length > 0 ? variants : undefined,
           });
         });
@@ -165,7 +169,7 @@ const ExerciseImporter: React.FC<ExerciseImporterProps> = ({ open, onImport, onC
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ fontWeight: 'bold' }}>Import Exercises</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 'bold' }}>Nhập bài tập từ Excel</DialogTitle>
       <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
         <Box sx={{ bgcolor: '#f4f6f8', p: 3, borderRadius: 2, textAlign: 'center' }}>
           <Download sx={{ fontSize: 40, color: '#1976d2', mb: 1 }} />
@@ -209,7 +213,7 @@ const ExerciseImporter: React.FC<ExerciseImporterProps> = ({ open, onImport, onC
                 {previewData.slice(0, 5).map((ex, i) => (
                   <TableRow key={i}>
                     <TableCell>{i + 1}</TableCell>
-                    <TableCell>{ex.type}</TableCell>
+                    <TableCell>{ex.type === 'quiz' ? 'Trắc nghiệm' : ex.type === 'fill_blank' ? 'Điền từ' : 'Nghe chép'}</TableCell>
                     <TableCell>{ex.question.length > 60 ? ex.question.substring(0, 60) + '...' : ex.question}</TableCell>
                   </TableRow>
                 ))}

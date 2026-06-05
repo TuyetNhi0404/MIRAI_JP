@@ -78,7 +78,7 @@ const LabeledSwitch: React.FC<LabeledSwitchProps> = ({ checked, onChange }) => (
         userSelect: 'none',
       }}
     >
-      {checked ? 'Active' : 'Draft'}
+      {checked ? 'Hoạt động' : 'Bản nháp'}
     </Typography>
     <Box
       sx={{
@@ -185,11 +185,11 @@ const AssignmentsPage: React.FC = () => {
       const coursesArray = Array.isArray(data) ? data : [];
       setCourses(coursesArray);
       if (coursesArray.length === 0) {
-        setError('No courses available. Please create a course first.');
+        setError('Không có khóa học khả dụng. Vui lòng tạo khóa học trước.');
       }
     } catch (err) {
       const error = err as Error;
-      setError(error.message || 'Failed to load courses');
+      setError(error.message || 'Tải danh sách khóa học thất bại');
       setCourses([]);
     } finally {
       setLoadingCourses(false);
@@ -239,7 +239,7 @@ const AssignmentsPage: React.FC = () => {
       setTotalPages(Math.max(1, Math.ceil(data.length / ITEMS_PER_PAGE)));
     } catch (err) {
       const error = err as Error;
-      setError(error.message || 'Failed to load assignments');
+      setError(error.message || 'Tải danh sách bài tập thất bại');
       setAllAssignments([]);
       setTotalItems(0);
       setTotalPages(1);
@@ -363,7 +363,7 @@ const AssignmentsPage: React.FC = () => {
       const year = d.getFullYear();
       return `${day}/${month}/${year}`;
     } catch {
-      return 'Invalid date';
+      return 'Ngày không hợp lệ';
     }
   };
 
@@ -371,14 +371,14 @@ const AssignmentsPage: React.FC = () => {
     const course = courses.find(c => c.id === assignment.courseId || c._id === assignment.courseId);
     if (course) return course.name;
     if (assignment.courseName) return assignment.courseName;
-    return 'Unknown Course';
+    return 'Khóa học không xác định';
   };
 
   if (loadingCourses) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
         <CircularProgress />
-        <Typography sx={{ ml: 2 }}>Loading courses...</Typography>
+        <Typography sx={{ ml: 2 }}>Đang tải khóa học...</Typography>
       </Box>
     );
   }
@@ -387,7 +387,7 @@ const AssignmentsPage: React.FC = () => {
     <Box sx={{ p: 3, pb: 10 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
         <Typography variant="h4" sx={{ color: '#023665', fontWeight: 'bold' }}>
-          Assignments Management
+          Quản lý bài tập
         </Typography>
         <IconButton
           onClick={() => {
@@ -395,7 +395,7 @@ const AssignmentsPage: React.FC = () => {
             fetchAssignments();
           }}
           color="primary"
-          title="Refresh"
+          title="Làm mới"
         >
           <RefreshIcon />
         </IconButton>
@@ -411,16 +411,16 @@ const AssignmentsPage: React.FC = () => {
         <Grid container spacing={2}>
           <Grid item xs={12} md={3}>
             <FormControl fullWidth>
-              <InputLabel>Course</InputLabel>
+              <InputLabel>Khóa học</InputLabel>
               <Select
                 value={selectedCourse}
-                label="Course"
+                label="Khóa học"
                 onChange={(e: SelectChangeEvent) => setSelectedCourse(e.target.value)}
                 disabled={courses.length === 0}
               >
-                <MenuItem value="all"><strong>All Courses</strong></MenuItem>
+                <MenuItem value="all"><strong>Tất cả khóa học</strong></MenuItem>
                 {courses.length === 0 ? (
-                  <MenuItem value="" disabled><em>No courses available</em></MenuItem>
+                  <MenuItem value="" disabled><em>Không có khóa học nào</em></MenuItem>
                 ) : (
                   courses.map(course => (
                     <MenuItem key={course.id} value={course.id}>{course.name}</MenuItem>
@@ -433,8 +433,8 @@ const AssignmentsPage: React.FC = () => {
           <Grid item xs={12} md={6}>
             <TextField
               fullWidth
-              label="Search"
-              placeholder="Search assignments by title..."
+              label="Tìm kiếm"
+              placeholder="Tìm kiếm bài tập theo tiêu đề..."
               value={search}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
               variant="outlined"
@@ -450,16 +450,16 @@ const AssignmentsPage: React.FC = () => {
 
           <Grid item xs={12} md={3}>
             <FormControl fullWidth>
-              <InputLabel>Status Filter</InputLabel>
+              <InputLabel>Trạng thái</InputLabel>
               <Select
                 value={statusFilter}
-                label="Status Filter"
+                label="Trạng thái"
                 onChange={(e: SelectChangeEvent) => setStatusFilter(e.target.value)}
               >
-                <MenuItem value="all">All Status</MenuItem>
-                <MenuItem value="active">Active</MenuItem>
-                <MenuItem value="draft">Draft</MenuItem>
-                <MenuItem value="closed">Closed</MenuItem>
+                <MenuItem value="all">Tất cả trạng thái</MenuItem>
+                <MenuItem value="active">Hoạt động</MenuItem>
+                <MenuItem value="draft">Bản nháp</MenuItem>
+                <MenuItem value="closed">Đã đóng</MenuItem>
               </Select>
             </FormControl>
           </Grid>
@@ -469,7 +469,7 @@ const AssignmentsPage: React.FC = () => {
       {totalItems > 0 && (
         <Box sx={{ mb: 3 }}>
           <Typography variant="body2" color="text.secondary">
-            Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, totalItems)} of {totalItems} assignments
+            Hiển thị {((currentPage - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, totalItems)} trên tổng số {totalItems} bài tập
           </Typography>
         </Box>
       )}
@@ -477,7 +477,7 @@ const AssignmentsPage: React.FC = () => {
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}>
           <CircularProgress />
-          <Typography sx={{ ml: 2 }}>Loading assignments...</Typography>
+          <Typography sx={{ ml: 2 }}>Đang tải danh sách bài tập...</Typography>
         </Box>
       ) : (
         <>
@@ -485,10 +485,10 @@ const AssignmentsPage: React.FC = () => {
             <Box sx={{ textAlign: 'center', py: 8 }}>
               <SchoolIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
               <Typography variant="h6" color="text.secondary" gutterBottom>
-                No courses available
+                Không có khóa học khả dụng
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Please create a course first before creating assignments
+                Vui lòng tạo khóa học trước khi tạo bài tập
               </Typography>
             </Box>
           )}
@@ -536,7 +536,7 @@ const AssignmentsPage: React.FC = () => {
                             
                             {/* Toggle Switch with label inside */}
                             {assignment.status !== 'closed' && (
-                              <Tooltip title={assignment.status === 'draft' ? 'Activate assignment' : 'Set as draft'}>
+                              <Tooltip title={assignment.status === 'draft' ? 'Kích hoạt bài tập' : 'Chuyển thành bản nháp'}>
                                 <Box sx={{ flexShrink: 0 }}>
                                   <LabeledSwitch
                                     checked={assignment.status === 'active'}
@@ -549,7 +549,7 @@ const AssignmentsPage: React.FC = () => {
                             {/* Show Closed chip if closed */}
                             {assignment.status === 'closed' && (
                               <Chip
-                                label="CLOSED"
+                                label="ĐÃ ĐÓNG"
                                 color="error"
                                 size="small"
                                 sx={{ flexShrink: 0 }}
@@ -595,7 +595,7 @@ const AssignmentsPage: React.FC = () => {
                           <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
                             <CalendarIcon sx={{ fontSize: 20, mr: 1.5, color: 'text.secondary' }} />
                             <Typography variant="body2" color="text.secondary">
-                              Due: <strong style={{ color: '#000' }}>{formatDate(assignment.dueDate)}</strong>
+                              Hạn nộp: <strong style={{ color: '#000' }}>{formatDate(assignment.dueDate)}</strong>
                             </Typography>
                           </Box>
 
@@ -603,7 +603,7 @@ const AssignmentsPage: React.FC = () => {
                           <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
                             <GradeIcon sx={{ fontSize: 20, mr: 1.5, color: 'text.secondary' }} />
                             <Typography variant="body2" color="text.secondary">
-                              Max Score: <strong style={{ color: '#000' }}>{assignment.maxScore}</strong>
+                              Điểm tối đa: <strong style={{ color: '#000' }}>{assignment.maxScore}</strong>
                             </Typography>
                           </Box>
 
@@ -630,11 +630,11 @@ const AssignmentsPage: React.FC = () => {
                             <AttachFileIcon sx={{ fontSize: 20, mr: 1.5, color: assignment.fileUrls?.length ? 'primary.main' : 'text.disabled' }} />
                             {assignment.fileUrls && assignment.fileUrls.length > 0 ? (
                               <Typography variant="body2" color="primary">
-                                {assignment.fileUrls.length} file{assignment.fileUrls.length > 1 ? 's' : ''} attached
+                                {assignment.fileUrls.length} tệp đính kèm
                               </Typography>
                             ) : (
                               <Typography variant="body2" color="text.disabled" fontStyle="italic">
-                                No attachments
+                                Không có tệp đính kèm
                               </Typography>
                             )}
                           </Box>
@@ -648,7 +648,7 @@ const AssignmentsPage: React.FC = () => {
                               e.stopPropagation();
                               handleOpenDialog(assignment);
                             }}
-                            title="Edit assignment"
+                            title="Sửa bài tập"
                           >
                             <EditIcon />
                           </IconButton>
@@ -659,7 +659,7 @@ const AssignmentsPage: React.FC = () => {
                               e.stopPropagation();
                               handleDeleteClick(assignment);
                             }}
-                            title="Delete assignment"
+                            title="Xóa bài tập"
                           >
                             <DeleteIcon />
                           </IconButton>
@@ -672,13 +672,13 @@ const AssignmentsPage: React.FC = () => {
                 <Box sx={{ textAlign: 'center', py: 8 }}>
                   <Typography variant="h6" color="text.secondary" gutterBottom>
                     {search || statusFilter !== 'all'
-                      ? 'No assignments match your filters'
-                      : 'No assignments found'}
+                      ? 'Không tìm thấy bài tập nào khớp với bộ lọc'
+                      : 'Không tìm thấy bài tập nào'}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
                     {search || statusFilter !== 'all'
-                      ? 'Try adjusting your search or filters'
-                      : 'Create your first assignment to get started'}
+                      ? 'Hãy thử điều chỉnh ô tìm kiếm hoặc bộ lọc'
+                      : 'Tạo bài tập đầu tiên của bạn để bắt đầu'}
                   </Typography>
                 </Box>
               )}
@@ -706,7 +706,7 @@ const AssignmentsPage: React.FC = () => {
                       disabled={loading}
                     />
                     <Typography variant="body2" color="text.secondary">
-                      Page {currentPage} of {totalPages} • Total: {totalItems} assignment{totalItems !== 1 ? 's' : ''}
+                      Trang {currentPage} / {totalPages} • Tổng số: {totalItems} bài tập
                     </Typography>
                   </Stack>
                 </Box>
@@ -735,8 +735,8 @@ const AssignmentsPage: React.FC = () => {
 
       <ConfirmDialog
         open={confirmOpen}
-        title="Confirm Delete"
-        message={`Are you sure you want to delete "${targetAssignment?.title}"? This action cannot be undone.`}
+        title="Xác nhận xóa"
+        message={`Bạn có chắc chắn muốn xóa bài tập "${targetAssignment?.title}" không? Hành động này không thể hoàn tác.`}
         onConfirm={handleConfirmDelete}
         onCancel={() => setConfirmOpen(false)}
       />

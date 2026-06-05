@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -12,6 +12,11 @@ import {
   IconButton,
   Tooltip,
   LinearProgress,
+  TextField,
+  InputAdornment,
+  Paper,
+  Zoom,
+  Fade,
 } from "@mui/material";
 import {
   ChevronLeft,
@@ -25,6 +30,9 @@ import {
   Brain,
   Trophy,
   Target,
+  Volume2,
+  Sparkles,
+  Search,
 } from "lucide-react";
 import { vocabularyService } from "../../services/vocabulary.service";
 import type { IVocabulary } from "../../services/vocabulary.service";
@@ -32,12 +40,37 @@ import type { IVocabulary } from "../../services/vocabulary.service";
 // ─── Constants ────────────────────────────────────────────────────────────────
 const LEVELS = ["N1", "N2", "N3", "N4", "N5"];
 
-const LEVEL_COLORS: Record<string, { bg: string; text: string; badge: string }> = {
-  N1: { bg: "linear-gradient(135deg, #7B1FA2 0%, #AB47BC 100%)", text: "#fff", badge: "#7B1FA2" },
-  N2: { bg: "linear-gradient(135deg, #1565C0 0%, #42A5F5 100%)", text: "#fff", badge: "#1565C0" },
-  N3: { bg: "linear-gradient(135deg, #2E7D32 0%, #66BB6A 100%)", text: "#fff", badge: "#2E7D32" },
-  N4: { bg: "linear-gradient(135deg, #E65100 0%, #FFA726 100%)", text: "#fff", badge: "#E65100" },
-  N5: { bg: "linear-gradient(135deg, #B90000 0%, #EF5350 100%)", text: "#fff", badge: "#B90000" },
+const LEVEL_COLORS: Record<string, { bg: string; text: string; badge: string; shadow: string }> = {
+  N1: {
+    bg: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
+    text: "#fff",
+    badge: "#a855f7",
+    shadow: "rgba(168, 85, 247, 0.35)",
+  },
+  N2: {
+    bg: "linear-gradient(135deg, #0284c7 0%, #06b6d4 100%)",
+    text: "#fff",
+    badge: "#0284c7",
+    shadow: "rgba(6, 182, 212, 0.35)",
+  },
+  N3: {
+    bg: "linear-gradient(135deg, #059669 0%, #10b981 100%)",
+    text: "#fff",
+    badge: "#059669",
+    shadow: "rgba(16, 185, 129, 0.35)",
+  },
+  N4: {
+    bg: "linear-gradient(135deg, #ea580c 0%, #f97316 100%)",
+    text: "#fff",
+    badge: "#ea580c",
+    shadow: "rgba(249, 115, 22, 0.35)",
+  },
+  N5: {
+    bg: "linear-gradient(135deg, #dc2626 0%, #f43f5e 100%)",
+    text: "#fff",
+    badge: "#dc2626",
+    shadow: "rgba(244, 63, 94, 0.35)",
+  },
 };
 
 const OPTION_LABELS = ["A", "B", "C", "D"];
@@ -68,9 +101,10 @@ const VocabularyPracticePage: React.FC = () => {
   // ─── Mode ─────────────────────────────────────────────────────────────────
   const [mode, setMode] = useState<"flashcard" | "quiz">("flashcard");
 
-  // ─── Filter State ─────────────────────────────────────────────────────────
+  // ─── Filter & Search State ────────────────────────────────────────────────
   const [selectedLevel, setSelectedLevel] = useState<string>("");
   const [selectedTopic, setSelectedTopic] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [topics, setTopics] = useState<string[]>([]);
   const [loadingTopics, setLoadingTopics] = useState(false);
 
@@ -99,13 +133,28 @@ const VocabularyPracticePage: React.FC = () => {
   const [wrongAnswers, setWrongAnswers] = useState<WrongAnswer[]>([]);
   const [showWrongReview, setShowWrongReview] = useState(false);
 
+  // ─── Text-to-Speech (TTS) Voice ───────────────────────────────────────────
+  const speakWord = (e: React.MouseEvent, word: string) => {
+    e.stopPropagation(); // Prevent card flipping on speak click
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(word);
+      utterance.lang = "ja-JP";
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
   // ─── Fetch topics on level change ─────────────────────────────────────────
   useEffect(() => {
     setLoadingTopics(true);
     setSelectedTopic("");
     vocabularyService
       .getTopics(selectedLevel || undefined)
-      .then(setTopics)
+      .then((data) => {
+        // Clean out topics that are empty or invalid typos (like single character "d")
+        const clean = data.filter((t) => t && t.trim().length > 1);
+        setTopics(clean);
+      })
       .finally(() => setLoadingTopics(false));
   }, [selectedLevel]);
 
@@ -136,6 +185,18 @@ const VocabularyPracticePage: React.FC = () => {
     loadDeck();
   }, [loadDeck]);
 
+  // ─── Filter local deck by search query ───────────────────────────────────
+  const filteredCards = useMemo(() => {
+    if (!searchQuery.trim()) return cards;
+    const q = searchQuery.toLowerCase().trim();
+    return cards.filter(
+      (c) =>
+        c.word.toLowerCase().includes(q) ||
+        c.reading.toLowerCase().includes(q) ||
+        c.meaning.toLowerCase().includes(q)
+    );
+  }, [cards, searchQuery]);
+
   // ─── Flashcard handlers ───────────────────────────────────────────────────
   const flip = () => {
     if (isAnimating) return;
@@ -146,20 +207,33 @@ const VocabularyPracticePage: React.FC = () => {
 
   const goNext = () => {
     if (isAnimating) return;
-    if (currentIndex >= cards.length - 1) { setFinished(true); return; }
+    if (currentIndex >= filteredCards.length - 1) {
+      setFinished(true);
+      return;
+    }
     setIsAnimating(true);
     setIsFlipped(false);
-    setTimeout(() => { setCurrentIndex((p) => p + 1); setIsAnimating(false); }, 300);
+    setTimeout(() => {
+      setCurrentIndex((p) => p + 1);
+      setIsAnimating(false);
+    }, 300);
   };
 
   const goPrev = () => {
     if (isAnimating || currentIndex === 0) return;
     setIsAnimating(true);
     setIsFlipped(false);
-    setTimeout(() => { setCurrentIndex((p) => p - 1); setIsAnimating(false); }, 300);
+    setTimeout(() => {
+      setCurrentIndex((p) => p - 1);
+      setIsAnimating(false);
+    }, 300);
   };
 
-  const handleRestart = () => { setCurrentIndex(0); setIsFlipped(false); setFinished(false); };
+  const handleRestart = () => {
+    setCurrentIndex(0);
+    setIsFlipped(false);
+    setFinished(false);
+  };
   const handleShuffle = () => {
     setCards((prev) => shuffle(prev));
     setCurrentIndex(0);
@@ -167,28 +241,31 @@ const VocabularyPracticePage: React.FC = () => {
     setFinished(false);
   };
 
-  // Keyboard nav
+  // Keyboard navigation support
   useEffect(() => {
     if (mode !== "flashcard") return;
     const handler = (e: KeyboardEvent) => {
-      if (!sessionStarted || finished) return;
+      if (!sessionStarted || finished || filteredCards.length === 0) return;
       if (e.key === "ArrowRight") goNext();
       if (e.key === "ArrowLeft") goPrev();
-      if (e.key === " " || e.key === "Enter") { e.preventDefault(); flip(); }
+      if (e.key === " " || e.key === "Enter") {
+        e.preventDefault();
+        flip();
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, sessionStarted, finished, currentIndex, isAnimating, isFlipped]);
+  }, [mode, sessionStarted, finished, currentIndex, isAnimating, isFlipped, filteredCards]);
 
   // ─── Quiz handlers ────────────────────────────────────────────────────────
   const generateQuiz = useCallback(() => {
-    if (cards.length < 4) return;
-    const count = quizCount === -1 ? cards.length : Math.min(quizCount, cards.length);
-    const questionCards = shuffle(cards).slice(0, count);
+    if (filteredCards.length < 4) return;
+    const count = quizCount === -1 ? filteredCards.length : Math.min(quizCount, filteredCards.length);
+    const questionCards = shuffle(filteredCards).slice(0, count);
 
     const questions: QuizQuestion[] = questionCards.map((card) => {
-      const others = cards.filter((c) => c._id !== card._id);
+      const others = filteredCards.filter((c) => c._id !== card._id);
       const distractorCards = shuffle(others).slice(0, 3);
 
       const correctOpt = quizDirection === "jp-to-vn" ? card.meaning : card.word;
@@ -210,7 +287,7 @@ const VocabularyPracticePage: React.FC = () => {
     setWrongAnswers([]);
     setShowWrongReview(false);
     setQuizStarted(true);
-  }, [cards, quizDirection, quizCount]);
+  }, [filteredCards, quizDirection, quizCount]);
 
   const handleSelectAnswer = (index: number) => {
     if (isAnswered) return;
@@ -247,8 +324,8 @@ const VocabularyPracticePage: React.FC = () => {
   };
 
   // ─── Computed values ──────────────────────────────────────────────────────
-  const currentCard = cards[currentIndex];
-  const progress = cards.length > 0 ? ((currentIndex + 1) / cards.length) * 100 : 0;
+  const currentCard = filteredCards[currentIndex];
+  const progress = filteredCards.length > 0 ? ((currentIndex + 1) / filteredCards.length) * 100 : 0;
   const levelColor = currentCard ? LEVEL_COLORS[currentCard.level] : LEVEL_COLORS["N5"];
 
   const currentQuestion = quizQuestions[quizIndex];
@@ -261,237 +338,356 @@ const VocabularyPracticePage: React.FC = () => {
     if (!isAnswered) {
       return {
         bgcolor: "#fff",
-        borderColor: "#e0e0e0",
-        color: "#333",
-        "&:hover": { bgcolor: "#fff5f5", borderColor: "#B90000" },
+        borderColor: "#e2e8f0",
+        color: "#334155",
+        boxShadow: "0 2px 4px rgba(0,0,0,0.02)",
+        "&:hover": {
+          bgcolor: "#f8fafc",
+          borderColor: "#B90000",
+          transform: "translateY(-2px)",
+          boxShadow: "0 6px 12px rgba(185, 0, 0, 0.08)",
+        },
       };
     }
     if (index === currentQuestion?.correctIndex) {
-      return { bgcolor: "#e8f5e9", borderColor: "#4CAF50", color: "#2E7D32", fontWeight: 700 };
+      return {
+        bgcolor: "#f0fdf4",
+        borderColor: "#22c55e",
+        color: "#166534",
+        fontWeight: 700,
+        boxShadow: "0 4px 10px rgba(34, 197, 94, 0.15)",
+      };
     }
     if (index === selectedAnswer) {
-      return { bgcolor: "#ffebee", borderColor: "#F44336", color: "#C62828" };
+      return {
+        bgcolor: "#fef2f2",
+        borderColor: "#ef4444",
+        color: "#991b1b",
+        boxShadow: "0 4px 10px rgba(239, 68, 68, 0.15)",
+      };
     }
-    return { bgcolor: "#fafafa", borderColor: "#e0e0e0", color: "#aaa" };
+    return {
+      bgcolor: "#f8fafc",
+      borderColor: "#e2e8f0",
+      color: "#94a3b8",
+      opacity: 0.6,
+    };
   };
 
   const getScoreMessage = (pct: number) => {
-    if (pct === 100) return { msg: "Hoàn hảo! Bạn xuất sắc! 🏆", color: "#2E7D32" };
-    if (pct >= 80) return { msg: "Rất tốt! Tiếp tục phát huy! 🌟", color: "#1565C0" };
-    if (pct >= 60) return { msg: "Khá tốt! Ôn thêm một chút nữa nhé! 💪", color: "#E65100" };
-    if (pct >= 40) return { msg: "Cần cố gắng hơn! Đừng nản lòng! 📚", color: "#F44336" };
-    return { msg: "Hãy ôn lại flashcard trước khi làm quiz nhé! 🔄", color: "#B90000" };
+    if (pct === 100) return { msg: "Hoàn hảo! Bạn thật xuất sắc! 🏆", color: "#22c55e" };
+    if (pct >= 80) return { msg: "Rất tốt! Tiếp tục phát huy nhé! 🌟", color: "#3b82f6" };
+    if (pct >= 60) return { msg: "Khá tốt! Ôn thêm chút nữa nhé! 💪", color: "#f97316" };
+    if (pct >= 40) return { msg: "Cần cố gắng hơn! Đừng nản lòng! 📚", color: "#ef4444" };
+    return { msg: "Hãy ôn lại flashcard trước khi làm quiz nhé! 🔄", color: "#dc2626" };
   };
 
-  // ─── RENDER ───────────────────────────────────────────────────────────────
   return (
     <Box
       sx={{
-        minHeight: "80vh",
+        minHeight: "85vh",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        pt: 2,
-        pb: 6,
-        px: 2,
+        pt: 3,
+        pb: 8,
+        px: { xs: 2, md: 4 },
+        bgcolor: "#f8fafc",
       }}
     >
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <Box
+      {/* ── Header Card ────────────────────────────────────────────────────── */}
+      <Paper
+        elevation={0}
         sx={{
           width: "100%",
           maxWidth: 860,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          mb: 2.5,
-          flexWrap: "wrap",
-          gap: 1,
+          p: 3,
+          borderRadius: "24px",
+          bgcolor: "#fff",
+          border: "1px solid #e2e8f0",
+          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.03)",
+          mb: 4,
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-          <Box
-            sx={{
-              width: 44,
-              height: 44,
-              borderRadius: "12px",
-              background: "linear-gradient(135deg, #B90000 0%, #EF5350 100%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 4px 12px rgba(185,0,0,0.3)",
-            }}
-          >
-            <BookMarked size={22} color="#fff" />
-          </Box>
-          <Box>
-            <Typography variant="h5" fontWeight={700} color="#1a1a1a">
-              Ôn luyện Từ vựng
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Flashcard JLPT N1 – N5
-            </Typography>
-          </Box>
-        </Box>
-
-        {/* Flashcard toolbar */}
-        {mode === "flashcard" && (
-          <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-            <Tooltip title={showReading ? "Ẩn cách đọc" : "Hiện cách đọc"}>
-              <IconButton
-                onClick={() => setShowReading((p) => !p)}
-                size="small"
-                sx={{ border: "1px solid #eee" }}
-              >
-                {showReading ? <EyeOff size={16} /> : <Eye size={16} />}
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Trộn bài">
-              <IconButton
-                onClick={handleShuffle}
-                size="small"
-                disabled={cards.length === 0}
-                sx={{ border: "1px solid #eee" }}
-              >
-                <Shuffle size={16} />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Làm lại từ đầu">
-              <IconButton
-                onClick={handleRestart}
-                size="small"
-                disabled={cards.length === 0}
-                sx={{ border: "1px solid #eee" }}
-              >
-                <RotateCcw size={16} />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        )}
-      </Box>
-
-      {/* ── Mode Tabs ──────────────────────────────────────────────────────── */}
-      <Box sx={{ width: "100%", maxWidth: 860, mb: 2.5 }}>
         <Box
           sx={{
             display: "flex",
-            bgcolor: "#f5f5f5",
-            borderRadius: "14px",
-            p: "4px",
-            gap: "4px",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 2,
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2.5 }}>
+            <Box
+              sx={{
+                width: 54,
+                height: 54,
+                borderRadius: "16px",
+                background: "linear-gradient(135deg, #B90000 0%, #EF5350 100%)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 8px 16px rgba(185, 0, 0, 0.25)",
+              }}
+            >
+              <BookMarked size={26} color="#fff" />
+            </Box>
+            <Box>
+              <Typography variant="h5" fontWeight={800} color="#0f172a" sx={{ letterSpacing: "-0.5px" }}>
+                Ôn luyện Từ vựng
+              </Typography>
+              <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                Trình học thông minh tiếng Nhật JLPT N1 – N5
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* Controls helper */}
+          {mode === "flashcard" && (
+            <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+              <Tooltip title={showReading ? "Ẩn cách đọc" : "Hiện cách đọc"}>
+                <IconButton
+                  onClick={() => setShowReading((p) => !p)}
+                  sx={{
+                    border: "1.5px solid #e2e8f0",
+                    color: showReading ? "#B90000" : "#64748b",
+                    bgcolor: showReading ? "#fff5f5" : "transparent",
+                    transition: "all 0.2s",
+                    "&:hover": { bgcolor: "#fff5f5" },
+                  }}
+                >
+                  {showReading ? <EyeOff size={18} /> : <Eye size={18} />}
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Trộn bài">
+                <IconButton
+                  onClick={handleShuffle}
+                  disabled={filteredCards.length === 0}
+                  sx={{
+                    border: "1.5px solid #e2e8f0",
+                    color: "#64748b",
+                    transition: "all 0.2s",
+                    "&:hover": { borderColor: "#B90000", color: "#B90000" },
+                  }}
+                >
+                  <Shuffle size={18} />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Làm lại từ đầu">
+                <IconButton
+                  onClick={handleRestart}
+                  disabled={filteredCards.length === 0}
+                  sx={{
+                    border: "1.5px solid #e2e8f0",
+                    color: "#64748b",
+                    transition: "all 0.2s",
+                    "&:hover": { borderColor: "#B90000", color: "#B90000" },
+                  }}
+                >
+                  <RotateCcw size={18} />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          )}
+        </Box>
+      </Paper>
+
+      {/* ── Mode Selection Slider (Tabs) ─────────────────────────────────────── */}
+      <Box sx={{ width: "100%", maxWidth: 860, mb: 3.5 }}>
+        <Box
+          sx={{
+            display: "flex",
+            bgcolor: "#e2e8f0",
+            borderRadius: "18px",
+            p: "5px",
+            gap: "5px",
           }}
         >
           {[
-            { key: "flashcard", label: "🃏 Flashcard" },
-            { key: "quiz", label: "📝 Quiz" },
-          ].map((tab) => (
-            <Button
-              key={tab.key}
-              onClick={() => {
-                setMode(tab.key as "flashcard" | "quiz");
-                resetQuiz();
-              }}
-              sx={{
-                flex: 1,
-                borderRadius: "10px",
-                py: 1,
-                fontWeight: 700,
-                fontSize: 14,
-                transition: "all 0.2s",
-                bgcolor: mode === tab.key ? "#fff" : "transparent",
-                color: mode === tab.key ? "#B90000" : "#888",
-                boxShadow: mode === tab.key ? "0 2px 8px rgba(0,0,0,0.1)" : "none",
-                "&:hover": {
-                  bgcolor: mode === tab.key ? "#fff" : "rgba(255,255,255,0.6)",
-                },
-              }}
-            >
-              {tab.label}
-            </Button>
-          ))}
+            { key: "flashcard", label: "🃏 Học Flashcard" },
+            { key: "quiz", label: "📝 Làm Trắc nghiệm" },
+          ].map((tab) => {
+            const isActive = mode === tab.key;
+            return (
+              <Button
+                key={tab.key}
+                onClick={() => {
+                  setMode(tab.key as "flashcard" | "quiz");
+                  resetQuiz();
+                }}
+                sx={{
+                  flex: 1,
+                  borderRadius: "14px",
+                  py: 1.4,
+                  fontWeight: 700,
+                  fontSize: 14,
+                  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                  bgcolor: isActive ? "#fff" : "transparent",
+                  color: isActive ? "#B90000" : "#475569",
+                  boxShadow: isActive ? "0 4px 12px rgba(0,0,0,0.08)" : "none",
+                  transform: isActive ? "scale(1.01)" : "none",
+                  "&:hover": {
+                    bgcolor: isActive ? "#fff" : "rgba(255,255,255,0.4)",
+                  },
+                }}
+              >
+                {tab.label}
+              </Button>
+            );
+          })}
         </Box>
       </Box>
 
-      {/* ── Filters ────────────────────────────────────────────────────────── */}
-      <Box
+      {/* ── Filters & Search ───────────────────────────────────────────────── */}
+      <Paper
+        elevation={0}
         sx={{
           width: "100%",
           maxWidth: 860,
-          display: "flex",
-          gap: 2,
-          mb: 2.5,
-          flexWrap: "wrap",
-          alignItems: "center",
+          p: 2.5,
+          borderRadius: "20px",
+          bgcolor: "#fff",
+          border: "1px solid #e2e8f0",
+          mb: 4,
         }}
       >
-        <FormControl size="small" sx={{ minWidth: 140 }}>
-          <InputLabel>Cấp độ</InputLabel>
-          <Select
-            label="Cấp độ"
-            value={selectedLevel}
-            onChange={(e) => setSelectedLevel(e.target.value)}
-          >
-            <MenuItem value="">Tất cả</MenuItem>
-            {LEVELS.map((l) => (
-              <MenuItem key={l} value={l}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Box
-                    sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: LEVEL_COLORS[l].badge }}
-                  />
-                  {l}
-                </Box>
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", sm: "140px 180px 1fr" },
+            gap: 2,
+            alignItems: "center",
+          }}
+        >
+          {/* Level Filter */}
+          <FormControl size="small" fullWidth>
+            <InputLabel sx={{ fontWeight: 600 }}>Cấp độ</InputLabel>
+            <Select
+              label="Cấp độ"
+              value={selectedLevel}
+              onChange={(e) => setSelectedLevel(e.target.value)}
+              sx={{ borderRadius: "10px", fontWeight: 600 }}
+              MenuProps={{
+                PaperProps: {
+                  style: {
+                    maxHeight: 280,
+                  },
+                },
+              }}
+            >
+              <MenuItem value="">Tất cả</MenuItem>
+              {LEVELS.map((l) => (
+                <MenuItem key={l} value={l} sx={{ fontWeight: 600 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <Box
+                      sx={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: "50%",
+                        background: LEVEL_COLORS[l].bg,
+                        boxShadow: `0 0 6px ${LEVEL_COLORS[l].shadow}`,
+                      }}
+                    />
+                    {l}
+                  </Box>
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
-        <FormControl size="small" sx={{ minWidth: 180 }}>
-          <InputLabel>Chủ đề</InputLabel>
-          <Select
-            label="Chủ đề"
-            value={selectedTopic}
-            onChange={(e) => setSelectedTopic(e.target.value)}
-            disabled={loadingTopics}
-          >
-            <MenuItem value="">Tất cả chủ đề</MenuItem>
-            {topics.map((t) => (
-              <MenuItem key={t} value={t}>
-                {t}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+          {/* Topic Filter */}
+          <FormControl size="small" fullWidth>
+            <InputLabel sx={{ fontWeight: 600 }}>Chủ đề</InputLabel>
+            <Select
+              label="Chủ đề"
+              value={selectedTopic}
+              onChange={(e) => setSelectedTopic(e.target.value)}
+              disabled={loadingTopics}
+              sx={{ borderRadius: "10px" }}
+              MenuProps={{
+                PaperProps: {
+                  style: {
+                    maxHeight: 280,
+                  },
+                },
+              }}
+            >
+              <MenuItem value="">Tất cả chủ đề</MenuItem>
+              {topics.map((t) => (
+                <MenuItem key={t} value={t}>
+                  {t}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
-        {cards.length > 0 && (
-          <Chip
-            label={`${cards.length} thẻ`}
+          {/* Local Search Input */}
+          <TextField
             size="small"
-            sx={{
-              bgcolor: "#fff5f5",
-              color: "#B90000",
-              border: "1px solid #ffcccc",
-              fontWeight: 600,
+            placeholder="Tìm kiếm từ vựng, cách đọc, ý nghĩa..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            fullWidth
+            InputProps={{
+              sx: { borderRadius: "10px" },
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search size={18} color="#94a3b8" />
+                </InputAdornment>
+              ),
             }}
           />
-        )}
+        </Box>
 
-        {mode === "flashcard" && (
-          <Typography variant="caption" color="text.secondary" sx={{ ml: "auto" }}>
-            Phím tắt: ← → di chuyển | Space lật thẻ
-          </Typography>
-        )}
-      </Box>
+        {/* Info row */}
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, alignItems: "center", mt: 2 }}>
+          {filteredCards.length > 0 && (
+            <Chip
+              label={`${filteredCards.length} từ vựng phù hợp`}
+              size="small"
+              sx={{
+                bgcolor: "#fff5f5",
+                color: "#B90000",
+                border: "1px solid #ffcccc",
+                fontWeight: 700,
+              }}
+            />
+          )}
+          {mode === "flashcard" && (
+            <Box sx={{ display: "flex", gap: 1, ml: "auto", flexWrap: "wrap" }}>
+              <Chip label="← → Di chuyển" size="small" variant="outlined" sx={{ borderRadius: "6px" }} />
+              <Chip label="Space Lật thẻ" size="small" variant="outlined" sx={{ borderRadius: "6px" }} />
+            </Box>
+          )}
+        </Box>
+      </Paper>
 
       {/* ── Loading ────────────────────────────────────────────────────────── */}
       {loading && (
-        <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
-          <CircularProgress sx={{ color: "#B90000" }} />
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", py: 10, gap: 2 }}>
+          <CircularProgress sx={{ color: "#B90000" }} size={45} />
+          <Typography variant="body2" color="text.secondary" fontWeight={500}>
+            Đang tải dữ liệu bài học...
+          </Typography>
         </Box>
       )}
 
       {/* ── Empty state ────────────────────────────────────────────────────── */}
-      {!loading && cards.length === 0 && (
-        <Box sx={{ textAlign: "center", py: 8, px: 3, maxWidth: 400 }}>
+      {!loading && filteredCards.length === 0 && (
+        <Box
+          sx={{
+            textAlign: "center",
+            py: 8,
+            px: 4,
+            maxWidth: 460,
+            bgcolor: "#fff",
+            borderRadius: "24px",
+            border: "1px solid #e2e8f0",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.02)",
+            mt: 2,
+          }}
+        >
           <Box
             sx={{
               width: 80,
@@ -502,17 +698,17 @@ const VocabularyPracticePage: React.FC = () => {
               alignItems: "center",
               justifyContent: "center",
               mx: "auto",
-              mb: 2,
+              mb: 2.5,
             }}
           >
             <BookMarked size={36} color="#B90000" />
           </Box>
-          <Typography variant="h6" fontWeight={600} color="#333" mb={1}>
-            Chưa có từ vựng nào
+          <Typography variant="h6" fontWeight={700} color="#1e293b" mb={1}>
+            Không tìm thấy từ vựng nào
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Bộ từ vựng đang được cập nhật. Hãy chọn cấp độ/chủ đề khác hoặc liên hệ admin để thêm
-            từ.
+          <Typography variant="body2" color="text.secondary" lineHeight={1.5}>
+            Chưa có từ vựng phù hợp với bộ lọc hoặc từ khóa tìm kiếm của bạn. Hãy thử thay đổi bộ lọc
+            hoặc từ khóa khác.
           </Typography>
         </Box>
       )}
@@ -520,36 +716,36 @@ const VocabularyPracticePage: React.FC = () => {
       {/* ══════════════════════════════════════════════════════════════════════ */}
       {/* ── FLASHCARD MODE ─────────────────────────────────────────────────── */}
       {/* ══════════════════════════════════════════════════════════════════════ */}
-      {!loading && mode === "flashcard" && (
+      {!loading && mode === "flashcard" && filteredCards.length > 0 && (
         <>
           {/* Progress bar */}
-          {cards.length > 0 && !finished && (
-            <Box sx={{ width: "100%", maxWidth: 860, mb: 2 }}>
-              <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
-                <Typography variant="caption" color="text.secondary">
-                  Tiến độ
-                </Typography>
+          {!finished && (
+            <Box sx={{ width: "100%", maxWidth: 680, mb: 3 }}>
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
                 <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                  {currentIndex + 1} / {cards.length}
+                  TIẾN ĐỘ HỌC
+                </Typography>
+                <Typography variant="caption" color="#B90000" fontWeight={700}>
+                  {currentIndex + 1} / {filteredCards.length} từ
                 </Typography>
               </Box>
               <LinearProgress
                 variant="determinate"
                 value={progress}
                 sx={{
-                  height: 6,
-                  borderRadius: 3,
-                  bgcolor: "#f0f0f0",
+                  height: 8,
+                  borderRadius: 4,
+                  bgcolor: "#e2e8f0",
                   "& .MuiLinearProgress-bar": {
                     background: "linear-gradient(90deg, #B90000 0%, #EF5350 100%)",
-                    borderRadius: 3,
+                    borderRadius: 4,
                   },
                 }}
               />
             </Box>
           )}
 
-          {/* Flashcard */}
+          {/* Flashcard 3D Card */}
           {currentCard && !finished && (
             <>
               <Box
@@ -557,10 +753,10 @@ const VocabularyPracticePage: React.FC = () => {
                 sx={{
                   width: "100%",
                   maxWidth: 680,
-                  height: { xs: 320, sm: 380 },
-                  perspective: "1200px",
+                  height: { xs: 340, sm: 400 },
+                  perspective: "1500px",
                   cursor: "pointer",
-                  mb: 3,
+                  mb: 4,
                 }}
               >
                 <Box
@@ -569,69 +765,107 @@ const VocabularyPracticePage: React.FC = () => {
                     width: "100%",
                     height: "100%",
                     transformStyle: "preserve-3d",
-                    transition: "transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
+                    transition: "transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
                     transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
                   }}
                 >
-                  {/* Front */}
+                  {/* Front Side */}
                   <Box
                     sx={{
                       position: "absolute",
                       inset: 0,
                       backfaceVisibility: "hidden",
                       WebkitBackfaceVisibility: "hidden",
-                      borderRadius: "24px",
+                      borderRadius: "28px",
                       background: levelColor.bg,
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "center",
                       justifyContent: "center",
                       gap: 2,
-                      boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+                      boxShadow: `0 20px 40px ${levelColor.shadow}`,
+                      border: "1px solid rgba(255,255,255,0.2)",
                       px: 4,
                       userSelect: "none",
                     }}
                   >
+                    {/* Speaker (TTS) & Badge */}
+                    <Box sx={{ position: "absolute", top: 20, right: 20 }}>
+                      <IconButton
+                        onClick={(e) => speakWord(e, currentCard.word)}
+                        sx={{
+                          bgcolor: "rgba(255,255,255,0.25)",
+                          color: "#fff",
+                          "&:hover": { bgcolor: "rgba(255,255,255,0.4)" },
+                        }}
+                      >
+                        <Volume2 size={22} />
+                      </IconButton>
+                    </Box>
+
                     <Chip
                       label={currentCard.level}
                       size="small"
                       sx={{
+                        position: "absolute",
+                        top: 24,
+                        left: 24,
                         bgcolor: "rgba(255,255,255,0.25)",
                         color: "#fff",
-                        fontWeight: 700,
+                        fontWeight: 800,
                         fontSize: 12,
                         letterSpacing: 1,
                       }}
                     />
+
+                    {/* Word display */}
                     <Typography
                       sx={{
-                        fontSize: { xs: 52, sm: 68 },
-                        fontWeight: 700,
+                        fontSize: { xs: 48, sm: 64 },
+                        fontWeight: 800,
                         color: "#fff",
-                        lineHeight: 1,
-                        textShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                        lineHeight: 1.1,
+                        textShadow: "0 2px 10px rgba(0,0,0,0.15)",
                         textAlign: "center",
                       }}
                     >
                       {currentCard.word}
                     </Typography>
+
                     {showReading && (
-                      <Typography sx={{ fontSize: 22, color: "rgba(255,255,255,0.85)", fontWeight: 400 }}>
+                      <Typography
+                        sx={{
+                          fontSize: 24,
+                          color: "rgba(255,255,255,0.9)",
+                          fontWeight: 500,
+                          bgcolor: "rgba(255,255,255,0.15)",
+                          py: 0.5,
+                          px: 2,
+                          borderRadius: "10px",
+                        }}
+                      >
                         {currentCard.reading}
                       </Typography>
                     )}
+
                     <Box
                       sx={{
                         position: "absolute",
-                        bottom: 20,
-                        color: "rgba(255,255,255,0.6)",
+                        bottom: 24,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        color: "rgba(255,255,255,0.7)",
                       }}
                     >
-                      <Typography variant="caption">Nhấn để lật thẻ</Typography>
+                      <Sparkles size={14} />
+                      <Typography variant="caption" fontWeight={600}>
+                        Bấm vào thẻ để xem ý nghĩa
+                      </Typography>
                     </Box>
                   </Box>
 
-                  {/* Back */}
+                  {/* Back Side */}
                   <Box
                     sx={{
                       position: "absolute",
@@ -639,215 +873,269 @@ const VocabularyPracticePage: React.FC = () => {
                       backfaceVisibility: "hidden",
                       WebkitBackfaceVisibility: "hidden",
                       transform: "rotateY(180deg)",
-                      borderRadius: "24px",
+                      borderRadius: "28px",
                       bgcolor: "#fff",
-                      border: "3px solid",
-                      borderColor: levelColor.badge,
+                      border: `3px solid ${levelColor.badge}`,
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "center",
                       justifyContent: "center",
-                      gap: 2,
-                      boxShadow: "0 20px 60px rgba(0,0,0,0.12)",
+                      gap: 2.5,
+                      boxShadow: "0 20px 50px rgba(0,0,0,0.06)",
                       px: 4,
-                      py: 3,
+                      py: 4,
                       userSelect: "none",
                     }}
                   >
-                    <Box sx={{ position: "absolute", top: 20, left: 20, display: "flex", gap: 1 }}>
+                    {/* TTS Button on back */}
+                    <Box sx={{ position: "absolute", top: 20, right: 20 }}>
+                      <IconButton
+                        onClick={(e) => speakWord(e, currentCard.word)}
+                        sx={{
+                          bgcolor: "#f1f5f9",
+                          color: levelColor.badge,
+                          "&:hover": { bgcolor: "#e2e8f0" },
+                        }}
+                      >
+                        <Volume2 size={22} />
+                      </IconButton>
+                    </Box>
+
+                    {/* Metadata Badges */}
+                    <Box sx={{ position: "absolute", top: 24, left: 24, display: "flex", gap: 1 }}>
                       <Chip
                         label={currentCard.level}
                         size="small"
                         sx={{
-                          bgcolor: levelColor.badge + "18",
+                          bgcolor: levelColor.badge + "12",
                           color: levelColor.badge,
-                          fontWeight: 700,
+                          fontWeight: 800,
                           fontSize: 11,
                         }}
                       />
                       <Chip
                         label={currentCard.topic}
                         size="small"
-                        sx={{ bgcolor: "#f5f5f5", color: "#666", fontSize: 11 }}
+                        sx={{ bgcolor: "#f1f5f9", color: "#475569", fontSize: 11, fontWeight: 600 }}
                       />
                     </Box>
-                    <Typography sx={{ fontSize: 22, fontWeight: 700, color: "#1a1a1a", textAlign: "center" }}>
+
+                    {/* Word again */}
+                    <Typography sx={{ fontSize: 24, fontWeight: 800, color: "#0f172a" }}>
                       {currentCard.word}
                     </Typography>
+
+                    {/* Meaning */}
                     <Box
                       sx={{
                         textAlign: "center",
-                        borderTop: "1px solid #f0f0f0",
-                        borderBottom: "1px solid #f0f0f0",
-                        py: 1.5,
-                        px: 2,
+                        borderTop: "1.5px dashed #e2e8f0",
+                        borderBottom: "1.5px dashed #e2e8f0",
+                        py: 2,
+                        px: 3,
                         width: "100%",
                       }}
                     >
-                      <Typography variant="h5" fontWeight={700} color={levelColor.badge} mb={0.5}>
+                      <Typography variant="h4" fontWeight={800} color={levelColor.badge}>
                         {currentCard.meaning}
                       </Typography>
                     </Box>
+
+                    {/* Example block */}
                     {currentCard.example && (
-                      <Box sx={{ textAlign: "center", maxWidth: "90%" }}>
-                        <Typography variant="body2" color="#555" mb={0.5} sx={{ fontStyle: "italic" }}>
+                      <Box
+                        sx={{
+                          textAlign: "center",
+                          maxWidth: "95%",
+                          bgcolor: "#f8fafc",
+                          p: 2,
+                          borderRadius: "16px",
+                          border: "1px solid #e2e8f0",
+                        }}
+                      >
+                        <Typography
+                          variant="body2"
+                          color="#334155"
+                          fontWeight={600}
+                          sx={{ fontStyle: "italic", mb: 0.5 }}
+                        >
                           {currentCard.example}
                         </Typography>
                         {currentCard.exampleMeaning && (
-                          <Typography variant="caption" color="#888">
+                          <Typography variant="caption" color="#64748b" fontWeight={500}>
                             → {currentCard.exampleMeaning}
                           </Typography>
                         )}
+                      </Box>
+                    )}
+
+                    {/* Tags */}
+                    {(currentCard.tags || []).length > 0 && (
+                      <Box sx={{ display: "flex", gap: 0.8, flexWrap: "wrap", justifyContent: "center" }}>
+                        {currentCard.tags!.map((tag) => (
+                          <Chip
+                            key={tag}
+                            label={`#${tag}`}
+                            size="small"
+                            sx={{ bgcolor: "#f1f5f9", color: "#64748b", fontSize: 10, height: 20 }}
+                          />
+                        ))}
                       </Box>
                     )}
                   </Box>
                 </Box>
               </Box>
 
-              {/* Nav buttons */}
-              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              {/* Navigation buttons */}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 3 }}>
                 <Button
                   variant="outlined"
-                  startIcon={<ChevronLeft size={18} />}
+                  startIcon={<ChevronLeft size={20} />}
                   onClick={goPrev}
                   disabled={currentIndex === 0}
                   sx={{
-                    borderColor: "#ddd",
-                    color: "#555",
-                    borderRadius: "12px",
-                    px: 3,
-                    "&:hover": { borderColor: "#B90000", color: "#B90000" },
-                    "&.Mui-disabled": { borderColor: "#f0f0f0", color: "#ccc" },
+                    borderColor: "#cbd5e1",
+                    color: "#475569",
+                    borderRadius: "14px",
+                    py: 1.3,
+                    px: 3.5,
+                    fontWeight: 700,
+                    transition: "all 0.2s",
+                    "&:hover": { borderColor: "#B90000", color: "#B90000", bgcolor: "#fff5f5" },
                   }}
                 >
                   Trước
                 </Button>
+
                 <Button
                   variant="contained"
                   onClick={flip}
                   sx={{
                     background: "linear-gradient(135deg, #B90000 0%, #EF5350 100%)",
-                    borderRadius: "12px",
-                    px: 4,
-                    fontWeight: 600,
-                    boxShadow: "0 4px 16px rgba(185,0,0,0.35)",
-                    "&:hover": { background: "linear-gradient(135deg, #990000 0%, #D32F2F 100%)" },
+                    borderRadius: "14px",
+                    py: 1.4,
+                    px: 5,
+                    fontWeight: 700,
+                    fontSize: 15,
+                    boxShadow: "0 8px 20px rgba(185,0,0,0.3)",
+                    "&:hover": {
+                      background: "linear-gradient(135deg, #990000 0%, #D32F2F 100%)",
+                      transform: "scale(1.02)",
+                    },
                   }}
                 >
                   Lật thẻ
                 </Button>
+
                 <Button
                   variant="outlined"
-                  endIcon={<ChevronRight size={18} />}
+                  endIcon={<ChevronRight size={20} />}
                   onClick={goNext}
                   sx={{
-                    borderColor: "#ddd",
-                    color: "#555",
-                    borderRadius: "12px",
-                    px: 3,
-                    "&:hover": { borderColor: "#B90000", color: "#B90000" },
+                    borderColor: "#cbd5e1",
+                    color: "#475569",
+                    borderRadius: "14px",
+                    py: 1.3,
+                    px: 3.5,
+                    fontWeight: 700,
+                    transition: "all 0.2s",
+                    "&:hover": { borderColor: "#B90000", color: "#B90000", bgcolor: "#fff5f5" },
                   }}
                 >
-                  {currentIndex >= cards.length - 1 ? "Xong" : "Tiếp"}
+                  {currentIndex >= filteredCards.length - 1 ? "Xong" : "Tiếp theo"}
                 </Button>
               </Box>
-
-              {/* Tags */}
-              {(currentCard.tags || []).length > 0 && (
-                <Box sx={{ mt: 2, display: "flex", gap: 1, flexWrap: "wrap", justifyContent: "center" }}>
-                  {currentCard.tags!.map((tag) => (
-                    <Chip
-                      key={tag}
-                      label={tag}
-                      size="small"
-                      sx={{ bgcolor: "#f5f5f5", color: "#888", fontSize: 11 }}
-                    />
-                  ))}
-                </Box>
-              )}
             </>
           )}
 
-          {/* Flashcard finished */}
+          {/* Flashcard finished card */}
           {finished && (
-            <Box
-              sx={{
-                textAlign: "center",
-                py: 6,
-                px: 4,
-                maxWidth: 480,
-                background: "linear-gradient(135deg, #fff5f5 0%, #fff 100%)",
-                borderRadius: "24px",
-                border: "2px solid #ffcccc",
-                boxShadow: "0 12px 40px rgba(185,0,0,0.12)",
-              }}
-            >
+            <Zoom in={finished}>
               <Box
                 sx={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: "50%",
-                  background: "linear-gradient(135deg, #B90000 0%, #EF5350 100%)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  mx: "auto",
-                  mb: 3,
-                  boxShadow: "0 8px 24px rgba(185,0,0,0.3)",
+                  textAlign: "center",
+                  py: 6,
+                  px: 4,
+                  maxWidth: 500,
+                  bgcolor: "#fff",
+                  borderRadius: "28px",
+                  border: "2px solid #ffcccc",
+                  boxShadow: "0 20px 45px rgba(185, 0, 0, 0.08)",
                 }}
               >
-                <CheckCircle size={40} color="#fff" />
-              </Box>
-              <Typography variant="h5" fontWeight={700} color="#1a1a1a" mb={1}>
-                🎉 Hoàn thành!
-              </Typography>
-              <Typography variant="body1" color="#555" mb={3}>
-                Bạn đã ôn xong{" "}
-                <strong style={{ color: "#B90000" }}>{cards.length}</strong> từ vựng
-                {selectedLevel && (
-                  <>
-                    {" "}
-                    cấp độ <strong style={{ color: "#B90000" }}>{selectedLevel}</strong>
-                  </>
-                )}
-                {selectedTopic && (
-                  <>
-                    {" "}
-                    chủ đề <strong style={{ color: "#B90000" }}>"{selectedTopic}"</strong>
-                  </>
-                )}
-                .
-              </Typography>
-              <Box sx={{ display: "flex", gap: 2, justifyContent: "center", flexWrap: "wrap" }}>
-                <Button
-                  variant="outlined"
-                  startIcon={<RotateCcw size={16} />}
-                  onClick={handleRestart}
+                <Box
                   sx={{
-                    borderColor: "#B90000",
-                    color: "#B90000",
-                    borderRadius: "12px",
-                    "&:hover": { bgcolor: "#fff5f5" },
-                  }}
-                >
-                  Ôn lại từ đầu
-                </Button>
-                <Button
-                  variant="contained"
-                  startIcon={<Shuffle size={16} />}
-                  onClick={() => { handleShuffle(); setFinished(false); }}
-                  sx={{
+                    width: 90,
+                    height: 90,
+                    borderRadius: "50%",
                     background: "linear-gradient(135deg, #B90000 0%, #EF5350 100%)",
-                    borderRadius: "12px",
-                    fontWeight: 600,
-                    boxShadow: "0 4px 16px rgba(185,0,0,0.3)",
-                    "&:hover": { background: "linear-gradient(135deg, #990000 0%, #D32F2F 100%)" },
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    mx: "auto",
+                    mb: 3,
+                    boxShadow: "0 10px 25px rgba(185,0,0,0.3)",
                   }}
                 >
-                  Trộn & ôn lại
-                </Button>
+                  <CheckCircle size={45} color="#fff" />
+                </Box>
+                <Typography variant="h5" fontWeight={800} color="#0f172a" mb={1.5}>
+                  🎉 Hoàn thành ôn tập!
+                </Typography>
+                <Typography variant="body1" color="#475569" mb={4} lineHeight={1.6}>
+                  Chúc mừng bạn đã hoàn thành ôn tập toàn bộ{" "}
+                  <strong style={{ color: "#B90000", fontSize: "1.1rem" }}>{filteredCards.length}</strong> từ vựng
+                  {selectedLevel && (
+                    <>
+                      {" "}
+                      cấp độ <strong style={{ color: "#B90000" }}>{selectedLevel}</strong>
+                    </>
+                  )}
+                  {selectedTopic && (
+                    <>
+                      {" "}
+                      chủ đề <strong style={{ color: "#B90000" }}>"{selectedTopic}"</strong>
+                    </>
+                  )}
+                  . Hãy làm Quiz trắc nghiệm để kiểm tra khả năng nhớ từ nhé!
+                </Typography>
+                <Box sx={{ display: "flex", gap: 2, justifyContent: "center", flexWrap: "wrap" }}>
+                  <Button
+                    variant="outlined"
+                    startIcon={<RotateCcw size={16} />}
+                    onClick={handleRestart}
+                    sx={{
+                      borderColor: "#B90000",
+                      color: "#B90000",
+                      borderRadius: "12px",
+                      fontWeight: 700,
+                      "&:hover": { bgcolor: "#fff5f5", borderColor: "#990000" },
+                    }}
+                  >
+                    Ôn lại từ đầu
+                  </Button>
+                  <Button
+                    variant="contained"
+                    startIcon={<Shuffle size={16} />}
+                    onClick={() => {
+                      handleShuffle();
+                      setFinished(false);
+                    }}
+                    sx={{
+                      background: "linear-gradient(135deg, #B90000 0%, #EF5350 100%)",
+                      borderRadius: "12px",
+                      fontWeight: 700,
+                      boxShadow: "0 4px 14px rgba(185,0,0,0.25)",
+                      "&:hover": {
+                        background: "linear-gradient(135deg, #990000 0%, #D32F2F 100%)",
+                      },
+                    }}
+                  >
+                    Trộn & ôn lại
+                  </Button>
+                </Box>
               </Box>
-            </Box>
+            </Zoom>
           )}
         </>
       )}
@@ -857,145 +1145,157 @@ const VocabularyPracticePage: React.FC = () => {
       {/* ══════════════════════════════════════════════════════════════════════ */}
       {!loading && mode === "quiz" && (
         <>
-          {/* ── Quiz Setup ──────────────────────────────────────────────── */}
-          {!quizStarted && cards.length >= 4 && (
-            <Box sx={{ width: "100%", maxWidth: 680 }}>
-              {/* Direction */}
-              <Typography variant="subtitle1" fontWeight={700} color="#333" mb={1.5}>
-                Chọn hướng câu hỏi:
-              </Typography>
-              <Box sx={{ display: "flex", gap: 1.5, mb: 3, flexWrap: "wrap" }}>
-                {[
-                  {
-                    key: "jp-to-vn",
-                    emoji: "🇯🇵 → 🇻🇳",
-                    sub: "Xem từ tiếng Nhật, chọn nghĩa tiếng Việt",
-                  },
-                  {
-                    key: "vn-to-jp",
-                    emoji: "🇻🇳 → 🇯🇵",
-                    sub: "Xem nghĩa tiếng Việt, chọn từ tiếng Nhật",
-                  },
-                ].map((opt) => {
-                  const isSelected = quizDirection === opt.key;
-                  return (
-                    <Box
-                      key={opt.key}
-                      onClick={() => setQuizDirection(opt.key as "jp-to-vn" | "vn-to-jp")}
-                      sx={{
-                        flex: 1,
-                        minWidth: 200,
-                        p: 2,
-                        borderRadius: "14px",
-                        cursor: "pointer",
-                        border: "2px solid",
-                        borderColor: isSelected ? "#B90000" : "#e0e0e0",
-                        bgcolor: isSelected ? "#fff5f5" : "#fff",
-                        transition: "all 0.2s",
-                        "&:hover": { borderColor: "#B90000", bgcolor: "#fff5f5" },
-                      }}
-                    >
-                      <Typography
-                        variant="h6"
-                        fontWeight={700}
-                        color={isSelected ? "#B90000" : "#333"}
-                        mb={0.3}
+          {/* Quiz Configuration Panel */}
+          {!quizStarted && filteredCards.length >= 4 && (
+            <Fade in={!quizStarted}>
+              <Box sx={{ width: "100%", maxWidth: 680 }}>
+                {/* Direction Selector */}
+                <Typography variant="subtitle1" fontWeight={800} color="#1e293b" mb={2}>
+                  Chọn hướng câu hỏi:
+                </Typography>
+                <Box sx={{ display: "flex", gap: 2, mb: 4, flexWrap: "wrap" }}>
+                  {[
+                    {
+                      key: "jp-to-vn",
+                      emoji: "🇯🇵 → 🇻🇳",
+                      title: "Tiếng Nhật sang Tiếng Việt",
+                      sub: "Nhìn từ vựng tiếng Nhật, chọn ý nghĩa dịch đúng",
+                    },
+                    {
+                      key: "vn-to-jp",
+                      emoji: "🇻🇳 → 🇯🇵",
+                      title: "Tiếng Việt sang Tiếng Nhật",
+                      sub: "Nhìn ý nghĩa dịch nghĩa tiếng Việt, chọn từ tiếng Nhật",
+                    },
+                  ].map((opt) => {
+                    const isSelected = quizDirection === opt.key;
+                    return (
+                      <Box
+                        key={opt.key}
+                        onClick={() => setQuizDirection(opt.key as "jp-to-vn" | "vn-to-jp")}
+                        sx={{
+                          flex: 1,
+                          minWidth: 240,
+                          p: 2.5,
+                          borderRadius: "18px",
+                          cursor: "pointer",
+                          border: "2px solid",
+                          borderColor: isSelected ? "#B90000" : "#e2e8f0",
+                          bgcolor: isSelected ? "#fff5f5" : "#fff",
+                          transition: "all 0.25s",
+                          boxShadow: isSelected ? "0 8px 24px rgba(185, 0, 0, 0.08)" : "none",
+                          "&:hover": {
+                            borderColor: "#B90000",
+                            bgcolor: "#fff5f5",
+                            transform: "translateY(-2px)",
+                          },
+                        }}
                       >
-                        {opt.emoji}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {opt.sub}
-                      </Typography>
-                    </Box>
-                  );
-                })}
-              </Box>
+                        <Typography
+                          variant="h5"
+                          fontWeight={800}
+                          color={isSelected ? "#B90000" : "#0f172a"}
+                          mb={1}
+                        >
+                          {opt.emoji}
+                        </Typography>
+                        <Typography variant="body2" fontWeight={700} color={isSelected ? "#B90000" : "#334155"} mb={0.5}>
+                          {opt.title}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          {opt.sub}
+                        </Typography>
+                      </Box>
+                    );
+                  })}
+                </Box>
 
-              {/* Question count */}
-              <Typography variant="subtitle1" fontWeight={700} color="#333" mb={1.5}>
-                Số câu hỏi:
-              </Typography>
-              <Box sx={{ display: "flex", gap: 1, mb: 4, flexWrap: "wrap" }}>
-                {[
-                  { label: "10 câu", value: 10 },
-                  { label: "20 câu", value: 20 },
-                  { label: `Tất cả (${cards.length})`, value: -1 },
-                ].map((opt) => {
-                  const tooFew = opt.value > 0 && opt.value > cards.length;
-                  const isSelected = quizCount === opt.value;
-                  return (
-                    <Chip
-                      key={opt.value}
-                      label={opt.label}
-                      onClick={() => !tooFew && setQuizCount(opt.value)}
-                      sx={{
-                        cursor: tooFew ? "not-allowed" : "pointer",
-                        fontWeight: isSelected ? 700 : 500,
-                        bgcolor: isSelected ? "#B90000" : tooFew ? "#f5f5f5" : "#fff",
-                        color: isSelected ? "#fff" : tooFew ? "#ccc" : "#333",
-                        border: "1.5px solid",
-                        borderColor: isSelected ? "#B90000" : tooFew ? "#e0e0e0" : "#ccc",
-                        px: 0.5,
-                        "& .MuiChip-label": { fontSize: 14, px: 1.5 },
-                        "&:hover": !tooFew ? { opacity: 0.85 } : {},
-                      }}
-                    />
-                  );
-                })}
-              </Box>
+                {/* Length Selector */}
+                <Typography variant="subtitle1" fontWeight={800} color="#1e293b" mb={2}>
+                  Số lượng câu hỏi trắc nghiệm:
+                </Typography>
+                <Box sx={{ display: "flex", gap: 1.5, mb: 4, flexWrap: "wrap" }}>
+                  {[
+                    { label: "10 câu", value: 10 },
+                    { label: "20 câu", value: 20 },
+                    { label: `Tất cả (${filteredCards.length})`, value: -1 },
+                  ].map((opt) => {
+                    const tooFew = opt.value > 0 && opt.value > filteredCards.length;
+                    const isSelected = quizCount === opt.value;
+                    return (
+                      <Chip
+                        key={opt.value}
+                        label={opt.label}
+                        onClick={() => !tooFew && setQuizCount(opt.value)}
+                        sx={{
+                          cursor: tooFew ? "not-allowed" : "pointer",
+                          fontWeight: 700,
+                          bgcolor: isSelected ? "#B90000" : tooFew ? "#f1f5f9" : "#fff",
+                          color: isSelected ? "#fff" : tooFew ? "#cbd5e1" : "#475569",
+                          border: "1.5px solid",
+                          borderColor: isSelected ? "#B90000" : tooFew ? "#e2e8f0" : "#cbd5e1",
+                          px: 1,
+                          height: 36,
+                          "& .MuiChip-label": { fontSize: 13 },
+                          "&:hover": !tooFew ? { opacity: 0.85 } : {},
+                        }}
+                      />
+                    );
+                  })}
+                </Box>
 
-              {/* Start button */}
-              <Button
-                variant="contained"
-                size="large"
-                fullWidth
-                onClick={generateQuiz}
-                startIcon={<Brain size={20} />}
-                sx={{
-                  background: "linear-gradient(135deg, #B90000 0%, #EF5350 100%)",
-                  borderRadius: "14px",
-                  py: 1.6,
-                  fontSize: 16,
-                  fontWeight: 700,
-                  letterSpacing: 0.3,
-                  boxShadow: "0 6px 20px rgba(185,0,0,0.35)",
-                  "&:hover": {
-                    background: "linear-gradient(135deg, #990000 0%, #D32F2F 100%)",
-                    boxShadow: "0 8px 24px rgba(185,0,0,0.45)",
-                  },
-                }}
-              >
-                Bắt đầu Quiz
-              </Button>
-            </Box>
+                {/* Start Action */}
+                <Button
+                  variant="contained"
+                  size="large"
+                  fullWidth
+                  onClick={generateQuiz}
+                  startIcon={<Brain size={22} />}
+                  sx={{
+                    background: "linear-gradient(135deg, #B90000 0%, #EF5350 100%)",
+                    borderRadius: "16px",
+                    py: 1.8,
+                    fontSize: 16,
+                    fontWeight: 700,
+                    boxShadow: "0 8px 24px rgba(185,0,0,0.3)",
+                    "&:hover": {
+                      background: "linear-gradient(135deg, #990000 0%, #D32F2F 100%)",
+                      transform: "translateY(-1px)",
+                    },
+                  }}
+                >
+                  Bắt đầu làm Quiz
+                </Button>
+              </Box>
+            </Fade>
           )}
 
-          {/* Not enough cards warning */}
-          {!quizStarted && cards.length > 0 && cards.length < 4 && (
+          {/* Warning for not enough vocabulary */}
+          {!quizStarted && filteredCards.length > 0 && filteredCards.length < 4 && (
             <Box
               sx={{
-                bgcolor: "#fff3cd",
-                border: "1px solid #ffc107",
-                borderRadius: "12px",
+                bgcolor: "#fef3c7",
+                border: "1px solid #f59e0b",
+                borderRadius: "16px",
                 p: 3,
-                maxWidth: 480,
+                maxWidth: 500,
                 textAlign: "center",
               }}
             >
-              <Typography variant="body1" color="#856404" fontWeight={600} mb={1}>
-                ⚠️ Không đủ từ vựng
+              <Typography variant="body1" color="#b45309" fontWeight={700} mb={1}>
+                ⚠️ Cần thêm từ vựng để kích hoạt Quiz
               </Typography>
-              <Typography variant="body2" color="#856404">
-                Cần ít nhất 4 từ để tạo câu hỏi trắc nghiệm. Hiện có{" "}
-                <strong>{cards.length}</strong> từ. Hãy chọn cấp độ/chủ đề khác.
+              <Typography variant="body2" color="#b45309" lineHeight={1.5}>
+                Chế độ trắc nghiệm yêu cầu tối thiểu **4 từ vựng** trong danh sách học để thiết kế các câu trả lời
+                nhiễu. Hiện tại chỉ có <strong>{filteredCards.length}</strong> từ. Bạn hãy thay đổi bộ lọc để ôn tập nhóm lớn hơn.
               </Typography>
             </Box>
           )}
 
-          {/* ── Quiz In Progress ────────────────────────────────────────── */}
+          {/* ── Quiz Interactive Interface ───────────────────────────────── */}
           {quizStarted && !quizFinished && currentQuestion && (
             <Box sx={{ width: "100%", maxWidth: 680 }}>
-              {/* Header bar */}
+              {/* Header stats bar */}
               <Box
                 sx={{
                   display: "flex",
@@ -1004,72 +1304,74 @@ const VocabularyPracticePage: React.FC = () => {
                   mb: 1.5,
                 }}
               >
-                <Typography variant="body2" color="text.secondary" fontWeight={600}>
-                  Câu {quizIndex + 1} / {quizQuestions.length}
+                <Typography variant="body2" color="text.secondary" fontWeight={700}>
+                  Câu hỏi {quizIndex + 1} / {quizQuestions.length}
                 </Typography>
-                <Box sx={{ display: "flex", gap: 1 }}>
+                <Box sx={{ display: "flex", gap: 1.2 }}>
                   <Box
                     sx={{
-                      px: 1.5,
-                      py: 0.4,
+                      px: 1.8,
+                      py: 0.5,
                       borderRadius: "20px",
-                      bgcolor: "#e8f5e9",
-                      border: "1px solid #c8e6c9",
+                      bgcolor: "#f0fdf4",
+                      border: "1px solid #bbf7d0",
                     }}
                   >
-                    <Typography variant="caption" fontWeight={700} color="#2E7D32">
-                      ✓ {quizScore}
+                    <Typography variant="caption" fontWeight={800} color="#166534">
+                      Đúng: {quizScore}
                     </Typography>
                   </Box>
                   <Box
                     sx={{
-                      px: 1.5,
-                      py: 0.4,
+                      px: 1.8,
+                      py: 0.5,
                       borderRadius: "20px",
-                      bgcolor: "#ffebee",
-                      border: "1px solid #ffcdd2",
+                      bgcolor: "#fef2f2",
+                      border: "1px solid #fecaca",
                     }}
                   >
-                    <Typography variant="caption" fontWeight={700} color="#C62828">
-                      ✗ {wrongAnswers.length}
+                    <Typography variant="caption" fontWeight={800} color="#991b1b">
+                      Sai: {wrongAnswers.length}
                     </Typography>
                   </Box>
                 </Box>
               </Box>
 
-              {/* Progress */}
+              {/* Progress Tracker */}
               <LinearProgress
                 variant="determinate"
                 value={quizProgress}
                 sx={{
-                  mb: 2.5,
-                  height: 6,
-                  borderRadius: 3,
-                  bgcolor: "#f0f0f0",
+                  mb: 3,
+                  height: 8,
+                  borderRadius: 4,
+                  bgcolor: "#e2e8f0",
                   "& .MuiLinearProgress-bar": {
                     background: "linear-gradient(90deg, #B90000 0%, #EF5350 100%)",
-                    borderRadius: 3,
+                    borderRadius: 4,
                   },
                 }}
               />
 
-              {/* Question card */}
+              {/* Question Screen */}
               <Box
                 sx={{
                   background:
                     LEVEL_COLORS[currentQuestion.card.level]?.bg || LEVEL_COLORS.N5.bg,
-                  borderRadius: "20px",
-                  p: { xs: 3, sm: 4 },
-                  mb: 2.5,
+                  borderRadius: "24px",
+                  p: { xs: 4, sm: 5 },
+                  mb: 3,
                   textAlign: "center",
-                  boxShadow: "0 10px 36px rgba(0,0,0,0.18)",
+                  boxShadow: `0 12px 30px ${LEVEL_COLORS[currentQuestion.card.level]?.shadow || LEVEL_COLORS.N5.shadow
+                    }`,
+                  position: "relative",
                 }}
               >
-                <Box sx={{ display: "flex", justifyContent: "center", gap: 1, mb: 2 }}>
+                <Box sx={{ display: "flex", justifyContent: "center", gap: 1.2, mb: 2.5 }}>
                   <Chip
                     label={currentQuestion.card.level}
                     size="small"
-                    sx={{ bgcolor: "rgba(255,255,255,0.25)", color: "#fff", fontWeight: 700 }}
+                    sx={{ bgcolor: "rgba(255,255,255,0.25)", color: "#fff", fontWeight: 800 }}
                   />
                   <Chip
                     label={currentQuestion.card.topic}
@@ -1078,6 +1380,7 @@ const VocabularyPracticePage: React.FC = () => {
                       bgcolor: "rgba(255,255,255,0.18)",
                       color: "rgba(255,255,255,0.9)",
                       fontSize: 11,
+                      fontWeight: 600,
                     }}
                   />
                 </Box>
@@ -1086,28 +1389,28 @@ const VocabularyPracticePage: React.FC = () => {
                   <>
                     <Typography
                       sx={{
-                        fontSize: { xs: 44, sm: 60 },
-                        fontWeight: 700,
+                        fontSize: { xs: 46, sm: 58 },
+                        fontWeight: 800,
                         color: "#fff",
                         lineHeight: 1.1,
                         mb: 1,
-                        textShadow: "0 2px 8px rgba(0,0,0,0.25)",
+                        textShadow: "0 2px 8px rgba(0,0,0,0.15)",
                       }}
                     >
                       {currentQuestion.card.word}
                     </Typography>
-                    <Typography sx={{ fontSize: 18, color: "rgba(255,255,255,0.8)" }}>
+                    <Typography sx={{ fontSize: 20, color: "rgba(255,255,255,0.85)", fontWeight: 500 }}>
                       {currentQuestion.card.reading}
                     </Typography>
                   </>
                 ) : (
                   <Typography
                     sx={{
-                      fontSize: { xs: 22, sm: 30 },
-                      fontWeight: 700,
+                      fontSize: { xs: 24, sm: 32 },
+                      fontWeight: 800,
                       color: "#fff",
                       lineHeight: 1.4,
-                      textShadow: "0 2px 8px rgba(0,0,0,0.25)",
+                      textShadow: "0 2px 8px rgba(0,0,0,0.15)",
                     }}
                   >
                     {currentQuestion.card.meaning}
@@ -1116,16 +1419,16 @@ const VocabularyPracticePage: React.FC = () => {
 
                 <Typography
                   variant="caption"
-                  sx={{ color: "rgba(255,255,255,0.6)", mt: 2, display: "block" }}
+                  sx={{ color: "rgba(255,255,255,0.65)", mt: 3, display: "block", fontWeight: 600 }}
                 >
                   {quizDirection === "jp-to-vn"
-                    ? "Nghĩa của từ này là gì?"
-                    : "Từ tiếng Nhật nào có nghĩa này?"}
+                    ? "Chọn bản dịch ý nghĩa chính xác nhất:"
+                    : "Chọn từ vựng tiếng Nhật chuẩn xác:"}
                 </Typography>
               </Box>
 
-              {/* Answer options 2×2 */}
-              <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5, mb: 2 }}>
+              {/* 2x2 Answer Grid */}
+              <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, mb: 3 }}>
                 {currentQuestion.options.map((option, index) => (
                   <Button
                     key={index}
@@ -1133,54 +1436,54 @@ const VocabularyPracticePage: React.FC = () => {
                     disabled={isAnswered}
                     sx={{
                       border: "2px solid",
-                      borderRadius: "12px",
-                      py: 1.5,
-                      px: 2,
+                      borderRadius: "16px",
+                      py: 2,
+                      px: 2.5,
                       textAlign: "left",
                       justifyContent: "flex-start",
                       textTransform: "none",
-                      transition: "all 0.2s",
+                      transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
                       cursor: isAnswered ? "default" : "pointer",
                       ...getOptionStyle(index),
                     }}
                   >
-                    <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5, width: "100%" }}>
-                      {/* Label circle */}
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 2, width: "100%" }}>
+                      {/* Round option circle indicator */}
                       <Box
                         sx={{
-                          width: 26,
-                          height: 26,
+                          width: 30,
+                          height: 30,
                           borderRadius: "50%",
                           flexShrink: 0,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          fontSize: 12,
-                          fontWeight: 700,
+                          fontSize: 13,
+                          fontWeight: 800,
                           transition: "all 0.2s",
                           bgcolor: isAnswered
                             ? index === currentQuestion.correctIndex
-                              ? "#4CAF50"
+                              ? "#22c55e"
                               : index === selectedAnswer
-                              ? "#F44336"
-                              : "#e0e0e0"
-                            : "#f0f0f0",
+                                ? "#ef4444"
+                                : "#e2e8f0"
+                            : "#f1f5f9",
                           color: isAnswered
                             ? index === currentQuestion.correctIndex || index === selectedAnswer
                               ? "#fff"
-                              : "#999"
-                            : "#555",
+                              : "#94a3b8"
+                            : "#475569",
                         }}
                       >
                         {isAnswered && index === currentQuestion.correctIndex
                           ? "✓"
                           : isAnswered && index === selectedAnswer
-                          ? "✗"
-                          : OPTION_LABELS[index]}
+                            ? "✗"
+                            : OPTION_LABELS[index]}
                       </Box>
                       <Typography
                         variant="body2"
-                        fontWeight={500}
+                        fontWeight={600}
                         sx={{ lineHeight: 1.4, wordBreak: "break-word" }}
                       >
                         {option}
@@ -1190,36 +1493,38 @@ const VocabularyPracticePage: React.FC = () => {
                 ))}
               </Box>
 
-              {/* Answer feedback + Next button */}
+              {/* Correct / Incorrect Feedback Alert & Action Button */}
               {isAnswered && (
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                   <Box
                     sx={{
-                      p: 1.5,
-                      borderRadius: "12px",
+                      p: 2,
+                      borderRadius: "16px",
                       bgcolor:
                         selectedAnswer === currentQuestion.correctIndex
-                          ? "#e8f5e9"
-                          : "#ffebee",
-                      border: "1px solid",
+                          ? "#f0fdf4"
+                          : "#fef2f2",
+                      border: "1.5px solid",
                       borderColor:
                         selectedAnswer === currentQuestion.correctIndex
-                          ? "#a5d6a7"
-                          : "#ffcdd2",
+                          ? "#bbf7d0"
+                          : "#fecaca",
                     }}
                   >
                     {selectedAnswer === currentQuestion.correctIndex ? (
-                      <Typography variant="body2" fontWeight={600} color="#2E7D32">
-                        ✅ Chính xác! Rất tốt!
+                      <Typography variant="body2" fontWeight={700} color="#166534">
+                        ✅ Chính xác! Bạn trả lời xuất sắc.
                       </Typography>
                     ) : (
                       <Box>
-                        <Typography variant="body2" fontWeight={600} color="#C62828" mb={0.3}>
-                          ❌ Chưa đúng!
+                        <Typography variant="body2" fontWeight={700} color="#991b1b" mb={0.5}>
+                          ❌ Rất tiếc, câu trả lời chưa đúng!
                         </Typography>
-                        <Typography variant="body2" color="#555">
-                          Đáp án đúng:{" "}
-                          <strong>{currentQuestion.options[currentQuestion.correctIndex]}</strong>
+                        <Typography variant="body2" color="#334155" fontWeight={500}>
+                          Đáp án đúng là:{" "}
+                          <strong style={{ color: "#22c55e" }}>
+                            {currentQuestion.options[currentQuestion.correctIndex]}
+                          </strong>
                         </Typography>
                       </Box>
                     )}
@@ -1237,197 +1542,200 @@ const VocabularyPracticePage: React.FC = () => {
                     }
                     sx={{
                       background: "linear-gradient(135deg, #B90000 0%, #EF5350 100%)",
-                      borderRadius: "12px",
-                      py: 1.3,
-                      fontWeight: 600,
-                      boxShadow: "0 4px 16px rgba(185,0,0,0.3)",
+                      borderRadius: "14px",
+                      py: 1.6,
+                      fontWeight: 700,
+                      boxShadow: "0 6px 18px rgba(185,0,0,0.35)",
                       "&:hover": {
                         background: "linear-gradient(135deg, #990000 0%, #D32F2F 100%)",
                       },
                     }}
                   >
-                    {quizIndex >= quizQuestions.length - 1 ? "Xem kết quả" : "Câu tiếp theo"}
+                    {quizIndex >= quizQuestions.length - 1 ? "Xem kết quả trắc nghiệm" : "Tiếp tục câu sau"}
                   </Button>
                 </Box>
               )}
             </Box>
           )}
 
-          {/* ── Quiz Results ─────────────────────────────────────────────── */}
+          {/* ── Quiz Summary Result Dashboard ──────────────────────────────── */}
           {quizFinished && !showWrongReview && (
-            <Box sx={{ width: "100%", maxWidth: 600 }}>
-              <Box
-                sx={{
-                  textAlign: "center",
-                  py: 5,
-                  px: 3,
-                  background: "linear-gradient(135deg, #fff5f5 0%, #fff 100%)",
-                  borderRadius: "24px",
-                  border: "2px solid #ffcccc",
-                  boxShadow: "0 12px 40px rgba(185,0,0,0.12)",
-                  mb: 2,
-                }}
-              >
-                {/* Score circle */}
-                <Box sx={{ position: "relative", display: "inline-flex", mb: 2 }}>
-                  <CircularProgress
-                    variant="determinate"
-                    value={100}
-                    size={128}
-                    thickness={4}
-                    sx={{ color: "#f0f0f0", position: "absolute" }}
-                  />
-                  <CircularProgress
-                    variant="determinate"
-                    value={quizScorePercent}
-                    size={128}
-                    thickness={4}
-                    sx={{
-                      color:
-                        quizScorePercent >= 80
-                          ? "#4CAF50"
-                          : quizScorePercent >= 60
-                          ? "#FF9800"
-                          : "#F44336",
-                    }}
-                  />
-                  <Box
-                    sx={{
-                      top: 0,
-                      left: 0,
-                      bottom: 0,
-                      right: 0,
-                      position: "absolute",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexDirection: "column",
-                    }}
-                  >
-                    <Typography
-                      variant="h4"
-                      fontWeight={800}
-                      color={
-                        quizScorePercent >= 80
-                          ? "#4CAF50"
-                          : quizScorePercent >= 60
-                          ? "#FF9800"
-                          : "#F44336"
-                      }
-                    >
-                      {quizScorePercent}%
-                    </Typography>
-                  </Box>
-                </Box>
-
-                <Typography variant="h5" fontWeight={700} color="#1a1a1a" mb={0.5}>
-                  {quizScore} / {quizQuestions.length} câu đúng
-                </Typography>
-                <Typography
-                  variant="body1"
-                  fontWeight={600}
-                  color={getScoreMessage(quizScorePercent).color}
-                  mb={3}
-                >
-                  {getScoreMessage(quizScorePercent).msg}
-                </Typography>
-
-                {/* Stats row */}
+            <Zoom in={quizFinished}>
+              <Box sx={{ width: "100%", maxWidth: 600 }}>
                 <Box
-                  sx={{ display: "flex", gap: 2, justifyContent: "center", mb: 3.5, flexWrap: "wrap" }}
+                  sx={{
+                    textAlign: "center",
+                    py: 5,
+                    px: 4,
+                    bgcolor: "#fff",
+                    borderRadius: "28px",
+                    border: "1px solid #e2e8f0",
+                    boxShadow: "0 20px 45px rgba(0,0,0,0.04)",
+                    mb: 3,
+                  }}
                 >
-                  {[
-                    { label: "Đúng", value: quizScore, bg: "#e8f5e9", border: "#c8e6c9", color: "#2E7D32" },
-                    {
-                      label: "Sai",
-                      value: wrongAnswers.length,
-                      bg: "#ffebee",
-                      border: "#ffcdd2",
-                      color: "#C62828",
-                    },
-                    {
-                      label: "Tổng",
-                      value: quizQuestions.length,
-                      bg: "#f3f4f6",
-                      border: "#e5e7eb",
-                      color: "#333",
-                    },
-                  ].map((s) => (
-                    <Box
-                      key={s.label}
+                  {/* Circular progress with indicator score */}
+                  <Box sx={{ position: "relative", display: "inline-flex", mb: 3 }}>
+                    <CircularProgress
+                      variant="determinate"
+                      value={100}
+                      size={130}
+                      thickness={4.5}
+                      sx={{ color: "#f1f5f9", position: "absolute" }}
+                    />
+                    <CircularProgress
+                      variant="determinate"
+                      value={quizScorePercent}
+                      size={130}
+                      thickness={4.5}
                       sx={{
-                        px: 3,
-                        py: 1.5,
-                        borderRadius: "12px",
-                        bgcolor: s.bg,
-                        border: `1px solid ${s.border}`,
-                        textAlign: "center",
-                        minWidth: 70,
+                        color:
+                          quizScorePercent >= 80
+                            ? "#22c55e"
+                            : quizScorePercent >= 60
+                              ? "#f59e0b"
+                              : "#ef4444",
+                      }}
+                    />
+                    <Box
+                      sx={{
+                        top: 0,
+                        left: 0,
+                        bottom: 0,
+                        right: 0,
+                        position: "absolute",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexDirection: "column",
                       }}
                     >
-                      <Typography variant="h6" fontWeight={800} color={s.color}>
-                        {s.value}
-                      </Typography>
-                      <Typography variant="caption" color="#666">
-                        {s.label}
+                      <Typography
+                        variant="h4"
+                        fontWeight={900}
+                        color={
+                          quizScorePercent >= 80
+                            ? "#166534"
+                            : quizScorePercent >= 60
+                              ? "#b45309"
+                              : "#991b1b"
+                        }
+                      >
+                        {quizScorePercent}%
                       </Typography>
                     </Box>
-                  ))}
-                </Box>
+                  </Box>
 
-                {/* Action buttons */}
-                <Box sx={{ display: "flex", gap: 1.5, justifyContent: "center", flexWrap: "wrap" }}>
-                  {wrongAnswers.length > 0 && (
+                  <Typography variant="h5" fontWeight={800} color="#0f172a" mb={1}>
+                    Đạt {quizScore} / {quizQuestions.length} câu chính xác
+                  </Typography>
+
+                  <Typography
+                    variant="body1"
+                    fontWeight={700}
+                    color={getScoreMessage(quizScorePercent).color}
+                    mb={4}
+                  >
+                    {getScoreMessage(quizScorePercent).msg}
+                  </Typography>
+
+                  {/* Summary grid score */}
+                  <Box
+                    sx={{ display: "flex", gap: 2, justifyContent: "center", mb: 4, flexWrap: "wrap" }}
+                  >
+                    {[
+                      { label: "Đúng", value: quizScore, bg: "#f0fdf4", border: "#bbf7d0", color: "#166534" },
+                      {
+                        label: "Sai",
+                        value: wrongAnswers.length,
+                        bg: "#fef2f2",
+                        border: "#fecaca",
+                        color: "#991b1b",
+                      },
+                      {
+                        label: "Tổng số câu",
+                        value: quizQuestions.length,
+                        bg: "#f8fafc",
+                        border: "#e2e8f0",
+                        color: "#334155",
+                      },
+                    ].map((s) => (
+                      <Box
+                        key={s.label}
+                        sx={{
+                          px: 3,
+                          py: 1.8,
+                          borderRadius: "16px",
+                          bgcolor: s.bg,
+                          border: `1.5px solid ${s.border}`,
+                          textAlign: "center",
+                          minWidth: 90,
+                        }}
+                      >
+                        <Typography variant="h5" fontWeight={900} color={s.color}>
+                          {s.value}
+                        </Typography>
+                        <Typography variant="caption" color="#64748b" fontWeight={700}>
+                          {s.label}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+
+                  {/* Actions buttons */}
+                  <Box sx={{ display: "flex", gap: 2, justifyContent: "center", flexWrap: "wrap" }}>
+                    {wrongAnswers.length > 0 && (
+                      <Button
+                        variant="outlined"
+                        onClick={() => setShowWrongReview(true)}
+                        sx={{
+                          borderColor: "#ef4444",
+                          color: "#ef4444",
+                          borderRadius: "12px",
+                          fontWeight: 700,
+                          "&:hover": { bgcolor: "#fef2f2", borderColor: "#dc2626" },
+                        }}
+                      >
+                        Xem {wrongAnswers.length} câu sai
+                      </Button>
+                    )}
                     <Button
                       variant="outlined"
-                      onClick={() => setShowWrongReview(true)}
+                      startIcon={<RotateCcw size={16} />}
+                      onClick={generateQuiz}
                       sx={{
-                        borderColor: "#F44336",
-                        color: "#F44336",
+                        borderColor: "#B90000",
+                        color: "#B90000",
                         borderRadius: "12px",
-                        fontWeight: 600,
-                        "&:hover": { bgcolor: "#ffebee" },
+                        fontWeight: 700,
+                        "&:hover": { bgcolor: "#fff5f5", borderColor: "#990000" },
                       }}
                     >
-                      Xem {wrongAnswers.length} câu sai
+                      Làm lại
                     </Button>
-                  )}
-                  <Button
-                    variant="outlined"
-                    startIcon={<RotateCcw size={16} />}
-                    onClick={generateQuiz}
-                    sx={{
-                      borderColor: "#B90000",
-                      color: "#B90000",
-                      borderRadius: "12px",
-                      fontWeight: 600,
-                      "&:hover": { bgcolor: "#fff5f5" },
-                    }}
-                  >
-                    Làm lại
-                  </Button>
-                  <Button
-                    variant="contained"
-                    startIcon={<Target size={16} />}
-                    onClick={resetQuiz}
-                    sx={{
-                      background: "linear-gradient(135deg, #B90000 0%, #EF5350 100%)",
-                      borderRadius: "12px",
-                      fontWeight: 600,
-                      boxShadow: "0 4px 16px rgba(185,0,0,0.3)",
-                      "&:hover": {
-                        background: "linear-gradient(135deg, #990000 0%, #D32F2F 100%)",
-                      },
-                    }}
-                  >
-                    Quiz mới
-                  </Button>
+                    <Button
+                      variant="contained"
+                      startIcon={<Target size={16} />}
+                      onClick={resetQuiz}
+                      sx={{
+                        background: "linear-gradient(135deg, #B90000 0%, #EF5350 100%)",
+                        borderRadius: "12px",
+                        fontWeight: 700,
+                        boxShadow: "0 4px 14px rgba(185,0,0,0.25)",
+                        "&:hover": {
+                          background: "linear-gradient(135deg, #990000 0%, #D32F2F 100%)",
+                        },
+                      }}
+                    >
+                      Quiz mới
+                    </Button>
+                  </Box>
                 </Box>
               </Box>
-            </Box>
+            </Zoom>
           )}
 
-          {/* ── Wrong Answer Review ──────────────────────────────────────── */}
+          {/* ── Wrong Answer Reviews Sheet ───────────────────────────────── */}
           {quizFinished && showWrongReview && (
             <Box sx={{ width: "100%", maxWidth: 680 }}>
               <Box
@@ -1435,11 +1743,11 @@ const VocabularyPracticePage: React.FC = () => {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  mb: 2.5,
+                  mb: 3,
                 }}
               >
-                <Typography variant="h6" fontWeight={700} color="#C62828">
-                  ❌ Các câu trả lời sai ({wrongAnswers.length})
+                <Typography variant="h6" fontWeight={800} color="#b91c1c">
+                  ❌ Xem lại các câu trả lời sai ({wrongAnswers.length})
                 </Typography>
                 <Button
                   variant="outlined"
@@ -1449,109 +1757,119 @@ const VocabularyPracticePage: React.FC = () => {
                     borderColor: "#B90000",
                     color: "#B90000",
                     borderRadius: "10px",
+                    fontWeight: 700,
+                    px: 2,
                     "&:hover": { bgcolor: "#fff5f5" },
                   }}
                 >
-                  ← Về kết quả
+                  ← Về bảng điểm
                 </Button>
               </Box>
 
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                {wrongAnswers.map(({ question, selectedIndex }, i) => (
-                  <Box
-                    key={i}
-                    sx={{
-                      borderRadius: "16px",
-                      border: "1px solid #ffcdd2",
-                      overflow: "hidden",
-                      bgcolor: "#fff",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-                    }}
-                  >
-                    {/* Card header */}
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+                {wrongAnswers.map(({ question, selectedIndex }, i) => {
+                  const cardLevelColor = LEVEL_COLORS[question.card.level] || LEVEL_COLORS.N5;
+                  return (
                     <Box
+                      key={i}
                       sx={{
-                        p: 2,
-                        background:
-                          LEVEL_COLORS[question.card.level]?.bg || LEVEL_COLORS.N5.bg,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1.5,
+                        borderRadius: "20px",
+                        border: "1px solid #fee2e2",
+                        overflow: "hidden",
+                        bgcolor: "#fff",
+                        boxShadow: "0 4px 15px rgba(0,0,0,0.02)",
                       }}
                     >
-                      <Chip
-                        label={question.card.level}
-                        size="small"
+                      {/* Top banner */}
+                      <Box
                         sx={{
-                          bgcolor: "rgba(255,255,255,0.25)",
-                          color: "#fff",
-                          fontWeight: 700,
-                          fontSize: 11,
+                          p: 2,
+                          background: cardLevelColor.bg,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1.5,
                         }}
-                      />
-                      <Typography fontWeight={700} color="#fff" fontSize={15}>
-                        {quizDirection === "jp-to-vn"
-                          ? `${question.card.word}（${question.card.reading}）`
-                          : question.card.meaning}
-                      </Typography>
-                    </Box>
-
-                    <Box sx={{ p: 2 }}>
-                      {/* Wrong answer */}
-                      <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1, mb: 1 }}>
-                        <Typography color="#F44336" sx={{ mt: 0.2, flexShrink: 0 }}>
-                          ✗
-                        </Typography>
-                        <Box>
-                          <Typography variant="caption" color="#aaa">
-                            Bạn chọn:
-                          </Typography>
-                          <Typography variant="body2" fontWeight={600} color="#C62828">
-                            {question.options[selectedIndex]}
-                          </Typography>
-                        </Box>
-                      </Box>
-
-                      {/* Correct answer */}
-                      <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}>
-                        <Typography color="#4CAF50" sx={{ mt: 0.2, flexShrink: 0 }}>
-                          ✓
-                        </Typography>
-                        <Box>
-                          <Typography variant="caption" color="#aaa">
-                            Đáp án đúng:
-                          </Typography>
-                          <Typography variant="body2" fontWeight={600} color="#2E7D32">
-                            {question.options[question.correctIndex]}
-                          </Typography>
-                        </Box>
-                      </Box>
-
-                      {/* Example sentence */}
-                      {question.card.example && (
-                        <Box
+                      >
+                        <Chip
+                          label={question.card.level}
+                          size="small"
                           sx={{
-                            mt: 1.5,
-                            pt: 1.5,
-                            borderTop: "1px solid #f0f0f0",
+                            bgcolor: "rgba(255,255,255,0.25)",
+                            color: "#fff",
+                            fontWeight: 800,
+                            fontSize: 11,
                           }}
-                        >
-                          <Typography variant="caption" color="#555" display="block" sx={{ fontStyle: "italic" }}>
-                            {question.card.example}
+                        />
+                        <Typography fontWeight={800} color="#fff" fontSize={16}>
+                          {quizDirection === "jp-to-vn"
+                            ? `${question.card.word}（${question.card.reading}）`
+                            : question.card.meaning}
+                        </Typography>
+                      </Box>
+
+                      {/* Choices analysis */}
+                      <Box sx={{ p: 2.5 }}>
+                        {/* Wrong choice */}
+                        <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5, mb: 1.5 }}>
+                          <Typography color="#ef4444" sx={{ mt: 0.2, fontWeight: 900 }}>
+                            ✕
                           </Typography>
-                          {question.card.exampleMeaning && (
-                            <Typography variant="caption" color="#aaa">
-                              → {question.card.exampleMeaning}
+                          <Box>
+                            <Typography variant="caption" color="text.secondary" fontWeight={600} display="block">
+                              BẠN ĐÃ CHỌN:
                             </Typography>
-                          )}
+                            <Typography variant="body2" fontWeight={700} color="#b91c1c">
+                              {question.options[selectedIndex]}
+                            </Typography>
+                          </Box>
                         </Box>
-                      )}
+
+                        {/* Correct choice */}
+                        <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}>
+                          <Typography color="#22c55e" sx={{ mt: 0.2, fontWeight: 900 }}>
+                            ✓
+                          </Typography>
+                          <Box>
+                            <Typography variant="caption" color="text.secondary" fontWeight={600} display="block">
+                              ĐÁP ÁN ĐÚNG LÀ:
+                            </Typography>
+                            <Typography variant="body2" fontWeight={700} color="#15803d">
+                              {question.options[question.correctIndex]}
+                            </Typography>
+                          </Box>
+                        </Box>
+
+                        {/* Example sentence */}
+                        {question.card.example && (
+                          <Box
+                            sx={{
+                              mt: 2,
+                              pt: 2,
+                              borderTop: "1px dashed #e2e8f0",
+                            }}
+                          >
+                            <Typography
+                              variant="body2"
+                              color="#475569"
+                              display="block"
+                              sx={{ fontStyle: "italic", mb: 0.5, fontWeight: 500 }}
+                            >
+                              {question.card.example}
+                            </Typography>
+                            {question.card.exampleMeaning && (
+                              <Typography variant="caption" color="#64748b" fontWeight={600}>
+                                → {question.card.exampleMeaning}
+                              </Typography>
+                            )}
+                          </Box>
+                        )}
+                      </Box>
                     </Box>
-                  </Box>
-                ))}
+                  );
+                })}
               </Box>
 
-              <Box sx={{ mt: 3, display: "flex", gap: 1.5, justifyContent: "center", flexWrap: "wrap" }}>
+              <Box sx={{ mt: 4, display: "flex", gap: 2, justifyContent: "center", flexWrap: "wrap" }}>
                 <Button
                   variant="outlined"
                   startIcon={<RotateCcw size={16} />}
@@ -1560,11 +1878,11 @@ const VocabularyPracticePage: React.FC = () => {
                     borderColor: "#B90000",
                     color: "#B90000",
                     borderRadius: "12px",
-                    fontWeight: 600,
+                    fontWeight: 700,
                     "&:hover": { bgcolor: "#fff5f5" },
                   }}
                 >
-                  Làm lại quiz
+                  Làm lại quiz này
                 </Button>
                 <Button
                   variant="contained"
@@ -1573,14 +1891,14 @@ const VocabularyPracticePage: React.FC = () => {
                   sx={{
                     background: "linear-gradient(135deg, #B90000 0%, #EF5350 100%)",
                     borderRadius: "12px",
-                    fontWeight: 600,
-                    boxShadow: "0 4px 16px rgba(185,0,0,0.3)",
+                    fontWeight: 700,
+                    boxShadow: "0 4px 14px rgba(185,0,0,0.25)",
                     "&:hover": {
                       background: "linear-gradient(135deg, #990000 0%, #D32F2F 100%)",
                     },
                   }}
                 >
-                  Quiz mới
+                  Làm quiz mới
                 </Button>
               </Box>
             </Box>

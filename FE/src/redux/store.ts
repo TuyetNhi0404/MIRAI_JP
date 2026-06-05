@@ -1,7 +1,6 @@
 // src/redux/store.ts
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import authReducer from "./slices/authSlice";
-import forumReducer from "./slices/forumSlice";
 import questionReducer from "./slices/questionSlice";
 import enrollmentReducer from "./slices/enrollmentSlice";
 import quizReducer from "./slices/quizSlice";
@@ -12,7 +11,6 @@ import profileReducer from "./slices/profileSlice";
 // ✅ QUAN TRỌNG: Đảm bảo các reducer được import đúng
 const rootReducer = combineReducers({
   auth: authReducer,
-  forum: forumReducer,
   question: questionReducer,
   enrollment: enrollmentReducer,
   quiz: quizReducer,

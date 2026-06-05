@@ -13,8 +13,6 @@ const chapterSchema = new Schema<IChapter>(
   { timestamps: true }
 );
 
-chapterSchema.index({ name: 1 }, { unique: true });
-
 export const Chapter = mongoose.model<IChapter>("Chapter", chapterSchema);
 
 

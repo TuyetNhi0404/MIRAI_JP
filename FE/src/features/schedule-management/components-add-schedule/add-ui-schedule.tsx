@@ -112,10 +112,10 @@ export default function ScheduleCreatorCalendar() {
 
   const formatStatus = (status: string): string => {
     const statusMap: Record<string, string> = {
-      'in_progress': 'In Progress',
-      'not_yet': 'Not Yet',
-      'completed': 'Completed',
-      'cancelled': 'Cancelled',
+      'in_progress': 'Đang tiến hành',
+      'not_yet': 'Chưa bắt đầu',
+      'completed': 'Đã hoàn thành',
+      'cancelled': 'Đã hủy',
     };
     return statusMap[status] || status;
   };
@@ -131,7 +131,7 @@ export default function ScheduleCreatorCalendar() {
 
   const handleCreateSchedule = async () => {
     if (!selectedSlot || !selectedCourse || !selectedTeacher) {
-      setError('Please select both course and teacher');
+      setError('Vui lòng chọn cả khóa học và giáo viên');
       return;
     }
 
@@ -152,7 +152,7 @@ export default function ScheduleCreatorCalendar() {
     } catch (err) {
       const axiosError = err as AxiosError<{ message?: string }>;
       console.error('Error creating schedule:', err);
-      setError(axiosError.response?.data?.message || 'Failed to create schedule');
+      setError(axiosError.response?.data?.message || 'Không thể tạo lịch học');
     } finally {
       setCreating(false);
     }
@@ -181,12 +181,12 @@ export default function ScheduleCreatorCalendar() {
       >
         <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
           <Typography variant="body2" fontWeight={600} sx={{ mb: 0.5, fontSize: '0.875rem' }}>
-            {course?.name || course?.courseName || 'Unknown Course'}
+            {course?.name || course?.courseName || 'Khóa học không xác định'}
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
             <User size={12} />
             <Typography variant="caption" sx={{ fontSize: '0.75rem' }}>
-              {teacher?.name || teacher?.username || 'Unknown'}
+              {teacher?.name || teacher?.username || 'Không xác định'}
             </Typography>
           </Box>
           <Chip
@@ -245,7 +245,7 @@ export default function ScheduleCreatorCalendar() {
                 }}
               >
                 <Typography variant="h6" fontWeight={700}>
-                  {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                  {date.toLocaleDateString('vi-VN', { weekday: 'short' })}
                 </Typography>
                 <Typography variant="body2">
                   {formatDateDisplay(date)}
@@ -263,7 +263,7 @@ export default function ScheduleCreatorCalendar() {
                     fontSize: '0.875rem'
                   }}
                 >
-                  Morning
+                  Sáng
                 </Typography>
                 
                 {morningSessions.length > 0 ? (
@@ -329,7 +329,7 @@ export default function ScheduleCreatorCalendar() {
                     fontSize: '0.875rem'
                   }}
                 >
-                  Afternoon
+                  Chiều
                 </Typography>
                 
                 {afternoonSessions.length > 0 ? (
@@ -399,7 +399,7 @@ export default function ScheduleCreatorCalendar() {
           width: '100%',
         }}>
           <Box sx={{ p: 2, borderBottom: 1, borderRight: 1, borderColor: 'divider', bgcolor: 'grey.50', fontWeight: 600 }}>
-            Time
+            Thời gian
           </Box>
           {weekDates.map((date, idx) => {
             const isToday = formatDate(date) === formatDate(new Date());
@@ -417,7 +417,7 @@ export default function ScheduleCreatorCalendar() {
                 }}
               >
                 <Typography sx={{ fontWeight: 600, color: isToday ? 'primary.main' : 'text.primary' }}>
-                  {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                  {date.toLocaleDateString('vi-VN', { weekday: 'short' })}
                 </Typography>
                 <Typography variant="body2" sx={{ color: isToday ? 'primary.main' : 'text.secondary' }}>
                   {formatDateDisplay(date)}
@@ -489,7 +489,7 @@ export default function ScheduleCreatorCalendar() {
             startIcon={<RotateCcw size={16} />}
             fullWidth={isMobile}
           >
-            This Week
+            Tuần này
           </Button>
 
           <Stack direction="row" spacing={1} alignItems="center" sx={{ width: isMobile ? '100%' : 'auto' }}>
@@ -497,7 +497,7 @@ export default function ScheduleCreatorCalendar() {
               <ChevronLeft />
             </IconButton>
             <Typography sx={{ flex: 1, textAlign: 'center', fontWeight: 600, fontSize: isMobile ? '0.875rem' : '1rem' }}>
-              {weekDates[0].getDate()} - {weekDates[6].getDate()} {weekDates[0].toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              {weekDates[0].getDate()} - {weekDates[6].getDate()} {weekDates[0].toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })}
             </Typography>
             <IconButton onClick={handleNext} size="small">
               <ChevronRight />
@@ -507,7 +507,7 @@ export default function ScheduleCreatorCalendar() {
           {!isMobile && (
             <Stack direction="row" spacing={1} alignItems="center">
               <Typography variant="body2" color="text.secondary">
-                Click to create
+                Nhấp để tạo
               </Typography>
               <Plus size={16} />
             </Stack>
@@ -530,7 +530,7 @@ export default function ScheduleCreatorCalendar() {
         <DialogTitle>
           <Stack direction="row" spacing={1} alignItems="center">
             <CalendarDays size={24} />
-            <Typography variant="h6">Create Schedule</Typography>
+            <Typography variant="h6">Tạo lịch học</Typography>
           </Stack>
         </DialogTitle>
         <DialogContent>
@@ -542,14 +542,14 @@ export default function ScheduleCreatorCalendar() {
 
           <Stack spacing={3} sx={{ pt: 2 }}>
             <Box>
-              <Typography variant="body2" color="text.secondary" gutterBottom>Date</Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>Ngày</Typography>
               <Typography variant="body1" fontWeight={600}>
                 {selectedSlot?.date && formatDateDisplay(selectedSlot.date)}
               </Typography>
             </Box>
 
             <Box>
-              <Typography variant="body2" color="text.secondary" gutterBottom>Session</Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>Ca học</Typography>
               <Typography variant="body1" fontWeight={600}>
                 {sessions.find((s: Session) => s._id === selectedSlot?.sessionId)?.sessionName}
               </Typography>
@@ -558,14 +558,14 @@ export default function ScheduleCreatorCalendar() {
             <Divider />
 
             <FormControl fullWidth required>
-              <InputLabel>Course</InputLabel>
+              <InputLabel>Khóa học</InputLabel>
               <Select
                 value={selectedCourse}
                 onChange={(e) => setSelectedCourse(e.target.value)}
-                label="Course"
+                label="Khóa học"
                 disabled={creating}
               >
-                <MenuItem value=""><em>Select a course</em></MenuItem>
+                <MenuItem value=""><em>Chọn một khóa học</em></MenuItem>
                 {activeCourses.map((course: Course) => (
                   <MenuItem key={course._id} value={course._id}>
                     <Stack direction="row" spacing={1} alignItems="center">
@@ -578,14 +578,14 @@ export default function ScheduleCreatorCalendar() {
             </FormControl>
 
             <FormControl fullWidth required>
-              <InputLabel>Teacher</InputLabel>
+              <InputLabel>Giáo viên</InputLabel>
               <Select
                 value={selectedTeacher}
                 onChange={(e) => setSelectedTeacher(e.target.value)}
-                label="Teacher"
+                label="Giáo viên"
                 disabled={creating}
               >
-                <MenuItem value=""><em>Select a teacher</em></MenuItem>
+                <MenuItem value=""><em>Chọn một giáo viên</em></MenuItem>
                 {teachers.map((teacher: UserType) => (
                   <MenuItem key={teacher._id} value={teacher._id}>
                     <Stack direction="row" spacing={1} alignItems="center">
@@ -599,13 +599,13 @@ export default function ScheduleCreatorCalendar() {
 
             <TextField
               fullWidth
-              label="Note (Optional)"
+              label="Ghi chú (Tùy chọn)"
               multiline
               rows={3}
               value={note}
               onChange={(e) => setNote(e.target.value)}
               disabled={creating}
-              placeholder="Add any additional notes..."
+              placeholder="Thêm ghi chú bổ sung..."
             />
           </Stack>
         </DialogContent>
@@ -616,7 +616,7 @@ export default function ScheduleCreatorCalendar() {
             variant="outlined"
             fullWidth={isMobile}
           >
-            Cancel
+            Hủy
           </Button>
           <Button 
             variant="contained" 
@@ -625,7 +625,7 @@ export default function ScheduleCreatorCalendar() {
             startIcon={creating ? <CircularProgress size={20} /> : <Plus size={20} />}
             fullWidth={isMobile}
           >
-            {creating ? 'Creating...' : 'Create Schedule'}
+            {creating ? 'Đang tạo...' : 'Tạo lịch học'}
           </Button>
         </DialogActions>
       </Dialog>

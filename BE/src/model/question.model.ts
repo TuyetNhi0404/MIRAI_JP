@@ -25,8 +25,6 @@ const questionSchema = new Schema<IQuestion>(
   { timestamps: true }
 );
 
-questionSchema.index({ chapterId: 1 });
-
 export const Question = mongoose.model<IQuestion>("Question", questionSchema);
 
 

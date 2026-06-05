@@ -9,14 +9,14 @@ interface ListeningFilterProps {
 }
 
 const topics = [
-  { value: 'all', label: 'All Topics' },
-  { value: 'daily_life', label: 'Daily Life' },
-  { value: 'travel', label: 'Travel' },
-  { value: 'business', label: 'Business' },
-  { value: 'culture', label: 'Culture' },
+  { value: 'all', label: 'Tất cả chủ đề' },
+  { value: 'daily_life', label: 'Đời sống hàng ngày' },
+  { value: 'travel', label: 'Du lịch' },
+  { value: 'business', label: 'Công việc/Kinh doanh' },
+  { value: 'culture', label: 'Văn hóa' },
 ];
 
-const levels = ['All', 'N5', 'N4', 'N3', 'N2', 'N1'];
+const levels = ['Tất cả', 'N5', 'N4', 'N3', 'N2', 'N1'];
 
 const ListeningFilter: React.FC<ListeningFilterProps> = ({ topic, level, setTopic, setLevel }) => {
   return (
@@ -33,11 +33,11 @@ const ListeningFilter: React.FC<ListeningFilterProps> = ({ topic, level, setTopi
       border: '1px solid rgba(255, 255, 255, 0.4)'
     }}>
       <FormControl size="small" sx={{ minWidth: 150 }}>
-        <InputLabel id="topic-select-label">Topic</InputLabel>
+        <InputLabel id="topic-select-label">Chủ đề</InputLabel>
         <Select
           labelId="topic-select-label"
           value={topic}
-          label="Topic"
+          label="Chủ đề"
           onChange={(e) => setTopic(e.target.value)}
           sx={{ borderRadius: '8px' }}
         >
@@ -53,16 +53,16 @@ const ListeningFilter: React.FC<ListeningFilterProps> = ({ topic, level, setTopi
             key={l}
             label={l}
             clickable
-            onClick={() => setLevel(l === 'All' ? 'all' : l)}
+            onClick={() => setLevel(l === 'Tất cả' ? 'all' : l)}
             sx={{
               fontWeight: 600,
-              bgcolor: level === (l === 'All' ? 'all' : l) ? '#B90000' : 'default',
-              color: level === (l === 'All' ? 'all' : l) ? 'white' : 'text.primary',
+              bgcolor: level === (l === 'Tất cả' ? 'all' : l) ? '#B90000' : 'default',
+              color: level === (l === 'Tất cả' ? 'all' : l) ? 'white' : 'text.primary',
               transition: 'all 0.2s',
               '&:hover': {
                 transform: 'translateY(-2px)',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                bgcolor: level === (l === 'All' ? 'all' : l) ? '#990000' : 'rgba(0,0,0,0.08)'
+                bgcolor: level === (l === 'Tất cả' ? 'all' : l) ? '#990000' : 'rgba(0,0,0,0.08)'
               }
             }}
           />

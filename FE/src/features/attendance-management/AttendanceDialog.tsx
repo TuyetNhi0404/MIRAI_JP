@@ -149,11 +149,11 @@ const getStatusIcon = (status: AttendanceStatus) => {
 const getStatusLabel = (status: AttendanceStatus): string => {
   switch (status) {
     case AttendanceStatus.PRESENT:
-      return 'Present';
+      return 'Có mặt';
     case AttendanceStatus.ABSENT:
-      return 'Absent';
+      return 'Vắng mặt';
     default:
-      return 'Not Yet';
+      return 'Chưa điểm danh';
   }
 };
 
@@ -212,12 +212,12 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
 
       await updateStatus(calendar._id, userId, newStatus);
 
-      setSuccessMessage('Attendance updated successfully');
+      setSuccessMessage('Cập nhật điểm danh thành công');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       console.error('❌ Update failed:', err);
       const error = err as ApiErrorResponse;
-      setUpdateError(error.response?.data?.message || error.message || 'Failed to update attendance');
+      setUpdateError(error.response?.data?.message || error.message || 'Cập nhật điểm danh thất bại');
     }
   };
 
@@ -260,7 +260,7 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
                 }}
               >
                 <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                  Status
+                  Trạng thái
                 </Typography>
                 <Chip
                   icon={getStatusIcon(student.status)}
@@ -286,7 +286,7 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
                       fontWeight: 600,
                     }}
                   >
-                    Present
+                    Có mặt
                   </Button>
                   <Button
                     variant={student.status === AttendanceStatus.ABSENT ? 'contained' : 'outlined'}
@@ -301,7 +301,7 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
                       fontWeight: 600,
                     }}
                   >
-                    Absent
+                    Vắng mặt
                   </Button>
                 </Stack>
               )}
@@ -317,12 +317,12 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
       <Table stickyHeader>
         <TableHead>
           <TableRow>
-            <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.100' }}>Name</TableCell>
+            <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.100' }}>Họ và tên</TableCell>
             <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.100' }}>Email</TableCell>
-            <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.100' }}>Username</TableCell>
-            <TableCell align="center" sx={{ fontWeight: 600, bgcolor: 'grey.100' }}>Status</TableCell>
+            <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.100' }}>Tên đăng nhập</TableCell>
+            <TableCell align="center" sx={{ fontWeight: 600, bgcolor: 'grey.100' }}>Trạng thái</TableCell>
             {canEdit && (
-              <TableCell align="center" sx={{ fontWeight: 600, bgcolor: 'grey.100' }}>Actions</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 600, bgcolor: 'grey.100' }}>Thao tác</TableCell>
             )}
           </TableRow>
         </TableHead>
@@ -408,14 +408,14 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
 
           <Box flex={1}>
             <Typography variant={isMobile ? 'h6' : 'h5'} fontWeight={600}>
-              Check Attendance
+              Điểm danh học viên
             </Typography>
             <Typography
               variant="body2"
               color="text.secondary"
               sx={{ mt: 0.3 }}
             >
-              {course?.name || course?.courseName || "Unknown Course"}
+              {course?.name || course?.courseName || "Khóa học chưa xác định"}
             </Typography>
           </Box>
         </Stack>
@@ -439,10 +439,10 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
           >
             <Box flex={1}>
               <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                SESSION
+                CA HỌC
               </Typography>
               <Typography variant="body1" fontWeight={600} sx={{ mt: 0.5 }}>
-                {session?.sessionName || 'Unknown'}
+                {session?.sessionName || 'Chưa xác định'}
               </Typography>
               {session?.startTime && session?.endTime ? (
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.3 }}>
@@ -450,20 +450,20 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
                 </Typography>
               ) : (
                 <Typography variant="caption" color="error">
-                  ⚠️ Missing time data
+                  ⚠️ Thiếu dữ liệu thời gian
                 </Typography>
               )}
             </Box>
 
             <Box flex={1}>
               <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                DATE
+                NGÀY
               </Typography>
               <Typography variant="body1" fontWeight={600} sx={{ mt: 0.5 }}>
-                {sessionDate.toLocaleDateString('en-US', {
-                  weekday: 'short',
+                {sessionDate.toLocaleDateString('vi-VN', {
+                  weekday: 'long',
                   year: 'numeric',
-                  month: 'short',
+                  month: 'long',
                   day: 'numeric'
                 })}
               </Typography>
@@ -473,7 +473,7 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
               <Box display="flex" alignItems="center">
                 <Chip
                   icon={<AlertCircle size={16} />}
-                  label="Session Active"
+                  label="Đang trong giờ học"
                   color="success"
                   size="small"
                   sx={{ fontWeight: 600 }}
@@ -487,10 +487,10 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
         {!canEdit && (
           <Alert severity="warning" sx={{ mb: 3 }}>
             {!session?.startTime || !session?.endTime
-              ? '⚠️ Session time data is missing. Cannot determine edit permission.'
+              ? '⚠️ Thiếu thông tin thời gian. Không thể xác định quyền điểm danh.'
               : sessionDate > new Date()
-                ? 'This session has not started yet. Attendance can only be taken during or within 24 hours after the session.'
-                : 'More than 24 hours have passed since this session. Attendance can no longer be edited.'}
+                ? 'Ca học này chưa bắt đầu. Chỉ có thể điểm danh trong lúc học hoặc trong vòng 24 giờ sau khi kết thúc.'
+                : 'Đã quá 24 giờ kể từ khi ca học kết thúc. Không thể chỉnh sửa điểm danh nữa.'}
           </Alert>
         )}
 
@@ -520,7 +520,7 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
         ) : students.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: 6 }}>
             <Typography variant="body1" color="text.secondary">
-              No students enrolled in this course
+              Không có học viên nào trong khóa học này
             </Typography>
           </Box>
         ) : (
@@ -538,7 +538,7 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
               }}
             >
               <Typography variant="body2" color="text.secondary" fontWeight={600} sx={{ mb: 2, textAlign: 'center' }}>
-                ATTENDANCE SUMMARY
+                TỔNG HỢP ĐIỂM DANH
               </Typography>
               <Stack
                 direction="row"
@@ -551,7 +551,7 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
                     {students.filter((s: AttendanceRecord) => s.status === AttendanceStatus.PRESENT).length}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" fontWeight={500} sx={{ mt: 0.5 }}>
-                    Present
+                    Có mặt
                   </Typography>
                 </Box>
                 <Box sx={{ textAlign: 'center' }}>
@@ -559,7 +559,7 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
                     {students.filter((s: AttendanceRecord) => s.status === AttendanceStatus.ABSENT).length}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" fontWeight={500} sx={{ mt: 0.5 }}>
-                    Absent
+                    Vắng mặt
                   </Typography>
                 </Box>
                 <Box sx={{ textAlign: 'center' }}>
@@ -567,7 +567,7 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
                     {students.filter((s: AttendanceRecord) => s.status === AttendanceStatus.NOT_YET).length}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" fontWeight={500} sx={{ mt: 0.5 }}>
-                    Not Yet
+                    Chưa điểm danh
                   </Typography>
                 </Box>
               </Stack>
@@ -590,7 +590,7 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
             fontWeight: 600,
           }}
         >
-          Close
+          Đóng
         </Button>
       </DialogActions>
     </Dialog>

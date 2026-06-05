@@ -53,7 +53,7 @@ const EnrollmentRequestsPage: React.FC = () => {
         }
 
         if (user.role !== "admin") {
-            alert("You do not have permission to access this page");
+            alert("Bạn không có quyền truy cập trang này");
             const redirectPath = user.role === "teacher"
                 ? "/dashboard/teacher"
                 : "/dashboard/student";
@@ -84,11 +84,11 @@ const EnrollmentRequestsPage: React.FC = () => {
 
             if (err && typeof err === 'object' && 'response' in err) {
                 const axiosError = err as { response?: { data?: { message?: string } } };
-                setError(axiosError.response?.data?.message || "Unable to load enrollment list");
+                setError(axiosError.response?.data?.message || "Không thể tải danh sách đăng ký học");
             } else if (err instanceof Error) {
                 setError(err.message);
             } else {
-                setError("Unable to load enrollment list");
+                setError("Không thể tải danh sách đăng ký học");
             }
         } finally {
             setLoading(false);
@@ -120,17 +120,17 @@ const EnrollmentRequestsPage: React.FC = () => {
     const getStatusLabel = (status: string) => {
         switch (status) {
             case "approved":
-                return "Approved";
+                return "Đã phê duyệt";
             case "rejected":
-                return "Rejected";
+                return "Đã từ chối";
             default:
-                return "Pending";
+                return "Đang chờ duyệt";
         }
     };
 
     // ✅ Helper function to get course name safely
     const getCourseName = (courseId: Enrollment['courseId']): string => {
-        if (!courseId) return "Course deleted";
+        if (!courseId) return "Khóa học đã bị xóa";
 
         if (typeof courseId === "object" && courseId !== null && 'name' in courseId) {
             return courseId.name;
@@ -166,9 +166,9 @@ const EnrollmentRequestsPage: React.FC = () => {
                             <Typography variant="body2" fontWeight="500">
                                 {courseName}
                             </Typography>
-                            {courseName === "Course deleted" && (
+                            {courseName === "Khóa học đã bị xóa" && (
                                 <Chip
-                                    label="Deleted"
+                                    label="Đã xóa"
                                     size="small"
                                     color="error"
                                     variant="outlined"
@@ -179,7 +179,7 @@ const EnrollmentRequestsPage: React.FC = () => {
 
                         <Typography variant="caption" color="text.secondary">
                             {enrollment.createdAt
-                                ? new Date(enrollment.createdAt).toLocaleDateString("en-US")
+                                ? new Date(enrollment.createdAt).toLocaleDateString("vi-VN")
                                 : "N/A"
                             }
                         </Typography>
@@ -199,7 +199,7 @@ const EnrollmentRequestsPage: React.FC = () => {
                                 },
                             }}
                         >
-                            View Details
+                            Xem chi tiết
                         </Button>
                     </Stack>
                 </CardContent>
@@ -219,7 +219,7 @@ const EnrollmentRequestsPage: React.FC = () => {
                 color="#023665"
                 mb={{ xs: 2, sm: 3 }}
             >
-                Enrollment Management
+                Quản lý đăng ký học
             </Typography>
 
             {error && (
@@ -246,10 +246,10 @@ const EnrollmentRequestsPage: React.FC = () => {
                         "& .MuiTabs-indicator": { backgroundColor: "#B90000" },
                     }}
                 >
-                    <Tab label="Pending" value="pending" />
-                    <Tab label="Approved" value="approved" />
-                    <Tab label="Rejected" value="rejected" />
-                    <Tab label="All" value="" />
+                    <Tab label="Chờ duyệt" value="pending" />
+                    <Tab label="Đã phê duyệt" value="approved" />
+                    <Tab label="Đã từ chối" value="rejected" />
+                    <Tab label="Tất cả" value="" />
                 </Tabs>
             </Box>
 
@@ -258,7 +258,7 @@ const EnrollmentRequestsPage: React.FC = () => {
                     <CircularProgress sx={{ color: "#B90000" }} />
                 </Box>
             ) : enrollments.length === 0 ? (
-                <Alert severity="info">No enrollment requests</Alert>
+                <Alert severity="info">Không có yêu cầu đăng ký học nào</Alert>
             ) : (
                 <>
                     {/* Mobile View - Cards */}
@@ -275,22 +275,22 @@ const EnrollmentRequestsPage: React.FC = () => {
                                 <TableHead sx={{ backgroundColor: "#F5F3EE" }}>
                                     <TableRow>
                                         <TableCell sx={{ fontSize: { sm: 13, md: 14 } }}>
-                                            <strong>Full Name</strong>
+                                            <strong>Họ tên</strong>
                                         </TableCell>
                                         <TableCell sx={{ fontSize: { sm: 13, md: 14 } }}>
                                             <strong>Email</strong>
                                         </TableCell>
                                         <TableCell sx={{ fontSize: { sm: 13, md: 14 } }}>
-                                            <strong>Course</strong>
+                                            <strong>Khóa học</strong>
                                         </TableCell>
                                         <TableCell sx={{ fontSize: { sm: 13, md: 14 } }}>
-                                            <strong>Registration Date</strong>
+                                            <strong>Ngày đăng ký</strong>
                                         </TableCell>
                                         <TableCell sx={{ fontSize: { sm: 13, md: 14 } }}>
-                                            <strong>Status</strong>
+                                            <strong>Trạng thái</strong>
                                         </TableCell>
                                         <TableCell align="center" sx={{ fontSize: { sm: 13, md: 14 } }}>
-                                            <strong>Actions</strong>
+                                            <strong>Hành động</strong>
                                         </TableCell>
                                     </TableRow>
                                 </TableHead>
@@ -308,9 +308,9 @@ const EnrollmentRequestsPage: React.FC = () => {
                                                 </TableCell>
                                                 <TableCell sx={{ fontSize: { sm: 13, md: 14 } }}>
                                                     {courseName}
-                                                    {courseName === "Course deleted" && (
+                                                    {courseName === "Khóa học đã bị xóa" && (
                                                         <Chip
-                                                            label="Deleted"
+                                                            label="Đã xóa"
                                                             size="small"
                                                             color="error"
                                                             variant="outlined"
@@ -320,7 +320,7 @@ const EnrollmentRequestsPage: React.FC = () => {
                                                 </TableCell>
                                                 <TableCell sx={{ fontSize: { sm: 13, md: 14 } }}>
                                                     {enrollment.createdAt
-                                                        ? new Date(enrollment.createdAt).toLocaleDateString("en-US")
+                                                        ? new Date(enrollment.createdAt).toLocaleDateString("vi-VN")
                                                         : "N/A"
                                                     }
                                                 </TableCell>
@@ -347,7 +347,7 @@ const EnrollmentRequestsPage: React.FC = () => {
                                                             },
                                                         }}
                                                     >
-                                                        {isTablet ? "View" : "View Details"}
+                                                        {isTablet ? "Xem" : "Xem chi tiết"}
                                                     </Button>
                                                 </TableCell>
                                             </TableRow>

@@ -21,15 +21,15 @@ const TeacherSidebar: React.FC<SidebarProps> = ({ isOpen }) => {
   const isDesktop = useMediaQuery("(min-width:900px)");
 
   const menuItems: MenuItem[] = [
-    { id: "dashboard", label: "Dashboard", icon: Home, path: "/dashboard/teacher" },
-    { id: "schedule", label: "Schedule", icon: CalendarClock, path: "/dashboard/teacher/schedule" },
-    { id: "my-classes", label: "My Classes", icon: School, path: "/dashboard/teacher/courses" },
-    { id: "assignments", label: "Assignments", icon: NotebookText, path: "/dashboard/teacher/assignments" },
-    { id: "questions", label: "Questions", icon: FileQuestion, path: "/dashboard/teacher/questions" },
-    { id: "quizzes", label: "Quizzes", icon: CircleHelp, path: "/dashboard/teacher/quizzes" },
+    { id: "dashboard", label: "Tổng quan", icon: Home, path: "/dashboard/teacher" },
+    { id: "schedule", label: "Lịch dạy", icon: CalendarClock, path: "/dashboard/teacher/schedule" },
+    { id: "my-classes", label: "Lớp học của tôi", icon: School, path: "/dashboard/teacher/courses" },
+    { id: "assignments", label: "Bài tập", icon: NotebookText, path: "/dashboard/teacher/assignments" },
+    { id: "questions", label: "Ngân hàng câu hỏi", icon: FileQuestion, path: "/dashboard/teacher/questions" },
+    { id: "quizzes", label: "Bài kiểm tra", icon: CircleHelp, path: "/dashboard/teacher/quizzes" },
     { id: "grammar-mcq", label: "Tạo Quiz Ngữ pháp", icon: FileQuestion, path: "/dashboard/teacher/grammar" },
     { id: "grammar-materials", label: "Tài liệu Ngữ pháp", icon: BookOpen, path: "/dashboard/teacher/grammar-materials" },
-    { id: "listening", label: "Listening", icon: Headphones, path: "/dashboard/teacher/listening" },
+    { id: "listening", label: "Luyện nghe", icon: Headphones, path: "/dashboard/teacher/listening" },
   ];
 
   const handleMenuClick = (path: string) => {

@@ -748,7 +748,7 @@ const CourseLeaderboard: React.FC = () => {
           }}
         >
           <Typography variant={isMobile ? 'caption' : 'body2'} color="text.secondary" fontWeight={500}>
-            Last updated: {new Date(leaderboardData.lastUpdated).toLocaleString('en-US')}
+            Cập nhật lần cuối: {new Date(leaderboardData.lastUpdated).toLocaleString('vi-VN')}
           </Typography>
         </Box>
       </Container>

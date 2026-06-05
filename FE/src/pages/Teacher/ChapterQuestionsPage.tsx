@@ -86,7 +86,7 @@ const ChapterQuestionsPage: React.FC = () => {
     try {
       if (editingQuestion) {
         await dispatch(updateQuestion({ id: editingQuestion._id, payload: data })).unwrap();
-        setSuccessMsg("Question updated successfully");
+        setSuccessMsg("Cập nhật câu hỏi thành công");
       } else {
         if (!chapterId) return;
         const createPayload: CreateQuestionPayload = {
@@ -94,7 +94,7 @@ const ChapterQuestionsPage: React.FC = () => {
           chapterId,
         };
         await dispatch(createQuestion(createPayload)).unwrap();
-        setSuccessMsg("Question created successfully");
+        setSuccessMsg("Tạo câu hỏi thành công");
       }
       setEditingQuestion(null);
     } catch (err: unknown) {
@@ -103,10 +103,10 @@ const ChapterQuestionsPage: React.FC = () => {
   };
 
   const handleDeleteQuestion = async (question: IQuestion) => {
-    if (window.confirm("Delete this question?")) {
+    if (window.confirm("Bạn có chắc chắn muốn xóa câu hỏi này không?")) {
       try {
         await dispatch(deleteQuestion(question._id)).unwrap();
-        setSuccessMsg("Question deleted successfully");
+        setSuccessMsg("Xóa câu hỏi thành công");
       } catch (err: unknown) {
         console.error(err);
       }
@@ -116,7 +116,7 @@ const ChapterQuestionsPage: React.FC = () => {
   const handleUploadSuccess = () => {
     if (chapterId) {
       dispatch(fetchQuestionsByChapter(chapterId));
-      setSuccessMsg("Questions imported successfully");
+      setSuccessMsg("Nhập câu hỏi từ Excel thành công");
     }
   };
 
@@ -127,7 +127,7 @@ const ChapterQuestionsPage: React.FC = () => {
   if (!selectedChapter) {
     return (
       <Box sx={{ textAlign: "center", py: 5 }}>
-        <Typography color="text.secondary">Loading chapter...</Typography>
+        <Typography color="text.secondary">Đang tải chương học...</Typography>
       </Box>
     );
   }
@@ -146,7 +146,7 @@ const ChapterQuestionsPage: React.FC = () => {
             "&:hover": { textDecoration: "underline" },
           }}
         >
-          Question Bank
+          Ngân hàng câu hỏi
         </Link>
         <Typography variant="body2" color="text.primary">
           {selectedChapter.name}
@@ -163,7 +163,7 @@ const ChapterQuestionsPage: React.FC = () => {
               onClick={() => navigate("/dashboard/teacher/questions")}
               sx={{ color: "#B90000", mb: 1 }}
             >
-              Back to Chapters
+              Quay lại danh sách chương
             </Button>
           </Box>
           <Typography variant="h4" fontWeight={700} color="#B90000">
@@ -175,7 +175,7 @@ const ChapterQuestionsPage: React.FC = () => {
             </Typography>
           )}
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Total Questions: {questions.length}
+            Tổng số câu hỏi: {questions.length}
           </Typography>
         </Box>
 
@@ -186,7 +186,7 @@ const ChapterQuestionsPage: React.FC = () => {
             onClick={() => setUploadModalOpen(true)}
             sx={{ borderColor: "#B90000", color: "#B90000" }}
           >
-            Import Excel
+            Nhập Excel
           </Button>
           <Button
             variant="contained"
@@ -197,7 +197,7 @@ const ChapterQuestionsPage: React.FC = () => {
             }}
             sx={{ bgcolor: "#B90000", "&:hover": { bgcolor: "#d66609" } }}
           >
-            Add Question
+            Thêm câu hỏi
           </Button>
         </Box>
       </Box>
@@ -217,14 +217,14 @@ const ChapterQuestionsPage: React.FC = () => {
           }}
           icon={<ErrorIcon fontSize="inherit" />}
         >
-          <AlertTitle sx={{ fontWeight: 600, fontSize: "1rem" }}>Error</AlertTitle>
+          <AlertTitle sx={{ fontWeight: 600, fontSize: "1rem" }}>Lỗi</AlertTitle>
           {error}
         </Alert>
       )}
 
       {/* Search */}
       <TextField
-        placeholder="Search questions..."
+        placeholder="Tìm kiếm câu hỏi..."
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
         size="small"
@@ -242,18 +242,18 @@ const ChapterQuestionsPage: React.FC = () => {
       {/* Questions List */}
       {loading && questions.length === 0 ? (
         <Box sx={{ textAlign: "center", py: 5 }}>
-          <Typography color="text.secondary">Loading questions...</Typography>
+          <Typography color="text.secondary">Đang tải câu hỏi...</Typography>
         </Box>
       ) : filteredQuestions.length === 0 ? (
         <Card sx={{ p: 5, textAlign: "center" }}>
           <HelpCircle sx={{ fontSize: 64, color: "#ccc", mb: 2 }} />
           <Typography variant="h6" color="text.secondary" gutterBottom>
-            {debouncedSearchQuery ? "No questions match your search" : "No questions yet"}
+            {debouncedSearchQuery ? "Không tìm thấy câu hỏi phù hợp" : "Chưa có câu hỏi nào"}
           </Typography>
           <Typography variant="body2" color="text.secondary" mb={3}>
             {debouncedSearchQuery
-              ? "Try different search terms"
-              : "Add questions to this chapter or import from Excel"}
+              ? "Hãy thử tìm bằng từ khóa khác"
+              : "Thêm câu hỏi cho chương học này hoặc nhập từ tệp Excel"}
           </Typography>
           {!debouncedSearchQuery && (
             <Box sx={{ display: "flex", gap: 2, justifyContent: "center" }}>
@@ -263,7 +263,7 @@ const ChapterQuestionsPage: React.FC = () => {
                 onClick={() => setUploadModalOpen(true)}
                 sx={{ borderColor: "#B90000", color: "#B90000" }}
               >
-                Import Excel
+                Nhập Excel
               </Button>
               <Button
                 variant="contained"
@@ -271,7 +271,7 @@ const ChapterQuestionsPage: React.FC = () => {
                 onClick={() => setQuestionModalOpen(true)}
                 sx={{ bgcolor: "#B90000", "&:hover": { bgcolor: "#d66609" } }}
               >
-                Add Question
+                Thêm câu hỏi
               </Button>
             </Box>
           )}
@@ -282,7 +282,7 @@ const ChapterQuestionsPage: React.FC = () => {
             <Card key={question._id} sx={{ p: 3, border: "1px solid #eee" }}>
               <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
                 <Typography variant="body2" fontWeight={600} color="#B90000">
-                  Question #{index + 1}
+                  Câu hỏi #{index + 1}
                 </Typography>
                 <Box sx={{ display: "flex", gap: 0.5 }}>
                   <IconButton
@@ -357,7 +357,7 @@ const ChapterQuestionsPage: React.FC = () => {
                     </Typography>
                     {question.correctAnswer === num && (
                       <Chip
-                        label="Correct Answer"
+                        label="Đáp án đúng"
                         size="small"
                         color="success"
                         sx={{ fontWeight: 600 }}
@@ -411,7 +411,7 @@ const ChapterQuestionsPage: React.FC = () => {
             }
           }}
         >
-          <AlertTitle sx={{ fontWeight: 600 }}>Success</AlertTitle>
+          <AlertTitle sx={{ fontWeight: 600 }}>Thành công</AlertTitle>
           {successMsg}
         </Alert>
       </Snackbar>
