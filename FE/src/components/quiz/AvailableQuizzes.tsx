@@ -45,7 +45,7 @@ const AvailableQuizzes: React.FC<AvailableQuizzesProps> = ({ quizzes = [] }) => 
   const formatDueDate = (dueDate?: string): string => {
     if (!dueDate) return "";
     const date = new Date(dueDate);
-    return date.toLocaleString('en-US', {
+    return date.toLocaleString('vi-VN', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',

@@ -641,7 +641,7 @@ const StudentSchedulePage: React.FC = () => {
             <Box display="flex" alignItems="center" justifyContent="center" gap={2} p={{ xs: 3, sm: 6 }}>
               <CircularProgress sx={{ color: PRIMARY_ORANGE }} size={isMobile ? 30 : 40} />
               <Typography variant={isMobile ? "body1" : "h6"} color="text.secondary">
-                Loading schedule...
+                Đang tải lịch học...
               </Typography>
             </Box>
           </Box>
@@ -678,7 +678,7 @@ const StudentSchedulePage: React.FC = () => {
                 }}
               >
                 <Typography variant="h6" color="text.secondary">
-                  No classes scheduled
+                  Chưa có lịch học
                 </Typography>
               </Box>
             )}
@@ -687,7 +687,7 @@ const StudentSchedulePage: React.FC = () => {
 
         <Box sx={{ mt: 3, px: { xs: 2, sm: 0 } }}>
           <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-            Attendance Legend:
+            Chú thích điểm danh:
           </Typography>
           <Box
             component="ul"
@@ -700,17 +700,17 @@ const StudentSchedulePage: React.FC = () => {
           >
             <li>
               <Typography variant="body2" sx={{ color: "#333", lineHeight: 1.6, fontSize: { xs: "0.875rem", sm: "1rem" } }}>
-                <strong style={{ color: "#4caf50" }}>(PRESENT)</strong>: You have attended the class.
+                <strong style={{ color: "#4caf50" }}>(CÓ MẶT)</strong>: Bạn đã tham gia lớp học.
               </Typography>
             </li>
             <li>
               <Typography variant="body2" sx={{ color: "#333", lineHeight: 1.6, fontSize: { xs: "0.875rem", sm: "1rem" } }}>
-                <strong style={{ color: "#f44336" }}>(ABSENT)</strong>: You were absent from the class.
+                <strong style={{ color: "#f44336" }}>(VẮNG MẶT)</strong>: Bạn đã vắng mặt trong lớp học.
               </Typography>
             </li>
             <li>
               <Typography variant="body2" sx={{ color: "#333", lineHeight: 1.6, fontSize: { xs: "0.875rem", sm: "1rem" } }}>
-                <strong style={{ color: "#757575" }}>(NOT YET)</strong>: Attendance has not been recorded yet.
+                <strong style={{ color: "#757575" }}>(CHƯA HỌC)</strong>: Điểm danh chưa được ghi nhận.
               </Typography>
             </li>
           </Box>

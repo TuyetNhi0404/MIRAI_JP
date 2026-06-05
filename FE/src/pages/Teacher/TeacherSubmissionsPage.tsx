@@ -262,7 +262,7 @@ const errorMsg = apiError.response?.data?.message ||
   const formatDate = (dateString: string): string => {
     try {
       const date = new Date(dateString);
-      return date.toLocaleString('en-US', { // Changed to en-US for consistent English formatting
+      return date.toLocaleString('vi-VN', { // Changed to vi-VN for consistent Vietnamese formatting
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',

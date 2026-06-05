@@ -101,7 +101,7 @@ const StudentDashboard = () => {
                   fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' }
                 }}
               >
-                Welcome to Student Dashboard
+                Chào mừng bạn đến với Trang Học Viên
               </Typography>
 
               <Typography 
@@ -113,7 +113,7 @@ const StudentDashboard = () => {
                   px: { xs: 1, sm: 0 }
                 }}
               >
-                MIRAI JAPANESE LMS - Intern Learning System
+                MIRAI JAPANESE LMS - Hệ thống học tập thực tập sinh
               </Typography>
             </Box>
 
@@ -139,7 +139,7 @@ const StudentDashboard = () => {
                     color="text.primary"
                     sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
                   >
-                    Learning
+                    Học tập
                   </Typography>
                 </Box>
               </Grid>
@@ -175,7 +175,7 @@ const StudentDashboard = () => {
                     color="text.primary"
                     sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
                   >
-                    Listening
+                    Luyện nghe
                   </Typography>
                 </Box>
               </Grid>
@@ -213,7 +213,7 @@ const StudentDashboard = () => {
                     color="text.primary"
                     sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
                   >
-                    Kana Practice
+                    Luyện chữ Kana
                   </Typography>
                 </Box>
               </Grid>
@@ -238,7 +238,7 @@ const StudentDashboard = () => {
                     color="text.primary"
                     sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
                   >
-                    Practice
+                    Luyện tập
                   </Typography>
                 </Box>
               </Grid>
@@ -263,7 +263,7 @@ const StudentDashboard = () => {
                     color="text.primary"
                     sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
                   >
-                    Achievements
+                    Thành tích
                   </Typography>
                 </Box>
               </Grid>
@@ -279,7 +279,7 @@ const StudentDashboard = () => {
               }}
             >
               <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.875rem' } }}>
-                MIRAI JAPANESE LMS • Intern Training System
+                MIRAI JAPANESE LMS • Hệ thống đào tạo thực tập sinh
               </Typography>
             </Box>
           </CardContent>

@@ -98,7 +98,7 @@ const TeacherDashboard = () => {
                   fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' }
                 }}
               >
-                Welcome to Teacher Dashboard
+                Chào mừng bạn đến với Trang Giáo Viên
               </Typography>
 
               <Typography 
@@ -110,7 +110,7 @@ const TeacherDashboard = () => {
                   px: { xs: 1, sm: 0 }
                 }}
               >
-                MIRAI JAPANESE LMS -Training Management
+                MIRAI JAPANESE LMS - Quản lý Đào tạo
               </Typography>
             </Box>
 
@@ -136,7 +136,7 @@ const TeacherDashboard = () => {
                     color="text.primary"
                     sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
                   >
-                    Class Management
+                    Quản lý Lớp học
                   </Typography>
                 </Box>
               </Grid>
@@ -161,7 +161,7 @@ const TeacherDashboard = () => {
                     color="text.primary"
                     sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
                   >
-                    Teaching
+                    Giảng dạy
                   </Typography>
                 </Box>
               </Grid>
@@ -186,7 +186,7 @@ const TeacherDashboard = () => {
                     color="text.primary"
                     sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
                   >
-                    Assessment
+                    Đánh giá
                   </Typography>
                 </Box>
               </Grid>
@@ -202,7 +202,7 @@ const TeacherDashboard = () => {
               }}
             >
               <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.875rem' } }}>
-                MIRAI JAPANESE LMS • Training Management System
+                MIRAI JAPANESE LMS • Hệ thống Quản lý Đào tạo
               </Typography>
             </Box>
           </CardContent>

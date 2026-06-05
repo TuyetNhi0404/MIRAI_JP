@@ -30,8 +30,8 @@ const ymd = (d: Date): string => {
 };
 
 const formatDayShort = (d: Date) =>
-  d.toLocaleDateString("en-US", {
-    weekday: "short",
+  d.toLocaleDateString("vi-VN", {
+    weekday: "long",
   });
 
 type SessionType = "morning" | "afternoon";
@@ -106,8 +106,8 @@ const ScheduleGrid: React.FC<Props> = ({ items, weekStart }) => {
   }, [weekStart]);
 
   const sessions: { type: SessionType; label: string }[] = [
-    { type: "morning", label: "Morning" },
-    { type: "afternoon", label: "Afternoon" },
+    { type: "morning", label: "Buổi sáng" },
+    { type: "afternoon", label: "Buổi chiều" },
   ];
 
   const weekStartYMD = weekStart; 
@@ -277,7 +277,7 @@ const ScheduleGrid: React.FC<Props> = ({ items, weekStart }) => {
                   fontFamily: "Inter, Roboto, sans-serif",
                 }}
               >
-                Session
+                Ca học
               </Typography>
             </Paper>
           </Grid>

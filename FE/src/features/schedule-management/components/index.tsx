@@ -101,7 +101,7 @@ interface ConfirmDialogProps {
 
 const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   open,
-  title = "Confirm",
+  title = "Xác nhận",
   message,
   onConfirm,
   onCancel
@@ -114,10 +114,10 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       </DialogContent>
       <DialogActions>
         <Button variant="outlined" onClick={onCancel}>
-          Cancel
+          Hủy
         </Button>
         <Button variant="contained" color="error" onClick={onConfirm}>
-          Delete
+          Xóa
         </Button>
       </DialogActions>
     </Dialog>
@@ -235,10 +235,10 @@ export default function ManageScheduleCalendar() {
 
   const formatStatus = (status: string): string => {
     const statusMap: Record<string, string> = {
-      'in_progress': 'In Progress',
-      'not_yet': 'Not Yet',
-      'completed': 'Completed',
-      'cancelled': 'Cancelled',
+      'in_progress': 'Đang học',
+      'not_yet': 'Chưa bắt đầu',
+      'completed': 'Hoàn thành',
+      'cancelled': 'Đã hủy',
     };
     return statusMap[status] || status;
   };
@@ -257,9 +257,9 @@ export default function ManageScheduleCalendar() {
     if (viewMode === 'week') {
       const weekDates = getWeekDates();
       const format: 'short' | 'long' = isMobile ? 'short' : 'long';
-      return `${weekDates[0].getDate()} - ${weekDates[6].getDate()} ${weekDates[0].toLocaleDateString('en-US', { month: format, year: 'numeric' })}`;
+      return `${weekDates[0].getDate()} - ${weekDates[6].getDate()} ${weekDates[0].toLocaleDateString('vi-VN', { month: format, year: 'numeric' })}`;
     } else if (viewMode === 'month') {
-      return currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      return currentDate.toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' });
     }
     return formatDateDisplay(currentDate);
   };
@@ -365,12 +365,12 @@ export default function ManageScheduleCalendar() {
       >
         <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
           <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.875rem', mb: 0.5 }}>
-            {course?.name || course?.courseName || 'Unknown Course'}
+            {course?.name || course?.courseName || 'Khóa học chưa xác định'}
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
             <User size={12} />
             <Typography variant="caption" sx={{ fontSize: '0.75rem' }}>
-              {teacher?.name || 'Unknown'}
+              {teacher?.name || 'Chưa xác định'}
             </Typography>
           </Box>
           <Chip 
@@ -432,7 +432,7 @@ export default function ManageScheduleCalendar() {
                 }}
               >
                 <Typography variant="h6" fontWeight={700}>
-                  {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                  {date.toLocaleDateString('vi-VN', { weekday: 'short' })}
                 </Typography>
                 <Typography variant="body2">
                   {formatDateDisplay(date)}
@@ -450,7 +450,7 @@ export default function ManageScheduleCalendar() {
                     fontSize: '0.875rem'
                   }}
                 >
-                  Morning
+                  Buổi sáng
                 </Typography>
                 
                 {morningSessions.map((session: Session) => {
@@ -496,7 +496,7 @@ export default function ManageScheduleCalendar() {
                     fontSize: '0.875rem'
                   }}
                 >
-                  Afternoon
+                  Buổi chiều
                 </Typography>
                 
                 {afternoonSessions.map((session: Session) => {
@@ -554,14 +554,14 @@ export default function ManageScheduleCalendar() {
       <Box sx={{ overflowX: 'auto' }}>
         <Box sx={{ display: 'grid', gridTemplateColumns: `${isTablet ? '100px' : '120px'} repeat(7, 1fr)`, minWidth: 'fit-content', width: '100%' }}>
           <Box sx={{ p: 2, borderBottom: 1, borderRight: 1, borderColor: 'divider', bgcolor: 'grey.50', fontWeight: 600 }}>
-            Time
+            Thời gian
           </Box>
           {weekDates.map((date, idx) => {
             const isToday = formatDate(date) === formatDate(new Date());
             return (
               <Box key={idx} sx={{ p: isTablet ? 1.5 : 2, borderBottom: 1, borderRight: 1, borderColor: 'divider', bgcolor: isToday ? 'primary.50' : 'grey.50', textAlign: 'center', minWidth: 140 }}>
                 <Typography sx={{ fontWeight: 600, color: isToday ? 'primary.main' : 'text.primary', fontSize: isTablet ? '0.875rem' : '1rem' }}>
-                  {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                  {date.toLocaleDateString('vi-VN', { weekday: 'short' })}
                 </Typography>
                 <Typography variant="body2" sx={{ color: isToday ? 'primary.main' : 'text.secondary' }}>
                   {formatDateDisplay(date)}
@@ -577,7 +577,7 @@ export default function ManageScheduleCalendar() {
               <React.Fragment key={sessionId}>
                 <Box sx={{ p: 2, borderBottom: 1, borderRight: 1, borderColor: 'divider', bgcolor: 'grey.50' }}>
                   <Typography variant="body2" fontWeight={600}>
-                    {session?.sessionName || 'Session'}
+                    {session?.sessionName || 'Ca học'}
                   </Typography>
                   {session?.startTime && (
                     <Typography variant="caption" color="text.secondary">
@@ -633,7 +633,7 @@ export default function ManageScheduleCalendar() {
           {/* Date Header */}
           <Box sx={{ p: 2, bgcolor: isToday ? 'primary.main' : 'grey.100', color: isToday ? 'white' : 'text.primary' }}>
             <Typography variant="h6" fontWeight={600}>
-              {date.toLocaleDateString('en-US', { weekday: 'long' })}
+              {date.toLocaleDateString('vi-VN', { weekday: 'long' })}
             </Typography>
             <Typography variant="body1">
               {formatDateDisplay(date)}
@@ -647,7 +647,7 @@ export default function ManageScheduleCalendar() {
               fontWeight={600} 
               sx={{ mb: 1.5, color: '#d97706', fontSize: '0.875rem' }}
             >
-              Morning
+              Buổi sáng
             </Typography>
             
             {morningSessions.map((session: Session) => {
@@ -689,7 +689,7 @@ export default function ManageScheduleCalendar() {
               fontWeight={600} 
               sx={{ mb: 1.5, color: '#d97706', fontSize: '0.875rem' }}
             >
-              Afternoon
+              Buổi chiều
             </Typography>
             
             {afternoonSessions.map((session: Session) => {
@@ -740,11 +740,11 @@ export default function ManageScheduleCalendar() {
       <Box sx={{ overflowX: 'auto' }}>
         <Box sx={{ display: 'grid', gridTemplateColumns: `${isTablet ? '100px' : '120px'} 1fr`, minWidth: 'fit-content', width: '100%' }}>
           <Box sx={{ p: 2, borderBottom: 1, borderRight: 1, borderColor: 'divider', bgcolor: 'grey.50', fontWeight: 600 }}>
-            Time
+            Thời gian
           </Box>
           <Box sx={{ p: 2, borderBottom: 1, borderRight: 1, borderColor: 'divider', bgcolor: isToday ? 'primary.50' : 'grey.50', textAlign: 'center', minWidth: 300 }}>
             <Typography sx={{ fontWeight: 600, color: isToday ? 'primary.main' : 'text.primary' }}>
-              {date.toLocaleDateString('en-US', { weekday: 'long' })}
+              {date.toLocaleDateString('vi-VN', { weekday: 'long' })}
             </Typography>
             <Typography variant="body2" sx={{ color: isToday ? 'primary.main' : 'text.secondary' }}>
               {formatDateDisplay(date)}
@@ -758,7 +758,7 @@ export default function ManageScheduleCalendar() {
               <React.Fragment key={sessionId}>
                 <Box sx={{ p: 2, borderBottom: 1, borderRight: 1, borderColor: 'divider', bgcolor: 'grey.50' }}>
                   <Typography variant="body2" fontWeight={600}>
-                    {session?.sessionName || 'Session'}
+                    {session?.sessionName || 'Ca học'}
                   </Typography>
                   {session?.startTime && (
                     <Typography variant="caption" color="text.secondary">
@@ -792,7 +792,7 @@ export default function ManageScheduleCalendar() {
     return (
       <Box>
         <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(7, 1fr)`, gap: isMobile ? 0.5 : 1 }}>
-          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+          {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((day) => (
             <Box key={day} sx={{ p: isMobile ? 0.5 : 1, textAlign: 'center', fontWeight: 600, bgcolor: 'grey.50', fontSize: isMobile ? '0.7rem' : '0.875rem' }}>
               {isMobile ? day.slice(0, 1) : day}
             </Box>

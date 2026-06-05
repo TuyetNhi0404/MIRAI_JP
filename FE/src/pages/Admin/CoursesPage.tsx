@@ -208,9 +208,9 @@ const CoursesPage: React.FC = () => {
 
   const mapStatus = (s: Course['status']) => {
     // not_yet -> red, in_progress -> yellow, complete -> green
-    if (s === 'not_yet') return { label: 'not_yet', color: 'error' as const };
-    if (s === 'in_progress') return { label: 'in_progress', color: 'warning' as const };
-    return { label: 'complete', color: 'success' as const };
+    if (s === 'not_yet') return { label: 'Chưa bắt đầu', color: 'error' as const };
+    if (s === 'in_progress') return { label: 'Đang học', color: 'warning' as const };
+    return { label: 'Hoàn thành', color: 'success' as const };
   };
 
   return (
@@ -225,14 +225,14 @@ const CoursesPage: React.FC = () => {
             fontSize: { xs: "1.5rem", sm: "2rem" },
           }}
         >
-          MANAGER COURSE
+          QUẢN LÝ KHÓA HỌC
         </Typography>
       </Box>
 
       {/* Search + Right actions */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4, flexWrap: { xs: 'nowrap', sm: 'nowrap' } }}>
         <TextField
-          placeholder="Search courses..."
+          placeholder="Tìm kiếm khóa học..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
@@ -303,10 +303,10 @@ const CoursesPage: React.FC = () => {
           <Filter size={18} />
         </IconButton>
         <Menu anchorEl={filterAnchorEl} open={Boolean(filterAnchorEl)} onClose={closeFilterMenu}>
-          <MenuItem selected={filterStatus === 'all'} onClick={() => applyFilter('all')}>All</MenuItem>
-          <MenuItem selected={filterStatus === 'not_yet'} onClick={() => applyFilter('not_yet')}>not_yet</MenuItem>
-          <MenuItem selected={filterStatus === 'in_progress'} onClick={() => applyFilter('in_progress')}>in_progress</MenuItem>
-          <MenuItem selected={filterStatus === 'complete'} onClick={() => applyFilter('complete')}>complete</MenuItem>
+          <MenuItem selected={filterStatus === 'all'} onClick={() => applyFilter('all')}>Tất cả</MenuItem>
+          <MenuItem selected={filterStatus === 'not_yet'} onClick={() => applyFilter('not_yet')}>Chưa bắt đầu</MenuItem>
+          <MenuItem selected={filterStatus === 'in_progress'} onClick={() => applyFilter('in_progress')}>Đang học</MenuItem>
+          <MenuItem selected={filterStatus === 'complete'} onClick={() => applyFilter('complete')}>Hoàn thành</MenuItem>
         </Menu>
         <Box sx={{ flex: 1, display: { xs: 'none', sm: 'block' } }} />
         <Box sx={{ display: { xs: 'none', sm: 'flex' } }}>
@@ -331,7 +331,7 @@ const CoursesPage: React.FC = () => {
               transition: 'all 0.2s ease'
             }}
           >
-            New Course
+          Thêm khóa học
           </Button>
         </Box>
       </Box>
@@ -375,11 +375,11 @@ const CoursesPage: React.FC = () => {
       {/* Card list */}
       {loading ? (
         <Box sx={{ padding: 8, textAlign: 'center', color: '#6b7280' }}>
-            <Typography variant="body1" sx={{ fontSize: '0.875rem' }}>Loading courses...</Typography>
+            <Typography variant="body1" sx={{ fontSize: '0.875rem' }}>Đang tải khóa học...</Typography>
         </Box>
         ) : filteredCourses.length === 0 ? (
         <Box sx={{ padding: 8, textAlign: 'center', color: '#6b7280' }}>
-            <Typography variant="body1" sx={{ fontSize: '0.875rem' }}>No courses match your current filters.</Typography>
+            <Typography variant="body1" sx={{ fontSize: '0.875rem' }}>Không có khóa học nào phù hợp với bộ lọc hiện tại.</Typography>
         </Box>
       ) : (
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr', lg: '1fr 1fr 1fr' }, gap: { xs: 1.5, md: 2.5 } }}>
@@ -450,7 +450,7 @@ const CoursesPage: React.FC = () => {
                           handleEdit(course._id || course.id || '');
                         }}>
                           <Edit size={18} style={{ marginRight: '8px' }} />
-                          Edit
+                           Chỉnh sửa
                         </MenuItem>
                         <MenuItem 
                           onClick={(e) => {
@@ -461,7 +461,7 @@ const CoursesPage: React.FC = () => {
                           sx={{ color: 'error.main' }}
                         >
                           <Trash2 size={18} style={{ marginRight: '8px' }} />
-                          Delete
+                           Xóa
                         </MenuItem>
                       </Menu>
                     </Box>
@@ -480,7 +480,7 @@ const CoursesPage: React.FC = () => {
                         mb: 0.5
                       }}
                     >
-                      Course Name
+                      Tên khóa học
                     </Typography>
                     <Typography 
                       variant="h6" 
@@ -504,7 +504,7 @@ const CoursesPage: React.FC = () => {
                     {/* Homeroom Teacher */}
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500 }}>
-                        Homeroom Teacher
+                        Giáo viên chủ nhiệm
                       </Typography>
                       <Typography variant="body2" sx={{ color: '#111827', fontSize: '0.875rem', fontWeight: 600, textAlign: 'right', maxWidth: '60%' }}>
                         {course.homeroomTeacher || '-'}
@@ -515,7 +515,7 @@ const CoursesPage: React.FC = () => {
                     <Box sx={{ display: 'flex', gap: 2 }}>
                       <Box sx={{ flex: 1 }}>
                         <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500, mb: 0.25 }}>
-                          Session
+                          Ca học
                         </Typography>
                         <Typography variant="body2" sx={{ color: '#111827', fontSize: '0.875rem', fontWeight: 600 }}>
                           {course.session ?? 0}
@@ -523,7 +523,7 @@ const CoursesPage: React.FC = () => {
                       </Box>
                       <Box sx={{ flex: 1 }}>
                         <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500, mb: 0.25 }}>
-                          Capacity
+                          Sực chứa
                         </Typography>
                         <Typography variant="body2" sx={{ color: '#111827', fontSize: '0.875rem', fontWeight: 600 }}>
                           {course.capacity}
@@ -539,7 +539,7 @@ const CoursesPage: React.FC = () => {
                       border: '1px solid #f0f0f0'
                     }}>
                       <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500 }}>
-                        Enrolled
+                        Đã ghi danh
                       </Typography>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Typography 
@@ -563,7 +563,7 @@ const CoursesPage: React.FC = () => {
                       {/* Start Date */}
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500 }}>
-                          Start Date
+                          Ngày bắt đầu
                         </Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0, justifyContent: 'flex-end', width: { xs: 160, sm: 180 }, flexShrink: 0 }}>
                           <CalendarDays size={16} color="#6b7280" />
@@ -576,7 +576,7 @@ const CoursesPage: React.FC = () => {
                       {/* End Date */}
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500 }}>
-                          End Date
+                          Ngày kết thúc
                         </Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0, justifyContent: 'flex-end', width: { xs: 160, sm: 180 }, flexShrink: 0 }}>
                           <CalendarDays size={16} color="#6b7280" />
@@ -590,7 +590,7 @@ const CoursesPage: React.FC = () => {
                     {/* Status */}
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 1 }}>
                       <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500 }}>
-                        Status
+                        Trạng thái
                       </Typography>
                       <Chip 
                         label={status.label} 

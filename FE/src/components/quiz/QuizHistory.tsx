@@ -112,7 +112,7 @@ const QuizHistory: React.FC<QuizHistoryProps> = ({ attempts }) => {
                       }}
                     >
                       <CalendarIcon sx={{ fontSize: '0.875rem' }} />
-                      {new Date(attempt.completedAt).toLocaleString('en-US', {
+                      {new Date(attempt.completedAt).toLocaleString('vi-VN', {
                         year: 'numeric',
                         month: 'short',
                         day: 'numeric',

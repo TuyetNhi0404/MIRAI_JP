@@ -116,8 +116,8 @@ export default function ManageScheduleWithAttendance() {
   const getViewTitle = () => {
     if (viewMode === 'week') {
       const weekDates = getWeekDates();
-      const format = isMobile ? 'short' : 'long';
-      return `${weekDates[0].getDate()} - ${weekDates[6].getDate()} ${weekDates[0].toLocaleDateString('en-US', { month: format, year: 'numeric' })}`;
+      const format = isMobile ? 'numeric' : 'long';
+      return `${weekDates[0].getDate()} - ${weekDates[6].getDate()} ${weekDates[0].toLocaleDateString('vi-VN', { month: format, year: 'numeric' })}`;
     }
     return formatDateDisplay(currentDate);
   };
@@ -161,7 +161,7 @@ export default function ManageScheduleWithAttendance() {
             fontWeight={600}
             sx={{ fontSize: "0.85rem", mb: 0.5, lineHeight: 1.2 }}
           >
-            {course?.name || course?.courseName || "Unknown Course"}
+            {course?.name || course?.courseName || "Khóa học chưa xác định"}
           </Typography>
 
           {/* Teacher */}
@@ -171,7 +171,7 @@ export default function ManageScheduleWithAttendance() {
               variant="caption"
               sx={{ fontSize: "0.7rem", opacity: 0.9 }}
             >
-              {teacher?.name || "Unknown"}
+              GV: {teacher?.name || "Chưa xác định"}
             </Typography>
           </Box>
 
@@ -185,9 +185,13 @@ export default function ManageScheduleWithAttendance() {
           >
             {/* Status Chip */}
             <Chip
-              label={schedule.status
-                .replace(/_/g, " ")
-                .replace(/\b\w/g, (c: string) => c.toUpperCase())}
+              label={
+                schedule.status === 'not_yet' ? 'Chưa bắt đầu' :
+                schedule.status === 'completed' ? 'Đã xong' :
+                schedule.status === 'in_progress' ? 'Đang học' :
+                schedule.status === 'cancelled' ? 'Đã hủy' : 
+                (schedule.status as string).replace(/_/g, " ")
+              }
               size="small"
               sx={{
                 height: 20,
@@ -226,7 +230,7 @@ export default function ManageScheduleWithAttendance() {
               }}
             >
               <UserCheck size={14} />
-              <span>Attendance</span>
+              <span>Điểm danh</span>
             </Button>
           </Box>
         </CardContent>
@@ -286,7 +290,7 @@ export default function ManageScheduleWithAttendance() {
                 }}
               >
                 <Typography variant="h6" fontWeight={700}>
-                  {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                  {date.toLocaleDateString('vi-VN', { weekday: 'long' })}
                 </Typography>
                 <Typography variant="body2">
                   {formatDateDisplay(date)}
@@ -304,7 +308,7 @@ export default function ManageScheduleWithAttendance() {
                     fontSize: '0.875rem'
                   }}
                 >
-                  Morning
+                  Buổi Sáng
                 </Typography>
                 
                 {morningSessions.map((session) => {
@@ -348,7 +352,7 @@ export default function ManageScheduleWithAttendance() {
                     fontSize: '0.875rem'
                   }}
                 >
-                  Afternoon
+                  Buổi Chiều
                 </Typography>
                 
                 {afternoonSessions.map((session) => {
@@ -409,14 +413,14 @@ export default function ManageScheduleWithAttendance() {
       <Box sx={{ overflowX: 'auto' }}>
         <Box sx={{ display: 'grid', gridTemplateColumns: `${isTablet ? '100px' : '120px'} repeat(7, 1fr)`, minWidth: 'fit-content', width: '100%' }}>
           <Box sx={{ p: 2, borderBottom: 1, borderRight: 1, borderColor: 'divider', bgcolor: 'grey.50', fontWeight: 600 }}>
-            Time
+            Thời gian
           </Box>
           {weekDates.map((date, idx) => {
             const isToday = formatDate(date) === formatDate(new Date());
             return (
               <Box key={idx} sx={{ p: isTablet ? 1.5 : 2, borderBottom: 1, borderRight: 1, borderColor: 'divider', bgcolor: isToday ? 'primary.50' : 'grey.50', textAlign: 'center', minWidth: 140 }}>
                 <Typography sx={{ fontWeight: 600, color: isToday ? 'primary.main' : 'text.primary', fontSize: isTablet ? '0.875rem' : '1rem' }}>
-                  {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                  {date.toLocaleDateString('vi-VN', { weekday: 'short' })}
                 </Typography>
                 <Typography variant="body2" sx={{ color: isToday ? 'primary.main' : 'text.secondary' }}>
                   {formatDateDisplay(date)}
@@ -432,7 +436,7 @@ export default function ManageScheduleWithAttendance() {
               <React.Fragment key={sessionId}>
                 <Box sx={{ p: 2, borderBottom: 1, borderRight: 1, borderColor: 'divider', bgcolor: 'grey.50' }}>
                   <Typography variant="body2" fontWeight={600}>
-                    {session?.sessionName || 'Session'}
+                    {session?.sessionName || 'Ca học'}
                   </Typography>
                   {session?.startTime && (
                     <Typography variant="caption" color="text.secondary">
@@ -495,7 +499,7 @@ export default function ManageScheduleWithAttendance() {
           {/* Date Header */}
           <Box sx={{ p: 2, bgcolor: isToday ? 'primary.main' : 'grey.100', color: isToday ? 'white' : 'text.primary' }}>
             <Typography variant="h6" fontWeight={600}>
-              {date.toLocaleDateString('en-US', { weekday: 'long' })}
+              {date.toLocaleDateString('vi-VN', { weekday: 'long' })}
             </Typography>
             <Typography variant="body1">
               {formatDateDisplay(date)}
@@ -509,7 +513,7 @@ export default function ManageScheduleWithAttendance() {
               fontWeight={600} 
               sx={{ mb: 1.5, color: '#d97706', fontSize: '0.875rem' }}
             >
-              Morning
+              Buổi sáng
             </Typography>
             
             {morningSessions.map((session) => {
@@ -549,7 +553,7 @@ export default function ManageScheduleWithAttendance() {
               fontWeight={600} 
               sx={{ mb: 1.5, color: '#d97706', fontSize: '0.875rem' }}
             >
-              Afternoon
+              Buổi chiều
             </Typography>
             
             {afternoonSessions.map((session) => {
@@ -604,11 +608,11 @@ export default function ManageScheduleWithAttendance() {
       <Box sx={{ overflowX: 'auto' }}>
         <Box sx={{ display: 'grid', gridTemplateColumns: `${isTablet ? '100px' : '120px'} 1fr`, minWidth: 'fit-content', width: '100%' }}>
           <Box sx={{ p: 2, borderBottom: 1, borderRight: 1, borderColor: 'divider', bgcolor: 'grey.50', fontWeight: 600 }}>
-            Time
+            Thời gian
           </Box>
           <Box sx={{ p: 2, borderBottom: 1, borderRight: 1, borderColor: 'divider', bgcolor: isToday ? 'primary.50' : 'grey.50', textAlign: 'center', minWidth: 300 }}>
             <Typography sx={{ fontWeight: 600, color: isToday ? 'primary.main' : 'text.primary' }}>
-              {date.toLocaleDateString('en-US', { weekday: 'long' })}
+              {date.toLocaleDateString('vi-VN', { weekday: 'long' })}
             </Typography>
             <Typography variant="body2" sx={{ color: isToday ? 'primary.main' : 'text.secondary' }}>
               {formatDateDisplay(date)}
@@ -622,7 +626,7 @@ export default function ManageScheduleWithAttendance() {
               <React.Fragment key={sessionId}>
                 <Box sx={{ p: 2, borderBottom: 1, borderRight: 1, borderColor: 'divider', bgcolor: 'grey.50' }}>
                   <Typography variant="body2" fontWeight={600}>
-                    {session?.sessionName || 'Session'}
+                    {session?.sessionName || 'Ca học'}
                   </Typography>
                   {session?.startTime && (
                     <Typography variant="caption" color="text.secondary">
@@ -673,7 +677,7 @@ export default function ManageScheduleWithAttendance() {
             startIcon={<RotateCcw size={16} />}
             fullWidth={isMobile}
           >
-            {isMobile ? 'Today' : 'Back to Today'}
+            {isMobile ? 'Hôm nay' : 'Quay lại hôm nay'}
           </Button>
 
           <Stack direction="row" spacing={1} alignItems="center" sx={{ width: isMobile ? '100%' : 'auto' }}>
@@ -695,10 +699,10 @@ export default function ManageScheduleWithAttendance() {
           ) : (
             <Stack direction="row" spacing={1}>
               <Button variant={viewMode === 'day' ? 'contained' : 'outlined'} onClick={() => setViewMode('day')} size="small" startIcon={<Clock size={16} />}>
-                Day
+                Ngày
               </Button>
               <Button variant={viewMode === 'week' ? 'contained' : 'outlined'} onClick={() => setViewMode('week')} size="small" startIcon={<CalendarDays size={16} />}>
-                Week
+                Tuần
               </Button>
             </Stack>
           )}
@@ -708,16 +712,16 @@ export default function ManageScheduleWithAttendance() {
       {/* Mobile View Selector Drawer */}
       <Drawer anchor="bottom" open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)}>
         <Box sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>Select View</Typography>
+          <Typography variant="h6" gutterBottom>Chọn chế độ xem</Typography>
           <List>
             <ListItemButton onClick={() => { setViewMode('day'); setMobileMenuOpen(false); }}>
               <Clock size={20} style={{ marginRight: 12 }} />
-              <ListItemText primary="Day View" />
+              <ListItemText primary="Xem theo ngày" />
             </ListItemButton>
             <Divider />
             <ListItemButton onClick={() => { setViewMode('week'); setMobileMenuOpen(false); }}>
               <CalendarDays size={20} style={{ marginRight: 12 }} />
-              <ListItemText primary="Week View" />
+              <ListItemText primary="Xem theo tuần" />
             </ListItemButton>
           </List>
         </Box>

@@ -179,7 +179,7 @@ const EnrollmentRequestsPage: React.FC = () => {
 
                         <Typography variant="caption" color="text.secondary">
                             {enrollment.createdAt
-                                ? new Date(enrollment.createdAt).toLocaleDateString("en-US")
+                                ? new Date(enrollment.createdAt).toLocaleDateString("vi-VN")
                                 : "N/A"
                             }
                         </Typography>
@@ -320,7 +320,7 @@ const EnrollmentRequestsPage: React.FC = () => {
                                                 </TableCell>
                                                 <TableCell sx={{ fontSize: { sm: 13, md: 14 } }}>
                                                     {enrollment.createdAt
-                                                        ? new Date(enrollment.createdAt).toLocaleDateString("en-US")
+                                                        ? new Date(enrollment.createdAt).toLocaleDateString("vi-VN")
                                                         : "N/A"
                                                     }
                                                 </TableCell>

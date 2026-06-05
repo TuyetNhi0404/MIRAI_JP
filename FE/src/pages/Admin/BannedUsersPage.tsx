@@ -102,7 +102,7 @@ const BannedUsersPage: React.FC = () => {
   const formatDate = (date: Date | string | null) => {
     if (!date) return "Permanent";
     const d = new Date(date);
-    return d.toLocaleDateString("en-US", {
+    return d.toLocaleDateString("vi-VN", {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
