@@ -8,7 +8,7 @@ if "HF_HOME" not in os.environ:
 
 from faster_whisper import WhisperModel
 
-model_size = "base"
+model_size = "small"
 model = WhisperModel(model_size, device="cpu", compute_type="int8")
 
 def transcribe_audio(audio_path: str):
