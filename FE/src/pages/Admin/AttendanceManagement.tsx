@@ -128,8 +128,8 @@ export default function ManageScheduleWithAttendance() {
   };
 
   const renderScheduleCard = (schedule: Calendar) => {
-    const course = typeof schedule.courseId === 'object' ? schedule.courseId : schedule.course;
-    const teacher = typeof schedule.teacherId === 'object' ? schedule.teacherId : schedule.teacher;
+    const course = typeof schedule.courseId === 'object' ? schedule.courseId as PopulatedCourse : null;
+    const teacher = typeof schedule.teacherId === 'object' ? schedule.teacherId as PopulatedTeacher : null;
     const courseId = extractId(schedule.courseId);
     const color = getScheduleColor(courseId);
 
@@ -140,87 +140,95 @@ export default function ManageScheduleWithAttendance() {
           bgcolor: color,
           color: "white",
           mb: 1,
-          borderRadius: 2,
-          transition: 'all 0.2s',
-          '&:hover': {
-            transform: 'translateY(-2px)',
-            boxShadow: 3,
-          }
+          borderRadius: 1.5,
+          boxShadow: 1,
+          transition: "all 0.2s",
+          "&:hover": {
+            transform: "translateY(-1px)",
+            boxShadow: 2,
+          },
         }}
       >
         <CardContent
           sx={{
-            p: isMobile ? 1.5 : 2,
-            "&:last-child": { pb: isMobile ? 1.5 : 2 },
+            p: 1.25,
+            "&:last-child": { pb: 1.25 },
           }}
         >
           {/* Course Name */}
           <Typography
             variant="body2"
             fontWeight={600}
-            sx={{ fontSize: isMobile ? "0.875rem" : "0.95rem", mb: 0.7 }}
+            sx={{ fontSize: "0.85rem", mb: 0.5, lineHeight: 1.2 }}
           >
             {course?.name || course?.courseName || "Unknown Course"}
           </Typography>
 
           {/* Teacher */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.7 }}>
-            <User size={isMobile ? 13 : 14} />
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
+            <User size={12} />
             <Typography
               variant="caption"
-              sx={{ fontSize: isMobile ? "0.7rem" : "0.75rem" }}
+              sx={{ fontSize: "0.7rem", opacity: 0.9 }}
             >
               {teacher?.name || "Unknown"}
             </Typography>
           </Box>
 
-          {/* Status */}
-          <Chip
-            label={
-              schedule.status
-                .replace(/_/g, " ")
-                .replace(/\b\w/g, (c: string) => c.toUpperCase())
-            }
-            size="small"
+          <Box
             sx={{
-              height: isMobile ? 20 : 22,
-              fontSize: isMobile ? "0.65rem" : "0.7rem",
-              bgcolor: "rgba(255,255,255,0.3)",
-              color: "white",
-              fontWeight: 600,
-            }}
-          />
-
-          {/* Attendance Button */}
-          <Button
-            size="small"
-            variant="contained"
-            fullWidth
-            sx={{
-              mt: 1.5,
-              bgcolor: "rgba(255,255,255,0.25)",
-              color: "white",
-              fontSize: isMobile ? "0.75rem" : "0.8rem",
-              py: isMobile ? 0.8 : 1,
-              fontWeight: 600,
               display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              gap: 0.7,
-              "&:hover": { 
-                bgcolor: "rgba(255,255,255,0.4)",
-                transform: 'scale(1.02)',
-              },
-              transition: 'all 0.2s',
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleOpenAttendance(schedule);
+              flexDirection: "column",
+              gap: 1,
+              mt: 1,
             }}
           >
-            <UserCheck size={isMobile ? 14 : 16} />
-            <span>Check Attendance</span>
-          </Button>
+            {/* Status Chip */}
+            <Chip
+              label={schedule.status
+                .replace(/_/g, " ")
+                .replace(/\b\w/g, (c: string) => c.toUpperCase())}
+              size="small"
+              sx={{
+                height: 20,
+                fontSize: "0.65rem",
+                bgcolor: "rgba(255,255,255,0.25)",
+                color: "white",
+                fontWeight: 600,
+                border: "1px solid rgba(255,255,255,0.2)",
+                alignSelf: 'flex-start',
+                px: 0.5
+              }}
+            />
+
+            {/* Compact Attendance Button */}
+            <Button
+              size="small"
+              variant="contained"
+              fullWidth
+              sx={{
+                py: 0.5,
+                bgcolor: "white",
+                color: color,
+                fontSize: "0.75rem",
+                fontWeight: 700,
+                '&:hover': { 
+                  bgcolor: "rgba(255,255,255,0.9)",
+                },
+                boxShadow: "none",
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenAttendance(schedule);
+              }}
+            >
+              <UserCheck size={14} />
+              <span>Attendance</span>
+            </Button>
+          </Box>
         </CardContent>
       </Card>
     );
@@ -238,7 +246,8 @@ export default function ManageScheduleWithAttendance() {
       .filter(s => {
         const startHour = parseInt(s.startTime?.split(':')[0] || '0');
         return startHour < 12;
-      });
+      })
+      .sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""));
     
     const afternoonSessions = [...new Set(calendars.map((c: Calendar) => extractId(c.sessionId)))]
       .map(id => calendars.find((c: Calendar) => extractId(c.sessionId) === id))
@@ -247,7 +256,8 @@ export default function ManageScheduleWithAttendance() {
       .filter(s => {
         const startHour = parseInt(s.startTime?.split(':')[0] || '0');
         return startHour >= 12;
-      });
+      })
+      .sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""));
 
     return (
       <Box>
@@ -389,6 +399,12 @@ export default function ManageScheduleWithAttendance() {
       }
     });
 
+    const sortedSessionIds = allSessions.sort((idA, idB) => {
+      const sessionA = sessionMap.get(idA);
+      const sessionB = sessionMap.get(idB);
+      return (sessionA?.startTime || "").localeCompare(sessionB?.startTime || "");
+    });
+
     return (
       <Box sx={{ overflowX: 'auto' }}>
         <Box sx={{ display: 'grid', gridTemplateColumns: `${isTablet ? '100px' : '120px'} repeat(7, 1fr)`, minWidth: 'fit-content', width: '100%' }}>
@@ -409,7 +425,7 @@ export default function ManageScheduleWithAttendance() {
             );
           })}
 
-          {allSessions.map((sessionId: string) => {
+          {sortedSessionIds.map((sessionId: string) => {
             const session = sessionMap.get(sessionId);
             
             return (
@@ -460,7 +476,8 @@ export default function ManageScheduleWithAttendance() {
       .filter(s => {
         const startHour = parseInt(s.startTime?.split(':')[0] || '0');
         return startHour < 12;
-      });
+      })
+      .sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""));
     
     const afternoonSessions = [...new Set(calendars.map((c: Calendar) => extractId(c.sessionId)))]
       .map(id => calendars.find((c: Calendar) => extractId(c.sessionId) === id))
@@ -469,7 +486,8 @@ export default function ManageScheduleWithAttendance() {
       .filter(s => {
         const startHour = parseInt(s.startTime?.split(':')[0] || '0');
         return startHour >= 12;
-      });
+      })
+      .sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""));
 
     if (isMobile) {
       return (
@@ -576,6 +594,12 @@ export default function ManageScheduleWithAttendance() {
       }
     });
 
+    const sortedSessionIds = allSessions.sort((idA, idB) => {
+      const sessionA = sessionMap.get(idA);
+      const sessionB = sessionMap.get(idB);
+      return (sessionA?.startTime || "").localeCompare(sessionB?.startTime || "");
+    });
+
     return (
       <Box sx={{ overflowX: 'auto' }}>
         <Box sx={{ display: 'grid', gridTemplateColumns: `${isTablet ? '100px' : '120px'} 1fr`, minWidth: 'fit-content', width: '100%' }}>
@@ -591,7 +615,7 @@ export default function ManageScheduleWithAttendance() {
             </Typography>
           </Box>
 
-          {allSessions.map((sessionId: string) => {
+          {sortedSessionIds.map((sessionId: string) => {
             const session = sessionMap.get(sessionId);
             
             return (

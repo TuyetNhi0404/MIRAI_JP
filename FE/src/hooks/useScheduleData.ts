@@ -40,7 +40,7 @@ export function useScheduleData(): ScheduleData {
         courseAPI.getAll(),
         sessionAPI.getAll(),
         calendarAPI.getAll(),
-        courseAPI.getHomeroomTeachers(), 
+        courseAPI.getHomeroomTeachers(),
       ]);
 
       console.log('📦 Raw API responses:');
@@ -51,7 +51,7 @@ export function useScheduleData(): ScheduleData {
 
       const extractArray = <T,>(response: AxiosResponse<BackendResponse<T[]>>): T[] => {
         const result = response.data;
-  
+
         if (result && typeof result === 'object' && 'data' in result && Array.isArray(result.data)) {
           return result.data;
         }
@@ -59,14 +59,28 @@ export function useScheduleData(): ScheduleData {
         if (Array.isArray(result)) {
           return result;
         }
-        
+
         console.warn('⚠️ Unexpected response structure:', result);
         return [];
       };
 
       const coursesData = extractArray<Course>(coursesRes);
-      const sessionsData = extractArray<Session>(sessionsRes);
-      const calendarsData = extractArray<Calendar>(calendarsRes);
+
+      const sessionsData = extractArray<Session>(sessionsRes).sort((a, b) => {
+        return (a.startTime || "").localeCompare(b.startTime || "");
+      });
+
+      const calendarsData = extractArray<Calendar>(calendarsRes).sort((a, b) => {
+        // Sort by date first
+        if (a.date < b.date) return -1;
+        if (a.date > b.date) return 1;
+
+        // Then by startTime of session
+        const timeA = (typeof a.sessionId === 'object' ? a.sessionId?.startTime : (a.session?.startTime ?? "")) || "";
+        const timeB = (typeof b.sessionId === 'object' ? b.sessionId?.startTime : (b.session?.startTime ?? "")) || "";
+        return timeA.localeCompare(timeB);
+      });
+
       const usersData = extractArray<User>(teachersRes);
 
       console.log('✅ Extracted data counts:');
@@ -79,18 +93,18 @@ export function useScheduleData(): ScheduleData {
       setSessions(sessionsData);
       setCalendars(calendarsData);
       setUsers(usersData);
-      
+
       console.log('✅ State updated successfully');
     } catch (err) {
       const axiosError = err as AxiosError<{ message?: string }>;
-      
-      const errorMessage = 
-        axiosError.response?.data?.message || 
-        axiosError.message || 
+
+      const errorMessage =
+        axiosError.response?.data?.message ||
+        axiosError.message ||
         'Failed to fetch data';
-        
+
       setError(errorMessage);
-      
+
       console.error('❌ Error fetching schedule data:', {
         message: axiosError.message,
         status: axiosError.response?.status,
@@ -106,13 +120,13 @@ export function useScheduleData(): ScheduleData {
     fetchData();
   }, [fetchData]);
 
-  return { 
-    courses, 
-    sessions, 
-    calendars, 
-    users, 
-    loading, 
-    error, 
-    refetch: fetchData 
+  return {
+    courses,
+    sessions,
+    calendars,
+    users,
+    loading,
+    error,
+    refetch: fetchData
   };
 }

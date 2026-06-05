@@ -41,7 +41,7 @@ const AdminSidebar: React.FC<SidebarProps> = ({ isOpen }) => {
     { id: "courses-manage", label: "Course Management", icon: BookOpen, path: "/dashboard/admin/courses" },
     { id: "request-management", label: "Request Schedule", icon: ClipboardList, path: "/dashboard/admin/request-management" },
     { id: "requests", label: "Enrollment Requests", icon: FileClock, path: "/dashboard/admin/requests" },
-    { id: "banned-users", label: "Banned Users", icon: Ban, path: "/dashboard/admin/banned-users" },
+    // { id: "banned-users", label: "Banned Users", icon: Ban, path: "/dashboard/admin/banned-users" },
     { id: "vocabulary", label: "Từ vựng JLPT", icon: BookMarked, path: "/dashboard/admin/vocabulary" },
     { id: "grammar-manage", label: "Ngữ pháp JLPT", icon: BookOpen, path: "/dashboard/admin/grammar" },
     { id: "listening-manage", label: "Listening Manage", icon: Headphones, path: "/dashboard/admin/listening" },
