@@ -179,8 +179,8 @@ const fetchAllCourses = async (): Promise<Map<string, string>> => {
 };
 
 const extractTeacherName = (teacherData: unknown): string => {
-  if (!teacherData) return "Unknown Teacher";
-  if (typeof teacherData === "string") return "Unknown Teacher";
+  if (!teacherData) return "Giáo viên chưa xác định";
+  if (typeof teacherData === "string") return "Giáo viên chưa xác định";
   
   if (typeof teacherData === "object") {
     const teacher = teacherData as TeacherData;
@@ -203,7 +203,7 @@ const extractTeacherName = (teacherData: unknown): string => {
     }
   }
   
-  return "Unknown Teacher";
+  return "Giáo viên chưa xác định";
 };
 
 const fetchMyAttendance = async (): Promise<Map<string, AttendanceStatus>> => {
@@ -336,23 +336,23 @@ const StudentSchedulePage: React.FC = () => {
           const endTime = sessionObj?.endTime ?? it.endTime ?? "00:00";
           const slotNumber = inferSlotNumber(it.slotNumber ?? it.slot ?? null, startTime);
 
-          let courseName = "Unknown Course";
+          let courseName = "Khóa học không xác định";
           let courseId: string | number | null = null;
 
           if (it.courseId) {
             if (typeof it.courseId === "object" && it.courseId !== null) {
               const courseObj = it.courseId as CourseData;
               courseId = courseObj._id || courseObj.id || null;
-              courseName = courseObj.courseName || courseObj.name || "Unknown";
+              courseName = courseObj.courseName || courseObj.name || "Chưa xác định";
 
-              if (courseName === "Unknown" && courseId) {
+              if (courseName === "Chưa xác định" && courseId) {
                 const cachedName = courseMap.get(String(courseId)) || await fetchCourseName(String(courseId));
-                if (cachedName !== "Unknown") courseName = cachedName;
+                if (cachedName !== "Chưa xác định") courseName = cachedName;
               }
             } else if (typeof it.courseId === "string") {
               courseId = it.courseId;
               const cachedName = courseMap.get(courseId) || await fetchCourseName(courseId);
-              if (cachedName !== "Unknown") courseName = cachedName;
+              if (cachedName !== "Chưa xác định") courseName = cachedName;
             }
           }
 
@@ -375,12 +375,12 @@ const StudentSchedulePage: React.FC = () => {
             s: attendanceStatus,
           };
 
-          let teacher: string = "Unknown Teacher";
+          let teacher: string = "Giáo viên chưa xác định";
           if (it.teacherId && typeof it.teacherId === "object") {
             teacher = extractTeacherName(it.teacherId);
           }
 
-          if (teacher === "Unknown Teacher" || teacher.startsWith("Teacher ")) {
+          if (teacher === "Giáo viên chưa xác định" || teacher.startsWith("Teacher ")) {
             const alt = it.teacher || it.teacherName || it.instructor?.name;
             if (alt && typeof alt === "string" && !alt.includes("@")) {
               teacher = alt.trim();
@@ -494,7 +494,7 @@ const StudentSchedulePage: React.FC = () => {
               whiteSpace: "nowrap",
             }}
           >
-            MY SCHEDULE
+            LỊCH HỌC CỦA TÔI
           </Typography>
         </Box>
 
@@ -515,10 +515,10 @@ const StudentSchedulePage: React.FC = () => {
           >
             <Box>
               <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                You are not logged in or your session has expired.
+                Bạn chưa đăng nhập hoặc phiên làm việc đã hết hạn.
               </Typography>
               <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                Please log in to view your schedule.
+                Vui lòng đăng nhập để xem lịch học của bạn.
               </Typography>
             </Box>
             <Box>
@@ -529,7 +529,7 @@ const StudentSchedulePage: React.FC = () => {
                 }}
                 sx={{ backgroundColor: PRIMARY_ORANGE }}
               >
-                Log In
+                Đăng nhập
               </Button>
             </Box>
           </Box>
@@ -540,7 +540,7 @@ const StudentSchedulePage: React.FC = () => {
             variant="body1"
             sx={{ color: "#555", mb: 1, fontWeight: 500, fontSize: { xs: "0.9rem", sm: "1rem" } }}
           >
-            Select Week:
+            Chọn tuần:
           </Typography>
           <Stack
             direction="row"

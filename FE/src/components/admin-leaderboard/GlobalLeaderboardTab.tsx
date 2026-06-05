@@ -58,8 +58,8 @@ const GlobalLeaderboardTab: React.FC = () => {
     } catch (err) {
       console.error('Error fetching global leaderboard:', err);
       const errorMessage = err instanceof Error && 'response' in err 
-        ? (err as { response?: { data?: { message?: string } } }).response?.data?.message || 'Failed to load global leaderboard'
-        : 'Failed to load global leaderboard';
+        ? (err as { response?: { data?: { message?: string } } }).response?.data?.message || 'Không thể tải bảng xếp hạng toàn hệ thống'
+        : 'Không thể tải bảng xếp hạng toàn hệ thống';
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -113,7 +113,7 @@ const GlobalLeaderboardTab: React.FC = () => {
                 <Grid item xs={4}>
                   <Box textAlign="center">
                     <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                      Avg Score
+                      Điểm trung bình
                     </Typography>
                     <Typography variant="h6" fontWeight="bold" color="#ff6b35" mt={0.5}>
                       {formatScore(student.averageFinalScore)}
@@ -124,7 +124,7 @@ const GlobalLeaderboardTab: React.FC = () => {
                 <Grid item xs={4}>
                   <Box textAlign="center">
                     <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                      Passed
+                      Đã đạt
                     </Typography>
                     <Box mt={0.5}>
                       <Chip 
@@ -143,7 +143,7 @@ const GlobalLeaderboardTab: React.FC = () => {
                 <Grid item xs={4}>
                   <Box textAlign="center">
                     <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                      Pass Rate
+                      Tỷ lệ đạt
                     </Typography>
                     <Typography 
                       variant="h6" 
@@ -167,7 +167,7 @@ const GlobalLeaderboardTab: React.FC = () => {
     return (
       <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" minHeight="400px" gap={2}>
         <CircularProgress sx={{ color: '#ff6b35' }} size={45} />
-        <Typography variant="body1" color="text.secondary">Loading global leaderboard...</Typography>
+        <Typography variant="body1" color="text.secondary">Đang tải bảng xếp hạng hệ thống...</Typography>
       </Box>
     );
   }
@@ -188,14 +188,14 @@ const GlobalLeaderboardTab: React.FC = () => {
               <Box display="flex" alignItems="center" gap={isMobile ? 1.5 : 2}>
                 <Globe size={isMobile ? 20 : 24} color="#ff6b35" />
                 <Typography variant={isMobile ? 'subtitle1' : 'h6'} fontWeight="bold" color="#ff6b35">
-                  Global System Ranking
+                  Bảng xếp hạng hệ thống
                 </Typography>
               </Box>
             </Grid>
             <Grid item xs={12} md={6}>
               <FormControl fullWidth size={isMobile ? 'small' : 'medium'}>
-                <InputLabel>Limit</InputLabel>
-                <Select value={limit} onChange={(e) => setLimit(Number(e.target.value))} label="Limit">
+                <InputLabel>Giới hạn</InputLabel>
+                <Select value={limit} onChange={(e) => setLimit(Number(e.target.value))} label="Giới hạn">
                   <MenuItem value={5}>Top 5</MenuItem>
                   <MenuItem value={10}>Top 10</MenuItem>
                   <MenuItem value={20}>Top 20</MenuItem>
@@ -218,7 +218,7 @@ const GlobalLeaderboardTab: React.FC = () => {
         }}>
           <Star size={isMobile ? 18 : 22} color="#fff" />
           <Typography variant={isMobile ? 'subtitle1' : 'h6'} fontWeight="bold" color="#fff">
-            Global Top Students
+            Học viên xuất sắc toàn hệ thống
           </Typography>
         </Box>
 
@@ -231,11 +231,11 @@ const GlobalLeaderboardTab: React.FC = () => {
             <Table size={isTablet ? 'small' : 'medium'}>
               <TableHead>
                 <TableRow sx={{ background: 'rgba(255,107,53,0.04)' }}>
-                  <TableCell sx={{ fontWeight: 700, color: '#ff6b35' }}>Rank</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: '#ff6b35' }}>Student</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 700, color: '#ff6b35' }}>Avg Score</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 700, color: '#ff6b35' }}>Passed</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 700, color: '#ff6b35' }}>Pass Rate</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: '#ff6b35' }}>Thứ hạng</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: '#ff6b35' }}>Học viên</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, color: '#ff6b35' }}>Điểm trung bình</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, color: '#ff6b35' }}>Đã đạt</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, color: '#ff6b35' }}>Tỷ lệ đạt</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>

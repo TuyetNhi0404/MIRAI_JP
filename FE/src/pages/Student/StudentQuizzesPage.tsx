@@ -94,14 +94,14 @@ const StudentQuizzesPage: React.FC = () => {
             fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' }
           }}
         >
-          Quizzes
+          Bài kiểm tra
         </Typography>
         <Typography
           variant="body2"
           color="textSecondary"
           sx={{ fontSize: { xs: '0.875rem', sm: '0.875rem' } }}
         >
-          Take quizzes and view your results
+          Làm bài kiểm tra và xem kết quả của bạn
         </Typography>
       </Box>
 
@@ -147,8 +147,8 @@ const StudentQuizzesPage: React.FC = () => {
             },
           }}
         >
-          <Tab label={isMobile ? "Available" : "Available Quizzes"} />
-          <Tab label={isMobile ? "Results" : "My Results"} />
+          <Tab label={isMobile ? "Có sẵn" : "Bài kiểm tra hiện có"} />
+          <Tab label={isMobile ? "Kết quả" : "Kết quả của tôi"} />
         </Tabs>
       </Box>
 

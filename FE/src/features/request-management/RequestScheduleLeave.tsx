@@ -72,7 +72,7 @@ export const RequestScheduleLeave: React.FC = () => {
       console.error("Error fetching requests:", error);
       setSnackbar({
         open: true,
-        message: "Failed to load requests",
+        message: "Không thể tải danh sách yêu cầu",
         severity: "error"
       });
     } finally {
@@ -129,7 +129,7 @@ export const RequestScheduleLeave: React.FC = () => {
       await requestScheduleService.acceptRequest(requestId);
       setSnackbar({
         open: true,
-        message: "Request accepted",
+        message: "Đã chấp nhận yêu cầu nghỉ học",
         severity: "success"
       });
       fetchRequests();
@@ -138,7 +138,7 @@ export const RequestScheduleLeave: React.FC = () => {
       const apiError = error as ApiError;
       setSnackbar({
         open: true,
-        message: apiError.response?.data?.message || apiError.message || "An error occurred",
+        message: apiError.response?.data?.message || apiError.message || "Đã xảy ra lỗi",
         severity: "error"
       });
     } finally {
@@ -152,7 +152,7 @@ export const RequestScheduleLeave: React.FC = () => {
       await requestScheduleService.rejectRequest(requestId);
       setSnackbar({
         open: true,
-        message: "Request rejected",
+        message: "Đã từ chối yêu cầu nghỉ học",
         severity: "success"
       });
       fetchRequests();
@@ -161,7 +161,7 @@ export const RequestScheduleLeave: React.FC = () => {
       const apiError = error as ApiError;
       setSnackbar({
         open: true,
-        message: apiError.response?.data?.message || apiError.message || "An error occurred",
+        message: apiError.response?.data?.message || apiError.message || "Đã xảy ra lỗi",
         severity: "error"
       });
     } finally {
@@ -179,9 +179,9 @@ export const RequestScheduleLeave: React.FC = () => {
 
   const getStatusBadge = (status: RequestStatus) => {
     const statusConfig = {
-      pending: { label: "Pending", icon: <Clock size={14} />, bgcolor: "#FEF3C7", color: "#92400E" },
-      accepted: { label: "Accepted", icon: <CheckCircle size={14} />, bgcolor: "#D1FAE5", color: "#065F46" },
-      rejected: { label: "Rejected", icon: <XCircle size={14} />, bgcolor: "#FEE2E2", color: "#991B1B" },
+      pending: { label: "Đang chờ duyệt", icon: <Clock size={14} />, bgcolor: "#FEF3C7", color: "#92400E" },
+      accepted: { label: "Đã chấp nhận", icon: <CheckCircle size={14} />, bgcolor: "#D1FAE5", color: "#065F46" },
+      rejected: { label: "Đã từ chối", icon: <XCircle size={14} />, bgcolor: "#FEE2E2", color: "#991B1B" },
     };
 
     const config = statusConfig[status];
@@ -198,10 +198,10 @@ export const RequestScheduleLeave: React.FC = () => {
   const FilterButtons = () => (
     <Box display="flex" gap={1} flexWrap="wrap" sx={{ width: '100%' }}>
       {[
-        { value: "all", label: "All", color: "#B90000" },
-        { value: "pending", label: "Pending", color: "#F59E0B" },
-        { value: "accepted", label: "Accepted", color: "#10B981" },
-        { value: "rejected", label: "Rejected", color: "#EF4444" },
+        { value: "all", label: "Tất cả", color: "#B90000" },
+        { value: "pending", label: "Chờ duyệt", color: "#F59E0B" },
+        { value: "accepted", label: "Đã duyệt", color: "#10B981" },
+        { value: "rejected", label: "Từ chối", color: "#EF4444" },
       ].map(({ value, label, color }) => (
         <Button
           key={value}
@@ -254,14 +254,14 @@ export const RequestScheduleLeave: React.FC = () => {
           color="#333"
           sx={{ mb: 0.5 }}
         >
-          Leave Request Management
+          Quản lý yêu cầu nghỉ học
         </Typography>
         <Typography
           variant="body2"
           color="text.secondary"
           sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
         >
-          Review and approve leave requests from instructors
+          Xem xét và duyệt các yêu cầu nghỉ học của giảng viên
         </Typography>
       </Box>
 
@@ -272,9 +272,9 @@ export const RequestScheduleLeave: React.FC = () => {
         mb: { xs: 2, sm: 3, md: 4 }
       }}>
         {[
-          { label: "Pending", count: stats.pending, color: "#F59E0B", icon: Clock },
-          { label: "Accepted", count: stats.accepted, color: "#10B981", icon: CheckCircle },
-          { label: "Rejected", count: stats.rejected, color: "#EF4444", icon: XCircle },
+          { label: "Chờ duyệt", count: stats.pending, color: "#F59E0B", icon: Clock },
+          { label: "Đã chấp nhận", count: stats.accepted, color: "#10B981", icon: CheckCircle },
+          { label: "Đã từ chối", count: stats.rejected, color: "#EF4444", icon: XCircle },
         ].map(({ label, count, color, icon: Icon }) => (
           <Card key={label} sx={{ borderRadius: { xs: 2, md: 3 }, boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
             <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 2.5 } }}>
@@ -310,7 +310,7 @@ export const RequestScheduleLeave: React.FC = () => {
       }}>
         <Box display="flex" gap={{ xs: 1, sm: 1.5, md: 2 }} alignItems="center">
           <TextField
-            placeholder={isMobile ? "Search..." : "Search by name, email, course..."}
+            placeholder={isMobile ? "Tìm kiếm..." : "Tìm theo tên, email, khóa học..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             sx={{
@@ -365,7 +365,7 @@ export const RequestScheduleLeave: React.FC = () => {
         <Box>
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
             <Typography variant="h6" fontWeight={600}>
-              Filter by Status
+              Lọc theo trạng thái
             </Typography>
             <IconButton onClick={() => setFilterDrawerOpen(false)} size="small">
               <X size={20} />
@@ -378,7 +378,7 @@ export const RequestScheduleLeave: React.FC = () => {
       {filteredRequests.length === 0 ? (
         <Paper sx={{ p: 4, textAlign: "center", borderRadius: 3 }}>
           <Typography variant="body1" color="text.secondary">
-            No requests found
+            Không tìm thấy yêu cầu nào
           </Typography>
         </Paper>
       ) : (
@@ -398,16 +398,16 @@ export const RequestScheduleLeave: React.FC = () => {
                     }}
                   >
                     <Typography variant="body2" fontWeight={700} color="#6B7280">
-                      Name
+                      Họ tên
                     </Typography>
                     <Typography variant="body2" fontWeight={700} color="#6B7280">
                       Email
                     </Typography>
                     <Typography variant="body2" fontWeight={700} color="#6B7280">
-                      Status
+                      Trạng thái
                     </Typography>
                     <Typography variant="body2" fontWeight={700} color="#6B7280" textAlign="center">
-                      Actions
+                      Hành động
                     </Typography>
                   </Box>
 
@@ -441,7 +441,7 @@ export const RequestScheduleLeave: React.FC = () => {
                           {request.createdBy?.name?.charAt(0)?.toUpperCase() || "?"}
                         </Avatar>
                         <Typography variant="body2" fontWeight={500} color="#111827">
-                          {request.createdBy?.name || "Unknown"}
+                          {request.createdBy?.name || "Chưa xác định"}
                         </Typography>
                       </Box>
 
@@ -471,7 +471,7 @@ export const RequestScheduleLeave: React.FC = () => {
                             },
                           }}
                         >
-                          View
+                          Xem
                         </Button>
                       </Box>
                     </Box>
@@ -514,7 +514,7 @@ export const RequestScheduleLeave: React.FC = () => {
                             noWrap
                             sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
                           >
-                            {request.createdBy?.name || "Unknown"}
+                            {request.createdBy?.name || "Chưa xác định"}
                           </Typography>
                           <Typography
                             variant="body2"
@@ -539,7 +539,7 @@ export const RequestScheduleLeave: React.FC = () => {
                           display="block"
                           sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' }, mb: 0.5 }}
                         >
-                          Course
+                          Khóa học
                         </Typography>
                         <Typography
                           variant="body2"
@@ -591,7 +591,7 @@ export const RequestScheduleLeave: React.FC = () => {
                         }}
                       >
                         <Eye size={isMobile ? 14 : 16} />
-                        View
+                        Xem
                       </Button>
                     </Box>
                   </CardContent>

@@ -18,7 +18,6 @@ import {
   KeyboardArrowDown,
   Person,
   Logout,
-  Forum,
 } from "@mui/icons-material";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -48,7 +47,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, sidebarOpen }) => {
 
   // Sử dụng profile nếu có, fallback về authUser
   const user = profile || authUser;
-  const userName = user?.name || "User Name";
+  const userName = user?.name || "Người dùng";
   const avatarUrl = user?.avatar && user.avatar.startsWith("http") ? user.avatar : "";
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) =>
@@ -137,20 +136,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, sidebarOpen }) => {
             height: "100%",
           }}
         >
-          {/* Chat button */}
-          <IconButton
-            href="/faq"
-            sx={{
-              backgroundColor: "white",
-              color: "#6B6B6B",
-              borderRadius: "50%",
-              width: 40,
-              height: 40,
-              "&:hover": { backgroundColor: "#f5f5f5" },
-            }}
-          >
-            <Forum sx={{ fontSize: 22 }} />
-          </IconButton>
+
           {/* Notifications */}
           <NotificationDropdown />
           {/* User Menu */}
@@ -212,7 +198,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, sidebarOpen }) => {
                   setTimeout(() => setOpenProfile(true), 200);
                 }}
               >
-                <Person sx={{ fontSize: 18, mr: 1.25 }} /> Profile
+                <Person sx={{ fontSize: 18, mr: 1.25 }} /> Hồ sơ
               </MenuItem>
 
               <MenuItem
@@ -222,7 +208,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, sidebarOpen }) => {
                   "&:hover": { backgroundColor: "#fff5f5" },
                 }}
               >
-                <Logout sx={{ fontSize: 18, mr: 1.25 }} /> Logout
+                <Logout sx={{ fontSize: 18, mr: 1.25 }} /> Đăng xuất
               </MenuItem>
             </Menu>
 

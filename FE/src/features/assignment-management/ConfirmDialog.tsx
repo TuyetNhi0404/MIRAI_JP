@@ -18,7 +18,7 @@ interface ConfirmDialogProps {
 
 const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   open,
-  title = "Confirm",
+  title = "Xác nhận",
   message,
   onConfirm,
   onCancel
@@ -31,10 +31,10 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       </DialogContent>
       <DialogActions>
         <Button variant="outlined" onClick={onCancel}>
-          Cancel
+          Hủy
         </Button>
         <Button variant="contained" color="error" onClick={onConfirm}>
-          Delete
+          Xóa
         </Button>
       </DialogActions>
     </Dialog>

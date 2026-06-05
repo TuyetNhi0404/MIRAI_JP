@@ -17,8 +17,6 @@ const userAnswerSchema = new Schema<IUserAnswer>(
   { timestamps: true }
 );
 
-userAnswerSchema.index({ attemptId: 1 });
-
 export const UserAnswer = mongoose.model<IUserAnswer>("UserAnswer", userAnswerSchema);
 
 

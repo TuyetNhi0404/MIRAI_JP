@@ -194,8 +194,8 @@ const TakeQuizPage: React.FC = () => {
       navigate("/dashboard/student/quizzes", {
         state: {
           message: isAuto
-            ? `Quiz automatically submitted due to: ${reason === 'time_expired' ? 'Time Expired' : 'Excessive Violations'}`
-            : "Quiz submitted successfully!",
+            ? `Bài kiểm tra tự động nộp do: ${reason === 'time_expired' ? 'Hết giờ làm bài' : 'Vi phạm quy chế thi nhiều lần'}`
+            : "Nộp bài kiểm tra thành công!",
           isAutoSubmit: isAuto,
         },
       });
@@ -268,7 +268,7 @@ const TakeQuizPage: React.FC = () => {
           onClick={() => navigate("/dashboard/student/quizzes")}
           sx={{ color: "#B90000" }}
         >
-          Back to Quizzes
+          Quay lại trang kiểm tra
         </Button>
       </Box>
     );
@@ -278,7 +278,7 @@ const TakeQuizPage: React.FC = () => {
     return (
       <Box sx={{ textAlign: "center", py: 8 }}>
         <Typography variant="h6" color="textSecondary">
-          Quiz not found
+          Không tìm thấy bài kiểm tra
         </Typography>
       </Box>
     );
@@ -297,7 +297,7 @@ const TakeQuizPage: React.FC = () => {
         sx={{ mb: 3 }}
         icon={<WarningIcon />}
         action={
-          <Tooltip title="View details about anti-cheat system">
+          <Tooltip title="Xem chi tiết về hệ thống chống gian lận">
             <IconButton size="small" color="inherit">
               <InfoIcon />
             </IconButton>
@@ -305,7 +305,7 @@ const TakeQuizPage: React.FC = () => {
         }
       >
         <Typography variant="body2" sx={{ fontWeight: 500 }}>
-          🔒 <strong>This quiz is monitored for academic integrity.</strong> All activities (tab switches, copy/paste, window blur, etc.) are recorded and will be sent to your teacher.
+          🔒 <strong>Bài kiểm tra này được giám sát để đảm bảo tính trung thực học thuật.</strong> Tất cả hoạt động (chuyển tab, sao chép/dán, rời khỏi cửa sổ, v.v.) đều được ghi lại và gửi cho giáo viên của bạn.
         </Typography>
       </Alert>
 
@@ -313,10 +313,10 @@ const TakeQuizPage: React.FC = () => {
       {isLocked && (
         <Alert severity="error" sx={{ mb: 3 }} icon={<LockIcon />}>
           <Typography variant="body1" sx={{ fontWeight: 600 }}>
-            ⚠️ QUIZ LOCKED - Too many violations detected
+            ⚠️ BÀI THI BỊ KHÓA - Phát hiện quá nhiều vi phạm
           </Typography>
           <Typography variant="body2">
-            You have exceeded the maximum violation limit. The quiz will be automatically submitted.
+            Bạn đã vượt quá giới hạn vi phạm tối đa. Bài thi sẽ tự động được nộp.
           </Typography>
         </Alert>
       )}
@@ -334,7 +334,7 @@ const TakeQuizPage: React.FC = () => {
               <Badge badgeContent={summary.totalViolations} color="error" max={99}>
                 <Chip
                   icon={<WarningIcon />}
-                  label={`${violationCount}/${maxViolations} Violations`}
+                  label={`${violationCount}/${maxViolations} Vi phạm`}
                   color="error"
                   size="small"
                   sx={{ fontWeight: 600 }}
@@ -343,7 +343,7 @@ const TakeQuizPage: React.FC = () => {
             )}
 
             {/* Fullscreen Toggle */}
-            <Tooltip title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}>
+            <Tooltip title={isFullscreen ? "Thoát toàn màn hình" : "Chế độ toàn màn hình"}>
               <IconButton
                 onClick={isFullscreen ? exitFullscreen : requestFullscreen}
                 disabled={isLocked}
@@ -388,7 +388,7 @@ const TakeQuizPage: React.FC = () => {
         {/* Progress Bar */}
         <Box sx={{ mb: 1 }}>
           <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
-            Progress: {Object.keys(answers).length} / {currentQuiz.questions.length} answered
+            Tiến độ: {Object.keys(answers).length} / {currentQuiz.questions.length} câu đã trả lời
           </Typography>
           <LinearProgress
             variant="determinate"
@@ -475,7 +475,7 @@ const TakeQuizPage: React.FC = () => {
           sx={{ color: "#666" }}
           disabled={isSubmitting}
         >
-          Cancel
+          Hủy
         </Button>
         <Button
           variant="contained"
@@ -490,39 +490,39 @@ const TakeQuizPage: React.FC = () => {
             px: 4,
           }}
         >
-          {isSubmitting ? "Submitting..." : "Submit Quiz"}
+          {isSubmitting ? "Đang nộp bài..." : "Nộp bài"}
         </Button>
       </Box>
 
       {/* Confirmation Dialog */}
       <Dialog open={showSubmitDialog} onClose={() => setShowSubmitDialog(false)}>
-        <DialogTitle sx={{ color: "#B90000" }}>Confirm Submission</DialogTitle>
+        <DialogTitle sx={{ color: "#B90000" }}>Xác nhận nộp bài</DialogTitle>
         <DialogContent>
           <Typography sx={{ mb: 2 }}>
-            You have <strong>{currentQuiz.questions.filter((_, index) => !answers[index]).length} unanswered questions</strong>.
+            Bạn còn <strong>{currentQuiz.questions.filter((_, index) => !answers[index]).length} câu chưa trả lời</strong>.
           </Typography>
           {hasViolations && (
             <Alert severity="warning" sx={{ mb: 2 }}>
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                ⚠️ {summary.totalViolations} violation(s) detected:
+                ⚠️ Phát hiện {summary.totalViolations} vi phạm:
               </Typography>
               <Typography variant="body2" component="div" sx={{ mt: 1, fontSize: '13px' }}>
-                • Tab switches: {summary.tabSwitches}<br />
-                • Window focus loss: {summary.windowBlurs}<br />
-                • Copy attempts: {summary.copyEvents}<br />
-                • Paste attempts: {summary.pasteEvents}<br />
-                • Fullscreen exits: {summary.fullscreenExits}<br />
-                • DevTools attempts: {summary.devToolsAttempts}
+                • Chuyển tab: {summary.tabSwitches}<br />
+                • Rời cửa sổ: {summary.windowBlurs}<br />
+                • Thao tác sao chép: {summary.copyEvents}<br />
+                • Thao tác dán: {summary.pasteEvents}<br />
+                • Thoát toàn màn hình: {summary.fullscreenExits}<br />
+                • Cố gắng mở DevTools: {summary.devToolsAttempts}
               </Typography>
             </Alert>
           )}
           <Typography variant="body2" color="textSecondary">
-            Are you sure you want to submit?
+            Bạn có chắc chắn muốn nộp bài không?
           </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowSubmitDialog(false)} sx={{ color: "#666" }}>
-            Review Answers
+            Xem lại câu trả lời
           </Button>
           <Button
             onClick={() => {
@@ -532,7 +532,7 @@ const TakeQuizPage: React.FC = () => {
             variant="contained"
             sx={{ backgroundColor: "#B90000", "&:hover": { backgroundColor: "#d66a0e" } }}
           >
-            Submit Anyway
+            Vẫn nộp bài
           </Button>
         </DialogActions>
       </Dialog>

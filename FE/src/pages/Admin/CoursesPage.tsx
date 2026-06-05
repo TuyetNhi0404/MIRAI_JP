@@ -54,7 +54,7 @@ const CoursesPage: React.FC = () => {
       setCourses(allCourses);
     } catch (error: any) {
       console.error('Error loading courses:', error);
-      setError(error.message || 'Failed to load courses');
+      setError(error.message || 'Tải danh sách khóa học thất bại');
     } finally {
       setLoading(false);
     }
@@ -88,7 +88,7 @@ const CoursesPage: React.FC = () => {
             setPage(1);
           } catch (error: any) {
             console.error('Error searching courses:', error);
-            setError(error.message || 'Failed to search courses');
+            setError(error.message || 'Tìm kiếm khóa học thất bại');
           } finally {
             setLoading(false);
           }
@@ -115,7 +115,7 @@ const CoursesPage: React.FC = () => {
         setPage(1);
       } catch (error: any) {
         console.error('Error searching courses:', error);
-        setError(error.message || 'Failed to search courses');
+        setError(error.message || 'Tìm kiếm khóa học thất bại');
       } finally {
         setLoading(false);
       }
@@ -129,12 +129,12 @@ const CoursesPage: React.FC = () => {
     setError(null);
     try {
       await courseService.delete(id);
-      showSnackbar(`Course "${name}" deleted successfully`, 'success');
+      showSnackbar(`Khóa học "${name}" đã được xóa thành công`, 'success');
       await loadCourses();
     } catch (error: any) {
       console.error('Error deleting course:', error);
-      showSnackbar(error.message || 'Failed to delete course', 'error');
-      setError(error.message || 'Failed to delete course');
+      showSnackbar(error.message || 'Xóa khóa học thất bại', 'error');
+      setError(error.message || 'Xóa khóa học thất bại');
       setLoading(false);
     }
   };
@@ -360,7 +360,7 @@ const CoursesPage: React.FC = () => {
             width: { xs: '100%', sm: 'auto' } 
           }}
         >
-          New Course
+          Thêm khóa học
         </Button>
       </Box>
 
@@ -523,7 +523,7 @@ const CoursesPage: React.FC = () => {
                       </Box>
                       <Box sx={{ flex: 1 }}>
                         <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500, mb: 0.25 }}>
-                          Sực chứa
+                          Sức chứa
                         </Typography>
                         <Typography variant="body2" sx={{ color: '#111827', fontSize: '0.875rem', fontWeight: 600 }}>
                           {course.capacity}

@@ -325,8 +325,8 @@ const TeacherGrammarMaterials: React.FC = () => {
                           </TableCell>
                           <TableCell>
                             {doc.scope === "shared"
-                              ? <Chip label="Shared" size="small" color="info" variant="outlined" />
-                              : <Chip label="Private" size="small" variant="outlined" />
+                              ? <Chip label="Chia sẻ" size="small" color="info" variant="outlined" />
+                              : <Chip label="Riêng tư" size="small" variant="outlined" />
                             }
                           </TableCell>
                           <TableCell>{doc.totalPages || "—"}</TableCell>
@@ -496,7 +496,7 @@ const TeacherGrammarMaterials: React.FC = () => {
                         .filter(d => d.status === "completed")
                         .map(d => (
                           <MenuItem key={d._id} value={d._id}>
-                            {d.title} ({d.level}) {d.scope === "shared" ? "• shared" : ""}
+                            {d.title} ({d.level}) {d.scope === "shared" ? "• chia sẻ" : ""}
                           </MenuItem>
                         ))}
                       {documents.filter(d => d.status === "completed").length === 0 && (

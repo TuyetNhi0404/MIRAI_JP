@@ -61,12 +61,12 @@ const EnrollmentDetailModal: React.FC<EnrollmentDetailModalProps> = ({
     setError(null);
     const result = await approveEnrollment(enrollment._id);
     if (result.success) {
-      setSuccess("Application approved successfully!");
+      setSuccess("Đã phê duyệt đơn thành công!");
       setTimeout(() => {
         onClose();
       }, 1500);
     } else {
-      setError(result.error || "Unable to approve application");
+      setError(result.error || "Không thể phê duyệt đơn");
     }
     setLoading(false);
   };
@@ -76,12 +76,12 @@ const EnrollmentDetailModal: React.FC<EnrollmentDetailModalProps> = ({
     setError(null);
     const result = await rejectEnrollment(enrollment._id);
     if (result.success) {
-      setSuccess("Application rejected successfully!");
+      setSuccess("Đã từ chối đơn thành công!");
       setTimeout(() => {
         onClose();
       }, 1500);
     } else {
-      setError(result.error || "Cannot refuse application");
+      setError(result.error || "Không thể từ chối đơn");
     }
     setLoading(false);
   };
@@ -100,11 +100,11 @@ const EnrollmentDetailModal: React.FC<EnrollmentDetailModalProps> = ({
   const getStatusLabel = (status: string) => {
     switch (status) {
       case "approved":
-        return "Approved";
+        return "Đã phê duyệt";
       case "rejected":
-        return "Rejected";
+        return "Đã từ chối";
       default:
-        return "Pending";
+        return "Đang chờ duyệt";
     }
   };
 
@@ -137,7 +137,7 @@ const EnrollmentDetailModal: React.FC<EnrollmentDetailModalProps> = ({
           color="#023665"
           sx={{ pr: 5 }}
         >
-          Application details
+          Chi tiết đơn đăng ký
         </Typography>
         <IconButton
           onClick={onClose}
@@ -167,7 +167,7 @@ const EnrollmentDetailModal: React.FC<EnrollmentDetailModalProps> = ({
         <Grid container spacing={{ xs: 1.5, sm: 2 }}>
           <Grid item xs={12}>
             <Typography variant="subtitle2" color="text.secondary" fontSize={{ xs: 12, sm: 14 }}>
-              Course
+              Khóa học
             </Typography>
             <Typography variant="body1" fontWeight="500" fontSize={{ xs: 14, sm: 16 }}>
               {courseName}
@@ -180,7 +180,7 @@ const EnrollmentDetailModal: React.FC<EnrollmentDetailModalProps> = ({
 
           <Grid item xs={12} sm={6}>
             <Typography variant="subtitle2" color="text.secondary" fontSize={{ xs: 12, sm: 14 }}>
-              Full name
+              Họ và tên
             </Typography>
             <Typography variant="body1" fontSize={{ xs: 14, sm: 16 }}>
               {enrollment.studentName}
@@ -202,7 +202,7 @@ const EnrollmentDetailModal: React.FC<EnrollmentDetailModalProps> = ({
 
           <Grid item xs={12}>
             <Typography variant="subtitle2" color="text.secondary" fontSize={{ xs: 12, sm: 14 }}>
-              Enroll date
+              Ngày đăng ký
             </Typography>
             <Typography variant="body1" fontSize={{ xs: 14, sm: 16 }}>
               {new Date(enrollment.createdAt).toLocaleString("vi-VN")}
@@ -235,7 +235,7 @@ const EnrollmentDetailModal: React.FC<EnrollmentDetailModalProps> = ({
               },
             }}
           >
-            Reject
+            Từ chối
           </Button>
           <Button
             variant="contained"
@@ -250,7 +250,7 @@ const EnrollmentDetailModal: React.FC<EnrollmentDetailModalProps> = ({
               },
             }}
           >
-            Approve
+            Phê duyệt
           </Button>
         </DialogActions>
       )}

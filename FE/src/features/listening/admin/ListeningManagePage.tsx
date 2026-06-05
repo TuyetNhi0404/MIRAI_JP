@@ -26,7 +26,7 @@ const ListeningManagePage = () => {
       setContents(res.contents);
     } catch (err: any) {
       console.error(err);
-      setError(err.message || 'Failed to load listening contents');
+      setError(err.message || 'Tải danh sách bài nghe thất bại');
     } finally {
       setLoading(false);
     }
@@ -37,20 +37,20 @@ const ListeningManagePage = () => {
   }, []);
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this content?')) {
+    if (window.confirm('Bạn có chắc chắn muốn xóa nội dung này không?')) {
       try {
         await listeningService.delete(id);
         setContents(prev => prev.filter(c => c._id !== id));
         setSnackbar({
           open: true,
-          message: 'Content deleted successfully!',
+          message: 'Xóa nội dung thành công!',
           severity: 'success',
         });
       } catch (err: any) {
         console.error(err);
         setSnackbar({
           open: true,
-          message: err.message || 'Failed to delete content',
+          message: err.message || 'Xóa nội dung thất bại',
           severity: 'error',
         });
       }
@@ -65,14 +65,14 @@ const ListeningManagePage = () => {
       );
       setSnackbar({
         open: true,
-        message: `Content ${!currentStatus ? 'published' : 'unpublished'} successfully!`,
+        message: `Nội dung đã được ${!currentStatus ? 'xuất bản' : 'hủy xuất bản'} thành công!`,
         severity: 'success',
       });
     } catch (err: any) {
       console.error(err);
       setSnackbar({
         open: true,
-        message: err.message || 'Failed to update content',
+        message: err.message || 'Cập nhật nội dung thất bại',
         severity: 'error',
       });
     }
@@ -82,7 +82,7 @@ const ListeningManagePage = () => {
     <Box sx={{ p: 4 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
         <Typography variant="h4" fontWeight="bold" sx={{ color: '#B90000' }}>
-          Listening Content Management
+          Quản lý nội dung luyện nghe
         </Typography>
         <Button
           variant="contained"
@@ -97,7 +97,7 @@ const ListeningManagePage = () => {
             '&:hover': { bgcolor: '#990000' }
           }}
         >
-          Add New Content
+          Thêm nội dung mới
         </Button>
       </Box>
 
@@ -111,12 +111,12 @@ const ListeningManagePage = () => {
         <Table>
           <TableHead sx={{ bgcolor: '#f9f9f9' }}>
             <TableRow>
-              <TableCell sx={{ fontWeight: 'bold' }}>Title</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>Topic</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>Level</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>Source</TableCell>
-              <TableCell sx={{ fontWeight: 'bold', textAlign: 'center' }}>Published</TableCell>
-              <TableCell sx={{ fontWeight: 'bold' }}>Actions</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Tiêu đề</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Chủ đề</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Trình độ</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Nguồn</TableCell>
+              <TableCell sx={{ fontWeight: 'bold', textAlign: 'center' }}>Xuất bản</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Thao tác</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -168,7 +168,7 @@ const ListeningManagePage = () => {
             {!loading && contents.length === 0 && (
               <TableRow>
                 <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
-                  No listening content found. Click "Add New Content" to create one.
+                  Không tìm thấy nội dung luyện nghe nào. Nhấp vào "Thêm nội dung mới" để tạo.
                 </TableCell>
               </TableRow>
             )}

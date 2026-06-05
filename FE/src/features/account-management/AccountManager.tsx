@@ -34,9 +34,9 @@ import { AccountLock } from "./AccountLock";
 import { AddAccountUsers } from "./AddAccountUsers";
 
 const roleLabels: Record<string, string> = {
-  student: "Student",
-  teacher: "Teacher",
-  admin: "Admin",
+  student: "Học viên",
+  teacher: "Giáo viên",
+  admin: "Quản trị viên",
 };
 
 const ITEMS_PER_PAGE = 8;
@@ -88,7 +88,7 @@ export default function AccountManagement() {
       setUsers([]);
       setToast({ 
         open: true, 
-        message: "Failed to load users", 
+        message: "Không thể tải danh sách người dùng", 
         severity: "error" 
       });
     } finally {
@@ -130,7 +130,7 @@ export default function AccountManagement() {
     
     setToast({
       open: true,
-      message: `Account ${newStatus === "locked" ? "locked" : "unlocked"} successfully`,
+      message: `Tài khoản đã được ${newStatus === "locked" ? "khóa" : "mở khóa"} thành công`,
       severity: "success"
     });
   };
@@ -144,13 +144,13 @@ export default function AccountManagement() {
       setOpenAddModal(false);
       setToast({
         open: true,
-        message: "Account created successfully",
+        message: "Tạo tài khoản thành công",
         severity: "success"
       });
     } catch (error) {
       const errorMessage = error instanceof Error 
         ? error.message 
-        : "Failed to create account";
+        : "Không thể tạo tài khoản";
       
       console.error(" Failed to add account:", error);
       
@@ -224,7 +224,7 @@ export default function AccountManagement() {
     <Container maxWidth={isTablet ? "md" : "lg"} sx={{ py: { xs: 2, sm: 3, md: 4 } }}>
       <Box sx={{ mb: { xs: 2, sm: 3 } }}>
         <Typography variant={isMobile ? "h5" : "h4"} sx={{ color: "#023665", fontWeight: "bold" }}>
-          MANAGE {selectedRole.toUpperCase()}
+          QUẢN LÝ {selectedRole === "student" ? "HỌC VIÊN" : selectedRole === "teacher" ? "GIÁO VIÊN" : "QUẢN TRỊ VIÊN"}
         </Typography>
         <Tabs
           value={roles.indexOf(selectedRole)}
@@ -243,7 +243,7 @@ export default function AccountManagement() {
 
       <Box sx={{ display: "flex", gap: 2, mb: 3, justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
         <TextField
-          placeholder="Search by name or email..."
+          placeholder="Tìm kiếm theo tên hoặc email..."
           variant="outlined"
           size="small"
           value={searchQuery}
@@ -276,7 +276,7 @@ export default function AccountManagement() {
           >
             <Box sx={{ p: 1, minWidth: 150 }}>
               <Typography variant="caption" sx={{ px: 2, py: 1, display: "block", color: "#666" }}>
-                Filter by Status
+                Lọc theo trạng thái
               </Typography>
               {(["all", "active", "locked"] as const).map((s) => (
                 <MenuItem
@@ -298,7 +298,7 @@ export default function AccountManagement() {
                     }
                   }}
                 >
-                  {s.charAt(0).toUpperCase() + s.slice(1)}
+                  {s === "all" ? "Tất cả" : s === "active" ? "Đang hoạt động" : "Đã khóa"}
                 </MenuItem>
               ))}
             </Box>
@@ -316,7 +316,7 @@ export default function AccountManagement() {
               }}
               onClick={() => setOpenAddModal(true)}
             >
-              {isMobile ? "+ Add" : `+ Add ${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)}`}
+              {isMobile ? "+ Thêm" : `+ Thêm ${selectedRole === "teacher" ? "Giáo viên" : "Quản trị viên"}`}
             </Button>
           )}
         </Box>
@@ -324,9 +324,9 @@ export default function AccountManagement() {
 
       <Box sx={{ mb: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <Typography variant="body2" color="text.secondary">
-          Showing {paginatedUsers.length} of {filteredUsers.length} {selectedRole}s
-          {selectedStatus !== "all" && ` (${selectedStatus})`}
-          {searchQuery && ` matching "${searchQuery}"`}
+          Hiển thị {paginatedUsers.length} trên {filteredUsers.length} {selectedRole === "student" ? "học viên" : selectedRole === "teacher" ? "giáo viên" : "quản trị viên"}
+          {selectedStatus !== "all" && ` (${selectedStatus === "active" ? "Đang hoạt động" : "Đã khóa"})`}
+          {searchQuery && ` khớp với "${searchQuery}"`}
         </Typography>
         {searchQuery && (
           <Button 
@@ -334,7 +334,7 @@ export default function AccountManagement() {
             onClick={() => setSearchQuery("")}
             sx={{ color: "#B90000" }}
           >
-            Clear search
+            Xóa tìm kiếm
           </Button>
         )}
       </Box>
@@ -344,11 +344,11 @@ export default function AccountManagement() {
           <Table>
             <TableHead sx={{ background: "#f5f5f5" }}>
               <TableRow>
-                <TableCell sx={{ fontWeight: 600 }}>Name</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Họ tên</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Created At</TableCell>
-                <TableCell align="center" sx={{ fontWeight: 600 }}>Action</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Trạng thái</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Ngày tạo</TableCell>
+                <TableCell align="center" sx={{ fontWeight: 600 }}>Hành động</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -365,7 +365,7 @@ export default function AccountManagement() {
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
                       <Chip
-                        label={user.status}
+                        label={user.status === "active" ? "Đang hoạt động" : "Đã khóa"}
                         color={user.status === "active" ? "success" : "error"}
                         size="small"
                       />
@@ -381,9 +381,9 @@ export default function AccountManagement() {
                   <TableCell colSpan={5} align="center" sx={{ py: 6 }}>
                     <Typography color="text.secondary" variant="body1">
                       {searchQuery ? (
-                        <>No {selectedRole}s found matching "{searchQuery}"</>
+                        <>Không tìm thấy {selectedRole === "student" ? "học viên" : selectedRole === "teacher" ? "giáo viên" : "quản trị viên"} nào khớp với "{searchQuery}"</>
                       ) : (
-                        <>No {selectedRole}s found</>
+                        <>Không tìm thấy {selectedRole === "student" ? "học viên" : selectedRole === "teacher" ? "giáo viên" : "quản trị viên"} nào</>
                       )}
                     </Typography>
                   </TableCell>
@@ -400,9 +400,9 @@ export default function AccountManagement() {
             <Box sx={{ textAlign: "center", py: 6 }}>
               <Typography color="text.secondary">
                 {searchQuery ? (
-                  <>No {selectedRole}s found matching "{searchQuery}"</>
+                  <>Không tìm thấy {selectedRole === "student" ? "học viên" : selectedRole === "teacher" ? "giáo viên" : "quản trị viên"} nào khớp với "{searchQuery}"</>
                 ) : (
-                  <>No {selectedRole}s found</>
+                  <>Không tìm thấy {selectedRole === "student" ? "học viên" : selectedRole === "teacher" ? "giáo viên" : "quản trị viên"} nào</>
                 )}
               </Typography>
             </Box>

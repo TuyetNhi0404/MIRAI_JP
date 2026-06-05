@@ -84,9 +84,9 @@ export default function AddScheduleForm({ onAdd, onSuccess }: AddScheduleFormPro
     e.preventDefault();
     
     const newErrors: FormErrors = {};
-    if (!formData.courseId) newErrors.courseId = 'Please select a course';
-    if (!formData.sessionId) newErrors.sessionId = 'Please select a session';
-    if (!formData.teacherId) newErrors.teacherId = 'Please select a teacher';
+    if (!formData.courseId) newErrors.courseId = 'Vui lòng chọn khóa học';
+    if (!formData.sessionId) newErrors.sessionId = 'Vui lòng chọn ca học';
+    if (!formData.teacherId) newErrors.teacherId = 'Vui lòng chọn giảng viên';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -106,7 +106,7 @@ export default function AddScheduleForm({ onAdd, onSuccess }: AddScheduleFormPro
         note: formData.note,
       }) as ApiCreateResponse;
 
-      setSuccessMessage('Schedule created successfully!');
+      setSuccessMessage('Tạo lịch học thành công!');
       
       // Reset form
       setFormData({
@@ -130,7 +130,7 @@ export default function AddScheduleForm({ onAdd, onSuccess }: AddScheduleFormPro
     } catch (err) {
       console.error('Error creating schedule:', err);
       const error = err as ApiErrorResponse;
-      const errMsg = error.response?.data?.message || error.message || 'Failed to create schedule';
+      const errMsg = error.response?.data?.message || error.message || 'Tạo lịch học thất bại';
       setErrorMessage(errMsg);
     } finally {
       setSubmitting(false);
@@ -188,7 +188,7 @@ export default function AddScheduleForm({ onAdd, onSuccess }: AddScheduleFormPro
                 <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                   <CalendarCheck size={18} />
                   <Typography variant="body2" fontWeight={600}>
-                    Class Date *
+                    Ngày học *
                   </Typography>
                 </Stack>
                 <TextField
@@ -202,7 +202,7 @@ export default function AddScheduleForm({ onAdd, onSuccess }: AddScheduleFormPro
                 />
                 {formData.classDate && (
                   <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
-                    Display: {formatDateDisplay(formData.classDate)}
+                    Hiển thị: {formatDateDisplay(formData.classDate)}
                   </Typography>
                 )}
               </FormControl>
@@ -213,22 +213,22 @@ export default function AddScheduleForm({ onAdd, onSuccess }: AddScheduleFormPro
               <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                 <BookOpen size={18} />
                 <Typography variant="body2" fontWeight={600}>
-                  Course Name *
+                  Tên khóa học *
                 </Typography>
               </Stack>
               <FormControl fullWidth required error={!!errors.courseId}>
-                <InputLabel>Course Name</InputLabel>
+                <InputLabel>Tên khóa học</InputLabel>
                 <Select
                   value={formData.courseId}
                   onChange={(e) => {
                     setFormData({ ...formData, courseId: e.target.value });
                     setErrors({ ...errors, courseId: '' });
                   }}
-                  label="Course Name"
+                  label="Tên khóa học"
                   disabled={submitting}
                 >
                   <MenuItem value="">
-                    <em>Select a course</em>
+                    <em>Chọn một khóa học</em>
                   </MenuItem>
                   {activeCourses.map((course: Course) => (
                     <MenuItem key={course._id} value={course._id}>
@@ -245,22 +245,22 @@ export default function AddScheduleForm({ onAdd, onSuccess }: AddScheduleFormPro
               <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                 <Clock size={18} />
                 <Typography variant="body2" fontWeight={600}>
-                  Session *
+                  Ca học *
                 </Typography>
               </Stack>
               <FormControl fullWidth required error={!!errors.sessionId}>
-                <InputLabel>Session</InputLabel>
+                <InputLabel>Ca học</InputLabel>
                 <Select
                   value={formData.sessionId}
                   onChange={(e) => {
                     setFormData({ ...formData, sessionId: e.target.value });
                     setErrors({ ...errors, sessionId: '' });
                   }}
-                  label="Session"
+                  label="Ca học"
                   disabled={submitting}
                 >
                   <MenuItem value="">
-                    <em>Select a session</em>
+                    <em>Chọn một ca học</em>
                   </MenuItem>
                   {sessions.map((session: Session) => (
                     <MenuItem key={session._id} value={session._id}>
@@ -277,22 +277,22 @@ export default function AddScheduleForm({ onAdd, onSuccess }: AddScheduleFormPro
               <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                 <User size={18} />
                 <Typography variant="body2" fontWeight={600}>
-                  Teacher *
+                  Giảng viên *
                 </Typography>
               </Stack>
               <FormControl fullWidth required error={!!errors.teacherId}>
-                <InputLabel>Teacher</InputLabel>
+                <InputLabel>Giảng viên</InputLabel>
                 <Select
                   value={formData.teacherId}
                   onChange={(e) => {
                     setFormData({ ...formData, teacherId: e.target.value });
                     setErrors({ ...errors, teacherId: '' });
                   }}
-                  label="Teacher"
+                  label="Giảng viên"
                   disabled={submitting}
                 >
                   <MenuItem value="">
-                    <em>Select a teacher</em>
+                    <em>Chọn giảng viên</em>
                   </MenuItem>
                   {teachers.map((teacher: UserType) => (
                     <MenuItem key={teacher._id} value={teacher._id}>
@@ -309,18 +309,18 @@ export default function AddScheduleForm({ onAdd, onSuccess }: AddScheduleFormPro
               <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                 <FileText size={18} />
                 <Typography variant="body2" fontWeight={600}>
-                  Note (Optional)
+                  Ghi chú (Tùy chọn)
                 </Typography>
               </Stack>
               <TextField
                 fullWidth
-                label="Note (Optional)"
+                label="Ghi chú (Tùy chọn)"
                 multiline
                 rows={3}
                 value={formData.note}
                 onChange={(e) => setFormData({ ...formData, note: e.target.value })}
                 disabled={submitting}
-                placeholder="Add any additional notes here..."
+                placeholder="Thêm ghi chú nếu có..."
               />
             </Grid>
 
@@ -334,7 +334,7 @@ export default function AddScheduleForm({ onAdd, onSuccess }: AddScheduleFormPro
                   disabled={submitting}
                   sx={{ minWidth: 120 }}
                 >
-                  Reset
+                  Đặt lại
                 </Button>
                 <Button 
                   type="submit"
@@ -344,7 +344,7 @@ export default function AddScheduleForm({ onAdd, onSuccess }: AddScheduleFormPro
                   startIcon={submitting ? <CircularProgress size={20} /> : null}
                   sx={{ minWidth: 120 }}
                 >
-                  {submitting ? 'Creating...' : 'Create Schedule'}
+                  {submitting ? 'Đang tạo...' : 'Tạo lịch học'}
                 </Button>
               </Stack>
             </Grid>

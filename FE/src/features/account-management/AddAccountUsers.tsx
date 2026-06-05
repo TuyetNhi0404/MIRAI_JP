@@ -48,30 +48,30 @@ export function AddAccountUsers({ open, onClose, onAdd, role }: AddAccountModalP
     const trimmedEmail = email.trim();
 
     if (!trimmedName) {
-      newNameError = "Name is required";
+      newNameError = "Họ tên là bắt buộc";
       isValid = false;
     } else if (trimmedName.length < 2) {
-      newNameError = "Name must be at least 2 characters";
+      newNameError = "Họ tên phải có ít nhất 2 ký tự";
       isValid = false;
     } else if (trimmedName.length > 40) {
-      newNameError = "Name must not exceed 40 characters";
+      newNameError = "Họ tên không được vượt quá 40 ký tự";
       isValid = false;
     } else {
       const nameRegex = /^[a-zA-ZÀ-ỿ\s]+$/;
       if (!nameRegex.test(trimmedName)) {
-        newNameError = "Name can only contain letters and spaces";
+        newNameError = "Họ tên chỉ được chứa chữ cái và khoảng trắng";
         isValid = false;
       }
     }
 
 
     if (!trimmedEmail) {
-      newEmailError = "Email is required";
+      newEmailError = "Email là bắt buộc";
       isValid = false;
     } else {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(trimmedEmail)) {
-        newEmailError = "Please enter a valid email address";
+        newEmailError = "Vui lòng nhập địa chỉ email hợp lệ";
         isValid = false;
       }
     }
@@ -97,7 +97,7 @@ export function AddAccountUsers({ open, onClose, onAdd, role }: AddAccountModalP
       
       setToast({ 
         open: true, 
-        message: "Account added successfully", 
+        message: "Tạo tài khoản thành công", 
         severity: "success" 
       });
       
@@ -107,7 +107,7 @@ export function AddAccountUsers({ open, onClose, onAdd, role }: AddAccountModalP
     } catch (error) {
       const errorMessage = error instanceof Error 
         ? error.message 
-        : "Failed to add account";
+        : "Không thể tạo tài khoản";
       
       setToast({ 
         open: true, 
@@ -129,18 +129,18 @@ export function AddAccountUsers({ open, onClose, onAdd, role }: AddAccountModalP
     <>
       <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontWeight: "bold", color: "#023665" }}>
-          Add New {role.charAt(0).toUpperCase() + role.slice(1)}
+          Thêm {role === "teacher" ? "Giáo viên" : "Quản trị viên"} mới
         </DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <TextField
-              label="Name"
+              label="Họ tên"
               variant="outlined"
               fullWidth
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Enter name"
+              placeholder="Nhập họ tên"
               helperText={nameError}
               error={!!nameError}
               disabled={loading}
@@ -154,7 +154,7 @@ export function AddAccountUsers({ open, onClose, onAdd, role }: AddAccountModalP
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Enter email"
+              placeholder="Nhập email"
               helperText={emailError}
               error={!!emailError}
               disabled={loading}
@@ -167,7 +167,7 @@ export function AddAccountUsers({ open, onClose, onAdd, role }: AddAccountModalP
             variant="outlined"
             disabled={loading}
           >
-            Cancel
+            Hủy
           </Button>
           <Button
             onClick={handleAdd}
@@ -178,7 +178,7 @@ export function AddAccountUsers({ open, onClose, onAdd, role }: AddAccountModalP
             }}
             disabled={loading}
           >
-            {loading ? "Adding..." : "Add"}
+            {loading ? "Đang thêm..." : "Thêm"}
           </Button>
         </DialogActions>
       </Dialog>

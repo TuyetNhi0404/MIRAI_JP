@@ -10,9 +10,9 @@ interface DictationFormProps {
 
 const DictationForm: React.FC<DictationFormProps> = ({ initialData, onSave, onCancel }) => {
   const [question, setQuestion] = useState(initialData?.question || 'Hãy nghe và chép lại đoạn audio sau');
-  const [startTime, setStartTime] = useState<number>(initialData?.startTime || 0);
-  const [endTime, setEndTime] = useState<number>(initialData?.endTime || 0);
-  const [correctText, setCorrectText] = useState(initialData?.correctText || '');
+  const [startTime, setStartTime] = useState<number>(initialData?.audioSegmentStart || 0);
+  const [endTime, setEndTime] = useState<number>(initialData?.audioSegmentEnd || 0);
+  const [correctText, setCorrectText] = useState(initialData?.targetText || '');
   const [variants, setVariants] = useState<string>(initialData?.acceptableVariants?.join('\n') || '');
 
   const isValid = question.trim() !== '' && correctText.trim() !== '' && endTime > startTime;
@@ -23,9 +23,9 @@ const DictationForm: React.FC<DictationFormProps> = ({ initialData, onSave, onCa
       id: initialData?.id || `dictation_${Date.now()}`,
       type: 'dictation',
       question: question.trim(),
-      startTime,
-      endTime,
-      correctText: correctText.trim(),
+      audioSegmentStart: startTime,
+      audioSegmentEnd: endTime,
+      targetText: correctText.trim(),
       acceptableVariants: variants.trim()
         ? variants.split('\n').map(v => v.trim()).filter(Boolean)
         : undefined,

@@ -44,8 +44,8 @@ const CourseComparisonTab: React.FC = () => {
       setComparisonData(data);
     } catch (err) {
       const errorMessage = err instanceof Error && 'response' in err 
-        ? (err as unknown as { response?: { data?: { message?: string } } }).response?.data?.message || 'Failed to load comparison data'
-        : 'Failed to load comparison data';
+        ? (err as unknown as { response?: { data?: { message?: string } } }).response?.data?.message || 'Không thể tải dữ liệu so sánh'
+        : 'Không thể tải dữ liệu so sánh';
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -70,7 +70,7 @@ const CourseComparisonTab: React.FC = () => {
     return (
       <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" minHeight="400px" gap={2}>
         <CircularProgress sx={{ color: '#ff6b35' }} size={45} />
-        <Typography variant="body1" color="text.secondary">Loading course comparison...</Typography>
+        <Typography variant="body1" color="text.secondary">Đang tải dữ liệu so sánh...</Typography>
       </Box>
     );
   }
@@ -96,15 +96,15 @@ const CourseComparisonTab: React.FC = () => {
               <School size={isMobile ? 24 : 28} color="#ff6b35" />
               <Box>
                 <Typography variant={isMobile ? 'subtitle1' : 'h6'} fontWeight="bold" color="#ff6b35">
-                  Top 1 Course Comparison
+                  So sánh thủ khoa các lớp học
                 </Typography>
                 <Typography variant={isMobile ? 'caption' : 'body2'} color="text.secondary">
-                  Total Courses: {comparisonData.totalCourses}
+                  Tổng số lớp học: {comparisonData.totalCourses}
                 </Typography>
               </Box>
             </Box>
             <Box textAlign={isMobile ? 'left' : 'right'}>
-              <Typography variant="caption" color="text.secondary">Highest Score</Typography>
+              <Typography variant="caption" color="text.secondary">Điểm cao nhất</Typography>
               <Typography variant={isMobile ? 'h6' : 'h5'} fontWeight="bold" color="#ff6b35">
                 {formatScore(comparisonData.highestScoreOverall)}
               </Typography>
@@ -156,7 +156,7 @@ const CourseComparisonTab: React.FC = () => {
               </Box>
               <CardContent sx={{ p: isMobile ? 2 : 3 }}>
                 <Box mb={2}>
-                  <Typography variant="body2" color="text.secondary" mb={1}>🏆 Top Student</Typography>
+                  <Typography variant="body2" color="text.secondary" mb={1}>🏆 Thủ khoa lớp</Typography>
                   <Box display="flex" alignItems="center" gap={1.5} mb={1}>
                     <Avatar sx={{ 
                       width: isMobile ? 40 : 48, 
@@ -190,13 +190,13 @@ const CourseComparisonTab: React.FC = () => {
                 <Box sx={{ borderTop: '1px solid rgba(0,0,0,0.1)', pt: 2 }}>
                   <Grid container spacing={2}>
                     <Grid item xs={6}>
-                      <Typography variant="caption" color="text.secondary">Total Students</Typography>
+                      <Typography variant="caption" color="text.secondary">Sĩ số lớp</Typography>
                       <Typography variant={isMobile ? 'body1' : 'h6'} fontWeight="bold">
                         {courseData.statistics.totalStudents}
                       </Typography>
                     </Grid>
                     <Grid item xs={6}>
-                      <Typography variant="caption" color="text.secondary">Avg Score</Typography>
+                      <Typography variant="caption" color="text.secondary">Điểm trung bình</Typography>
                       <Typography variant={isMobile ? 'body1' : 'h6'} fontWeight="bold">
                         {formatScore(courseData.statistics.averageScore)}
                       </Typography>

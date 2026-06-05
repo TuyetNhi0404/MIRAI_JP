@@ -60,13 +60,13 @@ const AvailableQuizzes: React.FC<AvailableQuizzesProps> = ({ quizzes = [] }) => 
     const due = new Date(dueDate);
     const diffMs = due.getTime() - now.getTime();
     
-    if (diffMs < 0) return "Expired";
+    if (diffMs < 0) return "Đã hết hạn";
     
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    if (diffHours < 24) return `${diffHours}h left`;
+    if (diffHours < 24) return `Còn ${diffHours} giờ`;
     
     const diffDays = Math.floor(diffHours / 24);
-    return `${diffDays}d left`;
+    return `Còn ${diffDays} ngày`;
   };
 
   const getDueDateColor = (dueDate?: string): "error" | "warning" | "success" | "default" => {
@@ -83,7 +83,7 @@ const AvailableQuizzes: React.FC<AvailableQuizzesProps> = ({ quizzes = [] }) => 
 
   const courseName = quizzes.length > 0 && quizzes[0].courseName 
     ? quizzes[0].courseName 
-    : "Unknown Course";
+    : "Khóa học không xác định";
 
   const filteredQuizzes = quizzes.filter((quiz) => {
     const completedMatch = showCompleted || !quiz.hasAttempted;
@@ -92,12 +92,12 @@ const AvailableQuizzes: React.FC<AvailableQuizzesProps> = ({ quizzes = [] }) => 
 
   const handleStartQuiz = (quizId: string, hasAttempted: boolean, dueDate?: string) => {
     if (isQuizExpired(dueDate)) {
-      alert("This quiz has expired and can no longer be taken.");
+      alert("Bài kiểm tra này đã hết hạn và không thể làm nữa.");
       return;
     }
     
     if (hasAttempted) {
-      alert("You have already completed this quiz!");
+      alert("Bạn đã hoàn thành bài kiểm tra này rồi!");
       return;
     }
     navigate(`/dashboard/student/quiz/${quizId}`);
@@ -112,10 +112,10 @@ const AvailableQuizzes: React.FC<AvailableQuizzesProps> = ({ quizzes = [] }) => 
       <Box sx={{ textAlign: "center", py: { xs: 4, sm: 8 } }}>
         <Alert severity="info">
           <Typography variant={isMobile ? "body1" : "h6"}>
-            No quizzes available yet
+            Hiện chưa có bài kiểm tra nào
           </Typography>
           <Typography variant="body2" sx={{ mt: 1 }}>
-            You haven't joined any courses yet or no quizzes have been created
+            Bạn chưa tham gia khóa học nào hoặc chưa có bài kiểm tra nào được tạo
           </Typography>
         </Alert>
       </Box>
@@ -151,15 +151,15 @@ const AvailableQuizzes: React.FC<AvailableQuizzesProps> = ({ quizzes = [] }) => 
                 mt: 0.5
               }}
             >
-              Total: {quizzes.length} • 
-              Available: {quizzes.filter(q => !q.hasAttempted && !isQuizExpired(q.dueDate)).length} • 
-              Completed: {quizzes.filter(q => q.hasAttempted).length}
+              Tổng số: {quizzes.length} • 
+              Chưa làm: {quizzes.filter(q => !q.hasAttempted && !isQuizExpired(q.dueDate)).length} • 
+              Đã hoàn thành: {quizzes.filter(q => q.hasAttempted).length}
             </Typography>
           </Box>
           
           <TextField
             select
-            label="Show Completed"
+            label="Hiển thị trạng thái"
             value={showCompleted ? "yes" : "no"}
             onChange={(e) => setShowCompleted(e.target.value === "yes")}
             sx={{ 
@@ -170,8 +170,8 @@ const AvailableQuizzes: React.FC<AvailableQuizzesProps> = ({ quizzes = [] }) => 
             }}
             size="small"
           >
-            <MenuItem value="no">Available Only</MenuItem>
-            <MenuItem value="yes">Show All</MenuItem>
+            <MenuItem value="no">Chỉ bài chưa làm</MenuItem>
+            <MenuItem value="yes">Hiển thị tất cả</MenuItem>
           </TextField>
         </Stack>
       </Box>
@@ -184,12 +184,12 @@ const AvailableQuizzes: React.FC<AvailableQuizzesProps> = ({ quizzes = [] }) => 
           color: "#666" 
         }}>
           <Typography variant={isMobile ? "body1" : "h6"}>
-            {showCompleted ? "No quizzes found" : "No available quizzes"}
+            {showCompleted ? "Không tìm thấy bài kiểm tra nào" : "Không có bài kiểm tra khả dụng"}
           </Typography>
           <Typography variant="body2" sx={{ mt: 1, fontSize: { xs: '0.875rem', sm: '1rem' } }}>
             {showCompleted 
-              ? "Try unchecking 'Show All' to view available quizzes"
-              : "You have completed all quizzes or no quizzes have been created yet"}
+              ? "Thử thay đổi bộ lọc để hiển thị bài kiểm tra"
+              : "Bạn đã hoàn thành toàn bộ bài kiểm tra hoặc chưa có bài kiểm tra nào được tạo"}
           </Typography>
         </Box>
       ) : (
@@ -237,7 +237,7 @@ const AvailableQuizzes: React.FC<AvailableQuizzesProps> = ({ quizzes = [] }) => 
                       {quiz.hasAttempted && (
                         <Chip
                           icon={<CompletedIcon sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }} />}
-                          label={`Completed - ${quiz.attemptPercentage}%`}
+                          label={`Đã hoàn thành - ${quiz.attemptPercentage}%`}
                           color={quiz.attemptPassed ? "success" : "error"}
                           size="small"
                           sx={{ 
@@ -249,7 +249,7 @@ const AvailableQuizzes: React.FC<AvailableQuizzesProps> = ({ quizzes = [] }) => 
                       {isExpired && !quiz.hasAttempted && (
                         <Chip
                           icon={<WarningIcon sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }} />}
-                          label="EXPIRED"
+                          label="ĐÃ HẾT HẠN"
                           color="error"
                           size="small"
                           sx={{ 
@@ -301,7 +301,7 @@ const AvailableQuizzes: React.FC<AvailableQuizzesProps> = ({ quizzes = [] }) => 
                     }}>
                       <Chip
                         icon={<QuestionIcon sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }} />}
-                        label={`${quiz.totalQuestions} questions`}
+                        label={`${quiz.totalQuestions} câu hỏi`}
                         size="small"
                         sx={{ 
                           backgroundColor: "#FFF5E6",
@@ -312,7 +312,7 @@ const AvailableQuizzes: React.FC<AvailableQuizzesProps> = ({ quizzes = [] }) => 
                       {quiz.durationMinutes && (
                         <Chip
                           icon={<TimerIcon sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }} />}
-                          label={`${quiz.durationMinutes} minutes`}
+                          label={`${quiz.durationMinutes} phút`}
                           size="small"
                           sx={{ 
                             backgroundColor: "#FFF5E6",
@@ -346,7 +346,7 @@ const AvailableQuizzes: React.FC<AvailableQuizzesProps> = ({ quizzes = [] }) => 
                           fontSize: { xs: '0.7rem', sm: '0.75rem' }
                         }}
                       >
-                        📅 Due: {formatDueDate(quiz.dueDate)}
+                        📅 Hạn nộp: {formatDueDate(quiz.dueDate)}
                       </Typography>
                     )}
 
@@ -365,7 +365,7 @@ const AvailableQuizzes: React.FC<AvailableQuizzesProps> = ({ quizzes = [] }) => 
                           py: { xs: 0.75, sm: 1 }
                         }}
                       >
-                        Completed
+                        Đã hoàn thành
                       </Button>
                     ) : isExpired ? (
                       <Button
@@ -380,7 +380,7 @@ const AvailableQuizzes: React.FC<AvailableQuizzesProps> = ({ quizzes = [] }) => 
                           py: { xs: 0.75, sm: 1 }
                         }}
                       >
-                        Quiz Expired
+                        Bài thi đã hết hạn
                       </Button>
                     ) : (
                       <Button
@@ -396,7 +396,7 @@ const AvailableQuizzes: React.FC<AvailableQuizzesProps> = ({ quizzes = [] }) => 
                           py: { xs: 0.75, sm: 1 }
                         }}
                       >
-                        Start Quiz
+                        Bắt đầu làm bài
                       </Button>
                     )}
                   </CardContent>

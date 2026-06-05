@@ -299,7 +299,7 @@ export default function ManageScheduleCalendar() {
     } catch (err: unknown) {
       console.error('Error updating schedule:', err);
       const error = err as { response?: { data?: { message?: string } } };
-      setUpdateError(error.response?.data?.message || 'Failed to update schedule');
+      setUpdateError(error.response?.data?.message || 'Không thể cập nhật lịch học');
     } finally {
       setUpdating(false);
     }
@@ -325,7 +325,7 @@ export default function ManageScheduleCalendar() {
     } catch (err: unknown) {
       console.error('Error deleting schedule:', err);
       const error = err as { response?: { data?: { message?: string } } };
-      setDeleteError(error.response?.data?.message || 'Failed to delete schedule');
+      setDeleteError(error.response?.data?.message || 'Không thể xóa lịch học');
     } finally {
       setDeleting(false);
     }
@@ -851,7 +851,7 @@ export default function ManageScheduleCalendar() {
                       }}
                       onClick={() => handleOpenSchedule(schedule)}
                     >
-                      {course?.name || course?.courseName || 'Unknown'}
+                      {course?.name || course?.courseName || 'Chưa xác định'}
                     </Box>
                   );
                 })}
@@ -908,7 +908,7 @@ export default function ManageScheduleCalendar() {
             startIcon={<RotateCcw size={16} />}
             fullWidth={isMobile}
           >
-            {isMobile ? 'Today' : 'Back to Today'}
+            {isMobile ? 'Hôm nay' : 'Quay lại hôm nay'}
           </Button>
 
           <Stack direction="row" spacing={1} alignItems="center" sx={{ width: isMobile ? '100%' : 'auto' }}>
@@ -930,13 +930,13 @@ export default function ManageScheduleCalendar() {
           ) : (
             <Stack direction="row" spacing={1}>
               <Button variant={viewMode === 'day' ? 'contained' : 'outlined'} onClick={() => setViewMode('day')} size="small" startIcon={<Clock size={16} />}>
-                Day
+                Ngày
               </Button>
               <Button variant={viewMode === 'week' ? 'contained' : 'outlined'} onClick={() => setViewMode('week')} size="small" startIcon={<CalendarDays size={16} />}>
-                Week
+                Tuần
               </Button>
               <Button variant={viewMode === 'month' ? 'contained' : 'outlined'} onClick={() => setViewMode('month')} size="small" startIcon={<Grid3x3 size={16} />}>
-                Month
+                Tháng
               </Button>
             </Stack>
           )}
@@ -946,21 +946,21 @@ export default function ManageScheduleCalendar() {
       {/* Mobile View Selector Drawer */}
       <Drawer anchor="bottom" open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)}>
         <Box sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>Select View</Typography>
+          <Typography variant="h6" gutterBottom>Chọn chế độ xem</Typography>
           <List>
             <ListItemButton onClick={() => { setViewMode('day'); setMobileMenuOpen(false); }}>
               <Clock size={20} style={{ marginRight: 12 }} />
-              <ListItemText primary="Day View" />
+              <ListItemText primary="Xem theo ngày" />
             </ListItemButton>
             <Divider />
             <ListItemButton onClick={() => { setViewMode('week'); setMobileMenuOpen(false); }}>
               <CalendarDays size={20} style={{ marginRight: 12 }} />
-              <ListItemText primary="Week View" />
+              <ListItemText primary="Xem theo tuần" />
             </ListItemButton>
             <Divider />
             <ListItemButton onClick={() => { setViewMode('month'); setMobileMenuOpen(false); }}>
               <Grid3x3 size={20} style={{ marginRight: 12 }} />
-              <ListItemText primary="Month View" />
+              <ListItemText primary="Xem theo tháng" />
             </ListItemButton>
           </List>
         </Box>
@@ -987,7 +987,7 @@ export default function ManageScheduleCalendar() {
               <Stack direction="row" spacing={1} alignItems="center">
                 {isEditing ? <Edit size={24} /> : <CalendarDays size={24} />}
                 <Typography variant="h6">
-                  {isEditing ? 'Edit Schedule' : 'Schedule Details'}
+                  {isEditing ? 'Sửa lịch học' : 'Chi tiết lịch học'}
                 </Typography>
               </Stack>
             </DialogTitle>
@@ -1003,10 +1003,10 @@ export default function ManageScheduleCalendar() {
                   <Box>
                     <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
                       <BookOpen size={16} color={theme.palette.text.secondary} />
-                      <Typography variant="caption" color="text.secondary">Course</Typography>
+                      <Typography variant="caption" color="text.secondary">Khóa học</Typography>
                     </Stack>
                     <Typography variant="body1" fontWeight={600}>
-                      {getSelectedCourse()?.name || getSelectedCourse()?.courseName || 'Unknown Course'}
+                      {getSelectedCourse()?.name || getSelectedCourse()?.courseName || 'Khóa học chưa xác định'}
                     </Typography>
                   </Box>
 
@@ -1015,10 +1015,10 @@ export default function ManageScheduleCalendar() {
                   <Box>
                     <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
                       <User size={16} color={theme.palette.text.secondary} />
-                      <Typography variant="caption" color="text.secondary">Teacher</Typography>
+                      <Typography variant="caption" color="text.secondary">Giáo viên</Typography>
                     </Stack>
                     <Typography variant="body1">
-                      {getSelectedTeacher()?.name || 'Unknown'}
+                      {getSelectedTeacher()?.name || 'Chưa xác định'}
                     </Typography>
                     {getSelectedTeacher()?.email && (
                       <Typography variant="caption" color="text.secondary">
@@ -1032,10 +1032,10 @@ export default function ManageScheduleCalendar() {
                   <Box>
                     <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
                       <Clock size={16} color={theme.palette.text.secondary} />
-                      <Typography variant="caption" color="text.secondary">Session</Typography>
+                      <Typography variant="caption" color="text.secondary">Ca học</Typography>
                     </Stack>
                     <Typography variant="body1">
-                      {getSelectedSession()?.sessionName || 'Unknown'}
+                      {getSelectedSession()?.sessionName || 'Chưa xác định'}
                     </Typography>
                     {getSelectedSession()?.startTime && (
                       <Typography variant="caption" color="text.secondary">
@@ -1049,7 +1049,7 @@ export default function ManageScheduleCalendar() {
                   <Box>
                     <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
                       <CalendarDays size={16} color={theme.palette.text.secondary} />
-                      <Typography variant="caption" color="text.secondary">Date</Typography>
+                      <Typography variant="caption" color="text.secondary">Ngày</Typography>
                     </Stack>
                     <Typography variant="body1">
                       {formatDateDisplay(selectedSchedule.date)}
@@ -1059,7 +1059,7 @@ export default function ManageScheduleCalendar() {
                   <Divider />
 
                   <Box>
-                    <Typography variant="caption" color="text.secondary" gutterBottom>Status</Typography>
+                    <Typography variant="caption" color="text.secondary" gutterBottom>Trạng thái</Typography>
                     <Box sx={{ mt: 0.5 }}>
                       <Chip 
                         label={formatStatus(selectedSchedule.status)} 
@@ -1073,7 +1073,7 @@ export default function ManageScheduleCalendar() {
                     <>
                       <Divider />
                       <Box>
-                        <Typography variant="caption" color="text.secondary" gutterBottom>Note</Typography>
+                        <Typography variant="caption" color="text.secondary" gutterBottom>Ghi chú</Typography>
                         <Typography variant="body2" sx={{ mt: 0.5, p: 1.5, bgcolor: 'grey.50', borderRadius: 1 }}>
                           {selectedSchedule.note}
                         </Typography>
@@ -1086,12 +1086,12 @@ export default function ManageScheduleCalendar() {
                   <FormControl fullWidth required>
                     <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                       <BookOpen size={18} />
-                      <InputLabel>Course</InputLabel>
+                      <InputLabel>Khóa học</InputLabel>
                     </Stack>
                     <Select
                       value={editFormData.courseId}
                       onChange={(e: SelectChangeEvent) => setEditFormData({ ...editFormData, courseId: e.target.value })}
-                      label="Course"
+                      label="Khóa học"
                       disabled={updating}
                     >
                       {activeCourses.map((course) => (
@@ -1105,12 +1105,12 @@ export default function ManageScheduleCalendar() {
                   <FormControl fullWidth required>
                     <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                       <Clock size={18} />
-                      <InputLabel>Session</InputLabel>
+                      <InputLabel>Ca học</InputLabel>
                     </Stack>
                     <Select
                       value={editFormData.sessionId}
                       onChange={(e: SelectChangeEvent) => setEditFormData({ ...editFormData, sessionId: e.target.value })}
-                      label="Session"
+                      label="Ca học"
                       disabled={updating}
                     >
                       {sessionList.map((session) => (
@@ -1124,12 +1124,12 @@ export default function ManageScheduleCalendar() {
                   <FormControl fullWidth required>
                     <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                       <User size={18} />
-                      <InputLabel>Teacher</InputLabel>
+                      <InputLabel>Giáo viên</InputLabel>
                     </Stack>
                     <Select
                       value={editFormData.teacherId}
                       onChange={(e: SelectChangeEvent) => setEditFormData({ ...editFormData, teacherId: e.target.value })}
-                      label="Teacher"
+                      label="Giáo viên"
                       disabled={updating}
                     >
                       {teachers.map((teacher) => (
@@ -1143,7 +1143,7 @@ export default function ManageScheduleCalendar() {
                   <FormControl fullWidth required>
                     <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                       <CalendarDays size={18} />
-                      <Typography variant="body2" fontWeight={600}>Date</Typography>
+                      <Typography variant="body2" fontWeight={600}>Ngày</Typography>
                     </Stack>
                     <TextField
                       fullWidth
@@ -1156,14 +1156,14 @@ export default function ManageScheduleCalendar() {
                     />
                     {editFormData.date && (
                       <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
-                        Display: {formatDateDisplay(editFormData.date)}
+                        Hiển thị: {formatDateDisplay(editFormData.date)}
                       </Typography>
                     )}
                   </FormControl>
 
                   <TextField
                     fullWidth
-                    label="Note (Optional)"
+                    label="Ghi chú (Tùy chọn)"
                     multiline
                     rows={3}
                     value={editFormData.note}
@@ -1182,7 +1182,7 @@ export default function ManageScheduleCalendar() {
                     fullWidth={isMobile}
                     variant="outlined"
                   >
-                    Close
+                    Đóng
                   </Button>
                   <Box sx={{ flex: 1 }} />
                   <Button 
@@ -1193,7 +1193,7 @@ export default function ManageScheduleCalendar() {
                     startIcon={<Edit size={18} />}
                     fullWidth={isMobile}
                   >
-                    Edit
+                    Sửa
                   </Button>
                   <Button 
                     variant="contained" 
@@ -1203,7 +1203,7 @@ export default function ManageScheduleCalendar() {
                     startIcon={deleting ? <CircularProgress size={20} /> : <Trash2 size={18} />}
                     fullWidth={isMobile}
                   >
-                    {deleting ? 'Deleting...' : 'Delete'}
+                    {deleting ? 'Đang xóa...' : 'Xóa'}
                   </Button>
                 </>
               ) : (
@@ -1214,7 +1214,7 @@ export default function ManageScheduleCalendar() {
                     fullWidth={isMobile}
                     variant="outlined"
                   >
-                    Cancel
+                    Hủy
                   </Button>
                   <Button 
                     variant="contained" 
@@ -1224,7 +1224,7 @@ export default function ManageScheduleCalendar() {
                     startIcon={updating ? <CircularProgress size={20} /> : null}
                     fullWidth={isMobile}
                   >
-                    {updating ? 'Updating...' : 'Save Changes'}
+                    {updating ? 'Đang lưu...' : 'Lưu thay đổi'}
                   </Button>
                 </>
               )}
@@ -1236,8 +1236,8 @@ export default function ManageScheduleCalendar() {
       {/* Confirm Delete Dialog */}
       <ConfirmDialog
         open={confirmOpen}
-        title="Delete Schedule"
-        message={`Are you sure you want to delete this schedule?\n\nCourse: ${getSelectedCourse()?.name || getSelectedCourse()?.courseName || 'Unknown'}\nDate: ${selectedSchedule ? formatDateDisplay(selectedSchedule.date) : ''}\n\nThis action cannot be undone.`}
+        title="Xóa lịch học"
+        message={`Bạn có chắc chắn muốn xóa lịch học này không?\n\nKhóa học: ${getSelectedCourse()?.name || getSelectedCourse()?.courseName || 'Chưa xác định'}\nNgày: ${selectedSchedule ? formatDateDisplay(selectedSchedule.date) : ''}\n\nHành động này không thể hoàn tác.`}
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
       />

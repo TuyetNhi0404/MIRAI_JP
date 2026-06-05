@@ -36,12 +36,12 @@ import { calendarAPI } from '../../../services/scheduleManagementAPI';
 import type { Course, Session, User as UserType } from '../../../types/schedule.types';
 
 const formSchema = z.object({
-  dayOfWeek: z.array(z.string()).nonempty('Please select at least one day'),
-  courseId: z.string().min(1, 'Please select a course'),
-  sessionId: z.string().min(1, 'Please select a session'),
-  teacherId: z.string().min(1, 'Please select a teacher'),
-  startDate: z.string().min(1, 'Please select start date'),
-  endDate: z.string().min(1, 'Please select end date'),
+  dayOfWeek: z.array(z.string()).nonempty('Vui lòng chọn ít nhất một ngày'),
+  courseId: z.string().min(1, 'Vui lòng chọn khóa học'),
+  sessionId: z.string().min(1, 'Vui lòng chọn ca học'),
+  teacherId: z.string().min(1, 'Vui lòng chọn giảng viên'),
+  startDate: z.string().min(1, 'Vui lòng chọn ngày bắt đầu'),
+  endDate: z.string().min(1, 'Vui lòng chọn ngày kết thúc'),
   note: z.string().optional(),
 });
 
@@ -65,13 +65,13 @@ interface PendingSubmit {
 }
 
 const daysOfWeek: DayOfWeek[] = [
-  { value: 'Mon', label: 'Monday', dayIndex: 1 },
-  { value: 'Tue', label: 'Tuesday', dayIndex: 2 },
-  { value: 'Wed', label: 'Wednesday', dayIndex: 3 },
-  { value: 'Thu', label: 'Thursday', dayIndex: 4 },
-  { value: 'Fri', label: 'Friday', dayIndex: 5 },
-  { value: 'Sat', label: 'Saturday', dayIndex: 6 },
-  { value: 'Sun', label: 'Sunday', dayIndex: 0 },
+  { value: 'Mon', label: 'Thứ Hai', dayIndex: 1 },
+  { value: 'Tue', label: 'Thứ Ba', dayIndex: 2 },
+  { value: 'Wed', label: 'Thứ Tư', dayIndex: 3 },
+  { value: 'Thu', label: 'Thứ Năm', dayIndex: 4 },
+  { value: 'Fri', label: 'Thứ Sáu', dayIndex: 5 },
+  { value: 'Sat', label: 'Thứ Bảy', dayIndex: 6 },
+  { value: 'Sun', label: 'Chủ Nhật', dayIndex: 0 },
 ];
 
 interface ConfirmDialogProps {
@@ -84,7 +84,7 @@ interface ConfirmDialogProps {
 
 const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   open,
-  title = "Confirm",
+  title = "Xác nhận",
   message,
   onConfirm,
   onCancel
@@ -96,8 +96,8 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         <Typography sx={{ whiteSpace: 'pre-wrap' }}>{message}</Typography>
       </DialogContent>
       <DialogActions>
-        <Button variant="outlined" onClick={onCancel}>Cancel</Button>
-        <Button variant="contained" color="primary" onClick={onConfirm}>Confirm</Button>
+        <Button variant="outlined" onClick={onCancel}>Hủy</Button>
+        <Button variant="contained" color="primary" onClick={onConfirm}>Xác nhận</Button>
       </DialogActions>
     </Dialog>
   );
@@ -186,7 +186,7 @@ export default function MyFormAuto({ onSuccess, isLoading: externalLoading }: My
       );
 
       if (scheduleDates.length === 0) {
-        setErrorMessage('No matching dates found in the selected range');
+        setErrorMessage('Không tìm thấy ngày phù hợp trong khoảng thời gian đã chọn');
         return;
       }
 
@@ -194,7 +194,7 @@ export default function MyFormAuto({ onSuccess, isLoading: externalLoading }: My
       const selectedSession = sessions.find((s: Session) => s._id === values.sessionId);
       const selectedTeacher = teachers.find((t: UserType) => t._id === values.teacherId);
       
-      const confirmMessage = `This will create ${scheduleDates.length} schedule(s) from ${formatDateDisplay(values.startDate)} to ${formatDateDisplay(values.endDate)}.\n\nCourse: ${selectedCourse?.name || selectedCourse?.courseName || 'Unknown'}\nSession: ${selectedSession?.sessionName || 'Unknown'}\nTeacher: ${selectedTeacher?.name || 'Unknown'}\nDays: ${values.dayOfWeek.join(', ')}\n\nDo you want to continue?`;
+      const confirmMessage = `Hành động này sẽ tạo ${scheduleDates.length} lịch học từ ngày ${formatDateDisplay(values.startDate)} đến ngày ${formatDateDisplay(values.endDate)}.\n\nKhóa học: ${selectedCourse?.name || selectedCourse?.courseName || 'Không xác định'}\nCa học: ${selectedSession?.sessionName || 'Không xác định'}\nGiảng viên: ${selectedTeacher?.name || 'Không xác định'}\nThứ: ${values.dayOfWeek.map(val => daysOfWeek.find(d => d.value === val)?.label).join(', ')}\n\nBạn có muốn tiếp tục không?`;
       
       setPendingSubmit({ values, scheduleDates, confirmMessage });
       setConfirmOpen(true);
@@ -202,7 +202,7 @@ export default function MyFormAuto({ onSuccess, isLoading: externalLoading }: My
     } catch (error) {
       const axiosError = error as AxiosError<{ message?: string }>;
       console.error('Form submission error', error);
-      setErrorMessage(axiosError.response?.data?.message || 'Failed to prepare schedules');
+      setErrorMessage(axiosError.response?.data?.message || 'Chuẩn bị tạo lịch thất bại');
     }
   }
 
@@ -224,20 +224,20 @@ export default function MyFormAuto({ onSuccess, isLoading: externalLoading }: My
           sessionId: values.sessionId,
           teacherId: values.teacherId,
           date: date.toISOString().split('T')[0],
-          note: values.note || `Auto-generated schedule`,
+          note: values.note || `Lịch học tạo tự động`,
         });
         successCount++;
         setCreatedCount(successCount);
       } catch (err) {
         const axiosError = err as AxiosError<{ message?: string }>;
         const dateStr = formatDateDisplay(date.toISOString().split('T')[0]);
-        errors.push(`${dateStr}: ${axiosError.response?.data?.message || 'Failed'}`);
+        errors.push(`${dateStr}: ${axiosError.response?.data?.message || 'Thất bại'}`);
       }
     }
 
     if (successCount > 0) {
       setSuccessMessage(
-        `Successfully created ${successCount} out of ${scheduleDates.length} schedules!`
+        `Đã tạo thành công ${successCount} trên tổng số ${scheduleDates.length} lịch học!`
       );
       
       reset();
@@ -249,8 +249,8 @@ export default function MyFormAuto({ onSuccess, isLoading: externalLoading }: My
 
     if (errors.length > 0) {
       setErrorMessage(
-        `${errors.length} schedule(s) failed:\n${errors.slice(0, 5).join('\n')}${
-          errors.length > 5 ? `\n... and ${errors.length - 5} more` : ''
+        `Tạo thất bại ${errors.length} lịch học:\n${errors.slice(0, 5).join('\n')}${
+          errors.length > 5 ? `\n... và ${errors.length - 5} lịch khác` : ''
         }`
       );
     }
@@ -289,10 +289,10 @@ export default function MyFormAuto({ onSuccess, isLoading: externalLoading }: My
             <Zap size={24} />
             <Box>
               <Typography variant="h6" gutterBottom>
-                Auto Generate Schedules
+                Tự động tạo lịch học
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Create multiple schedules automatically for selected days of the week
+                Tự động tạo nhiều lịch học cho các ngày được chọn trong tuần
               </Typography>
             </Box>
           </Stack>
@@ -313,7 +313,7 @@ export default function MyFormAuto({ onSuccess, isLoading: externalLoading }: My
 
           {submitting && createdCount > 0 && (
             <Alert severity="info" sx={{ mb: 2 }}>
-              Creating schedules... {createdCount} completed
+              Đang tạo lịch học... đã hoàn thành {createdCount}
             </Alert>
           )}
 
@@ -325,7 +325,7 @@ export default function MyFormAuto({ onSuccess, isLoading: externalLoading }: My
             <FormControl error={!!errors.dayOfWeek} fullWidth required>
               <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                 <Calendar size={18} />
-                <FormLabel>Days of Week *</FormLabel>
+                <FormLabel>Các ngày trong tuần *</FormLabel>
               </Stack>
               <Controller
                 name="dayOfWeek"
@@ -365,7 +365,7 @@ export default function MyFormAuto({ onSuccess, isLoading: externalLoading }: My
               <FormControl error={!!errors.startDate} fullWidth required>
                 <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                   <Calendar size={18} />
-                  <FormLabel>Start Date *</FormLabel>
+                  <FormLabel>Ngày bắt đầu *</FormLabel>
                 </Stack>
                 <Controller
                   name="startDate"
@@ -380,7 +380,7 @@ export default function MyFormAuto({ onSuccess, isLoading: externalLoading }: My
                       />
                       {field.value && (
                         <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
-                          Display: {formatDateDisplay(field.value)}
+                          Hiển thị: {formatDateDisplay(field.value)}
                         </Typography>
                       )}
                     </>
@@ -394,7 +394,7 @@ export default function MyFormAuto({ onSuccess, isLoading: externalLoading }: My
               <FormControl error={!!errors.endDate} fullWidth required>
                 <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                   <Calendar size={18} />
-                  <FormLabel>End Date *</FormLabel>
+                  <FormLabel>Ngày kết thúc *</FormLabel>
                 </Stack>
                 <Controller
                   name="endDate"
@@ -409,7 +409,7 @@ export default function MyFormAuto({ onSuccess, isLoading: externalLoading }: My
                       />
                       {field.value && (
                         <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
-                          Display: {formatDateDisplay(field.value)}
+                          Hiển thị: {formatDateDisplay(field.value)}
                         </Typography>
                       )}
                     </>
@@ -424,7 +424,7 @@ export default function MyFormAuto({ onSuccess, isLoading: externalLoading }: My
             <FormControl error={!!errors.courseId} fullWidth required>
               <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                 <BookOpen size={18} />
-                <FormLabel>Course Name *</FormLabel>
+                <FormLabel>Tên khóa học *</FormLabel>
               </Stack>
               <Controller
                 name="courseId"
@@ -435,7 +435,7 @@ export default function MyFormAuto({ onSuccess, isLoading: externalLoading }: My
                     disabled={submitting}
                     displayEmpty
                   >
-                    <MenuItem value=""><em>Select a course</em></MenuItem>
+                    <MenuItem value=""><em>Chọn một khóa học</em></MenuItem>
                     {activeCourses.map((course: Course) => (
                       <MenuItem key={course._id} value={course._id}>
                         {course.name || course.courseName} {course.codeName ? `(${course.codeName})` : ''}
@@ -452,7 +452,7 @@ export default function MyFormAuto({ onSuccess, isLoading: externalLoading }: My
             <FormControl error={!!errors.sessionId} fullWidth required>
               <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                 <Clock size={18} />
-                <FormLabel>Session *</FormLabel>
+                <FormLabel>Ca học *</FormLabel>
               </Stack>
               <Controller
                 name="sessionId"
@@ -463,7 +463,7 @@ export default function MyFormAuto({ onSuccess, isLoading: externalLoading }: My
                     disabled={submitting}
                     displayEmpty
                   >
-                    <MenuItem value=""><em>Select a session</em></MenuItem>
+                    <MenuItem value=""><em>Chọn một ca học</em></MenuItem>
                     {sessions.map((session: Session) => (
                       <MenuItem key={session._id} value={session._id}>
                         {session.sessionName} ({session.startTime} - {session.endTime})
@@ -480,7 +480,7 @@ export default function MyFormAuto({ onSuccess, isLoading: externalLoading }: My
             <FormControl error={!!errors.teacherId} fullWidth required>
               <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                 <User size={18} />
-                <FormLabel>Teacher *</FormLabel>
+                <FormLabel>Giảng viên *</FormLabel>
               </Stack>
               <Controller
                 name="teacherId"
@@ -491,7 +491,7 @@ export default function MyFormAuto({ onSuccess, isLoading: externalLoading }: My
                     disabled={submitting}
                     displayEmpty
                   >
-                    <MenuItem value=""><em>Select a teacher</em></MenuItem>
+                    <MenuItem value=""><em>Chọn giảng viên</em></MenuItem>
                     {teachers.map((teacher: UserType) => (
                       <MenuItem key={teacher._id} value={teacher._id}>
                         {teacher.name} - {teacher.email}
@@ -506,7 +506,7 @@ export default function MyFormAuto({ onSuccess, isLoading: externalLoading }: My
             </FormControl>
 
             <FormControl fullWidth>
-              <FormLabel>Note (Optional)</FormLabel>
+              <FormLabel>Ghi chú (Tùy chọn)</FormLabel>
               <Controller
                 name="note"
                 control={control}
@@ -516,7 +516,7 @@ export default function MyFormAuto({ onSuccess, isLoading: externalLoading }: My
                     multiline
                     rows={3}
                     disabled={submitting}
-                    placeholder="Add any additional notes..."
+                    placeholder="Thêm ghi chú nếu có..."
                   />
                 )}
               />
@@ -533,7 +533,7 @@ export default function MyFormAuto({ onSuccess, isLoading: externalLoading }: My
                 disabled={submitting}
                 sx={{ minWidth: 120 }}
               >
-                Reset
+                Đặt lại
               </Button>
               <Button 
                 variant="contained" 
@@ -543,7 +543,7 @@ export default function MyFormAuto({ onSuccess, isLoading: externalLoading }: My
                 startIcon={submitting ? <CircularProgress size={20} /> : <Zap size={20} />}
                 sx={{ minWidth: 120 }}
               >
-                {submitting ? `Creating... (${createdCount})` : 'Generate Schedules'}
+                {submitting ? `Đang tạo... (${createdCount})` : 'Tạo lịch học'}
               </Button>
             </Stack>
           </Box>
@@ -552,7 +552,7 @@ export default function MyFormAuto({ onSuccess, isLoading: externalLoading }: My
 
       <ConfirmDialog
         open={confirmOpen}
-        title="Confirm Schedule Generation"
+        title="Xác nhận tự động tạo lịch học"
         message={pendingSubmit?.confirmMessage || ''}
         onConfirm={handleConfirmSubmit}
         onCancel={handleCancelSubmit}

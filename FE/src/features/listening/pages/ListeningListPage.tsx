@@ -42,7 +42,7 @@ const ListeningListPage = () => {
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent'
         }}>
-          Listening Practice
+          Luyện nghe
         </Typography>
         <Typography variant="h6" color="text.secondary">
           Luyện nghe tiếng Nhật một cách dễ dàng và hiệu quả.
@@ -116,7 +116,7 @@ const ListeningListPage = () => {
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'text.secondary' }}>
                       <Headset fontSize="small" />
-                      <Typography variant="caption">{content.playCount || 0} plays</Typography>
+                      <Typography variant="caption">{content.playCount || 0} lượt nghe</Typography>
                     </Box>
                     <Typography variant="caption" sx={{ fontWeight: 'medium', color: '#B90000' }}>
                       {Math.floor((content.duration || 0) / 60)}:{((content.duration || 0) % 60).toString().padStart(2, '0')}
@@ -137,7 +137,7 @@ const ListeningListPage = () => {
                       boxShadow: '0 4px 14px 0 rgba(185, 0, 0, 0.39)',
                     }}
                   >
-                    Start Practice
+                    Bắt đầu luyện tập
                   </Button>
                 </CardContent>
               </Card>

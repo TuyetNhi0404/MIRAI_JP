@@ -35,14 +35,14 @@ const AdminLeaderboard: React.FC = () => {
           mb: 3, 
           boxShadow: '0 8px 32px rgba(255,107,53,0.2)' 
         }}>
-          <Box display="flex" alignItems="center" gap={isMobile ? 1.5 : 2}>
+            <Box display="flex" alignItems="center" gap={isMobile ? 1.5 : 2}>
             <Trophy size={isMobile ? 28 : 36} color="#fff" />
             <Box>
               <Typography variant={isMobile ? 'h5' : 'h4'} fontWeight="bold" color="#fff">
-                {isMobile ? 'Admin Leaderboard' : 'Admin Leaderboard Dashboard'}
+                {isMobile ? 'Bảng xếp hạng Admin' : 'Bảng xếp hạng học tập'}
               </Typography>
               <Typography variant={isMobile ? 'body2' : 'body1'} sx={{ color: 'rgba(255,255,255,0.9)' }}>
-                {isMobile ? 'Track performance' : 'Manage and track student performance'}
+                {isMobile ? 'Theo dõi kết quả học tập' : 'Quản lý và theo dõi kết quả học tập của học viên'}
               </Typography>
             </Box>
           </Box>
@@ -72,17 +72,17 @@ const AdminLeaderboard: React.FC = () => {
             }}
           >
             <Tab 
-              label={isMobile ? 'Course' : 'Course Leaderboard'} 
+              label={isMobile ? 'Lớp học' : 'Bảng xếp hạng lớp học'} 
               icon={<School size={isMobile ? 18 : 20} />} 
               iconPosition="start" 
             />
             <Tab 
-              label={isMobile ? 'Global' : 'Global Leaderboard'} 
+              label={isMobile ? 'Hệ thống' : 'Bảng xếp hạng hệ thống'} 
               icon={<Globe size={isMobile ? 18 : 20} />} 
               iconPosition="start" 
             />
             <Tab 
-              label={isMobile ? 'Top 1' : 'Top 1 Comparison'} 
+              label={isMobile ? 'So sánh' : 'So sánh thủ khoa'} 
               icon={<Trophy size={isMobile ? 18 : 20} />} 
               iconPosition="start" 
             />

@@ -53,10 +53,10 @@ const QuestionBankPage: React.FC = () => {
     try {
       if (editingChapter) {
         await dispatch(updateChapter({ id: editingChapter._id, payload: data })).unwrap();
-        setSuccessMsg("Chapter updated successfully");
+        setSuccessMsg("Cập nhật chương thành công");
       } else {
         await dispatch(createChapter(data)).unwrap();
-        setSuccessMsg("Chapter created successfully");
+        setSuccessMsg("Tạo chương thành công");
       }
       setEditingChapter(null);
     } catch (err) {
@@ -68,12 +68,12 @@ const QuestionBankPage: React.FC = () => {
   const handleDeleteChapter = async (chapter: IChapter) => {
     if (
       window.confirm(
-        `Delete chapter "${chapter.name}"? All questions in this chapter will also be deleted.`
+        `Xóa chương "${chapter.name}"? Tất cả câu hỏi trong chương này cũng sẽ bị xóa.`
       )
     ) {
       try {
         await dispatch(deleteChapter(chapter._id)).unwrap();
-        setSuccessMsg("Chapter deleted successfully");
+        setSuccessMsg("Xóa chương thành công");
       } catch (err) {
         const error = err as Error;
         console.error(error);
@@ -95,10 +95,10 @@ const QuestionBankPage: React.FC = () => {
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
         <Box>
           <Typography variant="h4" fontWeight={700} color="#B90000">
-            Question Bank
+            Ngân hàng câu hỏi
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Manage chapters and questions for your courses
+            Quản lý các chương và câu hỏi cho khóa học của bạn
           </Typography>
         </Box>
         <Button
@@ -110,7 +110,7 @@ const QuestionBankPage: React.FC = () => {
           }}
           sx={{ bgcolor: "#B90000", "&:hover": { bgcolor: "#d66609" } }}
         >
-          New Chapter
+          Chương mới
         </Button>
       </Box>
 
@@ -129,7 +129,7 @@ const QuestionBankPage: React.FC = () => {
           }}
           icon={<ErrorIcon fontSize="inherit" />}
         >
-          <AlertTitle sx={{ fontWeight: 600, fontSize: "1rem" }}>Error</AlertTitle>
+          <AlertTitle sx={{ fontWeight: 600, fontSize: "1rem" }}>Lỗi</AlertTitle>
           {error}
         </Alert>
       )}
@@ -137,16 +137,16 @@ const QuestionBankPage: React.FC = () => {
       {/* Chapters Grid */}
       {loading && chapters.length === 0 ? (
         <Box sx={{ textAlign: "center", py: 5 }}>
-          <Typography color="text.secondary">Loading chapters...</Typography>
+          <Typography color="text.secondary">Đang tải danh sách chương...</Typography>
         </Box>
       ) : chapters.length === 0 ? (
         <Card sx={{ p: 5, textAlign: "center" }}>
           <BookOpen sx={{ fontSize: 64, color: "#ccc", mb: 2 }} />
           <Typography variant="h6" color="text.secondary" gutterBottom>
-            No chapters yet
+            Chưa có chương nào
           </Typography>
           <Typography variant="body2" color="text.secondary" mb={3}>
-            Create your first chapter to start adding questions
+            Tạo chương đầu tiên để bắt đầu thêm câu hỏi
           </Typography>
           <Button
             variant="contained"
@@ -154,7 +154,7 @@ const QuestionBankPage: React.FC = () => {
             onClick={() => setChapterModalOpen(true)}
             sx={{ bgcolor: "#B90000", "&:hover": { bgcolor: "#d66609" } }}
           >
-            Create Chapter
+            Tạo chương
           </Button>
         </Card>
       ) : (
@@ -241,7 +241,7 @@ const QuestionBankPage: React.FC = () => {
                       "&:hover": { bgcolor: "#d66609" },
                     }}
                   >
-                    View Questions
+                    Xem câu hỏi
                   </Button>
                 </CardActions>
               </Card>
@@ -283,7 +283,7 @@ const QuestionBankPage: React.FC = () => {
             }
           }}
         >
-          <AlertTitle sx={{ fontWeight: 600 }}>Success</AlertTitle>
+          <AlertTitle sx={{ fontWeight: 600 }}>Thành công</AlertTitle>
           {successMsg}
         </Alert>
       </Snackbar>

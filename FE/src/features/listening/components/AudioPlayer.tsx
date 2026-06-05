@@ -189,7 +189,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, onTimeUpdate, targetStar
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', width: 120 }}>
-          <Tooltip title={`Speed: ${playbackRate}x`}>
+          <Tooltip title={`Tốc độ: ${playbackRate}x`}>
             <IconButton onClick={changeSpeed} sx={{ color: 'text.secondary' }}>
               <Speed fontSize="small" sx={{ mr: 0.5 }} />
               <Typography variant="caption" fontWeight="bold">{playbackRate}x</Typography>

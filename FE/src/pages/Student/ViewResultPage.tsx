@@ -55,7 +55,7 @@ const ViewResultPage: React.FC = () => {
           onClick={() => navigate("/dashboard/student/quizzes")}
           sx={{ color: "#B90000" }}
         >
-          Back to Quizzes
+          Quay lại danh sách bài kiểm tra
         </Button>
       </Box>
     );
@@ -65,7 +65,7 @@ const ViewResultPage: React.FC = () => {
     return (
       <Box sx={{ textAlign: "center", py: 8 }}>
         <Typography variant="h6" color="textSecondary">
-          Result not found
+          Không tìm thấy kết quả
         </Typography>
       </Box>
     );
@@ -79,7 +79,7 @@ const ViewResultPage: React.FC = () => {
         onClick={() => navigate("/dashboard/student/quizzes")}
         sx={{ mb: 3, color: "#B90000" }}
       >
-        Back to Quizzes
+        Quay lại danh sách bài kiểm tra
       </Button>
 
       {/* Result Summary */}
@@ -96,7 +96,7 @@ const ViewResultPage: React.FC = () => {
                 {attemptDetail.score}/{attemptDetail.totalQuestions}
               </Typography>
               <Typography variant="body2" color="textSecondary">
-                Score
+                Điểm số
               </Typography>
             </Paper>
           </Grid>
@@ -114,7 +114,7 @@ const ViewResultPage: React.FC = () => {
                 {attemptDetail.percentage}%
               </Typography>
               <Typography variant="body2" color="textSecondary">
-                Percentage
+                Tỷ lệ đúng
               </Typography>
             </Paper>
           </Grid>
@@ -126,7 +126,7 @@ const ViewResultPage: React.FC = () => {
                 {attemptDetail.timeSpent}
               </Typography>
               <Typography variant="body2" color="textSecondary">
-                Minutes
+                Phút
               </Typography>
             </Paper>
           </Grid>
@@ -135,7 +135,7 @@ const ViewResultPage: React.FC = () => {
             <Paper elevation={2} sx={{ p: 2, textAlign: "center", backgroundColor: "white" }}>
               <Chip
                 icon={attemptDetail.passed ? <CorrectIcon /> : <WrongIcon />}
-                label={attemptDetail.passed ? "PASSED" : "FAILED"}
+                label={attemptDetail.passed ? "ĐẠT" : "KHÔNG ĐẠT"}
                 color={attemptDetail.passed ? "success" : "error"}
                 sx={{ fontSize: "16px", fontWeight: 700, px: 2, py: 3 }}
               />
@@ -144,13 +144,13 @@ const ViewResultPage: React.FC = () => {
         </Grid>
 
         <Typography variant="body2" color="textSecondary">
-          Completed: {new Date(attemptDetail.completedAt).toLocaleString()}
+          Hoàn thành: {new Date(attemptDetail.completedAt).toLocaleString()}
         </Typography>
       </Paper>
 
       {/* Detailed Results */}
       <Typography variant="h5" sx={{ mb: 3, fontWeight: 600, color: "#333" }}>
-        Question Review
+        Xem lại câu hỏi
       </Typography>
 
       <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
@@ -179,14 +179,14 @@ const ViewResultPage: React.FC = () => {
                 {isCorrect ? (
                   <Chip
                     icon={<CorrectIcon />}
-                    label="Correct"
+                    label="Đúng"
                     color="success"
                     size="small"
                   />
                 ) : (
                   <Chip
                     icon={<WrongIcon />}
-                    label="Incorrect"
+                    label="Sai"
                     color="error"
                     size="small"
                   />
@@ -266,7 +266,7 @@ const ViewResultPage: React.FC = () => {
 
                       {isStudentAnswer && (
                         <Chip
-                          label="Your Answer"
+                          label="Đáp án của bạn"
                           size="small"
                           sx={{
                             backgroundColor: isCorrect ? "#4CAF50" : "#f44336",
@@ -277,7 +277,7 @@ const ViewResultPage: React.FC = () => {
                       )}
                       {isCorrectAnswer && !isStudentAnswer && (
                         <Chip
-                          label="Correct Answer"
+                          label="Đáp án đúng"
                           size="small"
                           sx={{
                             backgroundColor: "#4CAF50",
@@ -307,7 +307,7 @@ const ViewResultPage: React.FC = () => {
             px: 4,
           }}
         >
-          Back to Quizzes
+          Quay lại danh sách bài kiểm tra
         </Button>
       </Box>
     </Box>
