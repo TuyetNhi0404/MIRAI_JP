@@ -1,7 +1,23 @@
-/dashboard/admin
-/dashboard/admin/users
-/dashboard/admin/schedule-management
-/dashboard/admin/attendance-management
-/dashboard/admin/courses
-/dashboard/admin/request-management -> change this to yêu cầu xin nghỉ (slot)
-/dashboard/admin/requests
+1. khi click vào phần điểm danh (admin) đang có rất nhiều logs " canEditAttendance check: {date: '2026-06-06T00:00:00.000Z', startTime: '09:45', endTime: '11:45', now: '2026-06-06T14:35:07.630Z'}
+AttendanceDialog.tsx:75 ⏰ Session time check: {currentMinutes: 1295, sessionStart: 585, sessionEnd: 705, isActive: false}
+AttendanceDialog.tsx:118 ⏱️ Time since session end: {sessionEnd: '2026-06-06T04:45:00.000Z', hoursSinceEnd: 9.835452777777778, canEdit: true}
+AttendanceDialog.tsx:75 ⏰ Session time check: {currentMinutes: 1295, sessionStart: 585, sessionEnd: 705, isActive: false}
+AttendanceDialog.tsx:203 🔐 Permissions: {canEdit: true, isActive: false}
+useAttendanceData.ts:30 🔄 Fetching attendance data for calendar: 6a21c1362ef465f1df7d5e00
+AttendanceDialog.tsx:86 🔍 canEditAttendance check: {date: '2026-06-06T00:00:00.000Z', startTime: '09:45', endTime: '11:45', now: '2026-06-06T14:35:07.653Z'}
+AttendanceDialog.tsx:75 ⏰ Session time check: {currentMinutes: 1295, sessionStart: 585, sessionEnd: 705, isActive: false}
+AttendanceDialog.tsx:118 ⏱️ Time since session end: {sessionEnd: '2026-06-06T04:45:00.000Z', hoursSinceEnd: 9.835459166666666, canEdit: true}
+AttendanceDialog.tsx:75 ⏰ Session time check: {currentMinutes: 1295, sessionStart: 585, sessionEnd: 705, isActive: false}
+AttendanceDialog.tsx:203 🔐 Permissions: {canEdit: true, isActive: false}
+useAttendanceData.ts:36 ✅ Extracted students: []
+AttendanceDialog.tsx:86 🔍 canEditAttendance check: {date: '2026-06-06T00:00:00.000Z', startTime: '09:45', endTime: '11:45', now: '2026-06-06T14:35:08.566Z'}
+AttendanceDialog.tsx:75 ⏰ Session time check: {currentMinutes: 1295, sessionStart: 585, sessionEnd: 705, isActive: false}
+AttendanceDialog.tsx:118 ⏱️ Time since session end: {sessionEnd: '2026-06-06T04:45:00.000Z', hoursSinceEnd: 9.835713055555555, canEdit: true}
+AttendanceDialog.tsx:75 ⏰ Session time check: {currentMinutes: 1295, sessionStart: 585, sessionEnd: 705, isActive: false}
+AttendanceDialog.tsx:203 🔐 Permissions: {canEdit: true, isActive: false}" -> hãy ẩn chúng đi, chỉ log ra những thứ thực sự cần thiết & loại bỏ icon trong console log.
+
+2. 
+ở phần quản lí lịch học, thì khi click vào slot học đã tạo , cần hiển thị được giáo viên phụ trách cho buổi đó, số lượng học viên, và có nút settings -> cập nhật thông tin để thay đổi thông tin slot học 
+
+3.
+phần voice AI luyện nói, giao diện chưa được tối ưu cho việc xem tin nhắn, hãy áp dụng @taste-skill để cập nhật lại giao diện (giữ component interactive 3d) chỉ thay đổi layout và màu sắc cho match với hệ thống, follow @taste-skill và @ui-ux-pro-max-skill để tạo 1 giao diện high UI UX design, elegant design.clean, modern and easy to use 

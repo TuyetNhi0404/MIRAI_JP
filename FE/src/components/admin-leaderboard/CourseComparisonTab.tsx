@@ -56,7 +56,7 @@ const CourseComparisonTab: React.FC = () => {
     if (index === 0) return 'linear-gradient(135deg, #FFD700, #FFA500)';
     if (index === 1) return 'linear-gradient(135deg, #C0C0C0, #A8A8A8)';
     if (index === 2) return 'linear-gradient(135deg, #CD7F32, #8B4513)';
-    return 'linear-gradient(135deg, #ff6b35, #ff8c42)';
+    return 'linear-gradient(135deg, #B90000, #E53935)';
   };
 
   const getRankBadge = (index: number) => {
@@ -69,7 +69,7 @@ const CourseComparisonTab: React.FC = () => {
   if (loading) {
     return (
       <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" minHeight="400px" gap={2}>
-        <CircularProgress sx={{ color: '#ff6b35' }} size={45} />
+        <CircularProgress sx={{ color: '#B90000' }} size={45} />
         <Typography variant="body1" color="text.secondary">Đang tải dữ liệu so sánh...</Typography>
       </Box>
     );
@@ -84,18 +84,26 @@ const CourseComparisonTab: React.FC = () => {
   return (
     <Box>
       {/* Header Card */}
-      <Card sx={{ borderRadius: isMobile ? 2 : 3, mb: 3, boxShadow: '0 4px 20px rgba(255,107,53,0.08)' }}>
+      <Card
+        className="mira-fade-in-up"
+        sx={{
+          borderRadius: isMobile ? 2 : 3,
+          mb: 3,
+          boxShadow: '0 4px 20px rgba(185,0,0,0.06)',
+          border: '1px solid rgba(185,0,0,0.06)',
+        }}
+      >
         <CardContent sx={{ p: isMobile ? 2 : 3 }}>
-          <Stack 
-            direction={isMobile ? 'column' : 'row'} 
-            alignItems={isMobile ? 'flex-start' : 'center'} 
-            justifyContent="space-between" 
+          <Stack
+            direction={isMobile ? 'column' : 'row'}
+            alignItems={isMobile ? 'flex-start' : 'center'}
+            justifyContent="space-between"
             spacing={2}
           >
             <Box display="flex" alignItems="center" gap={isMobile ? 1.5 : 2}>
-              <School size={isMobile ? 24 : 28} color="#ff6b35" />
+              <School size={isMobile ? 24 : 28} color="#B90000" />
               <Box>
-                <Typography variant={isMobile ? 'subtitle1' : 'h6'} fontWeight="bold" color="#ff6b35">
+                <Typography variant={isMobile ? 'subtitle1' : 'h6'} fontWeight="bold" color="#B90000">
                   So sánh thủ khoa các lớp học
                 </Typography>
                 <Typography variant={isMobile ? 'caption' : 'body2'} color="text.secondary">
@@ -105,7 +113,7 @@ const CourseComparisonTab: React.FC = () => {
             </Box>
             <Box textAlign={isMobile ? 'left' : 'right'}>
               <Typography variant="caption" color="text.secondary">Điểm cao nhất</Typography>
-              <Typography variant={isMobile ? 'h6' : 'h5'} fontWeight="bold" color="#ff6b35">
+              <Typography variant={isMobile ? 'h6' : 'h5'} fontWeight="bold" color="#B90000">
                 {formatScore(comparisonData.highestScoreOverall)}
               </Typography>
             </Box>
@@ -114,21 +122,34 @@ const CourseComparisonTab: React.FC = () => {
       </Card>
 
       {/* Courses Grid */}
-      <Grid container spacing={isMobile ? 2 : 3}>
+      <Grid container spacing={isMobile ? 2 : 3} className="mira-stagger">
         {comparisonData.courses.map((courseData: CourseComparison, index: number) => (
           <Grid item xs={12} md={6} key={courseData.course.id}>
-            <Card sx={{ 
-              borderRadius: isMobile ? 2 : 3, 
-              boxShadow: index < 3 ? '0 8px 32px rgba(255,107,53,0.2)' : '0 6px 24px rgba(255,107,53,0.1)', 
-              height: '100%',
-              border: index < 3 ? '2px solid' : 'none',
-              borderColor: index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : index === 2 ? '#CD7F32' : 'transparent'
-            }}>
-              <Box sx={{ 
+            <Card
+              className="mira-card-hover"
+              sx={{
+                borderRadius: isMobile ? 2 : 3,
+                boxShadow: index < 3 ? '0 8px 32px rgba(185,0,0,0.15)' : '0 6px 24px rgba(0,0,0,0.06)',
+                height: '100%',
+                border: index < 3 ? '2px solid' : '1px solid rgba(185,0,0,0.06)',
+                borderColor: index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : index === 2 ? '#CD7F32' : 'transparent',
+                overflow: 'hidden',
+              }}
+            >
+              <Box sx={{
                 background: getRankGradient(index),
                 p: isMobile ? 1.5 : 2,
-                position: 'relative'
+                position: 'relative',
+                overflow: 'hidden',
               }}>
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.15), transparent 50%)',
+                    pointerEvents: 'none',
+                  }}
+                />
                 <Box position="absolute" top={8} right={8} fontSize={isMobile ? '1.5rem' : '2rem'}>
                   {getRankBadge(index)}
                 </Box>
@@ -182,7 +203,7 @@ const CourseComparisonTab: React.FC = () => {
                       />
                     </Box>
                   </Box>
-                  <Typography variant={isMobile ? 'h5' : 'h4'} fontWeight="bold" color="#ff6b35">
+                  <Typography variant={isMobile ? 'h5' : 'h4'} fontWeight="bold" color="#B90000">
                     {formatScore(courseData.topStudent.finalScore)}
                   </Typography>
                 </Box>

@@ -11,6 +11,7 @@ import {
   BookMarked,
   Headphones,
   CalendarOff,
+  LayoutDashboard,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { brandColors } from "../../theme/theme";
@@ -33,7 +34,8 @@ const AdminSidebar: React.FC<SidebarProps> = ({ isOpen }) => {
   const location = useLocation();
 
   const menuItems: MenuItem[] = [
-    { id: "leaderboard", label: "Bảng xếp hạng", icon: Trophy, path: "/dashboard/admin" },
+    { id: "home", label: "Trang chủ", icon: LayoutDashboard, path: "/dashboard/admin" },
+    { id: "leaderboard", label: "Bảng xếp hạng", icon: Trophy, path: "/dashboard/admin/leaderboard" },
     { id: "users", label: "Quản lý người dùng", icon: Users, path: "/dashboard/admin/users" },
     { id: "schedule-management", label: "Quản lý lịch học", icon: CalendarCog, path: "/dashboard/admin/schedule-management" },
     { id: "attendance-management", label: "Điểm danh", icon: ClipboardCheck, path: "/dashboard/admin/attendance-management" },
@@ -70,14 +72,13 @@ const AdminSidebar: React.FC<SidebarProps> = ({ isOpen }) => {
         transition: "transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
       }}
     >
-      <div style={{ padding: "16px 12px 8px 16px" }}>
+      <div style={{ padding: "20px 20px 10px 20px" }}>
         <Typography.Text
           style={{
             color: brandColors.textTertiary,
-            fontSize: 11,
-            fontWeight: 600,
-            textTransform: "uppercase",
-            letterSpacing: 0.6,
+            fontSize: 12,
+            fontWeight: 500,
+            letterSpacing: 0.1,
           }}
         >
           Quản trị

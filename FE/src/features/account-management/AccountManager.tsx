@@ -11,7 +11,6 @@ import {
   Segmented,
   Space,
   Table,
-  Tabs,
   Typography,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
@@ -28,6 +27,7 @@ import type { User } from "../../types/account.types";
 import { AccountLock } from "./AccountLock";
 import { AddAccountUsers } from "./AddAccountUsers";
 import { PageHeader, StatCard, StatusTag } from "../../components/ui";
+import { Tabs, TabsList, TabsTrigger } from "../../components/ui/shadcn";
 import { brandColors } from "../../theme/theme";
 
 const { Text } = Typography;
@@ -147,22 +147,25 @@ export default function AccountManagement() {
       title: "Họ tên",
       dataIndex: "name",
       key: "name",
-      width: 260,
+      width: 280,
       render: (name: string, record) => (
-        <Space size={10}>
+        <Space size={12}>
           <Avatar
-            size={36}
+            size={38}
             src={record.avatar || undefined}
             style={{
               background: brandColors.redSoft,
               color: brandColors.red,
               fontWeight: 600,
+              fontSize: 14,
             }}
           >
             {(name || "U").charAt(0).toUpperCase()}
           </Avatar>
           <div>
-            <div style={{ fontWeight: 500 }}>{name}</div>
+            <div style={{ fontWeight: 500, fontSize: 14, color: brandColors.textPrimary }}>
+              {name}
+            </div>
             <Text type="secondary" style={{ fontSize: 12 }}>
               {record.email}
             </Text>
@@ -220,18 +223,12 @@ export default function AccountManagement() {
     },
   ];
 
-  const tabsItems = [
-    { key: "student", label: `Học viên (${roleStats.student})` },
-    { key: "teacher", label: `Giáo viên (${roleStats.teacher})` },
-    { key: "admin", label: `Quản trị viên (${roleStats.admin})` },
-  ];
-
   return (
     <div>
       <PageHeader
         icon={UsersIcon}
         title="Quản lý người dùng"
-        subtitle="Quản lý tài khoản học viên, giáo viên và quản trị viên"
+        subtitle="Quản lý tài khoản học viên, giáo viên và quản trị viên trong hệ thống"
         extra={
           <Space>
             <Button
@@ -268,57 +265,72 @@ export default function AccountManagement() {
         ))}
       </Row>
 
-      <Card
+      <div
+        className="mira-fade-in"
         style={{
-          borderRadius: 12,
+          background: brandColors.paper,
           border: `1px solid ${brandColors.border}`,
+          borderRadius: 12,
           marginBottom: 20,
+          overflow: "hidden",
         }}
-        styles={{ body: { padding: 0 } }}
       >
-        <Tabs
-          activeKey={selectedRole}
-          onChange={(k) => setSelectedRole(k as "student" | "teacher" | "admin")}
-          items={tabsItems}
-          size="large"
-          tabBarStyle={{ padding: "0 20px", margin: 0, fontWeight: 500 }}
-        />
-        <div style={{ padding: 16, borderTop: `1px solid ${brandColors.borderLight}` }}>
-          <Row gutter={[12, 12]} align="middle">
-            <Col xs={24} md={14} lg={12}>
-              <Input
-                allowClear
-                size="large"
-                prefix={
-                  <Search size={16} color={brandColors.textTertiary} />
-                }
-                placeholder="Tìm kiếm theo tên hoặc email..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </Col>
-            <Col xs={24} md={10} lg={12}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  flexWrap: "wrap",
-                }}
+        <div style={{ padding: "16px 18px 0 18px" }}>
+          <Tabs value={selectedRole} onValueChange={(v) => setSelectedRole(v as "student" | "teacher" | "admin")}>
+            <TabsList className="bg-[#F5F5F5] p-1 rounded-lg inline-flex h-auto">
+              <TabsTrigger
+                value="student"
+                className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md py-1.5 px-3.5 text-sm font-medium"
               >
-                <Segmented
-                  value={selectedStatus}
-                  onChange={(v) => setSelectedStatus(v as "all" | "active" | "locked")}
-                  options={[
-                    { label: "Tất cả", value: "all" },
-                    { label: "Đang hoạt động", value: "active" },
-                    { label: "Đã khóa", value: "locked" },
-                  ]}
-                />
-              </div>
-            </Col>
-          </Row>
+                Học viên <span style={{ marginLeft: 6, opacity: 0.6, fontSize: 12 }}>{roleStats.student}</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="teacher"
+                className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md py-1.5 px-3.5 text-sm font-medium"
+              >
+                Giáo viên <span style={{ marginLeft: 6, opacity: 0.6, fontSize: 12 }}>{roleStats.teacher}</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="admin"
+                className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md py-1.5 px-3.5 text-sm font-medium"
+              >
+                Quản trị viên <span style={{ marginLeft: 6, opacity: 0.6, fontSize: 12 }}>{roleStats.admin}</span>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
-      </Card>
+        <div
+          style={{
+            padding: "14px 18px",
+            borderTop: `1px solid ${brandColors.borderLight}`,
+            display: "flex",
+            gap: 12,
+            flexWrap: "wrap",
+            alignItems: "center",
+          }}
+        >
+          <Input
+            allowClear
+            size="large"
+            prefix={<Search size={16} color={brandColors.textTertiary} />}
+            placeholder="Tìm kiếm theo tên hoặc email..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ flex: 1, minWidth: 240, maxWidth: 420 }}
+          />
+          <div style={{ marginLeft: "auto" }}>
+            <Segmented
+              value={selectedStatus}
+              onChange={(v) => setSelectedStatus(v as "all" | "active" | "locked")}
+              options={[
+                { label: "Tất cả", value: "all" },
+                { label: "Đang hoạt động", value: "active" },
+                { label: "Đã khóa", value: "locked" },
+              ]}
+            />
+          </div>
+        </div>
+      </div>
 
       <Card
         style={{
@@ -332,7 +344,6 @@ export default function AccountManagement() {
           columns={columns}
           dataSource={filteredUsers}
           loading={loading}
-          scroll={{ x: 700 }}
           pagination={{
             current: currentPage,
             pageSize: ITEMS_PER_PAGE,

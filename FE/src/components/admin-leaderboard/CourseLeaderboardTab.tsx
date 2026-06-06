@@ -25,17 +25,22 @@ import {
   Divider,
 } from '@mui/material';
 import { Users, TrendingUp, Award, Target, Crown } from 'lucide-react';
-import { 
-  adminLeaderboardService, 
-  formatScore, 
-  getGradeColor, 
-  getRankIcon 
+import { CountUp } from '../ui';
+import {
+  adminLeaderboardService,
+  formatScore,
+  getGradeColor,
+  getRankIcon,
 } from '../../services/admin-leaderboard.service';
-import type { 
-  Course, 
-  CourseLeaderboardData, 
-  LeaderboardStudent 
+import type {
+  Course,
+  CourseLeaderboardData,
+  LeaderboardStudent,
 } from '../../types/admin-leaderboard.types';
+
+const BRAND_RED = '#B90000';
+const BRAND_RED_SOFT = 'rgba(185, 0, 0, 0.08)';
+const BRAND_RED_TINT = 'rgba(185, 0, 0, 0.04)';
 
 const CourseLeaderboardTab: React.FC = () => {
   const theme = useTheme();
@@ -94,28 +99,30 @@ const CourseLeaderboardTab: React.FC = () => {
       {leaderboardData?.topStudents.map((student: LeaderboardStudent) => (
         <Card
           key={student.student.id}
+          className="mira-card-hover"
           sx={{
             mb: 2,
             borderRadius: 2,
-            border: '1px solid',
-            borderColor: 'divider',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+            border: '1px solid rgba(185,0,0,0.08)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
           }}
         >
           <CardContent sx={{ p: 2 }}>
             <Stack spacing={2}>
               <Box display="flex" alignItems="center" justifyContent="space-between">
-                <Box display="flex" alignItems="center" gap={1.5}>
-                  <Typography variant="h5" fontWeight="bold" color="#ff6b35">
+                  <Box display="flex" alignItems="center" gap={1.5}>
+                  <Typography variant="h5" fontWeight="bold" sx={{ color: BRAND_RED }}>
                     {getRankIcon(student.rank)}
                   </Typography>
-                  
+
                   <Avatar
                     src={student.student.avatar || undefined}
                     sx={{
                       width: 48,
                       height: 48,
-                      background: 'linear-gradient(135deg, #ff6b35, #ff8c42)',
+                      background: `linear-gradient(135deg, ${BRAND_RED}, #E53935)`,
+                      transition: 'transform 200ms ease',
+                      '&:hover': { transform: 'scale(1.08)' },
                     }}
                   >
                     {student.student.name.charAt(0)}
@@ -139,7 +146,7 @@ const CourseLeaderboardTab: React.FC = () => {
                   <Typography variant="caption" color="text.secondary" fontWeight={600}>
                     Điểm tổng kết
                   </Typography>
-                  <Typography variant="h5" fontWeight="bold" color="#ff6b35" mt={0.5}>
+                  <Typography variant="h5" fontWeight="bold" sx={{ color: BRAND_RED }} mt={0.5}>
                     {formatScore(student.finalScore)}
                   </Typography>
                 </Box>
@@ -175,7 +182,7 @@ const CourseLeaderboardTab: React.FC = () => {
   if (loading) {
     return (
       <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" minHeight="400px" gap={2}>
-        <CircularProgress sx={{ color: '#ff6b35' }} size={45} />
+        <CircularProgress sx={{ color: BRAND_RED }} size={45} />
         <Typography variant="body1" color="text.secondary">Đang tải bảng xếp hạng...</Typography>
       </Box>
     );
@@ -190,7 +197,15 @@ const CourseLeaderboardTab: React.FC = () => {
   return (
     <Box>
       {/* Controls */}
-      <Card sx={{ borderRadius: isMobile ? 2 : 3, mb: 3, boxShadow: '0 4px 20px rgba(255,107,53,0.08)' }}>
+      <Card
+        className="mira-fade-in-up"
+        sx={{
+          borderRadius: isMobile ? 2 : 3,
+          mb: 3,
+          boxShadow: '0 4px 20px rgba(185,0,0,0.06)',
+          border: '1px solid rgba(185,0,0,0.06)',
+        }}
+      >
         <CardContent sx={{ p: isMobile ? 2 : 3 }}>
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} md={8}>
@@ -230,16 +245,25 @@ const CourseLeaderboardTab: React.FC = () => {
 
       {/* Statistics */}
       {leaderboardData.statistics && (
-        <Grid container spacing={isMobile ? 2 : 3} mb={3}>
+        <Grid container spacing={isMobile ? 2 : 3} mb={3} className="mira-stagger">
           <Grid item xs={6} sm={6} md={3}>
-            <Card sx={{ borderRadius: isMobile ? 2 : 3, boxShadow: '0 4px 20px rgba(255,107,53,0.08)' }}>
+            <Card
+              className="mira-card-hover"
+              sx={{
+                borderRadius: isMobile ? 2 : 3,
+                boxShadow: '0 4px 20px rgba(185,0,0,0.06)',
+                border: '1px solid rgba(185,0,0,0.08)',
+              }}
+            >
               <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
                 <Box display="flex" alignItems="center" gap={1} mb={1}>
-                  <Box sx={{ 
-                    background: 'linear-gradient(135deg, #ff6b35, #ff8c42)', 
-                    borderRadius: isMobile ? 1 : 2, 
-                    p: isMobile ? 0.7 : 1, 
-                    display: 'flex' 
+                  <Box sx={{
+                    background: `linear-gradient(135deg, ${BRAND_RED}, #E53935)`,
+                    borderRadius: isMobile ? 1 : 2,
+                    p: isMobile ? 0.7 : 1,
+                    display: 'flex',
+                    transition: 'transform 200ms ease',
+                    '&:hover': { transform: 'rotate(-8deg) scale(1.08)' },
                   }}>
                     <Users size={isMobile ? 16 : 18} color="#fff" />
                   </Box>
@@ -247,21 +271,30 @@ const CourseLeaderboardTab: React.FC = () => {
                     Tổng số học viên
                   </Typography>
                 </Box>
-                <Typography variant={isMobile ? 'h6' : 'h5'} fontWeight="bold" color="#ff6b35">
-                  {leaderboardData.statistics.totalStudents}
+                <Typography variant={isMobile ? 'h6' : 'h5'} fontWeight="bold" sx={{ color: BRAND_RED }}>
+                  <CountUp end={leaderboardData.statistics.totalStudents} />
                 </Typography>
               </CardContent>
             </Card>
           </Grid>
           <Grid item xs={6} sm={6} md={3}>
-            <Card sx={{ borderRadius: isMobile ? 2 : 3, boxShadow: '0 4px 20px rgba(255,107,53,0.08)' }}>
+            <Card
+              className="mira-card-hover"
+              sx={{
+                borderRadius: isMobile ? 2 : 3,
+                boxShadow: '0 4px 20px rgba(185,0,0,0.06)',
+                border: '1px solid rgba(185,0,0,0.08)',
+              }}
+            >
               <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
                 <Box display="flex" alignItems="center" gap={1} mb={1}>
-                  <Box sx={{ 
-                    background: 'linear-gradient(135deg, #ff8c42, #ffa366)', 
-                    borderRadius: isMobile ? 1 : 2, 
-                    p: isMobile ? 0.7 : 1, 
-                    display: 'flex' 
+                  <Box sx={{
+                    background: 'linear-gradient(135deg, #E53935, #FF5252)',
+                    borderRadius: isMobile ? 1 : 2,
+                    p: isMobile ? 0.7 : 1,
+                    display: 'flex',
+                    transition: 'transform 200ms ease',
+                    '&:hover': { transform: 'rotate(-8deg) scale(1.08)' },
                   }}>
                     <TrendingUp size={isMobile ? 16 : 18} color="#fff" />
                   </Box>
@@ -269,21 +302,30 @@ const CourseLeaderboardTab: React.FC = () => {
                     Điểm trung bình
                   </Typography>
                 </Box>
-                <Typography variant={isMobile ? 'h6' : 'h5'} fontWeight="bold" color="#ff8c42">
-                  {formatScore(leaderboardData.statistics.averageScore)}
+                <Typography variant={isMobile ? 'h6' : 'h5'} fontWeight="bold" sx={{ color: BRAND_RED }}>
+                  <CountUp end={leaderboardData.statistics.averageScore} decimals={1} />
                 </Typography>
               </CardContent>
             </Card>
           </Grid>
           <Grid item xs={6} sm={6} md={3}>
-            <Card sx={{ borderRadius: isMobile ? 2 : 3, boxShadow: '0 4px 20px rgba(255,107,53,0.08)' }}>
+            <Card
+              className="mira-card-hover"
+              sx={{
+                borderRadius: isMobile ? 2 : 3,
+                boxShadow: '0 4px 20px rgba(185,0,0,0.06)',
+                border: '1px solid rgba(185,0,0,0.08)',
+              }}
+            >
               <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
                 <Box display="flex" alignItems="center" gap={1} mb={1}>
-                  <Box sx={{ 
-                    background: 'linear-gradient(135deg, #ff6b35, #ff8c42)', 
-                    borderRadius: isMobile ? 1 : 2, 
-                    p: isMobile ? 0.7 : 1, 
-                    display: 'flex' 
+                  <Box sx={{
+                    background: `linear-gradient(135deg, ${BRAND_RED}, #E53935)`,
+                    borderRadius: isMobile ? 1 : 2,
+                    p: isMobile ? 0.7 : 1,
+                    display: 'flex',
+                    transition: 'transform 200ms ease',
+                    '&:hover': { transform: 'rotate(-8deg) scale(1.08)' },
                   }}>
                     <Award size={isMobile ? 16 : 18} color="#fff" />
                   </Box>
@@ -291,21 +333,30 @@ const CourseLeaderboardTab: React.FC = () => {
                     Điểm cao nhất
                   </Typography>
                 </Box>
-                <Typography variant={isMobile ? 'h6' : 'h5'} fontWeight="bold" color="#ff6b35">
-                  {formatScore(leaderboardData.statistics.highestScore)}
+                <Typography variant={isMobile ? 'h6' : 'h5'} fontWeight="bold" sx={{ color: BRAND_RED }}>
+                  <CountUp end={leaderboardData.statistics.highestScore} decimals={1} />
                 </Typography>
               </CardContent>
             </Card>
           </Grid>
           <Grid item xs={6} sm={6} md={3}>
-            <Card sx={{ borderRadius: isMobile ? 2 : 3, boxShadow: '0 4px 20px rgba(255,107,53,0.08)' }}>
+            <Card
+              className="mira-card-hover"
+              sx={{
+                borderRadius: isMobile ? 2 : 3,
+                boxShadow: '0 4px 20px rgba(185,0,0,0.06)',
+                border: '1px solid rgba(185,0,0,0.08)',
+              }}
+            >
               <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
                 <Box display="flex" alignItems="center" gap={1} mb={1}>
-                  <Box sx={{ 
-                    background: 'linear-gradient(135deg, #ffa366, #ffb380)', 
-                    borderRadius: isMobile ? 1 : 2, 
-                    p: isMobile ? 0.7 : 1, 
-                    display: 'flex' 
+                  <Box sx={{
+                    background: 'linear-gradient(135deg, #FF5252, #FF8A80)',
+                    borderRadius: isMobile ? 1 : 2,
+                    p: isMobile ? 0.7 : 1,
+                    display: 'flex',
+                    transition: 'transform 200ms ease',
+                    '&:hover': { transform: 'rotate(-8deg) scale(1.08)' },
                   }}>
                     <Target size={isMobile ? 16 : 18} color="#fff" />
                   </Box>
@@ -313,8 +364,8 @@ const CourseLeaderboardTab: React.FC = () => {
                     Tỷ lệ đạt
                   </Typography>
                 </Box>
-                <Typography variant={isMobile ? 'h6' : 'h5'} fontWeight="bold" color="#ffa366">
-                  {leaderboardData.statistics.passRate.toFixed(1)}%
+                <Typography variant={isMobile ? 'h6' : 'h5'} fontWeight="bold" sx={{ color: BRAND_RED }}>
+                  <CountUp end={leaderboardData.statistics.passRate} decimals={1} suffix="%" />
                 </Typography>
               </CardContent>
             </Card>
@@ -323,49 +374,83 @@ const CourseLeaderboardTab: React.FC = () => {
       )}
 
       {/* Leaderboard Table/List */}
-      <Card sx={{ borderRadius: isMobile ? 2 : 3, boxShadow: '0 8px 28px rgba(255,107,53,0.1)', overflow: 'hidden' }}>
-        <Box sx={{ 
-          background: 'linear-gradient(90deg, #ff6b35, #ff8c42)', 
-          p: isMobile ? 1.5 : 2, 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: 1.2 
+      <Card
+        className="mira-fade-in-up"
+        sx={{
+          borderRadius: isMobile ? 2 : 3,
+          boxShadow: '0 8px 28px rgba(185,0,0,0.08)',
+          overflow: 'hidden',
+          border: '1px solid rgba(185,0,0,0.06)',
+        }}
+      >
+        <Box sx={{
+          background: `linear-gradient(135deg, ${BRAND_RED}, #E53935)`,
+          p: isMobile ? 1.5 : 2,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1.2,
+          position: 'relative',
+          overflow: 'hidden',
         }}>
-          <Crown size={isMobile ? 18 : 22} color="#fff" />
-          <Typography variant={isMobile ? 'subtitle1' : 'h6'} fontWeight="bold" color="#fff">
+          <Box
+            sx={{
+              position: 'absolute',
+              inset: 0,
+              background: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.12), transparent 50%)',
+              pointerEvents: 'none',
+            }}
+          />
+          <Crown size={isMobile ? 18 : 22} color="#fff" style={{ position: 'relative' }} />
+          <Typography
+            variant={isMobile ? 'subtitle1' : 'h6'}
+            fontWeight="bold"
+            color="#fff"
+            sx={{ position: 'relative' }}
+          >
             {isMobile ? 'Học viên xuất sắc' : `Học viên xuất sắc - ${leaderboardData.courseName || 'Khóa học'}`}
           </Typography>
         </Box>
 
         {isMobile ? (
-          <Box sx={{ p: 2 }}>
+          <Box sx={{ p: 2 }} className="mira-stagger">
             {renderMobileLeaderboard()}
           </Box>
         ) : (
           <TableContainer>
             <Table size={isTablet ? 'small' : 'medium'}>
               <TableHead>
-                <TableRow sx={{ background: 'rgba(255,107,53,0.04)' }}>
-                  <TableCell sx={{ fontWeight: 700, color: '#ff6b35' }}>Thứ hạng</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: '#ff6b35' }}>Học viên</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 700, color: '#ff6b35' }}>Điểm tổng kết</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 700, color: '#ff6b35' }}>Xếp loại</TableCell>
+                <TableRow sx={{ background: BRAND_RED_TINT }}>
+                  <TableCell sx={{ fontWeight: 700, color: BRAND_RED }}>Thứ hạng</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: BRAND_RED }}>Học viên</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, color: BRAND_RED }}>Điểm tổng kết</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, color: BRAND_RED }}>Xếp loại</TableCell>
                 </TableRow>
               </TableHead>
-              <TableBody>
+              <TableBody className="mira-stagger">
                 {leaderboardData.topStudents.map((student: LeaderboardStudent) => (
-                  <TableRow key={student.student.id} sx={{ '&:hover': { background: 'rgba(255,140,66,0.04)' } }}>
+                  <TableRow
+                    key={student.student.id}
+                    className="mira-row-hover"
+                    sx={{
+                      transition: 'background-color 200ms ease, transform 200ms ease',
+                    }}
+                  >
                     <TableCell>
                       <Typography variant="h6" fontWeight="bold">{getRankIcon(student.rank)}</Typography>
                     </TableCell>
                     <TableCell>
                       <Box display="flex" alignItems="center" gap={1.5}>
-                        <Avatar 
-                          src={student.student.avatar || undefined} 
-                          sx={{ 
-                            width: isTablet ? 36 : 42, 
-                            height: isTablet ? 36 : 42, 
-                            background: 'linear-gradient(135deg, #ff6b35, #ff8c42)' 
+                        <Avatar
+                          src={student.student.avatar || undefined}
+                          sx={{
+                            width: isTablet ? 36 : 42,
+                            height: isTablet ? 36 : 42,
+                            background: `linear-gradient(135deg, ${BRAND_RED}, #E53935)`,
+                            transition: 'transform 200ms ease, box-shadow 200ms ease',
+                            '&:hover': {
+                              transform: 'scale(1.1)',
+                              boxShadow: '0 4px 12px rgba(185,0,0,0.25)',
+                            },
                           }}
                         >
                           {student.student.name.charAt(0)}
@@ -381,14 +466,20 @@ const CourseLeaderboardTab: React.FC = () => {
                       </Box>
                     </TableCell>
                     <TableCell align="center">
-                      <Typography variant={isTablet ? 'body1' : 'h6'} fontWeight="bold" sx={{ color: '#ff6b35' }}>
+                      <Typography variant={isTablet ? 'body1' : 'h6'} fontWeight="bold" sx={{ color: BRAND_RED }}>
                         {formatScore(student.finalScore)}
                       </Typography>
                     </TableCell>
                     <TableCell align="center">
-                      <Chip 
-                        label={student.grade} 
-                        sx={{ bgcolor: getGradeColor(student.grade), color: '#fff', fontWeight: 700 }} 
+                      <Chip
+                        label={student.grade}
+                        sx={{
+                          bgcolor: getGradeColor(student.grade),
+                          color: '#fff',
+                          fontWeight: 700,
+                          transition: 'transform 200ms ease',
+                          '&:hover': { transform: 'scale(1.06)' },
+                        }}
                       />
                     </TableCell>
                   </TableRow>

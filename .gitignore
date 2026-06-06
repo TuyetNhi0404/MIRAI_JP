@@ -81,3 +81,6 @@ services/speaking-practice/uploads/*
 services/speaking-practice/.hf_cache/
 
 deploy.sh
+gsap-skills/
+taste-skill/
+req.txt

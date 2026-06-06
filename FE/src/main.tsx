@@ -7,6 +7,7 @@ import { setStore } from "./redux/storeRef";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { antdThemeConfig, brandColors } from "./theme/theme";
 import { globalStyles } from "./theme/animations";
+import "./styles/globals.css";
 import AppRouter from "./AppRouter";
 
 setStore(store);

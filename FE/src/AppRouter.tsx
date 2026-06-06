@@ -46,6 +46,7 @@ const QuizzesPage = lazy(() => import("./pages/Teacher/QuizzesPage"));
 const StudentStatisticsDashboard = lazy(() => import("./pages/Student/StudentStatistics"));
 const Leaderboard = lazy(() => import("./pages/Student/CourseLeaderboard").then(m => ({ default: m.Leaderboard })));
 const AdminLeaderboard = lazy(() => import("./pages/Admin/AdminLeaderboard"));
+const AdminHome = lazy(() => import("./pages/Admin/AdminHome"));
 const KanaPracticePage = lazy(() => import("./pages/Student/KanaPracticePage"));
 const TeacherCoursesPage = lazy(() => import("./pages/Teacher/TeacherCoursesPage"));
 const TeacherCourseStudentsPage = lazy(() => import("./pages/Teacher/TeacherCourseStudentsPage"));
@@ -104,7 +105,8 @@ const AppRouter = () => {
           {/* 🔐 Private routes */}
           <Route path="/dashboard" element={<DashboardLayout />}>
             {/* Admin routes */}
-            <Route path="admin" element={<AdminLeaderboard />} />
+            <Route path="admin" element={<AdminHome />} />
+            <Route path="admin/leaderboard" element={<AdminLeaderboard />} />
             <Route path="admin/users" element={<AccountManagement />} />
             <Route path="admin/courses" element={<CoursesPage />} />
             <Route path="admin/courses/new" element={<CourseFormPage />} />
