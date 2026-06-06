@@ -333,7 +333,7 @@ const CourseLeaderboardTab: React.FC = () => {
         }}>
           <Crown size={isMobile ? 18 : 22} color="#fff" />
           <Typography variant={isMobile ? 'subtitle1' : 'h6'} fontWeight="bold" color="#fff">
-            {isMobile ? 'Học viên xuất sắc' : `Học viên xuất sắc - ${leaderboardData.courseName}`}
+            {isMobile ? 'Học viên xuất sắc' : `Học viên xuất sắc - ${leaderboardData.courseName || 'Khóa học'}`}
           </Typography>
         </Box>
 

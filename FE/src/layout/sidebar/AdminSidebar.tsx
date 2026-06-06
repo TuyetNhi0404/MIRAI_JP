@@ -1,19 +1,19 @@
-// src/layout/sidebar/AdminSidebar.tsx
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { Menu, Typography } from "antd";
 import {
-  Drawer,
-  List,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Typography,
-  Box,
-  useMediaQuery,
-} from "@mui/material";
-import { BookOpen, Users, Trophy, ClipboardCheck, CalendarCog, ClipboardList, FileClock, Ban, BookMarked , Headphones} from "lucide-react";
+  BookOpen,
+  Users,
+  Trophy,
+  ClipboardCheck,
+  CalendarCog,
+  ClipboardList,
+  BookMarked,
+  Headphones,
+  CalendarOff,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-
+import { brandColors } from "../../theme/theme";
 
 interface MenuItem {
   id: string;
@@ -31,7 +31,6 @@ interface SidebarProps {
 const AdminSidebar: React.FC<SidebarProps> = ({ isOpen }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const isDesktop = useMediaQuery("(min-width:900px)");
 
   const menuItems: MenuItem[] = [
     { id: "leaderboard", label: "Bảng xếp hạng", icon: Trophy, path: "/dashboard/admin" },
@@ -39,8 +38,8 @@ const AdminSidebar: React.FC<SidebarProps> = ({ isOpen }) => {
     { id: "schedule-management", label: "Quản lý lịch học", icon: CalendarCog, path: "/dashboard/admin/schedule-management" },
     { id: "attendance-management", label: "Điểm danh", icon: ClipboardCheck, path: "/dashboard/admin/attendance-management" },
     { id: "courses-manage", label: "Quản lý khóa học", icon: BookOpen, path: "/dashboard/admin/courses" },
-    { id: "request-management", label: "Yêu cầu lịch học", icon: ClipboardList, path: "/dashboard/admin/request-management" },
-    { id: "requests", label: "Yêu cầu ghi danh", icon: FileClock, path: "/dashboard/admin/requests" },
+    { id: "request-management", label: "Yêu cầu xin nghỉ (slot)", icon: CalendarOff, path: "/dashboard/admin/request-management" },
+    { id: "requests", label: "Yêu cầu ghi danh", icon: ClipboardList, path: "/dashboard/admin/requests" },
     { id: "vocabulary", label: "Từ vựng JLPT", icon: BookMarked, path: "/dashboard/admin/vocabulary" },
     { id: "grammar-manage", label: "Ngữ pháp JLPT", icon: BookOpen, path: "/dashboard/admin/grammar" },
     { id: "listening-manage", label: "Bài nghe", icon: Headphones, path: "/dashboard/admin/listening" },
@@ -50,74 +49,52 @@ const AdminSidebar: React.FC<SidebarProps> = ({ isOpen }) => {
     navigate(path);
   };
 
+  const activePath = menuItems.find((m) => m.path === location.pathname)?.path;
+  const selectedKey = activePath || location.pathname;
+
   return (
-    <Drawer
-      variant={isDesktop ? "persistent" : "temporary"}
-      anchor="left"
-      open={isOpen}
-      onClose={() => {}}
-      sx={{
-        "& .MuiDrawer-paper": {
-          width: 200,
-          top: isDesktop ? "70px" : "64px",
-          bottom: isDesktop ? "60px" : 0,
-          borderRight: "2px solid #B90000",
-          transition: "all 0.3s ease",
-          boxShadow: "rgba(0, 0, 0, 0.1) 0px 2px 8px",
-        },
+    <aside
+      className="mira-fade-in"
+      style={{
+        position: "fixed",
+        top: 64,
+        bottom: 0,
+        left: 0,
+        width: 232,
+        background: brandColors.paper,
+        borderRight: `1px solid ${brandColors.border}`,
+        overflowY: "auto",
+        overflowX: "hidden",
+        zIndex: 90,
+        transform: isOpen ? "translateX(0)" : "translateX(-100%)",
+        transition: "transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
       }}
     >
-      <Box sx={{ mt: 2 }}>
-        <List>
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.path;
-
-            return (
-              <ListItemButton
-                key={item.id}
-                onClick={() => handleMenuClick(item.path)}
-                sx={{
-                  px: 2,
-                  py: 1.5,
-                  borderLeft: isActive
-                    ? "4px solid #B90000"
-                    : "4px solid transparent",
-                  backgroundColor: isActive ? "#FFF5E6" : "transparent",
-                  "&:hover": {
-                    backgroundColor: isActive ? "#FFF5E6" : "#f9f9f9",
-                  },
-                }}
-              >
-                <ListItemIcon
-                  sx={{
-                    minWidth: 35,
-                    color: isActive ? "#B90000" : "#666",
-                  }}
-                >
-                  <Icon size={20} />
-                </ListItemIcon>
-                <ListItemText
-                  primary={
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        color: isActive ? "#B90000" : "#666",
-                        fontWeight: isActive ? 600 : 400,
-                        fontSize: "14px",
-                        letterSpacing: "0.3px",
-                      }}
-                    >
-                      {item.label}
-                    </Typography>
-                  }
-                />
-              </ListItemButton>
-            );
-          })}
-        </List>
-      </Box>
-    </Drawer>
+      <div style={{ padding: "16px 12px 8px 16px" }}>
+        <Typography.Text
+          style={{
+            color: brandColors.textTertiary,
+            fontSize: 11,
+            fontWeight: 600,
+            textTransform: "uppercase",
+            letterSpacing: 0.6,
+          }}
+        >
+          Quản trị
+        </Typography.Text>
+      </div>
+      <Menu
+        mode="inline"
+        selectedKeys={[selectedKey]}
+        style={{ border: "none", background: "transparent", padding: "0 8px" }}
+        items={menuItems.map((item) => ({
+          key: item.path,
+          icon: <item.icon size={18} strokeWidth={1.8} />,
+          label: item.label,
+          onClick: () => handleMenuClick(item.path),
+        }))}
+      />
+    </aside>
   );
 };
 

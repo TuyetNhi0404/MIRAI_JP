@@ -1,0 +1,7 @@
+/dashboard/admin
+/dashboard/admin/users
+/dashboard/admin/schedule-management
+/dashboard/admin/attendance-management
+/dashboard/admin/courses
+/dashboard/admin/request-management -> change this to yêu cầu xin nghỉ (slot)
+/dashboard/admin/requests

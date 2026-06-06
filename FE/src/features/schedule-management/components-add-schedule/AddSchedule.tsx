@@ -1,225 +1,161 @@
-'use client';
-
-import React, { useState } from 'react';
-import { 
-  Box, 
-  Button, 
-  Typography, 
-  Tabs, 
-  Tab, 
-  Paper, 
-  useTheme, 
-  useMediaQuery,
+import React, { useState } from "react";
+import {
+  Button,
+  Card,
   Drawer,
   List,
-  ListItemButton,
-  ListItemText,
-  IconButton,
-  Divider
-} from '@mui/material';
-import { Plus, CalendarDays, List as ListIcon, Menu as MenuIcon } from 'lucide-react';
-import ScheduleCreatorCalendar from './add-ui-schedule';
-import ManageScheduleCalendar from '../components/index';
+  Space,
+  Tabs,
+  Typography,
+  Grid,
+} from "antd";
+import { Plus, CalendarDays, List as ListIcon, Menu as MenuIcon } from "lucide-react";
+import ScheduleCreatorCalendar from "./add-ui-schedule";
+import ManageScheduleCalendar from "../components/index";
+import { PageHeader } from "../../../components/ui";
+import { brandColors } from "../../../theme/theme";
 
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
-
-function TabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
-
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`schedule-tabpanel-${index}`}
-      aria-labelledby={`schedule-tab-${index}`}
-      {...other}
-    >
-      {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
-    </div>
-  );
-}
+const { useBreakpoint } = Grid;
 
 const tabs = [
-  { label: 'Lịch học', icon: <CalendarDays size={16} /> },
-  { label: 'Xem lịch học', icon: <ListIcon size={16} /> },
+  { label: "Lịch học", icon: <CalendarDays size={16} />, key: "add" },
+  { label: "Xem lịch học", icon: <ListIcon size={16} />, key: "view" },
 ];
 
 export default function AddSchedule() {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  
-  const [activeTab, setActiveTab] = useState(0);
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
+  const [activeTab, setActiveTab] = useState("add");
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
-
-
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setActiveTab(newValue);
+  const handleMobileTabSelect = (key: string) => {
+    setActiveTab(key);
     setMobileDrawerOpen(false);
   };
 
-  const handleMobileTabSelect = (index: number) => {
-    setActiveTab(index);
-    setMobileDrawerOpen(false);
-  };
+  const tabItems = tabs.map((t) => ({
+    key: t.key,
+    label: (
+      <Space size={6}>
+        {t.icon}
+        {t.label}
+      </Space>
+    ),
+  }));
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'grey.50', p: isMobile ? 1.5 : 3 }}>
-      <Paper sx={{ p: isMobile ? 2 : 3 }}>
-        {/* Header */}
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          mb: 3,
-          flexWrap: 'wrap',
-          gap: 2
-        }}>
-          <Typography variant={isMobile ? 'h5' : 'h4'} fontWeight={700}>
-            Quản lý lịch học
-          </Typography>
-          
-          {!isMobile && (
-            <Button 
-              variant="contained" 
-              onClick={() => setActiveTab(0)}
-              startIcon={<Plus size={18} />}
+    <div>
+      <PageHeader
+        icon={CalendarDays}
+        title="Quản lý lịch học"
+        subtitle="Tạo và quản lý lịch học cho các khóa học trong hệ thống"
+        extra={
+          !isMobile && (
+            <Button
+              type="primary"
+              icon={<Plus size={16} />}
+              onClick={() => setActiveTab("add")}
             >
               Thêm lịch học
             </Button>
-          )}
-          
+          )
+        }
+      />
 
-        </Box>
-
-        {/* Desktop Tabs */}
+      <Card
+        style={{
+          borderRadius: 12,
+          border: `1px solid ${brandColors.border}`,
+        }}
+        styles={{ body: { padding: isMobile ? 12 : 20 } }}
+      >
         {!isMobile ? (
-          <Tabs 
-            value={activeTab} 
-            onChange={handleTabChange} 
-            sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}
-            variant="scrollable"
-            scrollButtons="auto"
-          >
-            {tabs.map((tab, index) => (
-              <Tab 
-                key={index}
-                label={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {tab.icon}
-                    {tab.label}
-                  </Box>
-                }
-              />
-            ))}
-          </Tabs>
+          <Tabs
+            activeKey={activeTab}
+            onChange={setActiveTab}
+            items={tabItems}
+            size="large"
+            style={{ fontWeight: 500 }}
+          />
         ) : (
-          // Mobile: Show current tab with menu button
-          <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            mb: 2,
-            p: 2,
-            bgcolor: 'primary.50',
-            borderRadius: 1
-          }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              {tabs[activeTab].icon}
-              <Typography variant="body1" fontWeight={600}>
-                {tabs[activeTab].label}
-              </Typography>
-            </Box>
-            <IconButton onClick={() => setMobileDrawerOpen(true)} size="small">
-              <MenuIcon />
-            </IconButton>
-          </Box>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "12px 16px",
+              background: brandColors.redSoft,
+              borderRadius: 8,
+              marginBottom: 16,
+            }}
+          >
+            <Space>
+              {tabs.find((t) => t.key === activeTab)?.icon}
+              <Typography.Text strong>
+                {tabs.find((t) => t.key === activeTab)?.label}
+              </Typography.Text>
+            </Space>
+            <Button
+              type="text"
+              icon={<MenuIcon size={18} />}
+              onClick={() => setMobileDrawerOpen(true)}
+            />
+          </div>
         )}
 
-        {/* Mobile Tab Drawer */}
         <Drawer
-          anchor="bottom"
+          title="Chọn phần"
+          placement="bottom"
           open={mobileDrawerOpen}
           onClose={() => setMobileDrawerOpen(false)}
         >
-          <Box sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Chọn phần
-            </Typography>
-            <List>
-              {tabs.map((tab, index) => (
-                <React.Fragment key={index}>
-                  <ListItemButton 
-                    selected={activeTab === index}
-                    onClick={() => handleMobileTabSelect(index)}
+          <List
+            dataSource={tabs}
+            renderItem={(item) => (
+              <List.Item
+                onClick={() => handleMobileTabSelect(item.key)}
+                style={{
+                  cursor: "pointer",
+                  background:
+                    activeTab === item.key ? brandColors.redSoft : "transparent",
+                  borderRadius: 8,
+                  padding: "12px 16px",
+                }}
+              >
+                <Space>
+                  {item.icon}
+                  <Typography.Text
+                    strong={activeTab === item.key}
+                    style={{
+                      color:
+                        activeTab === item.key ? brandColors.red : undefined,
+                    }}
                   >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
-                      {tab.icon}
-                      <ListItemText primary={tab.label} />
-                    </Box>
-                  </ListItemButton>
-                  {index < tabs.length - 1 && <Divider />}
-                </React.Fragment>
-              ))}
-            </List>
-          </Box>
+                    {item.label}
+                  </Typography.Text>
+                </Space>
+              </List.Item>
+            )}
+          />
         </Drawer>
 
-        <TabPanel value={activeTab} index={0}>
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Lịch thêm lịch học
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Nhấp vào một ca học trên lịch dưới đây để tạo lịch học
-            </Typography>
-          </Box>
-          <ScheduleCreatorCalendar />
-        </TabPanel>
-
-        <TabPanel value={activeTab} index={1}>
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Lịch xem lịch học
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Xem và quản lý các lịch học hiện tại
-            </Typography>
-          </Box>
-          <ManageScheduleCalendar />
-        </TabPanel>
-
-        {/* Mobile FAB for Add Schedule */}
-        {isMobile && activeTab === 1 && (
-          <Box
-            sx={{
-              position: 'fixed',
-              bottom: 16,
-              right: 16,
-              zIndex: 1000,
-            }}
-          >
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => setActiveTab(0)}
-              sx={{
-                borderRadius: '50%',
-                width: 56,
-                height: 56,
-                minWidth: 56,
-                boxShadow: 3,
-              }}
-            >
-              <Plus size={24} />
-            </Button>
-          </Box>
-        )}
-      </Paper>
-    </Box>
+        <div className="mira-fade-in" key={activeTab}>
+          {activeTab === "add" && (
+            <div>
+              <Typography.Title level={5} style={{ marginBottom: 4 }}>
+                Lịch thêm lịch học
+              </Typography.Title>
+              <Typography.Text type="secondary">
+                Nhấp vào một ca học trên lịch dưới đây để tạo lịch học
+              </Typography.Text>
+              <div style={{ marginTop: 16 }}>
+                <ScheduleCreatorCalendar />
+              </div>
+            </div>
+          )}
+          {activeTab === "view" && <ManageScheduleCalendar />}
+        </div>
+      </Card>
+    </div>
   );
 }

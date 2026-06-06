@@ -1,60 +1,100 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Plus, Search, RefreshCw, Filter, CalendarDays, Edit, Trash2, MoreVertical, X } from 'lucide-react';
-import { 
-  Button, 
-  TextField, 
-  Chip, 
-  Alert, 
-  Box,
-  InputAdornment,
+import React, { useState, useEffect, useMemo } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import {
+  Plus,
+  Search,
+  RefreshCw,
+  CalendarDays,
+  Edit,
+  Trash2,
+  MoreVertical,
+  BookOpen,
+  Users,
+  GraduationCap,
+  BarChart3,
+} from "lucide-react";
+import {
+  App,
+  Button,
   Card,
-  CardContent,
-  MenuItem,
-  Menu,
-  IconButton,
+  Col,
+  Dropdown,
+  Input,
+  Row,
+  Segmented,
+  Skeleton,
+  Space,
+  Tag,
   Typography,
-  Snackbar
-} from '@mui/material';
-import { CheckCircle, Error as ErrorIcon } from '@mui/icons-material';
-import useMediaQuery from '@mui/material/useMediaQuery';
-import { useTheme } from '@mui/material/styles';
-import { courseService, type Course } from '../../services/courseService';
+} from "antd";
+import type { MenuProps } from "antd";
+import { courseService, type Course } from "../../services/courseService";
+import { PageHeader, StatCard, EmptyState } from "../../components/ui";
+import { brandColors } from "../../theme/theme";
+
+const { Text, Title } = Typography;
+
+type FilterStatus = "all" | "not_yet" | "in_progress" | "complete";
+
+const STATUS_MAP: Record<
+  Course["status"],
+  { label: string; color: string; bg: string; border: string }
+> = {
+  not_yet: {
+    label: "Chưa bắt đầu",
+    color: brandColors.warning,
+    bg: "#FFFBE6",
+    border: "#FFE58F",
+  },
+  in_progress: {
+    label: "Đang học",
+    color: brandColors.info,
+    bg: "#E6F4FF",
+    border: "#91CAFF",
+  },
+  complete: {
+    label: "Hoàn thành",
+    color: brandColors.success,
+    bg: "#F6FFED",
+    border: "#B7EB8F",
+  },
+};
+
+const formatDateFixed = (input?: string) => {
+  if (!input) return "-";
+  try {
+    const d = new Date(input);
+    return d.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  } catch {
+    return "-";
+  }
+};
 
 const CoursesPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { modal, message: msgApi } = App.useApp();
+
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [filterStatus, setFilterStatus] = useState<'all' | 'not_yet' | 'in_progress' | 'complete'>('all');
-  const [page, setPage] = useState(1);
-  const rowsPerPage = 6;
-  const [filterAnchorEl, setFilterAnchorEl] = useState<null | HTMLElement>(null);
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const [actionMenuAnchor, setActionMenuAnchor] = useState<{ [key: string]: HTMLElement | null }>({});
-  const [snackbar, setSnackbar] = useState({ 
-    open: false, 
-    message: '', 
-    severity: 'success' as 'success' | 'error' 
-  });
-
-  const showSnackbar = (message: string, severity: 'success' | 'error') => {
-    setSnackbar({ open: true, message, severity });
-  };
+  const [searchQuery, setSearchQuery] = useState("");
+  const [, setError] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
 
   const loadCourses = async () => {
     setLoading(true);
     setError(null);
     try {
-      // Backend automatically updates course status based on dates
       const allCourses = await courseService.getAll();
       setCourses(allCourses);
-    } catch (error: any) {
-      console.error('Error loading courses:', error);
-      setError(error.message || 'Tải danh sách khóa học thất bại');
+    } catch (err: unknown) {
+      console.error("Error loading courses:", err);
+      const message = err instanceof Error ? err.message : "Tải danh sách khóa học thất bại";
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -62,20 +102,15 @@ const CoursesPage: React.FC = () => {
 
   useEffect(() => {
     loadCourses();
-    
-    // Check if coming from create/update page
-    const state = location.state as { message?: string; type?: 'create' | 'update' } | null;
+    const state = location.state as
+      | { message?: string; type?: "create" | "update" }
+      | null;
     if (state?.message) {
-      showSnackbar(state.message, 'success');
-      // Clear state to prevent showing again on refresh
+      msgApi.success(state.message);
       window.history.replaceState({}, document.title);
     }
-
-    // Backend automatically updates course status based on dates
-    // No need for frontend sync interval anymore
   }, [location]);
 
-  // Debounce search query - only search after user stops typing for 500ms
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (searchQuery.trim()) {
@@ -85,615 +120,457 @@ const CoursesPage: React.FC = () => {
           try {
             const results = await courseService.search(searchQuery.trim());
             setCourses(results);
-            setPage(1);
-          } catch (error: any) {
-            console.error('Error searching courses:', error);
-            setError(error.message || 'Tìm kiếm khóa học thất bại');
-          } finally {
+    } catch (err: unknown) {
+      console.error("Error searching courses:", err);
+      const message = err instanceof Error ? err.message : "Tìm kiếm khóa học thất bại";
+      setError(message);
+    } finally {
             setLoading(false);
           }
         };
         performSearch();
       } else {
-        // If search is empty, reload all courses
         loadCourses();
       }
-    }, 500); // Wait 500ms after user stops typing
+    }, 400);
 
-    // Cleanup timeout on unmount or when searchQuery changes
     return () => clearTimeout(timeoutId);
   }, [searchQuery]);
 
-  const handleSearch = async () => {
-    // Manual search trigger (when clicking search button or pressing Enter)
-    if (searchQuery.trim()) {
-      setLoading(true);
-      setError(null);
-      try {
-        const results = await courseService.search(searchQuery.trim());
-        setCourses(results);
-        setPage(1);
-      } catch (error: any) {
-        console.error('Error searching courses:', error);
-        setError(error.message || 'Tìm kiếm khóa học thất bại');
-      } finally {
-        setLoading(false);
-      }
-    } else {
-      loadCourses();
-    }
-  };
-
   const handleDelete = async (id: string, name: string) => {
+    const confirmed = await modal.confirm({
+      title: "Xác nhận xóa khóa học",
+      content: `Bạn có chắc chắn muốn xóa khóa học "${name}"?`,
+      okText: "Xóa",
+      okType: "danger",
+      cancelText: "Hủy",
+    });
+    if (!confirmed) return;
     setLoading(true);
     setError(null);
     try {
       await courseService.delete(id);
-      showSnackbar(`Khóa học "${name}" đã được xóa thành công`, 'success');
+      msgApi.success(`Đã xóa khóa học "${name}"`);
       await loadCourses();
-    } catch (error: any) {
-      console.error('Error deleting course:', error);
-      showSnackbar(error.message || 'Xóa khóa học thất bại', 'error');
-      setError(error.message || 'Xóa khóa học thất bại');
+    } catch (err: unknown) {
+      console.error("Error deleting course:", err);
+      const message = err instanceof Error ? err.message : "Xóa khóa học thất bại";
+      msgApi.error(message);
+      setError(message);
       setLoading(false);
     }
   };
 
-  // Filter menu handlers
-  const openFilterMenu = (e: React.MouseEvent<HTMLButtonElement>) => setFilterAnchorEl(e.currentTarget);
-  const closeFilterMenu = () => setFilterAnchorEl(null);
-  const applyFilter = (status: 'all' | 'not_yet' | 'in_progress' | 'complete') => {
-    setFilterStatus(status);
-    setPage(1);
-    closeFilterMenu();
-  };
-
-  const handleEdit = (id: string) => {
-    navigate(`/admin/courses/${id}/edit`);
-    closeActionMenu(id);
-  };
-
-  const handleCreate = () => {
-    navigate('/admin/courses/new');
-  };
-
+  const handleEdit = (id: string) => navigate(`/admin/courses/${id}/edit`);
+  const handleCreate = () => navigate("/admin/courses/new");
   const handleViewStudents = (course: Course) => {
-    const courseId = course._id || course.id || '';
+    const courseId = course._id || course.id || "";
     navigate(`/dashboard/admin/courses/${courseId}/students`);
-    closeActionMenu(courseId);
   };
 
-  const handleOpenActionMenu = (event: React.MouseEvent<HTMLElement>, courseId: string) => {
-    setActionMenuAnchor({ [courseId]: event.currentTarget });
-  };
+  const filteredCourses = useMemo(
+    () =>
+      courses.filter((c) => {
+        if (filterStatus === "all") return true;
+        return c.status === filterStatus;
+      }),
+    [courses, filterStatus]
+  );
 
-  const closeActionMenu = (courseId: string) => {
-    setActionMenuAnchor(prev => ({ ...prev, [courseId]: null }));
-  };
+  const stats = useMemo(() => {
+    const total = courses.length;
+    const active = courses.filter((c) => c.status === "in_progress").length;
+    const upcoming = courses.filter((c) => c.status === "not_yet").length;
+    const completed = courses.filter((c) => c.status === "complete").length;
+    return { total, active, upcoming, completed };
+  }, [courses]);
 
-  // Backend automatically updates course status based on dates
-  // We just use the status returned from backend
-  const filteredCourses = courses.filter((c) => {
-    if (filterStatus === 'all') return true;
-    // Use status from database (not computed from dates)
-    return c.status === filterStatus;
-  });
-
-  // Format date to dd/MM/yyyy with fixed 2-digit day/month
-  const formatDateFixed = (input?: string) => {
-    if (!input) return '-';
-    try {
-      const d = new Date(input);
-      return d.toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-      });
-    } catch {
-      return '-';
-    }
-  };
-
-  const totalPages = Math.max(1, Math.ceil(filteredCourses.length / rowsPerPage));
-  const currentPage = Math.min(page, totalPages);
-  const startIndex = (currentPage - 1) * rowsPerPage;
-  const endIndex = startIndex + rowsPerPage;
-  const visibleCourses = isMobile ? filteredCourses : filteredCourses.slice(startIndex, endIndex);
-  const pagesArray = Array.from({ length: totalPages }, (_, i) => i + 1);
-
-  const goPrev = () => setPage((p) => Math.max(1, p - 1));
-  const goNext = () => setPage((p) => Math.min(totalPages, p + 1));
-
-  
-
-  const mapStatus = (s: Course['status']) => {
-    // not_yet -> red, in_progress -> yellow, complete -> green
-    if (s === 'not_yet') return { label: 'Chưa bắt đầu', color: 'error' as const };
-    if (s === 'in_progress') return { label: 'Đang học', color: 'warning' as const };
-    return { label: 'Hoàn thành', color: 'success' as const };
-  };
+  const filterOptions: { label: string; value: FilterStatus }[] = [
+    { label: `Tất cả (${stats.total})`, value: "all" },
+    { label: `Đang học (${stats.active})`, value: "in_progress" },
+    { label: `Sắp khai giảng (${stats.upcoming})`, value: "not_yet" },
+    { label: `Hoàn thành (${stats.completed})`, value: "complete" },
+  ];
 
   return (
-    <Box sx={{ padding: '20px' }}>
-      {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', flexDirection: { xs: 'column', sm: 'row' }, gap: 1.5, mb: 3 }}>
-        <Typography
-          variant={isMobile ? "h5" : "h4"}
-          sx={{
-            color: "#023665",
-            fontWeight: "bold",
-            fontSize: { xs: "1.5rem", sm: "2rem" },
-          }}
-        >
-          QUẢN LÝ KHÓA HỌC
-        </Typography>
-      </Box>
-
-      {/* Search + Right actions */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4, flexWrap: { xs: 'nowrap', sm: 'nowrap' } }}>
-        <TextField
-          placeholder="Tìm kiếm khóa học..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search size={18} color="#6b7280" />
-              </InputAdornment>
-            ),
-          }}
-          sx={{ 
-            flex: 1, 
-            minWidth: 0, 
-            maxWidth: 520,
-            '& .MuiOutlinedInput-root': {
-              borderRadius: '12px',
-              backgroundColor: '#ffffff',
-              '& fieldset': {
-                borderColor: '#e5e7eb',
-              },
-              '&:hover fieldset': {
-                borderColor: '#d1d5db',
-              },
-              '&.Mui-focused fieldset': {
-                borderColor: '#B90000',
-                borderWidth: '2px'
-              }
-            }
-          }}
-          variant="outlined"
-        />
-        <IconButton
-          onClick={handleSearch}
-          sx={{
-            width: 44,
-            height: 44,
-            borderRadius: '12px',
-            color: '#6b7280',
-            border: '1px solid #e5e7eb',
-            backgroundColor: '#ffffff',
-            '&:hover': { 
-              borderColor: '#B90000', 
-              backgroundColor: '#fff5e6',
-              color: '#B90000'
-            },
-            transition: 'all 0.2s ease'
-          }}
-        >
-          <RefreshCw size={18} />
-        </IconButton>
-        <IconButton
-          onClick={openFilterMenu}
-          sx={{
-            width: 44,
-            height: 44,
-            borderRadius: '12px',
-            color: '#6b7280',
-            border: '1px solid #e5e7eb',
-            backgroundColor: '#ffffff',
-            '&:hover': { 
-              borderColor: '#B90000', 
-              backgroundColor: '#fff5e6',
-              color: '#B90000'
-            },
-            transition: 'all 0.2s ease'
-          }}
-        >
-          <Filter size={18} />
-        </IconButton>
-        <Menu anchorEl={filterAnchorEl} open={Boolean(filterAnchorEl)} onClose={closeFilterMenu}>
-          <MenuItem selected={filterStatus === 'all'} onClick={() => applyFilter('all')}>Tất cả</MenuItem>
-          <MenuItem selected={filterStatus === 'not_yet'} onClick={() => applyFilter('not_yet')}>Chưa bắt đầu</MenuItem>
-          <MenuItem selected={filterStatus === 'in_progress'} onClick={() => applyFilter('in_progress')}>Đang học</MenuItem>
-          <MenuItem selected={filterStatus === 'complete'} onClick={() => applyFilter('complete')}>Hoàn thành</MenuItem>
-        </Menu>
-        <Box sx={{ flex: 1, display: { xs: 'none', sm: 'block' } }} />
-        <Box sx={{ display: { xs: 'none', sm: 'flex' } }}>
+    <div>
+      <PageHeader
+        icon={BookOpen}
+        title="Quản lý khóa học"
+        subtitle="Theo dõi, chỉnh sửa và quản lý toàn bộ khóa học trong hệ thống"
+        extra={
           <Button
-            variant="contained"
+            type="primary"
+            icon={<Plus size={16} />}
             onClick={handleCreate}
-            startIcon={<Plus size={18} />}
-            sx={{ 
-              backgroundColor: '#B90000', 
-              borderRadius: '12px', 
-              px: 3,
-              py: 1.25,
-              fontWeight: 600,
-              fontSize: '0.875rem',
-              textTransform: 'none',
-              boxShadow: '0 2px 8px rgba(236, 117, 16, 0.25)',
-              '&:hover': { 
-                backgroundColor: '#d6690d',
-                boxShadow: '0 4px 12px rgba(236, 117, 16, 0.35)',
-                transform: 'translateY(-1px)'
-              },
-              transition: 'all 0.2s ease'
-            }}
           >
-          Thêm khóa học
+            Thêm khóa học
           </Button>
-        </Box>
-      </Box>
+        }
+      />
 
-      {/* New Course button on its own row (mobile only) */}
-      <Box sx={{ display: { xs: 'flex', sm: 'none' }, justifyContent: 'flex-end', mb: 3 }}>
-        <Button
-          variant="contained"
-          onClick={handleCreate}
-          startIcon={<Plus size={18} />}
-          sx={{ 
-            backgroundColor: '#B90000', 
-            borderRadius: '12px', 
-            px: 3,
-            py: 1.25,
-            fontWeight: 600,
-            fontSize: '0.875rem',
-            textTransform: 'none',
-            boxShadow: '0 2px 8px rgba(236, 117, 16, 0.25)',
-            '&:hover': { 
-              backgroundColor: '#d6690d',
-              boxShadow: '0 4px 12px rgba(236, 117, 16, 0.35)',
-              transform: 'translateY(-1px)'
-            },
-            transition: 'all 0.2s ease',
-            width: { xs: '100%', sm: 'auto' } 
-          }}
-        >
-          Thêm khóa học
-        </Button>
-      </Box>
+      <Row gutter={[12, 12]} style={{ marginBottom: 20 }} className="mira-stagger">
+        <Col xs={12} sm={12} md={6}>
+          <StatCard
+            label="Tổng khóa học"
+            value={stats.total}
+            icon={BookOpen}
+            accent="primary"
+            loading={loading && courses.length === 0}
+          />
+        </Col>
+        <Col xs={12} sm={12} md={6}>
+          <StatCard
+            label="Đang học"
+            value={stats.active}
+            icon={BarChart3}
+            accent="info"
+            loading={loading && courses.length === 0}
+          />
+        </Col>
+        <Col xs={12} sm={12} md={6}>
+          <StatCard
+            label="Sắp khai giảng"
+            value={stats.upcoming}
+            icon={CalendarDays}
+            accent="warning"
+            loading={loading && courses.length === 0}
+          />
+        </Col>
+        <Col xs={12} sm={12} md={6}>
+          <StatCard
+            label="Hoàn thành"
+            value={stats.completed}
+            icon={GraduationCap}
+            accent="success"
+            loading={loading && courses.length === 0}
+          />
+        </Col>
+      </Row>
 
-
-      {/* Error Message */}
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-      )}
-
-      {/* Card list */}
-      {loading ? (
-        <Box sx={{ padding: 8, textAlign: 'center', color: '#6b7280' }}>
-            <Typography variant="body1" sx={{ fontSize: '0.875rem' }}>Đang tải khóa học...</Typography>
-        </Box>
-        ) : filteredCourses.length === 0 ? (
-        <Box sx={{ padding: 8, textAlign: 'center', color: '#6b7280' }}>
-            <Typography variant="body1" sx={{ fontSize: '0.875rem' }}>Không có khóa học nào phù hợp với bộ lọc hiện tại.</Typography>
-        </Box>
-      ) : (
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr', lg: '1fr 1fr 1fr' }, gap: { xs: 1.5, md: 2.5 } }}>
-          {visibleCourses.map((course) => {
-            // Use status from database (not computed from dates)
-            const status = mapStatus(course.status);
-            return (
-              <Card 
-                key={course._id || course.id} 
-                variant="outlined" 
-                onClick={() => handleViewStudents(course)}
-                sx={{ 
-                  borderRadius: '16px', 
-                  overflow: 'hidden', 
-                  border: '1px solid #e8eaed',
-                  backgroundColor: '#ffffff',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', 
-                  position: 'relative',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-                  cursor: 'pointer',
-                  '&:hover': { 
-                    boxShadow: '0 8px 24px rgba(2,54,101,0.15)', 
-                    transform: 'translateY(-4px)',
-                    borderColor: '#d0d7de'
-                  } 
-                }}
+      <Card
+        style={{
+          borderRadius: 12,
+          border: `1px solid ${brandColors.border}`,
+          marginBottom: 20,
+        }}
+        styles={{ body: { padding: 16 } }}
+      >
+        <Row gutter={[12, 12]} align="middle">
+          <Col xs={24} md={12} lg={10}>
+            <Input
+              allowClear
+              size="large"
+              prefix={<Search size={16} color={brandColors.textTertiary} />}
+              placeholder="Tìm kiếm khóa học theo tên, giáo viên..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </Col>
+          <Col xs={24} md={12} lg={14}>
+            <Space wrap style={{ width: "100%", justifyContent: "flex-end" }}>
+              <Segmented
+                value={filterStatus}
+                onChange={(v) => setFilterStatus(v as FilterStatus)}
+                options={filterOptions}
+              />
+              <Button
+                icon={<RefreshCw size={16} />}
+                onClick={loadCourses}
+                loading={loading}
               >
-                <CardContent sx={{ p: { xs: 2.5, md: 3 }, position: 'relative' }}>
-                  {/* Action Button - Top Right (only show for "not_yet" status from database) */}
-                  {course.status === 'not_yet' && (
-                    <Box sx={{ position: 'absolute', top: 12, right: 12, zIndex: 1 }}>
-                      <IconButton
-                        size="small"
-                        onClick={(e) => {
-                          e.stopPropagation(); // Prevent card click
-                          handleOpenActionMenu(e, course._id || course.id || '');
-                        }}
-                        sx={{
-                          color: '#6b7280',
-                          backgroundColor: '#f9fafb',
-                          width: 32,
-                          height: 32,
-                          '&:hover': {
-                            backgroundColor: '#f3f4f6',
-                            color: '#023665'
-                          },
-                          transition: 'all 0.2s ease'
+                Làm mới
+              </Button>
+            </Space>
+          </Col>
+        </Row>
+      </Card>
+
+      {loading && courses.length === 0 ? (
+        <Row gutter={[16, 16]}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Col xs={24} md={12} lg={8} key={i}>
+              <Card style={{ borderRadius: 12 }}>
+                <Skeleton active paragraph={{ rows: 4 }} />
+              </Card>
+            </Col>
+          ))}
+        </Row>
+      ) : filteredCourses.length === 0 ? (
+        <EmptyState
+          title={searchQuery ? "Không tìm thấy khóa học" : "Chưa có khóa học nào"}
+          description={
+            searchQuery
+              ? "Thử từ khóa khác hoặc xóa bộ lọc để xem tất cả"
+              : "Bắt đầu tạo khóa học đầu tiên cho trung tâm của bạn"
+          }
+          icon={BookOpen}
+          action={!searchQuery ? { label: "Tạo khóa học", onClick: handleCreate } : undefined}
+        />
+      ) : (
+        <Row gutter={[16, 16]} className="mira-stagger">
+          {filteredCourses.map((course) => {
+            const status = STATUS_MAP[course.status];
+            const id = course._id || course.id || "";
+            const enrolledPct = Math.min(
+              100,
+              (course.enrolledCount / course.capacity) * 100
+            );
+            const isEditable = course.status === "not_yet";
+
+            const actionItems: MenuProps["items"] = isEditable
+              ? [
+                  {
+                    key: "edit",
+                    label: "Chỉnh sửa",
+                    icon: <Edit size={16} />,
+                    onClick: () => handleEdit(id),
+                  },
+                  { type: "divider" },
+                  {
+                    key: "delete",
+                    label: "Xóa",
+                    icon: <Trash2 size={16} />,
+                    danger: true,
+                    onClick: () => handleDelete(id, course.name),
+                  },
+                ]
+              : [];
+
+            return (
+              <Col xs={24} md={12} lg={8} key={id}>
+                <Card
+                  hoverable
+                  className="mira-card-hover"
+                  onClick={() => handleViewStudents(course)}
+                  style={{
+                    borderRadius: 12,
+                    border: `1px solid ${brandColors.border}`,
+                    height: "100%",
+                  }}
+                  styles={{ body: { padding: 18 } }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      justifyContent: "space-between",
+                      marginBottom: 12,
+                    }}
+                  >
+                    <Space size={10} align="center">
+                      <div
+                        style={{
+                          width: 38,
+                          height: 38,
+                          borderRadius: 8,
+                          background: brandColors.redSoft,
+                          color: brandColors.red,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
                         }}
                       >
-                        <MoreVertical size={18} />
-                      </IconButton>
-                      <Menu
-                        anchorEl={actionMenuAnchor[course._id || course.id || '']}
-                        open={Boolean(actionMenuAnchor[course._id || course.id || ''])}
-                        onClose={() => closeActionMenu(course._id || course.id || '')}
-                        onClick={(e) => e.stopPropagation()} // Prevent card click when clicking menu
-                        anchorOrigin={{
-                          vertical: 'top',
-                          horizontal: 'right',
-                        }}
-                        transformOrigin={{
-                          vertical: 'top',
-                          horizontal: 'right',
+                        <BookOpen size={18} strokeWidth={2} />
+                      </div>
+                      <Text
+                        type="secondary"
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 600,
+                          textTransform: "uppercase",
+                          letterSpacing: 0.5,
                         }}
                       >
-                        <MenuItem onClick={(e) => {
-                          e.stopPropagation();
-                          handleEdit(course._id || course.id || '');
-                        }}>
-                          <Edit size={18} style={{ marginRight: '8px' }} />
-                           Chỉnh sửa
-                        </MenuItem>
-                        <MenuItem 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(course._id || course.id || '', course.name);
-                            closeActionMenu(course._id || course.id || '');
+                        Khóa học
+                      </Text>
+                    </Space>
+                    {isEditable && actionItems.length > 0 && (
+                      <Dropdown
+                        menu={{ items: actionItems }}
+                        trigger={["click"]}
+                        placement="bottomRight"
+                      >
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<MoreVertical size={16} />}
+                          onClick={(e) => e.stopPropagation()}
+                          aria-label="More actions"
+                        />
+                      </Dropdown>
+                    )}
+                  </div>
+
+                  <Title
+                    level={5}
+                    style={{
+                      margin: 0,
+                      marginBottom: 12,
+                      fontSize: 16,
+                      fontWeight: 600,
+                      lineHeight: 1.35,
+                      minHeight: "2.7em",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {course.name}
+                  </Title>
+
+                  <div
+                    style={{
+                      borderTop: `1px solid ${brandColors.borderLight}`,
+                      paddingTop: 12,
+                    }}
+                  >
+                    <Row gutter={[8, 8]}>
+                      <Col span={24}>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            fontSize: 13,
                           }}
-                          sx={{ color: 'error.main' }}
                         >
-                          <Trash2 size={18} style={{ marginRight: '8px' }} />
-                           Xóa
-                        </MenuItem>
-                      </Menu>
-                    </Box>
-                  )}
-
-                  {/* Course Name */}
-                  <Box sx={{ mb: 2.5, pr: 5 }}>
-                    <Typography 
-                      variant="body2" 
-                      sx={{ 
-                        color: '#6b7280', 
-                        fontSize: '0.75rem',
-                        fontWeight: 500,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
-                        mb: 0.5
-                      }}
-                    >
-                      Tên khóa học
-                    </Typography>
-                    <Typography 
-                      variant="h6" 
-                      sx={{ 
-                        color: '#023665', 
-                        fontWeight: 700,
-                        fontSize: '1.125rem',
-                        lineHeight: 1.4,
-                        wordBreak: 'break-word'
-                      }}
-                    >
-                      {course.name}
-                    </Typography>
-                  </Box>
-
-                  {/* Divider */}
-                  <Box sx={{ height: '1px', backgroundColor: '#f0f0f0', mb: 2 }} />
-
-                  {/* Info Grid */}
-                  <Box sx={{ display: 'grid', gap: 1.75 }}>
-                    {/* Homeroom Teacher */}
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500 }}>
-                        Giáo viên chủ nhiệm
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: '#111827', fontSize: '0.875rem', fontWeight: 600, textAlign: 'right', maxWidth: '60%' }}>
-                        {course.homeroomTeacher || '-'}
-                      </Typography>
-                    </Box>
-
-                    {/* Session & Capacity Row */}
-                    <Box sx={{ display: 'flex', gap: 2 }}>
-                      <Box sx={{ flex: 1 }}>
-                        <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500, mb: 0.25 }}>
+                          <Text type="secondary">Giáo viên chủ nhiệm</Text>
+                          <Text strong style={{ textAlign: "right" }}>
+                            {course.homeroomTeacher || "-"}
+                          </Text>
+                        </div>
+                      </Col>
+                      <Col span={12}>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
                           Ca học
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: '#111827', fontSize: '0.875rem', fontWeight: 600 }}>
+                        </Text>
+                        <div style={{ fontSize: 14, fontWeight: 600 }}>
                           {course.session ?? 0}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ flex: 1 }}>
-                        <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500, mb: 0.25 }}>
+                        </div>
+                      </Col>
+                      <Col span={12}>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
                           Sức chứa
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: '#111827', fontSize: '0.875rem', fontWeight: 600 }}>
+                        </Text>
+                        <div style={{ fontSize: 14, fontWeight: 600 }}>
                           {course.capacity}
-                        </Typography>
-                      </Box>
-                    </Box>
+                        </div>
+                      </Col>
+                    </Row>
 
-                    {/* Enrolled */}
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
-                      p: 1.5, 
-                      borderRadius: '8px',
-                      backgroundColor: '#f9fafb',
-                      border: '1px solid #f0f0f0'
-                    }}>
-                      <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500 }}>
-                        Đã ghi danh
-                      </Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography 
-                          variant="body1" 
-                          sx={{ 
-                            color: '#B90000', 
-                            fontSize: '1rem',
-                            fontWeight: 700 
+                    <div
+                      style={{
+                        marginTop: 12,
+                        padding: "10px 12px",
+                        borderRadius: 8,
+                        background: brandColors.redSoft,
+                        border: `1px solid #FFD6D6`,
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          marginBottom: 6,
+                        }}
+                      >
+                        <Space size={6}>
+                          <Users size={13} color={brandColors.textSecondary} />
+                          <Text
+                            type="secondary"
+                            style={{ fontSize: 12, fontWeight: 500 }}
+                          >
+                            Đã ghi danh
+                          </Text>
+                        </Space>
+                        <Text
+                          strong
+                          style={{
+                            color: brandColors.red,
+                            fontSize: 14,
+                            fontVariantNumeric: "tabular-nums",
                           }}
                         >
                           {course.enrolledCount}
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.75rem' }}>
-                          / {course.capacity}
-                        </Typography>
-                      </Box>
-                    </Box>
-
-                    {/* Dates */}
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                      {/* Start Date */}
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500 }}>
-                          Ngày bắt đầu
-                        </Typography>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0, justifyContent: 'flex-end', width: { xs: 160, sm: 180 }, flexShrink: 0 }}>
-                          <CalendarDays size={16} color="#6b7280" />
-                          <Typography variant="body2" sx={{ color: '#111827', fontSize: '0.875rem', fontWeight: 500, fontVariantNumeric: 'tabular-nums', ml: 0 }}>
-                            {formatDateFixed(course.startDate)}
-                          </Typography>
-                        </Box>
-                      </Box>
-
-                      {/* End Date */}
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500 }}>
-                          Ngày kết thúc
-                        </Typography>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0, justifyContent: 'flex-end', width: { xs: 160, sm: 180 }, flexShrink: 0 }}>
-                          <CalendarDays size={16} color="#6b7280" />
-                          <Typography variant="body2" sx={{ color: '#111827', fontSize: '0.875rem', fontWeight: 500, fontVariantNumeric: 'tabular-nums', ml: 0 }}>
-                            {formatDateFixed(course.endDate)}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </Box>
-
-                    {/* Status */}
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 1 }}>
-                      <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500 }}>
-                        Trạng thái
-                      </Typography>
-                      <Chip 
-                        label={status.label} 
-                        color={status.color} 
-                        size="small"
-                        sx={{
-                          fontWeight: 600,
-                          fontSize: '0.75rem',
-                          height: 24,
-                          borderRadius: '6px'
+                          <Text type="secondary" style={{ fontSize: 12, marginLeft: 4 }}>
+                            / {course.capacity}
+                          </Text>
+                        </Text>
+                      </div>
+                      <div
+                        style={{
+                          width: "100%",
+                          height: 4,
+                          borderRadius: 99,
+                          background: "#FFD6D6",
+                          overflow: "hidden",
                         }}
-                      />
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
+                      >
+                        <div
+                          style={{
+                            width: `${enrolledPct}%`,
+                            height: "100%",
+                            background: brandColors.red,
+                            borderRadius: "inherit",
+                            transition: "width 600ms cubic-bezier(0.16, 1, 0.3, 1)",
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginTop: 12,
+                        fontSize: 12,
+                        color: brandColors.textSecondary,
+                      }}
+                    >
+                      <span>
+                        <CalendarDays
+                          size={12}
+                          style={{ verticalAlign: "middle", marginRight: 4 }}
+                        />
+                        {formatDateFixed(course.startDate)}
+                      </span>
+                      <span>→ {formatDateFixed(course.endDate)}</span>
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: 12,
+                        paddingTop: 12,
+                        borderTop: `1px dashed ${brandColors.border}`,
+                      }}
+                    >
+                      <Tag
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 500,
+                          padding: "2px 8px",
+                          borderRadius: 4,
+                          background: status.bg,
+                          color: status.color,
+                          border: `1px solid ${status.border}`,
+                          margin: 0,
+                        }}
+                      >
+                        {status.label}
+                      </Tag>
+                    </div>
+                  </div>
+                </Card>
+              </Col>
             );
           })}
-        </Box>
+        </Row>
       )}
-
-  {/* Pagination (hidden on mobile) */}
-  {!isMobile && (
-  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 3, gap: { xs: 0.75, md: 1.2 } }}>
-    <Button size="small" variant="outlined" onClick={goPrev} disabled={currentPage === 1} sx={{ borderRadius: '10px', minWidth: { xs: 28, md: 36 } }}>{'<'}</Button>
-    {pagesArray.map((p) => (
-      p === currentPage ? (
-        <Box key={p} sx={{ px: { xs: 1, md: 1.5 }, py: 0.4, fontWeight: 700, color: '#111827', border: '1px solid #cfd8dc', borderRadius: '10px', backgroundColor: '#f3f4f6', minWidth: { xs: 28, md: 36 }, textAlign: 'center' }}>{p}</Box>
-      ) : (
-        <Button
-          key={p}
-          size="small"
-          variant="outlined"
-          onClick={() => setPage(p)}
-          sx={{ borderRadius: '10px', minWidth: { xs: 28, md: 36 } }}
-        >
-          {p}
-        </Button>
-      )
-    ))}
-    <Button size="small" variant="outlined" onClick={goNext} disabled={currentPage === totalPages} sx={{ borderRadius: '10px', minWidth: { xs: 28, md: 36 } }}>{'>'}</Button>
-  </Box>
-  )}
-
-      {/* Custom Toast Snackbar - Giống AssignmentsPage */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={4000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-        sx={{ top: { xs: 72, sm: 84 } }}
-      >
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1.5,
-            bgcolor: snackbar.severity === 'success' ? '#B90000' : '#f44336',
-            color: 'white',
-            px: 3,
-            py: 1.5,
-            borderRadius: 2,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            minWidth: '300px',
-            animation: 'slideIn 0.3s ease-out'
-          }}
-        >
-          {snackbar.severity === 'success' ? (
-            <CheckCircle sx={{ fontSize: 24 }} />
-          ) : (
-            <ErrorIcon sx={{ fontSize: 24 }} />
-          )}
-          <Typography variant="body1" sx={{ fontWeight: 500, flex: 1 }}>
-            {snackbar.message}
-          </Typography>
-          <IconButton
-            size="small"
-            onClick={() => setSnackbar({ ...snackbar, open: false })}
-            sx={{ 
-              color: 'white',
-              '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' }
-            }}
-          >
-            <X size={18} />
-          </IconButton>
-        </Box>
-      </Snackbar>
-
-      <style>
-        {`
-          @keyframes slideIn {
-            from {
-              transform: translateX(100%);
-              opacity: 0;
-            }
-            to {
-              transform: translateX(0);
-              opacity: 1;
-            }
-          }
-        `}
-      </style>
-    </Box>
+    </div>
   );
 };
 
