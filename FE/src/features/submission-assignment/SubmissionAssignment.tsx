@@ -45,7 +45,7 @@ const SubmissionAssignment: React.FC = () => {
         const response = await submissionService.getMyEnrolledCourses();
         
         if (response.courses.length === 0) {
-          setError("You have not enrolled in any courses. Please register for a course first.");
+          setError("Bạn chưa đăng ký tham gia khóa học nào. Vui lòng đăng ký khóa học trước.");
           setInitialLoading(false);
           return;
         }
@@ -61,9 +61,9 @@ const SubmissionAssignment: React.FC = () => {
       } catch (err) {
         const error = err as { response?: { status?: number } };
         if (error.response?.status === 404) {
-          setError("You have not enrolled in any courses. Please register for a course first.");
+          setError("Bạn chưa đăng ký tham gia khóa học nào. Vui lòng đăng ký khóa học trước.");
         } else {
-          setError("Unable to load course list. Please try again.");
+          setError("Không thể tải danh sách khóa học. Vui lòng thử lại.");
         }
       } finally {
         setInitialLoading(false);
@@ -111,12 +111,12 @@ const SubmissionAssignment: React.FC = () => {
       setAssignments(assignmentsWithStatus);
     } catch (err) {
       const error = err as { response?: { status?: number; data?: { message?: string } } };
-      const errorMsg = error.response?.data?.message || "Unable to load assignments";
+      const errorMsg = error.response?.data?.message || "Không thể tải danh sách bài tập";
       if (error.response?.status === 404) {
         setError(null);
         setAssignments([]);
       } else if (error.response?.status === 401 || error.response?.status === 403) {
-        setError("You do not have access permission. Please log in again.");
+        setError("Bạn không có quyền truy cập. Vui lòng đăng nhập lại.");
       } else {
         setError(errorMsg);
         setAssignments([]);
@@ -161,7 +161,7 @@ const SubmissionAssignment: React.FC = () => {
         }}
       >
         <CircularProgress sx={{ color: "#B90000" }} />
-        <Typography sx={{ ml: 2 }}>Loading your courses...</Typography>
+        <Typography sx={{ ml: 2 }}>Đang tải danh sách khóa học...</Typography>
       </Box>
     );
   }
@@ -179,10 +179,10 @@ const SubmissionAssignment: React.FC = () => {
         }}
       >
         <Typography variant="h6" gutterBottom>
-          You have not enrolled in any courses
+          Bạn chưa đăng ký khóa học nào
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Please register for a course to view and submit assignments
+          Vui lòng đăng ký khóa học để xem và nộp bài tập
         </Typography>
       </Box>
     );
@@ -198,7 +198,7 @@ const SubmissionAssignment: React.FC = () => {
           fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' }
         }}
       >
-        Assignments
+        Bài tập
       </Typography>
 
       <Box
@@ -211,7 +211,7 @@ const SubmissionAssignment: React.FC = () => {
         }}
       >
         <TextField
-          placeholder="Search assignments..."
+          placeholder="Tìm kiếm bài tập..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           disabled={!selectedCourseId || loading}
@@ -291,7 +291,7 @@ const SubmissionAssignment: React.FC = () => {
             }}
             selected={statusFilter === "all"}
           >
-            <ListItemText>All</ListItemText>
+            <ListItemText>Tất cả</ListItemText>
           </MenuItem>
           <MenuItem
             onClick={() => {
@@ -301,7 +301,7 @@ const SubmissionAssignment: React.FC = () => {
             }}
             selected={statusFilter === "active"}
           >
-            <ListItemText>Active</ListItemText>
+            <ListItemText>Đang mở</ListItemText>
           </MenuItem>
           <MenuItem
             onClick={() => {
@@ -311,7 +311,7 @@ const SubmissionAssignment: React.FC = () => {
             }}
             selected={statusFilter === "closed"}
           >
-            <ListItemText>Closed</ListItemText>
+            <ListItemText>Đã đóng</ListItemText>
           </MenuItem>
         </Menu>
       </Box>
@@ -343,12 +343,12 @@ const SubmissionAssignment: React.FC = () => {
                 sx={{ fontSize: { xs: '1rem', sm: '1.15rem', md: '1.25rem' } }}
               >
                 {searchQuery
-                  ? "No assignments found with your search"
+                  ? "Không tìm thấy bài tập nào khớp với tìm kiếm"
                   : statusFilter === "closed"
-                  ? "You don't have any closed assignments"
+                  ? "Bạn không có bài tập nào đã đóng"
                   : statusFilter === "active"
-                  ? "You don't have any active assignments"
-                  : "No assignments yet"}
+                  ? "Bạn không có bài tập nào đang mở"
+                  : "Chưa có bài tập nào"}
               </Typography>
             </Box>
           ) : (
@@ -412,13 +412,13 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({ assignment, onClick }) 
   const getSubmissionLabel = (status?: string) => {
     switch (status) {
       case "submitted":
-        return "SUBMITTED";
+        return "ĐÃ NỘP";
       case "late":
-        return "LATE";
+        return "NỘP TRỄ";
       case "graded":
-        return "GRADED";
+        return "ĐÃ CHẤM ĐIỂM";
       default:
-        return "NOT SUBMITTED";
+        return "CHƯA NỘP";
     }
   };
 
@@ -457,7 +457,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({ assignment, onClick }) 
             fontSize: '0.6rem'
           }}
         >
-          Title
+          Tiêu đề
         </Typography>
         <Typography
           variant="h6"
@@ -484,7 +484,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({ assignment, onClick }) 
               fontSize: '0.6rem'
             }}
           >
-            Type
+            Loại
           </Typography>
           <Typography 
             variant="body2" 
@@ -493,7 +493,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({ assignment, onClick }) 
               fontSize: { xs: '0.68rem', sm: '0.7rem' }
             }}
           >
-            Assignment
+            Bài tập
           </Typography>
         </Grid>
 
@@ -507,10 +507,10 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({ assignment, onClick }) 
               fontSize: '0.6rem'
             }}
           >
-            Status
+            Trạng thái
           </Typography>
           <Chip
-            label={assignment.status === 'closed' ? 'CLOSED' : 'ACTIVE'}
+            label={assignment.status === 'closed' ? 'ĐÃ ĐÓNG' : 'ĐANG MỞ'}
             size="small"
             sx={{
               backgroundColor: getStatusColor(assignment.status),
@@ -532,7 +532,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({ assignment, onClick }) 
               fontSize: '0.6rem'
             }}
           >
-            Start Time
+            Thời gian bắt đầu
           </Typography>
           <Typography 
             variant="body2"
@@ -552,7 +552,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({ assignment, onClick }) 
               fontSize: '0.6rem'
             }}
           >
-            Due Time
+            Hạn nộp
           </Typography>
           <Typography 
             variant="body2" 
@@ -576,7 +576,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({ assignment, onClick }) 
               fontSize: '0.6rem'
             }}
           >
-            Class Name
+            Tên lớp
           </Typography>
           <Typography 
             variant="body2"
@@ -596,7 +596,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({ assignment, onClick }) 
               fontSize: '0.6rem'
             }}
           >
-            Submission Status
+            Trạng thái nộp
           </Typography>
           <Chip
             label={getSubmissionLabel(submissionStatus)}
@@ -622,7 +622,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({ assignment, onClick }) 
                 fontSize: '0.6rem'
               }}
             >
-              Score
+              Điểm
             </Typography>
             <Typography 
               variant="body2"
@@ -647,7 +647,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({ assignment, onClick }) 
               fontSize: '0.6rem'
             }}
           >
-            Created By
+            Người tạo
           </Typography>
           <Typography 
             variant="body2"

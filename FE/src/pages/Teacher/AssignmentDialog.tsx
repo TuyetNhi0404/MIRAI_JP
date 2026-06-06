@@ -129,41 +129,41 @@ const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
 
     // Title validation
     if (!formData.title.trim()) {
-      newErrors.title = 'Title is required';
+      newErrors.title = 'Vui lòng nhập tiêu đề';
     } else if (formData.title.trim().length < 3) {
-      newErrors.title = 'Title must be at least 3 characters';
+      newErrors.title = 'Tiêu đề phải có ít nhất 3 ký tự';
     } else if (formData.title.trim().length > 200) {
-      newErrors.title = 'Title cannot exceed 200 characters';
+      newErrors.title = 'Tiêu đề không được vượt quá 200 ký tự';
     }
 
     // Course validation
     if (!formData.courseId) {
-      newErrors.courseId = 'Please select a course';
+      newErrors.courseId = 'Vui lòng chọn một khóa học';
     }
 
     // Due date validation
     if (!formData.dueDate) {
-      newErrors.dueDate = 'Please select a due date';
+      newErrors.dueDate = 'Vui lòng chọn hạn nộp';
     } else {
       const selectedDate = new Date(formData.dueDate);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
       if (selectedDate < today) {
-        newErrors.dueDate = 'Due date cannot be in the past';
+        newErrors.dueDate = 'Hạn nộp không thể ở quá khứ';
       }
     }
 
     // Max score validation
     if (formData.maxScore <= 0) {
-      newErrors.maxScore = 'Max score must be greater than 0';
+      newErrors.maxScore = 'Điểm tối đa phải lớn hơn 0';
     } else if (formData.maxScore > 1000) {
-      newErrors.maxScore = 'Max score cannot exceed 1000';
+      newErrors.maxScore = 'Điểm tối đa không thể vượt quá 1000';
     }
 
     // Description validation (optional but has max length)
     if (formData.description.length > 2000) {
-      newErrors.description = 'Description cannot exceed 2000 characters';
+      newErrors.description = 'Mô tả không được vượt quá 2000 ký tự';
     }
 
     setErrors(newErrors);
@@ -273,7 +273,7 @@ const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
       <DialogTitle>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="h6">
-            {assignment ? '✏️ Edit Assignment' : '➕ Create New Assignment'}
+            {assignment ? '✏️ Chỉnh sửa bài tập' : '➕ Tạo bài tập mới'}
           </Typography>
           <IconButton onClick={handleClose} size="small">
             <X size={20} />
@@ -286,10 +286,10 @@ const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
           <Grid item xs={12}>
             <TextField
               fullWidth
-              label="Title"
+              label="Tiêu đề"
               value={formData.title}
               required
-              placeholder="Enter assignment title"
+              placeholder="Nhập tiêu đề bài tập"
               onChange={(e) => {
                 setFormData({ ...formData, title: e.target.value });
                 if (errors.title) setErrors(prev => ({ ...prev, title: '' }));
@@ -303,14 +303,14 @@ const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
             <>
               <Grid item xs={12} md={6}>
                 <FormControl fullWidth required error={!!errors.courseId}>
-                  <InputLabel>Course</InputLabel>
+                  <InputLabel>Khóa học</InputLabel>
                   <Select
                     value={formData.courseId}
-                    label="Course"
+                    label="Khóa học"
                     onChange={(e) => handleCourseChange(e.target.value)}
                   >
                     <MenuItem value="">
-                      <em>Select a course</em>
+                      <em>Chọn một khóa học</em>
                     </MenuItem>
                     {courses.map(course => (
                       <MenuItem key={course.id} value={course.id}>
@@ -334,7 +334,7 @@ const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
                   height: '100%'
                 }}>
                   <Typography variant="body2" color="primary.dark">
-                    <strong>Status:</strong> New assignments start as <strong>DRAFT</strong>.
+                    <strong>Trạng thái:</strong> Bài tập mới sẽ được bắt đầu ở dạng <strong>BẢN NHÁP</strong>.
                   </Typography>
                 </Box>
               </Grid>
@@ -344,18 +344,18 @@ const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
           {assignment && (
             <Grid item xs={12} md={6}>
               <FormControl fullWidth>
-                <InputLabel>Status</InputLabel>
+                <InputLabel>Trạng thái</InputLabel>
                 <Select
                   value={formData.status}
-                  label="Status"
+                  label="Trạng thái"
                   onChange={(e) => setFormData({
                     ...formData,
                     status: e.target.value as 'active' | 'draft' | 'closed'
                   })}
                 >
-                  <MenuItem value="draft">Draft</MenuItem>
-                  <MenuItem value="active">Active</MenuItem>
-                  <MenuItem value="closed">Closed</MenuItem>
+                  <MenuItem value="draft">Bản nháp</MenuItem>
+                  <MenuItem value="active">Hoạt động</MenuItem>
+                  <MenuItem value="closed">Đã đóng</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -366,15 +366,15 @@ const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
               fullWidth
               multiline
               rows={4}
-              label="Description"
-              placeholder="Enter description (optional)"
+              label="Mô tả"
+              placeholder="Nhập mô tả (không bắt buộc)"
               value={formData.description}
               onChange={(e) => {
                 setFormData({ ...formData, description: e.target.value });
                 if (errors.description) setErrors(prev => ({ ...prev, description: '' }));
               }}
               error={!!errors.description}
-              helperText={errors.description || `${formData.description.length}/2000 characters`}
+              helperText={errors.description || `${formData.description.length}/2000 ký tự`}
             />
           </Grid>
 
@@ -383,7 +383,7 @@ const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
               fullWidth
               type="date"
               required
-              label="Due Date"
+              label="Hạn nộp"
               value={formData.dueDate}
               onChange={(e) => {
                 setFormData({ ...formData, dueDate: e.target.value });
@@ -400,7 +400,7 @@ const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
             <TextField
               fullWidth
               type="number"
-              label="Max Score"
+              label="Điểm tối đa"
               value={formData.maxScore}
               required
               onChange={(e) => {
@@ -424,7 +424,7 @@ const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
               bgcolor: '#f9f9f9'
             }}>
               <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 'bold' }}>
-                📎 File Attachments
+                📎 Tệp đính kèm
               </Typography>
               <input
                 type="file"
@@ -442,7 +442,7 @@ const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
                   size="medium"
                   sx={{ mb: 2 }}
                 >
-                  Add New Files
+                  Thêm tệp mới
                 </Button>
               </label>
 
@@ -453,7 +453,7 @@ const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
                     display: 'block',
                     mb: 1
                   }}>
-                    📁 Existing Files ({existingFiles.length})
+                    📁 Tệp hiện tại ({existingFiles.length})
                   </Typography>
                   <List dense sx={{ bgcolor: 'white', borderRadius: 1 }}>
                     {existingFiles.map((fileUrl, index) => (
@@ -475,7 +475,7 @@ const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
                               rel="noopener noreferrer"
                               style={{ color: '#1976d2', textDecoration: 'none' }}
                             >
-                              View file
+                              Xem tệp
                             </a>
                           }
                         />
@@ -502,7 +502,7 @@ const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
                     display: 'block',
                     mb: 1
                   }}>
-                    🆕 New Files ({newFiles.length})
+                    🆕 Tệp mới ({newFiles.length})
                   </Typography>
                   <List dense sx={{ bgcolor: 'white', borderRadius: 1 }}>
                     {newFiles.map((file, index) => (
@@ -538,7 +538,7 @@ const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
 
               {existingFiles.length === 0 && newFiles.length === 0 && (
                 <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                  No files attached. Click "Add New Files" to upload.
+                  Chưa đính kèm tệp nào. Bấm "Thêm tệp mới" để tải lên.
                 </Typography>
               )}
             </Box>
@@ -556,7 +556,7 @@ const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
 
       <DialogActions sx={{ p: 3, pt: 2 }}>
         <Button onClick={handleClose} variant="outlined" disabled={loading}>
-          Cancel
+          Hủy
         </Button>
         <Button
           onClick={handleSubmit}
@@ -564,7 +564,7 @@ const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
           disabled={loading}
           startIcon={loading ? <CircularProgress size={20} /> : null}
         >
-          {loading ? 'Saving...' : assignment ? 'Update Assignment' : 'Create Assignment'}
+          {loading ? 'Đang lưu...' : assignment ? 'Cập nhật bài tập' : 'Tạo bài tập'}
         </Button>
       </DialogActions>
     </Dialog>

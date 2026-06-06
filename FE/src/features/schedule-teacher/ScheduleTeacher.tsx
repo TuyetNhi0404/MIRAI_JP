@@ -57,7 +57,7 @@ interface SelectedSchedule {
 const ScheduleTeacher = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  
+
   const [currentWeekStart, setCurrentWeekStart] = useState(getMonday(new Date()));
   const [schedule, setSchedule] = useState<TeacherScheduleView[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -109,7 +109,7 @@ const ScheduleTeacher = () => {
         const weekStart = new Date(currentDate);
         const weekEnd = new Date(currentDate);
         weekEnd.setDate(weekEnd.getDate() + 6);
-if (weekStart.getFullYear() === year || weekEnd.getFullYear() === year) {
+        if (weekStart.getFullYear() === year || weekEnd.getFullYear() === year) {
           const value = toLocalDateString(weekStart);
           const label = `${weekStart.getDate().toString().padStart(2, '0')}.${(weekStart.getMonth() + 1)
             .toString()
@@ -160,10 +160,10 @@ if (weekStart.getFullYear() === year || weekEnd.getFullYear() === year) {
           setSchedule(response.data);
           console.log('Schedule loaded with sessions:', response.data.length);
         } else {
-          showToast(response.message || 'Failed to load schedule', 'error');
+          showToast(response.message || 'Không thể tải lịch dạy', 'error');
         }
       } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to load schedule';
+        const errorMessage = error instanceof Error ? error.message : 'Không thể tải lịch dạy';
         showToast(errorMessage, 'error');
       } finally {
         setLoading(false);
@@ -185,8 +185,8 @@ if (weekStart.getFullYear() === year || weekEnd.getFullYear() === year) {
 
   const periods = useMemo(
     () => [
-      { name: 'Morning', displayTime: '08:00 - 12:00', label: 'Morning' },
-      { name: 'Afternoon', displayTime: '13:00 - 17:00', label: 'Afternoon' },
+      { name: 'Morning', displayTime: '08:00 - 12:00', label: 'Buổi sáng' },
+      { name: 'Afternoon', displayTime: '13:00 - 17:00', label: 'Buổi chiều' },
     ],
     []
   );
@@ -200,7 +200,7 @@ if (weekStart.getFullYear() === year || weekEnd.getFullYear() === year) {
         const schedulesForDate = schedule.filter(s => s.date === dateStr);
         const daySchedules = schedulesForDate.filter(s => {
           if (!s.startTime) return false;
-const hour = parseInt(s.startTime.split(':')[0]);
+          const hour = parseInt(s.startTime.split(':')[0]);
           const timeInMinutes = hour * 60;
           const belongsToPeriod =
             period.name === 'Morning'
@@ -271,13 +271,13 @@ const hour = parseInt(s.startTime.split(':')[0]);
           prevSchedule.map(item =>
             item.calendarId === selectedSchedule.calendarId
               ? {
-                  ...item,
-                  request: {
-                    _id: response.data?._id || 'temp-id',
-                    status: 'pending' as RequestStatus,
-                    reason: reason.trim(),
-                  },
-                }
+                ...item,
+                request: {
+                  _id: response.data?._id || 'temp-id',
+                  status: 'pending' as RequestStatus,
+                  reason: reason.trim(),
+                },
+              }
               : item
           )
         );
@@ -289,18 +289,18 @@ const hour = parseInt(s.startTime.split(':')[0]);
         if (scheduleResponse.success && scheduleResponse.data) {
           setSchedule(scheduleResponse.data);
         }
-        
-        showToast('Request submitted successfully', 'success');
+
+        showToast('Gửi yêu cầu nghỉ học thành công', 'success');
       } else {
-showToast(response.message || 'Failed to submit request', 'error');
+        showToast(response.message || 'Không thể gửi yêu cầu', 'error');
       }
     } catch (error: unknown) {
       const errorMsg =
         error instanceof Error && 'response' in error
           ? (error as { response?: { data?: { message?: string } } }).response?.data?.message || error.message
           : error instanceof Error
-          ? error.message
-          : 'Server connection error';
+            ? error.message
+            : 'Lỗi kết nối máy chủ';
       showToast(errorMsg, 'error');
     }
   };
@@ -327,7 +327,7 @@ showToast(response.message || 'Failed to submit request', 'error');
             justifyContent: 'center',
           }}
         >
-          <Typography sx={{ fontSize: '0.85rem' }}>No class</Typography>
+          <Typography sx={{ fontSize: '0.85rem' }}>Không có lớp</Typography>
         </Box>
       );
     }
@@ -365,9 +365,9 @@ showToast(response.message || 'Failed to submit request', 'error');
                   fontSize: '0.8rem',
                   textTransform: 'none',
                   fontWeight: 600,
-                  '&.Mui-disabled': { 
-                    bgcolor: getStatusColor(scheduleItem.request!.status), 
-                    color: 'white' 
+                  '&.Mui-disabled': {
+                    bgcolor: getStatusColor(scheduleItem.request!.status),
+                    color: 'white'
                   },
                 }}
               >
@@ -380,15 +380,15 @@ showToast(response.message || 'Failed to submit request', 'error');
                 variant="contained"
                 onClick={() => handleRegisterClick(scheduleItem)}
                 sx={{
-bgcolor: '#1976d2',
-color: 'white',
+                  bgcolor: '#1976d2',
+                  color: 'white',
                   fontSize: '0.8rem',
                   textTransform: 'none',
                   fontWeight: 600,
                   '&:hover': { bgcolor: '#1565c0' },
                 }}
               >
-                Register
+                Xin nghỉ
               </Button>
             ) : (
               <Button
@@ -405,7 +405,7 @@ color: 'white',
                   '&.Mui-disabled': { bgcolor: '#424242', color: 'white' },
                 }}
               >
-                Expired
+                Hết hạn
               </Button>
             )}
           </Box>
@@ -471,9 +471,9 @@ color: 'white',
               disabled
               size="small"
               variant="contained"
-sx={btnStyle(getStatusColor(scheduleItem.request!.status))}
+              sx={btnStyle(getStatusColor(scheduleItem.request!.status))}
             >
-{getStatusText(scheduleItem.request!.status)}
+              {getStatusText(scheduleItem.request!.status)}
             </Button>
           ) : canReg ? (
             <Button
@@ -482,7 +482,7 @@ sx={btnStyle(getStatusColor(scheduleItem.request!.status))}
               onClick={() => handleRegisterClick(scheduleItem)}
               sx={btnStyle('#1976d2', true)}
             >
-              Register
+              Xin nghỉ
             </Button>
           ) : (
             <Button
@@ -500,7 +500,7 @@ sx={btnStyle(getStatusColor(scheduleItem.request!.status))}
                 '&.Mui-disabled': { bgcolor: '#424242', color: 'white' },
               }}
             >
-              Expired
+              Hết hạn
             </Button>
           )}
         </Box>
@@ -513,13 +513,13 @@ sx={btnStyle(getStatusColor(scheduleItem.request!.status))}
       <Grid container spacing={2}>
         {weekDates.map((date, dayIndex) => {
           const dateStr = toLocalDateString(date);
-          const dayName = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][dayIndex];
+          const dayName = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật'][dayIndex];
 
           return (
             <Grid item xs={12} key={dayIndex}>
-              <Card 
-                elevation={3} 
-                sx={{ 
+              <Card
+                elevation={3}
+                sx={{
                   borderRadius: 2,
                   overflow: 'hidden',
                   border: '1px solid #e0e0e0',
@@ -559,10 +559,10 @@ sx={btnStyle(getStatusColor(scheduleItem.request!.status))}
                     }}
                   >
                     <Clock size={14} color="#666" />
-<Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: '#666' }}>
-                      Morning (08:00 - 12:00)
+                    <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: '#666' }}>
+                      Buổi sáng (08:00 - 12:00)
                     </Typography>
-</Box>
+                  </Box>
                   {renderScheduleItemMobile(scheduleGrid['Morning']?.[dateStr], date)}
                 </Box>
 
@@ -579,7 +579,7 @@ sx={btnStyle(getStatusColor(scheduleItem.request!.status))}
                   >
                     <Clock size={14} color="#666" />
                     <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: '#666' }}>
-                      Afternoon (13:00 - 17:00)
+                      Buổi chiều (13:00 - 17:00)
                     </Typography>
                   </Box>
                   {renderScheduleItemMobile(scheduleGrid['Afternoon']?.[dateStr], date)}
@@ -606,8 +606,8 @@ sx={btnStyle(getStatusColor(scheduleItem.request!.status))}
         >
           <TableHead>
             <TableRow sx={{ bgcolor: '#f5f5f5' }}>
-              <TableCell sx={{ fontWeight: 600, width: 100 }}>Period</TableCell>
-              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, idx) => (
+              <TableCell sx={{ fontWeight: 600, width: 100 }}>Buổi</TableCell>
+              {['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'].map((day, idx) => (
                 <TableCell key={idx} align="center" sx={{ minWidth: 120 }}>
                   <Typography sx={{ fontSize: 13, fontWeight: 600 }}>
                     {day}
@@ -619,7 +619,7 @@ sx={btnStyle(getStatusColor(scheduleItem.request!.status))}
           <TableBody>
             {['Morning', 'Afternoon'].map(period => (
               <TableRow key={period}>
-                <TableCell sx={{ fontWeight: 600, bgcolor: '#fafafa' }}>{period}</TableCell>
+                <TableCell sx={{ fontWeight: 600, bgcolor: '#fafafa' }}>{period === 'Morning' ? 'Sáng' : 'Chiều'}</TableCell>
                 {weekDates.map((date, idx) => {
                   const dateStr = toLocalDateString(date);
                   const item = scheduleGrid[period]?.[dateStr];
@@ -646,10 +646,10 @@ sx={btnStyle(getStatusColor(scheduleItem.request!.status))}
   }
 
   return (
-<Box sx={{ maxWidth: '1600px', mx: 'auto', px: isMobile ? 2 : 2, pb: 12 }}>
+    <Box sx={{ maxWidth: '1600px', mx: 'auto', px: isMobile ? 2 : 2, pb: 12 }}>
       <Typography variant={isMobile ? 'h6' : 'h5'} sx={{ fontWeight: 600, mb: 2, mt: 2 }}>
         Teaching Schedule
-</Typography>
+      </Typography>
 
       <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 3, flexWrap: 'wrap' }}>
         <IconButton onClick={() => navigateWeek(-1)} size="small">
@@ -674,7 +674,7 @@ sx={btnStyle(getStatusColor(scheduleItem.request!.status))}
             },
           }}
         >
-          This Week
+          Tuần này
         </Button>
 
         <FormControl sx={{ minWidth: isMobile ? 200 : 270, maxWidth: isMobile ? 200 : 270, flexGrow: isMobile ? 1 : 0 }}>
@@ -737,7 +737,7 @@ sx={btnStyle(getStatusColor(scheduleItem.request!.status))}
             backgroundColor:
               toast.severity === 'success' ? '#4caf50' : toast.severity === 'error' ? '#f44336' : '#B90000',
             color: 'white',
-fontWeight: 500,
+            fontWeight: 500,
             '& .MuiAlert-icon': { color: 'white' },
           }}
         >
@@ -775,13 +775,13 @@ const getStatusColor = (status: RequestStatus) => {
 const getStatusText = (status: RequestStatus) => {
   switch (status) {
     case 'accepted':
-      return 'Approved';
+      return 'Đã chấp nhận';
     case 'rejected':
-      return 'Rejected';
+      return 'Đã từ chối';
     case 'pending':
-      return 'Pending';
+      return 'Đang chờ duyệt';
     default:
-      return 'Unknown';
+      return 'Không xác định';
   }
 };
 

@@ -10,7 +10,7 @@ interface FillBlankFormProps {
 
 const FillBlankForm: React.FC<FillBlankFormProps> = ({ initialData, onSave, onCancel }) => {
   const [question, setQuestion] = useState(initialData?.question || '');
-  const [template, setTemplate] = useState(initialData?.template || '');
+  const [template, setTemplate] = useState(initialData?.textWithBlanks || '');
   const [answers, setAnswers] = useState<string[]>(initialData?.answers || []);
   const [hints, setHints] = useState<string[]>(initialData?.hints || []);
 
@@ -37,7 +37,7 @@ const FillBlankForm: React.FC<FillBlankFormProps> = ({ initialData, onSave, onCa
       id: initialData?.id || `fill_${Date.now()}`,
       type: 'fill_blank',
       question: question.trim(),
-      template: template.trim(),
+      textWithBlanks: template.trim(),
       answers: answers.map(a => a.trim()),
       hints: hints.some(h => h.trim()) ? hints.map(h => h.trim()) : undefined,
     };

@@ -46,19 +46,19 @@ export const RequestDetailModal: React.FC<RequestDetailModalProps> = ({
 
   const statusConfig: Record<RequestStatus, { label: string; icon: React.ReactElement; bgcolor: string; color: string }> = {
     pending: {
-      label: "Pending",
+      label: "Chờ duyệt",
       icon: <Clock size={14} />,
       bgcolor: "#FEF3C7",
       color: "#92400E",
     },
     accepted: {
-      label: "Accepted",
+      label: "Đã chấp nhận",
       icon: <CheckCircle size={14} />,
       bgcolor: "#D1FAE5",
       color: "#065F46",
     },
     rejected: {
-      label: "Rejected",
+      label: "Đã từ chối",
       icon: <XCircle size={14} />,
       bgcolor: "#FEE2E2",
       color: "#991B1B",
@@ -111,7 +111,7 @@ export const RequestDetailModal: React.FC<RequestDetailModalProps> = ({
         }}
       >
         <Typography variant="body1" fontWeight={600} fontSize={{ xs: '0.95rem', sm: '1.05rem', md: '1.1rem' }}>
-          Leave Request Details
+          Chi tiết yêu cầu nghỉ học
         </Typography>
         <IconButton 
           onClick={onClose} 
@@ -151,7 +151,7 @@ export const RequestDetailModal: React.FC<RequestDetailModalProps> = ({
               fontSize={{ xs: '0.875rem', sm: '0.9375rem', md: '1rem' }}
               noWrap
             >
-              {request.createdBy?.name || "Unknown"}
+              {request.createdBy?.name || "Chưa xác định"}
             </Typography>
             <Typography 
               variant="body2" 
@@ -177,8 +177,8 @@ export const RequestDetailModal: React.FC<RequestDetailModalProps> = ({
 
         <Box display="flex" flexDirection="column" gap={1.5} mb={2}>
           {[
-            { icon: CalendarIcon, label: "Date", value: formatDate(request.calendarId?.date) },
-            { icon: Clock, label: "Session", value: request.calendarId?.sessionId?.sessionName || "N/A" }
+            { icon: CalendarIcon, label: "Ngày", value: formatDate(request.calendarId?.date) },
+            { icon: Clock, label: "Ca học", value: request.calendarId?.sessionId?.sessionName || "N/A" }
           ].map(({ icon: Icon, label, value }) => (
             <Box key={label} display="flex" alignItems="flex-start" gap={1.5}>
               <Icon size={isMobile ? 16 : isTablet ? 18 : 20} color="#B90000" style={{ flexShrink: 0, marginTop: 2 }} />
@@ -196,7 +196,7 @@ export const RequestDetailModal: React.FC<RequestDetailModalProps> = ({
 
         <Box mb={1.5}>
           <Typography variant="body2" color="text.secondary" mb={0.5} fontSize={{ xs: '0.75rem', sm: '0.8rem', md: '0.85rem' }}>
-            Reason
+            Lý do
           </Typography>
           <Typography 
             variant="body2" 
@@ -209,7 +209,7 @@ export const RequestDetailModal: React.FC<RequestDetailModalProps> = ({
         </Box>
 
         <Typography variant="caption" color="text.secondary" fontSize={{ xs: '0.7rem', sm: '0.75rem', md: '0.8rem' }}>
-          Submitted on {formatDate(request.createdAt)}
+          Đã gửi vào {formatDate(request.createdAt)}
         </Typography>
       </Box>
 
@@ -239,7 +239,7 @@ export const RequestDetailModal: React.FC<RequestDetailModalProps> = ({
             },
           }}
         >
-          CLOSE
+          ĐÓNG
         </Button>
         {request.status === "pending" && (
           <>
@@ -261,7 +261,7 @@ export const RequestDetailModal: React.FC<RequestDetailModalProps> = ({
                 }
               }}
             >
-              {isLoading ? <CircularProgress size={14} /> : 'REJECT'}
+              {isLoading ? <CircularProgress size={14} /> : 'TỪ CHỐI'}
             </Button>
             <Button
               variant="contained"
@@ -280,7 +280,7 @@ export const RequestDetailModal: React.FC<RequestDetailModalProps> = ({
                 }
               }}
             >
-              {isLoading ? <CircularProgress size={14} sx={{ color: "white" }} /> : 'ACCEPT'}
+              {isLoading ? <CircularProgress size={14} sx={{ color: "white" }} /> : 'ĐỒNG Ý'}
             </Button>
           </>
         )}

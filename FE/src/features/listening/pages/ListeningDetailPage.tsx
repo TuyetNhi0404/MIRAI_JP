@@ -103,7 +103,7 @@ const ListeningDetailPage = () => {
         onClick={() => navigate('/dashboard/student/listening')}
         sx={{ mb: 3, color: 'text.secondary', fontWeight: 'bold' }}
       >
-        Back to List
+        Quay lại danh sách
       </Button>
 
       {error && (
@@ -117,10 +117,10 @@ const ListeningDetailPage = () => {
         <Typography variant="subtitle1" color="text.secondary" gutterBottom>{content.description}</Typography>
         <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
           <Typography variant="caption" sx={{ px: 2, py: 0.5, bgcolor: '#fecaca', color: '#B90000', borderRadius: 4, fontWeight: 'bold' }}>
-            Level: {content.level}
+            Cấp độ: {content.level}
           </Typography>
           <Typography variant="caption" sx={{ px: 2, py: 0.5, bgcolor: '#ffedd5', color: '#c2410c', borderRadius: 4, fontWeight: 'bold' }}>
-            Topic: {content.topic}
+            Chủ đề: {content.topic}
           </Typography>
         </Box>
       </Box>
@@ -135,13 +135,13 @@ const ListeningDetailPage = () => {
         <>
           <Box sx={{ mb: 4, display: 'flex', justifyContent: 'flex-end' }}>
             <Button variant="text" onClick={() => setShowTranscript(!showTranscript)}>
-              {showTranscript ? "Hide Transcript" : "Show Transcript"}
+              {showTranscript ? "Ẩn văn bản" : "Hiện văn bản"}
             </Button>
           </Box>
 
           {showTranscript && (
             <Paper elevation={0} sx={{ p: 3, mb: 4, bgcolor: 'grey.50', borderRadius: 4, border: '1px solid', borderColor: 'grey.200' }}>
-              <Typography variant="h6" gutterBottom>Transcript</Typography>
+              <Typography variant="h6" gutterBottom>Văn bản ghi âm</Typography>
               <Typography variant="body1" sx={{ whiteSpace: 'pre-line', lineHeight: 1.8 }}>
                 {content.transcript}
               </Typography>
@@ -152,7 +152,7 @@ const ListeningDetailPage = () => {
 
       <Divider sx={{ my: 4 }} />
 
-      <Typography variant="h5" fontWeight="bold" sx={{ mb: 4 }}>Exercises</Typography>
+      <Typography variant="h5" fontWeight="bold" sx={{ mb: 4 }}>Bài tập luyện tập</Typography>
 
       {exercises.map((ex, index) => {
         const evaluation = result?.answers?.find(ans => ans.exerciseId === ex._id);
@@ -236,7 +236,7 @@ const ListeningDetailPage = () => {
                   </Typography>
                   {isSubmitted && (
                     <Typography variant="body2" color="success.main" sx={{ mt: 2, fontWeight: 'bold' }}>
-                      Correct Answers: {(ex.answers || []).join(', ')}
+                      Đáp án đúng: {(ex.answers || []).join(', ')}
                     </Typography>
                   )}
                 </Box>
@@ -249,14 +249,14 @@ const ListeningDetailPage = () => {
                     multiline
                     rows={3}
                     disabled={isSubmitted}
-                    placeholder="Listen and type here..."
+                    placeholder="Nghe và nhập nội dung tại đây..."
                     value={answers[ex._id || ''] || ''}
                     onChange={(e) => handleAnswerChange(ex._id || '', e.target.value)}
                     sx={{ mb: 2 }}
                   />
                   {isSubmitted && (
                     <Paper elevation={0} sx={{ p: 2, bgcolor: isCorrect ? 'success.50' : 'error.50', borderRadius: 2 }}>
-                      <Typography variant="subtitle2" color={isCorrect ? 'success.dark' : 'error.dark'} gutterBottom>Correct Text:</Typography>
+                      <Typography variant="subtitle2" color={isCorrect ? 'success.dark' : 'error.dark'} gutterBottom>Văn bản chính xác:</Typography>
                       <Typography variant="body1" color={isCorrect ? 'success.dark' : 'error.dark'}>{ex.targetText}</Typography>
                     </Paper>
                   )}
@@ -277,7 +277,7 @@ const ListeningDetailPage = () => {
           disabled={submitting}
           sx={{ py: 1.5, borderRadius: 3, fontWeight: 'bold', fontSize: '1.1rem', bgcolor: '#B90000', color: 'white', '&:hover': { bgcolor: '#990000' } }}
         >
-          {submitting ? <CircularProgress size={24} color="inherit" /> : 'Submit Answers'}
+          {submitting ? <CircularProgress size={24} color="inherit" /> : 'Nộp bài'}
         </Button>
       ) : (
         <Paper elevation={0} sx={{ p: 4, bgcolor: '#fff5f5', borderRadius: 4, textAlign: 'center', border: '1px solid', borderColor: '#fecaca' }}>

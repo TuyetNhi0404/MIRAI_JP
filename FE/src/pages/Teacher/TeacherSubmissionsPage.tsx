@@ -107,7 +107,7 @@ const TeacherSubmissionsPage: React.FC = () => {
 
   useEffect(() => {
     if (!assignmentId) {
-      setError('No assignment selected');
+      setError('Chưa chọn bài tập');
       return;
     }
     
@@ -141,12 +141,12 @@ const fetchSubmissions = async () => {
       }
 
       if (data.length === 0) {
-        setError('No submissions found for this assignment');
+        setError('Không tìm thấy bài nộp nào cho bài tập này');
       }
     } catch (err) {
       console.error('Failed to fetch submissions:', err);
       const apiError = err as ApiError;
-      const errorMsg = apiError.response?.data?.message || apiError.message || 'Failed to load submissions';
+      const errorMsg = apiError.response?.data?.message || apiError.message || 'Tải danh sách bài nộp thất bại';
       setError(errorMsg);
       setSubmissions([]);
       toast.error(errorMsg);
@@ -166,7 +166,7 @@ const fetchSubmissions = async () => {
 
   const handleGradeClick = (submission: ExtendedSubmission) => {
     if (!canGrade) {
-      toast.error('You do not have permission to grade this assignment. Only the creator can grade.');
+      toast.error('Bạn không có quyền chấm điểm bài tập này. Chỉ giáo viên tạo bài tập mới có thể chấm điểm.');
       return;
     }
 
@@ -184,17 +184,17 @@ const fetchSubmissions = async () => {
 
     // Validation
     if (gradeForm.score === null || gradeForm.score === undefined || gradeForm.score.toString().trim() === '') {
-      toast.error('Please enter a score');
+      toast.error('Vui lòng nhập điểm số');
       return;
     }
 
     if (gradeForm.score < 0 || gradeForm.score > 100) {
-      toast.error('Score must be between 0 and 100');
+      toast.error('Điểm số phải nằm trong khoảng từ 0 đến 100');
       return;
     }
 
     if (!gradeForm.feedback || gradeForm.feedback.trim() === '') {
-      toast.error('Please enter feedback for the student');
+      toast.error('Vui lòng nhập nhận xét cho học viên');
       return;
     }
 
@@ -206,7 +206,7 @@ const fetchSubmissions = async () => {
         feedback: gradeForm.feedback.trim()
       });
 
-      toast.success('Grading successful!');
+      toast.success('Chấm điểm thành công!');
       setGradeDialogOpen(false);
       void fetchSubmissions();
     } catch (err) {
@@ -216,12 +216,12 @@ const fetchSubmissions = async () => {
       // Handle 403 error
       if (apiError.response?.status === 403) {
 const errorMsg = apiError.response?.data?.message || 
-                        'You do not have permission to grade this. Only the creator can grade.';
+                        'Bạn không có quyền chấm điểm bài tập này. Chỉ giáo viên tạo bài tập mới có thể chấm điểm.';
         toast.error(errorMsg);
         setCanGrade(false);
         setGradeDialogOpen(false);
       } else {
-        const errorMsg = apiError.response?.data?.message || 'Failed to submit grade';
+        const errorMsg = apiError.response?.data?.message || 'Gửi điểm số thất bại';
         toast.error(errorMsg);
       }
     } finally {
@@ -232,10 +232,10 @@ const errorMsg = apiError.response?.data?.message ||
   const handleDownloadFile = async (fileUrl: string) => {
     try {
       await submissionService.downloadFile(fileUrl);
-      toast.success('Downloading file...');
+      toast.success('Đang tải tệp xuống...');
     } catch (err) {
       console.error('Download failed:', err);
-      toast.error('Failed to download file');
+      toast.error('Tải tệp thất bại');
     }
   };
 
@@ -270,7 +270,7 @@ const errorMsg = apiError.response?.data?.message ||
         minute: '2-digit'
       });
     } catch {
-      return 'Invalid date';
+      return 'Ngày không hợp lệ';
     }
   };
 
@@ -298,10 +298,10 @@ const errorMsg = apiError.response?.data?.message ||
     return (
       <Box sx={{ p: 3 }}>
         <Alert severity="error">
-          No assignment selected. Please go back and select an assignment.
+          Chưa chọn bài tập. Vui lòng quay lại và chọn một bài tập.
         </Alert>
         <Button startIcon={<ArrowBack />} onClick={() => navigate(-1)} sx={{ mt: 2 }}>
-          Back
+          Quay lại
         </Button>
       </Box>
     );
@@ -326,9 +326,9 @@ const errorMsg = apiError.response?.data?.message ||
             </Box>
           </Box>
           <Chip
-            label={submission.status === 'submitted' ? 'Submitted' : 
-                   submission.status === 'graded' ? 'Graded' :
-                   submission.status === 'late' ? 'Late' : submission.status}
+            label={submission.status === 'submitted' ? 'Đã nộp' : 
+                   submission.status === 'graded' ? 'Đã chấm' :
+                   submission.status === 'late' ? 'Nộp muộn' : submission.status}
             color={getStatusColor(submission.status)}
             size="small"
             variant={isMobile ? "outlined" : "filled"}
@@ -339,29 +339,29 @@ const errorMsg = apiError.response?.data?.message ||
 
         <Grid container spacing={1}>
           <Grid item xs={6}>
-             <Typography variant="caption" color="text.secondary" display="block">Submitted At</Typography>
+             <Typography variant="caption" color="text.secondary" display="block">Thời gian nộp</Typography>
              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <Schedule fontSize="small" color="action" />
                 <Typography variant="body2">{formatDate(submission.submittedAt)}</Typography>
              </Box>
           </Grid>
           <Grid item xs={6}>
-             <Typography variant="caption" color="text.secondary" display="block">Files</Typography>
+             <Typography variant="caption" color="text.secondary" display="block">Tệp đính kèm</Typography>
              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <FileDownload fontSize="small" color="action" />
-                <Typography variant="body2">{submission.fileUrls?.length || 0} file(s)</Typography>
+                <Typography variant="body2">{submission.fileUrls?.length || 0} tệp</Typography>
              </Box>
           </Grid>
           <Grid item xs={12} sx={{ mt: 1 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: '#f5f5f5', p: 1, borderRadius: 1 }}>
-                <Typography variant="body2" color="text.secondary">Score:</Typography>
+                <Typography variant="body2" color="text.secondary">Điểm số:</Typography>
                 {submission.score !== undefined && submission.score !== null ? (
                   <Typography variant="subtitle1" sx={{ color: '#2e7d32', fontWeight: 'bold' }}>
                     {submission.score}/{assignmentMaxScore}
                   </Typography>
                 ) : (
                   <Typography variant="body2" fontStyle="italic" color="text.secondary">
-                    Ungraded
+                    Chưa chấm
                   </Typography>
                 )}
             </Box>
@@ -370,11 +370,11 @@ const errorMsg = apiError.response?.data?.message ||
       </CardContent>
       <CardActions sx={{ justifyContent: 'flex-end', borderTop: '1px solid #eee', px: 2, py: 1 }}>
          <Button
-size="small" 
+            size="small" 
             startIcon={<Visibility />} 
             onClick={() => handleViewClick(submission)}
          >
-           Details
+           Chi tiết
          </Button>
          {canGrade ? (
             <Button 
@@ -383,13 +383,13 @@ size="small"
               startIcon={<Grade />} 
               onClick={() => handleGradeClick(submission)}
             >
-              Grade
+              Chấm điểm
             </Button>
          ) : (
-             <Tooltip title="You do not have permission to grade">
+             <Tooltip title="Bạn không có quyền chấm điểm">
                  <span>
                     <Button size="small" variant="outlined" disabled startIcon={<Grade />}>
-                        Grade
+                        Chấm điểm
                     </Button>
                  </span>
              </Tooltip>
@@ -405,15 +405,15 @@ size="small"
         <Box sx={{ display: 'flex', mb: 1, flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center' }}>
             {isMobile && (
                  <Button startIcon={<ArrowBack />} onClick={() => navigate(-1)} sx={{ mb: 1, p:0, minWidth: 'auto' }}>
-                    Back
+                    Quay lại
                 </Button>
             )}
           <Typography variant={isMobile ? "h5" : "h4"} sx={{ color: '#023665', fontWeight: 'bold' }}>
-            {assignmentTitle || 'Submissions List'}
+            {assignmentTitle || 'Danh sách bài nộp'}
           </Typography>
         </Box>
         <Typography variant="body2" color="text.secondary">
-          Total submissions: {submissions.length}
+          Tổng số bài nộp: {submissions.length}
         </Typography>
       </Box>
 
@@ -433,7 +433,7 @@ size="small"
           }}
           onClose={() => setShowNoPermissionWarning(false)}
         >
-          You do not have permission to grade submissions for another teacher's assignment.
+          Bạn không có quyền chấm điểm bài tập này.
         </Alert>
       )}
 
@@ -453,7 +453,7 @@ size="small"
           }}
           onClose={() => setShowNoSubmissionWarning(false)}
         >
-          No submissions yet for this assignment.
+          Chưa có bài nộp nào cho bài tập này.
         </Alert>
       )}
 
@@ -463,8 +463,8 @@ size="small"
           <Grid item xs={12} md={8}>
             <TextField
               fullWidth
-size={isMobile ? "small" : "medium"}
-              placeholder="Search by student name or email..."
+              size={isMobile ? "small" : "medium"}
+              placeholder="Tìm kiếm theo tên hoặc email học viên..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               InputProps={{
@@ -479,21 +479,21 @@ size={isMobile ? "small" : "medium"}
           <Grid item xs={12} md={4}>
             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mt: isMobile ? 1 : 0 }}>
               <Chip
-                label={`All (${statusCounts.all})`}
+                label={`Tất cả (${statusCounts.all})`}
                 color={filterStatus === 'all' ? 'primary' : 'default'}
                 onClick={() => setFilterStatus('all')}
                 sx={{ flex: 1, minWidth: isMobile ? 'auto' : 100 }}
                 size={isMobile ? "small" : "medium"}
               />
               <Chip
-                label={`Ungraded (${statusCounts.ungraded})`}
+                label={`Chưa chấm (${statusCounts.ungraded})`}
                 color={filterStatus === 'ungraded' ? 'warning' : 'default'}
                 onClick={() => setFilterStatus('ungraded')}
                 sx={{ flex: 1, minWidth: isMobile ? 'auto' : 100 }}
                 size={isMobile ? "small" : "medium"}
               />
               <Chip
-                label={`Graded (${statusCounts.graded})`}
+                label={`Đã chấm (${statusCounts.graded})`}
                 color={filterStatus === 'graded' ? 'success' : 'default'}
                 onClick={() => setFilterStatus('graded')}
                 sx={{ flex: 1, minWidth: isMobile ? 'auto' : 100 }}
@@ -507,19 +507,19 @@ size={isMobile ? "small" : "medium"}
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
           <CircularProgress />
-          <Typography sx={{ ml: 2 }}>Loading submissions...</Typography>
+          <Typography sx={{ ml: 2 }}>Đang tải danh sách bài nộp...</Typography>
         </Box>
       ) : filteredSubmissions.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 8 }}>
           <Typography variant="h6" color="text.secondary">
             {searchTerm || filterStatus !== 'all' 
-              ? 'No matching submissions found' 
-              : 'No submissions yet'}
+              ? 'Không tìm thấy bài nộp nào phù hợp' 
+              : 'Chưa có bài nộp nào'}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
             {searchTerm || filterStatus !== 'all'
-              ? 'Try adjusting your filters'
-              : 'Students have not submitted yet'}
+              ? 'Hãy thử điều chỉnh bộ lọc của bạn'
+              : 'Học sinh chưa nộp bài'}
           </Typography>
         </Box>
       ) : (
@@ -530,12 +530,12 @@ size={isMobile ? "small" : "medium"}
                 <Table>
                     <TableHead sx={{ bgcolor: '#f5f5f5' }}>
                     <TableRow>
-                        <TableCell><strong>Student</strong></TableCell>
-                        <TableCell><strong>Status</strong></TableCell>
-                        <TableCell><strong>Submitted At</strong></TableCell>
-<TableCell><strong>Files</strong></TableCell>
-                        <TableCell><strong>Score</strong></TableCell>
-                        <TableCell align="right"><strong>Actions</strong></TableCell>
+                        <TableCell><strong>Học viên</strong></TableCell>
+                        <TableCell><strong>Trạng thái</strong></TableCell>
+                        <TableCell><strong>Thời gian nộp</strong></TableCell>
+                        <TableCell><strong>Tệp đính kèm</strong></TableCell>
+                        <TableCell><strong>Điểm số</strong></TableCell>
+                        <TableCell align="right"><strong>Thao tác</strong></TableCell>
                     </TableRow>
                     </TableHead>
                     <TableBody>
@@ -559,9 +559,9 @@ size={isMobile ? "small" : "medium"}
                         <TableCell>
                             <Chip
                             icon={getStatusIcon(submission.status) || undefined}
-                            label={submission.status === 'submitted' ? 'Submitted' : 
-                                    submission.status === 'graded' ? 'Graded' :
-                                    submission.status === 'late' ? 'Late' : submission.status}
+                            label={submission.status === 'submitted' ? 'Đã nộp' : 
+                                    submission.status === 'graded' ? 'Đã chấm' :
+                                    submission.status === 'late' ? 'Nộp muộn' : submission.status}
                             color={getStatusColor(submission.status)}
                             size="small"
                             />
@@ -574,7 +574,7 @@ size={isMobile ? "small" : "medium"}
                         <TableCell>
                             <Chip
                             icon={<FileDownload />}
-                            label={`${submission.fileUrls?.length || 0} file(s)`}
+                             label={`${submission.fileUrls?.length || 0} tệp`}
                             size="small"
                             color={submission.fileUrls?.length ? 'primary' : 'default'}
                             variant="outlined"
@@ -586,13 +586,13 @@ size={isMobile ? "small" : "medium"}
                                 {submission.score}/{assignmentMaxScore}
                             </Typography>
                             ) : (
-<Typography variant="body2" color="text.secondary" fontStyle="italic">
-                                Ungraded
+                              <Typography variant="body2" color="text.secondary" fontStyle="italic">
+                                Chưa chấm
                             </Typography>
                             )}
                         </TableCell>
                         <TableCell align="right">
-                            <Tooltip title="View Details">
+                             <Tooltip title="Xem chi tiết">
                             <IconButton
                                 size="small"
                                 color="primary"
@@ -601,13 +601,13 @@ size={isMobile ? "small" : "medium"}
                                 <Visibility />
                             </IconButton>
                             </Tooltip>
-                            <Tooltip 
-                            title="You do not have permission to grade this assignment"
+                             <Tooltip 
+                            title="Bạn không có quyền chấm điểm bài tập này"
                             arrow
                             placement="top"
                             open={!canGrade && tooltipOpen[submission._id]}
                             onOpen={() => !canGrade && setTooltipOpen(prev => ({ ...prev, [submission._id]: true }))}
-                            onClose={() => setTooltipOpen(prev => ({ ...prev, [submission._id]: false }))}
+                            onClose={() => !canGrade && setTooltipOpen(prev => ({ ...prev, [submission._id]: false }))}
                             PopperProps={{
                                 sx: {
                                 '& .MuiTooltip-tooltip': {
@@ -664,7 +664,7 @@ size={isMobile ? "small" : "medium"}
       >
         <DialogTitle>
           <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-            Submission Details
+            Chi tiết bài nộp
           </Typography>
         </DialogTitle>
         <DialogContent dividers>
@@ -673,7 +673,7 @@ size={isMobile ? "small" : "medium"}
               {/* Student Info */}
               <Box sx={{ mb: 3 }}>
                 <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  Student Information
+                  Thông tin học viên
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
                   <Avatar sx={{ bgcolor: '#1976d2', width: 56, height: 56 }}>
@@ -696,7 +696,7 @@ size={isMobile ? "small" : "medium"}
               {/* Submission Info */}
               <Box sx={{ mb: 3 }}>
                 <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  Submission Information
+                  Thông tin nộp bài
                 </Typography>
                 <Grid container spacing={2}>
                   <Grid item xs={6}>
@@ -704,7 +704,7 @@ size={isMobile ? "small" : "medium"}
                       <CalendarToday sx={{ fontSize: 18, color: 'text.secondary' }} />
                       <Box>
                         <Typography variant="caption" color="text.secondary">
-                          Submitted At
+                          Thời gian nộp
                         </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
                           {formatDate(selectedSubmission.submittedAt)}
@@ -717,12 +717,12 @@ size={isMobile ? "small" : "medium"}
                       <CheckCircle sx={{ fontSize: 18, color: 'text.secondary' }} />
                       <Box>
 <Typography variant="caption" color="text.secondary">
-                          Status
+                          Trạng thái
                         </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                          {selectedSubmission.status === 'submitted' ? 'Submitted' :
-                           selectedSubmission.status === 'graded' ? 'Graded' :
-                           selectedSubmission.status === 'late' ? 'Late' : selectedSubmission.status}
+                          {selectedSubmission.status === 'submitted' ? 'Đã nộp' :
+                           selectedSubmission.status === 'graded' ? 'Đã chấm' :
+                           selectedSubmission.status === 'late' ? 'Nộp muộn' : selectedSubmission.status}
                         </Typography>
                       </Box>
                     </Box>
@@ -734,7 +734,7 @@ size={isMobile ? "small" : "medium"}
               {selectedSubmission.note && (
                 <Box sx={{ mb: 3 }}>
                   <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                    Student Note
+                  Ghi chú của học viên
                   </Typography>
                   <Box sx={{ p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
                     <Typography variant="body2">
@@ -748,7 +748,7 @@ size={isMobile ? "small" : "medium"}
               {selectedSubmission.fileUrls && selectedSubmission.fileUrls.length > 0 && (
                 <Box sx={{ mb: 3 }}>
                   <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                    Submitted Files ({selectedSubmission.fileUrls.length})
+                    Tệp đã nộp ({selectedSubmission.fileUrls.length})
                   </Typography>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                     {selectedSubmission.fileUrls.map((fileUrl, idx) => {
@@ -776,20 +776,20 @@ size={isMobile ? "small" : "medium"}
               {selectedSubmission.score !== undefined && selectedSubmission.score !== null && (
                 <Box>
                   <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                    Grading Information
+                    Thông tin chấm điểm
                   </Typography>
                   <Box sx={{ p: 2, bgcolor: '#e8f5e9', borderRadius: 1, mb: 2 }}>
                     <Typography variant="h4" sx={{ color: '#2e7d32', fontWeight: 'bold' }}>
                       {selectedSubmission.score}/{assignmentMaxScore}
 </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      Score
+                      Điểm số
                     </Typography>
                   </Box>
                   {selectedSubmission.feedback && (
                     <Box sx={{ p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
                       <Typography variant="caption" color="text.secondary">
-                        Feedback:
+                      Nhận xét:
                       </Typography>
                       <Typography variant="body2" sx={{ mt: 1 }}>
                         {selectedSubmission.feedback}
@@ -803,7 +803,7 @@ size={isMobile ? "small" : "medium"}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDetailDialogOpen(false)}>
-            Close
+            Đóng
           </Button>
           {canGrade && (
             <Button 
@@ -812,7 +812,7 @@ size={isMobile ? "small" : "medium"}
               startIcon={<Grade />}
               onClick={() => selectedSubmission && handleGradeClick(selectedSubmission)}
             >
-              {selectedSubmission?.score !== undefined && selectedSubmission?.score !== null ? 'Update Grade' : 'Grade'}
+              {selectedSubmission?.score !== undefined && selectedSubmission?.score !== null ? 'Cập nhật điểm' : 'Chấm điểm'}
             </Button>
           )}
         </DialogActions>
@@ -828,11 +828,11 @@ size={isMobile ? "small" : "medium"}
       >
         <DialogTitle>
           <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-            Grade Submission
+            Chấm điểm bài nộp
           </Typography>
           {selectedSubmission && (
             <Typography variant="body2" color="text.secondary">
-              Student: {selectedSubmission.studentName}
+              Học viên: {selectedSubmission.studentName}
             </Typography>
           )}
         </DialogTitle>
@@ -841,7 +841,7 @@ size={isMobile ? "small" : "medium"}
             <TextField
               fullWidth
               type="number"
-              label="Score (0-100)"
+              label="Điểm số (0-100)"
               value={gradeForm.score}
               onChange={(e) => setGradeForm({ ...gradeForm, score: Number(e.target.value) })}
               inputProps={{ min: 0, max: 100, step: 0.5 }}
@@ -850,27 +850,27 @@ size={isMobile ? "small" : "medium"}
               error={gradeForm.score < 0 || gradeForm.score > 100}
               helperText={
                 gradeForm.score < 0 || gradeForm.score > 100 
-                  ? 'Score must be between 0 and 100' 
-                  : 'Enter score from 0 to 100 (required)'
+                  ? 'Điểm số phải từ 0 đến 100' 
+                  : 'Nhập điểm số từ 0 đến 100 (bắt buộc)'
               }
             />
             <TextField
               fullWidth
               multiline
               rows={4}
-              label="Feedback"
+              label="Nhận xét / Phản hồi"
               value={gradeForm.feedback}
               onChange={(e) => setGradeForm({ ...gradeForm, feedback: e.target.value })}
-              placeholder="Write feedback for student..."
+              placeholder="Viết nhận xét cho học viên..."
               required
 error={!gradeForm.feedback || gradeForm.feedback.trim() === ''}
-              helperText="Please enter feedback (required)"
+              helperText="Vui lòng nhập nhận xét (bắt buộc)"
             />
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 2 }}>
           <Button onClick={() => setGradeDialogOpen(false)} disabled={grading}>
-            Cancel
+            Hủy
           </Button>
           <Button 
             onClick={handleGradeSubmit} 
@@ -879,7 +879,7 @@ error={!gradeForm.feedback || gradeForm.feedback.trim() === ''}
             disabled={grading}
             startIcon={grading ? <CircularProgress size={20} /> : <Grade />}
           >
-            {grading ? 'Saving...' : 'Save Grade'}
+            {grading ? 'Đang lưu...' : 'Lưu điểm số'}
           </Button>
         </DialogActions>
       </Dialog>

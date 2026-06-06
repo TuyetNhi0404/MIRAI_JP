@@ -30,7 +30,6 @@ import {
 import {
   Notifications as NotificationsIcon,
   Assignment,
-  Forum,
   School,
   CheckCircle,
   Close,
@@ -45,6 +44,7 @@ import {
   Delete,
 } from "@mui/icons-material";
 import { formatDistanceToNow } from "date-fns";
+import { vi } from "date-fns/locale";
 import notificationService from "../../services/notification.service";
 import { courseService, type Course } from "../../services/courseService";
 import { userService } from "../../services/accountService";
@@ -56,6 +56,79 @@ import type {
   MyCreatedNotification,
 } from "../../types/notification.types";
 import { useAppSelector } from "../../hooks/hooks";
+
+const translateTitle = (title: string): string => {
+  const tMap: Record<string, string> = {
+    "New Assignment": "Bài tập mới",
+    "Assignment Deadline Approaching": "Sắp đến hạn nộp bài tập",
+    "Assignment Graded": "Bài tập đã chấm điểm",
+    "Schedule Change Request": "Yêu cầu thay đổi lịch học",
+    "Schedule Request Response": "Phản hồi yêu cầu lịch học",
+    "Schedule Response": "Phản hồi lịch học",
+    "New Enrollment Request": "Yêu cầu ghi danh mới",
+    "Enrollment Request Response": "Phản hồi yêu cầu ghi danh",
+    "New Quiz": "Bài trắc nghiệm mới",
+  };
+  return tMap[title] || title;
+};
+
+const translateMessage = (message: string): string => {
+  if (!message) return message;
+  let msg = message;
+  
+  const newAssignmentRegex = /A new assignment "([^"]+)" has been posted\. Due: (.*)/i;
+  if (newAssignmentRegex.test(msg)) {
+    return msg.replace(newAssignmentRegex, 'Bài tập mới "$1" đã được đăng. Hạn nộp: $2');
+  }
+
+  const deadlineRegex = /Reminder: Assignment "([^"]+)" is due on (.*)/i;
+  if (deadlineRegex.test(msg)) {
+    return msg.replace(deadlineRegex, 'Nhắc nhở: Bài tập "$1" có hạn nộp vào ngày $2');
+  }
+
+  const gradedRegex = /Your assignment "([^"]+)" has been graded\. Score: (.*)/i;
+  if (gradedRegex.test(msg)) {
+    return msg.replace(gradedRegex, 'Bài tập "$1" của bạn đã được chấm điểm. Điểm số: $2');
+  }
+
+  const scheduleRequestRegex = /(.*) requested a schedule change\. Reason: (.*)/i;
+  if (scheduleRequestRegex.test(msg)) {
+    return msg.replace(scheduleRequestRegex, '$1 đã yêu cầu thay đổi lịch học. Lý do: $2');
+  }
+
+  if (msg.includes("Your schedule change request has been approved")) {
+    return "Yêu cầu thay đổi lịch học của bạn đã được phê duyệt.";
+  }
+  if (msg.includes("Your schedule change request has been rejected")) {
+    return "Yêu cầu thay đổi lịch học của bạn đã bị từ chối.";
+  }
+
+  const enrollmentRequestRegex = /(.*) \((.*)\) requested to enroll in "([^"]+)"/i;
+  if (enrollmentRequestRegex.test(msg)) {
+    return msg.replace(enrollmentRequestRegex, '$1 ($2) đã đăng ký ghi danh vào khóa học "$3"');
+  }
+
+  const enrollApprovedRegex = /Your enrollment request for "([^"]+)" has been approved! Welcome to the course\./i;
+  if (enrollApprovedRegex.test(msg)) {
+    return msg.replace(enrollApprovedRegex, 'Yêu cầu ghi danh của bạn cho khóa học "$1" đã được duyệt! Chào mừng bạn tham gia khóa học.');
+  }
+
+  const enrollRejectedRegex = /Your enrollment request for "([^"]+)" has been rejected\./i;
+  if (enrollRejectedRegex.test(msg)) {
+    return msg.replace(enrollRejectedRegex, 'Yêu cầu ghi danh của bạn cho khóa học "$1" đã bị từ chối.');
+  }
+
+  const quizCreatedDueRegex = /A new quiz "([^"]+)" has been created\. Due date: (.*)\./i;
+  if (quizCreatedDueRegex.test(msg)) {
+    return msg.replace(quizCreatedDueRegex, 'Bài trắc nghiệm mới "$1" đã được tạo. Hạn làm bài: $2.');
+  }
+  const quizCreatedRegex = /A new quiz "([^"]+)" has been created\./i;
+  if (quizCreatedRegex.test(msg)) {
+    return msg.replace(quizCreatedRegex, 'Bài trắc nghiệm mới "$1" đã được tạo.');
+  }
+
+  return msg;
+};
 
 const NotificationDropdown = () => {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
@@ -376,11 +449,9 @@ const NotificationDropdown = () => {
       return;
     }
 
-    // forum_pending_post: navigate to forum page with pending tab for admin
+    // forum_pending_post: do nothing, just close dropdown
     if (notification.type === "forum_pending_post") {
       handleClose();
-      // Navigate to forum page with pending tab
-      window.location.href = `/faq?tab=pending`;
       return;
     }
 
@@ -394,32 +465,6 @@ const NotificationDropdown = () => {
           break;
         case "quiz_created":
           window.location.href = `/dashboard/student/quizzes`;
-          break;
-        case "forum_comment":
-        case "forum_question":
-        case "forum_post_like":
-        case "forum_post_dislike":
-          const postId = notification.relatedEntityId || notification.metadata?.postId || '';
-          if (postId) {
-            window.location.href = `/faq?threadId=${postId}`;
-          } else {
-            window.location.href = `/faq`;
-          }
-          break;
-        case "reply_comment":
-          // For reply notifications, navigate to the post and scroll to the specific comment/reply
-          const replyPostId = notification.relatedEntityId || '';
-          const commentId = notification.metadata?.commentId;
-          const replyId = notification.metadata?.replyId;
-          if (replyPostId) {
-            if (commentId || replyId) {
-              window.location.href = `/faq?threadId=${replyPostId}&commentId=${commentId || replyId}`;
-            } else {
-              window.location.href = `/faq?threadId=${replyPostId}`;
-            }
-          } else {
-            window.location.href = `/faq`;
-          }
           break;
         case "enrollment_response":
           window.location.href = `/dashboard/admin/requests`;
@@ -551,7 +596,7 @@ const NotificationDropdown = () => {
       case "forum_post_rejected":
         return <Close fontSize="small" />;
       case "forum_pending_post":
-        return <Forum fontSize="small" />;
+        return <NotificationsIcon fontSize="small" />;
       case "forum_post_like":
         return <ThumbUp fontSize="small" />;
       case "forum_post_dislike":
@@ -565,9 +610,9 @@ const NotificationDropdown = () => {
             <ThumbDown fontSize="small" />
           );
         }
-        return <Forum fontSize="small" />;
+        return <NotificationsIcon fontSize="small" />;
       case "forum_question":
-        return <Forum fontSize="small" />;
+        return <NotificationsIcon fontSize="small" />;
       case "reply_comment":
         return <Reply fontSize="small" />;
       case "enrollment_request":
@@ -718,7 +763,7 @@ const NotificationDropdown = () => {
                   letterSpacing: "0.3px",
                 }}
               >
-                Notifications
+                Thông báo
               </Typography>
               {unreadCount > 0 && (
                 <Chip
@@ -759,7 +804,7 @@ const NotificationDropdown = () => {
                 {markingAll ? (
                   <CircularProgress size={14} sx={{ color: "white" }} />
                 ) : (
-                  "Mark all as read"
+                  "Đánh dấu tất cả đã đọc"
                 )}
               </Button>
             )}
@@ -799,7 +844,7 @@ const NotificationDropdown = () => {
               >
                 <CircularProgress size={32} sx={{ color: "#B90000" }} />
                 <Typography variant="body2" color="text.secondary">
-                  Loading...
+                  Đang tải...
                 </Typography>
               </Box>
             ) : notifications.length === 0 ? (
@@ -830,10 +875,10 @@ const NotificationDropdown = () => {
                   variant="body1"
                   sx={{ fontWeight: 500, color: "#666" }}
                 >
-                  No notifications
+                  Không có thông báo
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  You will receive notifications here
+                  Bạn sẽ nhận được thông báo tại đây
                 </Typography>
               </Box>
             ) : (
@@ -917,7 +962,7 @@ const NotificationDropdown = () => {
                                 color: notification.isRead ? "#666" : "#1a1a1a",
                               }}
                             >
-                              {notification.title}
+                              {translateTitle(notification.title)}
                             </Typography>
                             <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                               {!notification.isRead && (
@@ -950,7 +995,7 @@ const NotificationDropdown = () => {
                                 lineHeight: 1.5,
                               }}
                             >
-                              {notification.message}
+                              {translateMessage(notification.message)}
                             </Typography>
                           )}
                           {notification.type === "schedule_response" && (
@@ -966,7 +1011,7 @@ const NotificationDropdown = () => {
                                 lineHeight: 1.5,
                               }}
                             >
-                              {notification.message}
+                              {translateMessage(notification.message)}
                             </Typography>
                           )}
                           <Box
@@ -986,7 +1031,7 @@ const NotificationDropdown = () => {
                             >
                               {formatDistanceToNow(
                                 new Date(notification.createdAt),
-                                { addSuffix: true }
+                                { addSuffix: true, locale: vi }
                               )}
                             </Typography>
                           </Box>
@@ -1038,7 +1083,7 @@ const NotificationDropdown = () => {
                     transition: "all 0.2s ease-in-out",
                   }}
                 >
-                  Create New Notification
+                  Tạo thông báo mới
                 </Button>
                 <Button
                   fullWidth
@@ -1058,7 +1103,7 @@ const NotificationDropdown = () => {
                     },
                   }}
                 >
-                  My Created
+                  Đã tạo
                 </Button>
               </Box>
             </>
@@ -1113,7 +1158,7 @@ const NotificationDropdown = () => {
                     color: "#1a1a1a",
                   }}
                 >
-                  {selectedNotification.title}
+                  {translateTitle(selectedNotification.title)}
                 </Typography>
                 <Typography
                   variant="caption"
@@ -1127,7 +1172,7 @@ const NotificationDropdown = () => {
                 >
                   {formatDistanceToNow(
                     new Date(selectedNotification.createdAt),
-                    { addSuffix: true }
+                    { addSuffix: true, locale: vi }
                   )}
                 </Typography>
               </Box>
@@ -1161,7 +1206,7 @@ const NotificationDropdown = () => {
                   pr: 1,
                 }}
               >
-                {selectedNotification.message}
+                {translateMessage(selectedNotification.message)}
               </Typography>
             </DialogContent>
             <DialogActions
@@ -1192,7 +1237,7 @@ const NotificationDropdown = () => {
                 }}
                 fullWidth
               >
-                Close
+                Đóng
               </Button>
             </DialogActions>
           </>
@@ -1222,14 +1267,14 @@ const NotificationDropdown = () => {
             px: 3,
           }}
         >
-          Create New Notification
+          Tạo thông báo mới
         </DialogTitle>
         <DialogContent sx={{ px: 3, py: 3 }}>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
             {/* Notification Type Selection */}
             <Box>
               <Typography variant="body2" sx={{ mb: 1.5, fontWeight: 600, color: "#333" }}>
-                Notification Type
+                Loại thông báo
               </Typography>
               <ToggleButtonGroup
                 value={notificationType}
@@ -1260,14 +1305,14 @@ const NotificationDropdown = () => {
                   },
                 }}
               >
-                <ToggleButton value="global">Global Notification</ToggleButton>
-                <ToggleButton value="user">Send to User</ToggleButton>
+                <ToggleButton value="global">Thông báo chung</ToggleButton>
+                <ToggleButton value="user">Gửi cho người dùng</ToggleButton>
               </ToggleButtonGroup>
             </Box>
 
             {/* Common Fields */}
             <TextField
-              label="Title"
+              label="Tiêu đề"
               fullWidth
               value={notificationType === "global" ? formData.title : sendToUserFormData.title}
               onChange={(e) => {
@@ -1293,7 +1338,7 @@ const NotificationDropdown = () => {
             />
 
             <TextField
-              label="Content"
+              label="Nội dung"
               fullWidth
               multiline
               rows={5}
@@ -1324,7 +1369,7 @@ const NotificationDropdown = () => {
             {notificationType === "global" && (
               <>
                 <FormControl fullWidth>
-                  <InputLabel>Send to</InputLabel>
+                  <InputLabel>Gửi đến</InputLabel>
                   <Select
                     value={formData.targetRole}
                     onChange={(e) => {
@@ -1335,7 +1380,7 @@ const NotificationDropdown = () => {
                         courseIds: newRole === "courses" ? (formData.courseIds || []) : []
                       });
                     }}
-                    input={<OutlinedInput label="Send to" />}
+                    input={<OutlinedInput label="Gửi đến" />}
                     sx={{
                       borderRadius: 2,
                       "&:hover .MuiOutlinedInput-notchedOutline": {
@@ -1346,16 +1391,16 @@ const NotificationDropdown = () => {
                       },
                     }}
                   >
-                    <MenuItem value="all">All (Student + Teacher)</MenuItem>
-                    <MenuItem value="student">Students only</MenuItem>
-                    <MenuItem value="teacher">Teachers only</MenuItem>
-                    <MenuItem value="courses">Specific Courses</MenuItem>
+                    <MenuItem value="all">Tất cả (Học viên + Giáo viên)</MenuItem>
+                    <MenuItem value="student">Chỉ học viên</MenuItem>
+                    <MenuItem value="teacher">Chỉ giáo viên</MenuItem>
+                    <MenuItem value="courses">Khóa học cụ thể</MenuItem>
                   </Select>
                 </FormControl>
 
                 {formData.targetRole === "courses" && (
                   <FormControl fullWidth>
-                    <InputLabel>Select Courses</InputLabel>
+                    <InputLabel>Chọn khóa học</InputLabel>
                     <Select
                       multiple
                       value={formData.courseIds || []}
@@ -1363,14 +1408,14 @@ const NotificationDropdown = () => {
                         const value = e.target.value;
                         setFormData({ ...formData, courseIds: typeof value === 'string' ? value.split(',') : value as string[] });
                       }}
-                      input={<OutlinedInput label="Select Courses" />}
+                      input={<OutlinedInput label="Chọn khóa học" />}
                       renderValue={(selected) => {
-                        if (selected.length === 0) return "No courses selected";
+                        if (selected.length === 0) return "Chưa chọn khóa học nào";
                         if (selected.length === 1) {
                           const course = courses.find((c) => (c._id || c.id) === selected[0]);
                           return course?.name || selected[0];
                         }
-                        return `${selected.length} courses selected`;
+                        return `${selected.length} khóa học được chọn`;
                       }}
                       MenuProps={{
                         PaperProps: {
@@ -1392,10 +1437,10 @@ const NotificationDropdown = () => {
                       {loadingCourses ? (
                         <MenuItem disabled>
                           <CircularProgress size={20} />
-                          <Typography sx={{ ml: 1 }}>Loading courses...</Typography>
+                          <Typography sx={{ ml: 1 }}>Đang tải khóa học...</Typography>
                         </MenuItem>
                       ) : courses.length === 0 ? (
-                        <MenuItem disabled>No courses available</MenuItem>
+                        <MenuItem disabled>Không có khóa học nào</MenuItem>
                       ) : (
                         courses.map((course) => (
                           <MenuItem key={course._id || course.id} value={course._id || course.id}>
@@ -1446,11 +1491,12 @@ const NotificationDropdown = () => {
                   });
                   return filtered;
                 }}
+                filterSelectedOptions
                 renderInput={(params) => (
                   <TextField
                     {...params}
-                    label="Search and Select User"
-                    placeholder="Type to search users..."
+                    label="Tìm kiếm và chọn người dùng"
+                    placeholder="Nhập để tìm kiếm người dùng..."
                     variant="outlined"
                     sx={{
                       "& .MuiOutlinedInput-root": {
@@ -1486,7 +1532,7 @@ const NotificationDropdown = () => {
                     </Box>
                   </Box>
                 )}
-                noOptionsText="No users found"
+                noOptionsText="Không tìm thấy người dùng"
                 sx={{
                   "& .MuiAutocomplete-popper": {
                     "& .MuiAutocomplete-option": {
@@ -1526,7 +1572,7 @@ const NotificationDropdown = () => {
               },
             }}
           >
-            Cancel
+            Hủy
           </Button>
           <Button
             onClick={handleCreateSubmit}
@@ -1560,7 +1606,7 @@ const NotificationDropdown = () => {
             {creating ? (
               <CircularProgress size={20} sx={{ color: "white" }} />
             ) : (
-              notificationType === "global" ? "Create" : "Send"
+              notificationType === "global" ? "Tạo" : "Gửi"
             )}
           </Button>
         </DialogActions>
@@ -1593,12 +1639,12 @@ const NotificationDropdown = () => {
             px: 3,
           }}
         >
-          Edit Notification
+          Chỉnh sửa thông báo
         </DialogTitle>
         <DialogContent sx={{ px: 3, py: 3 }}>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
             <TextField
-              label="Title"
+              label="Tiêu đề"
               fullWidth
               value={editFormData.title}
               onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
@@ -1618,7 +1664,7 @@ const NotificationDropdown = () => {
             />
 
             <TextField
-              label="Content"
+              label="Nội dung"
               fullWidth
               multiline
               rows={5}
@@ -1667,7 +1713,7 @@ const NotificationDropdown = () => {
               },
             }}
           >
-            Cancel
+            Hủy
           </Button>
           <Button
             onClick={handleUpdateSubmit}
@@ -1696,7 +1742,7 @@ const NotificationDropdown = () => {
             {updating ? (
               <CircularProgress size={20} sx={{ color: "white" }} />
             ) : (
-              "Update"
+              "Cập nhật"
             )}
           </Button>
         </DialogActions>
@@ -1727,7 +1773,7 @@ const NotificationDropdown = () => {
             px: 3,
           }}
         >
-          My Created Notifications
+          Thông báo tôi đã tạo
         </DialogTitle>
         <DialogContent sx={{ px: 3, py: 3 }}>
           {loadingMyCreated ? (
@@ -1737,7 +1783,7 @@ const NotificationDropdown = () => {
           ) : myCreatedNotifications.length === 0 ? (
             <Box sx={{ textAlign: "center", p: 5 }}>
               <Typography variant="body1" sx={{ color: "#666" }}>
-                No notifications created yet
+                Chưa có thông báo nào được tạo
               </Typography>
             </Box>
           ) : (
@@ -1758,11 +1804,11 @@ const NotificationDropdown = () => {
                       <Box sx={{ width: "100%" }}>
                         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 1 }}>
                           <Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.95rem", flex: 1 }}>
-                            {notification.title}
+                            {translateTitle(notification.title)}
                           </Typography>
                           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, ml: 1 }}>
                             <Chip
-                              label={notification.notificationType === "global" ? `${notification.recipientCount} recipients` : "Individual"}
+                              label={notification.notificationType === "global" ? `${notification.recipientCount} người nhận` : "Cá nhân"}
                               size="small"
                               sx={{
                                 bgcolor: notification.notificationType === "global" ? "#B90000" : "#0288d1",
@@ -1792,7 +1838,7 @@ const NotificationDropdown = () => {
                             <IconButton
                               size="small"
                               onClick={async () => {
-                                if (window.confirm("Are you sure you want to delete this notification?")) {
+                                if (window.confirm("Bạn có chắc chắn muốn xóa thông báo này không?")) {
                                   try {
                                     setDeleting(true);
                                     await notificationService.deleteNotification(notification._id);
@@ -1822,17 +1868,17 @@ const NotificationDropdown = () => {
                           </Box>
                         </Box>
                         <Typography variant="body2" sx={{ color: "#666", mb: 1, fontSize: "0.85rem" }}>
-                          {notification.message}
+                          {translateMessage(notification.message)}
                         </Typography>
                         {notification.notificationType === "individual" && notification.recipientId && (
                           <Typography variant="caption" sx={{ color: "#999", fontSize: "0.75rem" }}>
-                            To: {typeof notification.recipientId === "object" 
-                              ? `${notification.recipientId.name || "Unknown"} (${notification.recipientId.email || "N/A"})`
-                              : "Unknown User"}
+                            Đến: {typeof notification.recipientId === "object" 
+                              ? `${notification.recipientId.name || "Không rõ"} (${notification.recipientId.email || "N/A"})`
+                              : "Người dùng không rõ"}
                           </Typography>
                         )}
                         <Typography variant="caption" sx={{ color: "#999", fontSize: "0.75rem", display: "block", mt: 0.5 }}>
-                          {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                          {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true, locale: vi })}
                         </Typography>
                       </Box>
                     </ListItem>
@@ -1853,10 +1899,10 @@ const NotificationDropdown = () => {
                     }}
                     sx={{ color: "#B90000" }}
                   >
-                    Previous
+                    Trước
                   </Button>
                   <Typography sx={{ display: "flex", alignItems: "center", px: 2 }}>
-                    Page {myCreatedPage} of {myCreatedTotalPages}
+                    Trang {myCreatedPage} / {myCreatedTotalPages}
                   </Typography>
                   <Button
                     disabled={myCreatedPage === myCreatedTotalPages}
@@ -1867,7 +1913,7 @@ const NotificationDropdown = () => {
                     }}
                     sx={{ color: "#B90000" }}
                   >
-                    Next
+                    Sau
                   </Button>
                 </Box>
               )}
@@ -1902,7 +1948,7 @@ const NotificationDropdown = () => {
             }}
             fullWidth
           >
-            Close
+            Đóng
           </Button>
         </DialogActions>
       </Dialog>

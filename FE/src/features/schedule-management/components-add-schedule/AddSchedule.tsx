@@ -44,8 +44,8 @@ function TabPanel(props: TabPanelProps) {
 }
 
 const tabs = [
-  { label: 'Calendar', icon: <CalendarDays size={16} /> },
-  { label: 'View Schedule', icon: <ListIcon size={16} /> },
+  { label: 'Lịch học', icon: <CalendarDays size={16} /> },
+  { label: 'Xem lịch học', icon: <ListIcon size={16} /> },
 ];
 
 export default function AddSchedule() {
@@ -80,7 +80,7 @@ export default function AddSchedule() {
           gap: 2
         }}>
           <Typography variant={isMobile ? 'h5' : 'h4'} fontWeight={700}>
-            Manage Schedule
+            Quản lý lịch học
           </Typography>
           
           {!isMobile && (
@@ -89,7 +89,7 @@ export default function AddSchedule() {
               onClick={() => setActiveTab(0)}
               startIcon={<Plus size={18} />}
             >
-              Add Schedule
+              Thêm lịch học
             </Button>
           )}
           
@@ -148,7 +148,7 @@ export default function AddSchedule() {
         >
           <Box sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
-              Select Section
+              Chọn phần
             </Typography>
             <List>
               {tabs.map((tab, index) => (
@@ -172,10 +172,10 @@ export default function AddSchedule() {
         <TabPanel value={activeTab} index={0}>
           <Box sx={{ mb: 2 }}>
             <Typography variant="h6" gutterBottom>
-              Add Schedule Calendar
+              Lịch thêm lịch học
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Click on a time slot in the calendar below to create a schedule
+              Nhấp vào một ca học trên lịch dưới đây để tạo lịch học
             </Typography>
           </Box>
           <ScheduleCreatorCalendar />
@@ -184,10 +184,10 @@ export default function AddSchedule() {
         <TabPanel value={activeTab} index={1}>
           <Box sx={{ mb: 2 }}>
             <Typography variant="h6" gutterBottom>
-              View Schedule Calendar
+              Lịch xem lịch học
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              View and manage existing schedules
+              Xem và quản lý các lịch học hiện tại
             </Typography>
           </Box>
           <ManageScheduleCalendar />

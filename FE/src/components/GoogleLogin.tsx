@@ -44,7 +44,7 @@ const GoogleLoginButton = ({ onSuccess, onError }: GoogleLoginButtonProps) => {
       // Show success message
       setSnackbar({
         open: true,
-        message: `Hello ${user.name || "there"}! Login successful 🎉`,
+        message: `Chào ${user.name || "bạn"}! Đăng nhập thành công 🎉`,
         severity: "success",
       });
 
@@ -73,21 +73,21 @@ const GoogleLoginButton = ({ onSuccess, onError }: GoogleLoginButtonProps) => {
       // Format error message for user display
       let displayMessage = errorMessage;
       
-      // Map backend error messages to user-friendly English
+      // Map backend error messages to user-friendly Vietnamese
       if (errorMessage.includes("chưa được cấp quyền truy cập")) {
-        displayMessage = "❌ Account not registered in the system. Please contact the administrator for access.";
+        displayMessage = "❌ Tài khoản chưa được đăng ký trong hệ thống. Vui lòng liên hệ quản trị viên để được cấp quyền truy cập.";
       } else if (errorMessage.includes("đã bị khóa")) {
-        displayMessage = "🔒 Your account has been locked. Please contact the administrator.";
+        displayMessage = "🔒 Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.";
       } else if (errorMessage.includes("Google payload invalid")) {
-        displayMessage = "❌ Invalid information from Google. Please try again.";
+        displayMessage = "❌ Thông tin từ Google không hợp lệ. Vui lòng thử lại.";
       } else if (errorMessage.includes("popup_closed_by_user") || errorMessage.includes("đóng cửa sổ")) {
-        displayMessage = "ℹ️ You closed the login window. Please try again.";
+        displayMessage = "ℹ️ Bạn đã đóng cửa sổ đăng nhập. Vui lòng thử lại.";
       } else if (errorMessage.includes("access_denied") || errorMessage.includes("từ chối")) {
-        displayMessage = "❌ You denied Google access permission. Please allow access to login.";
+        displayMessage = "❌ Bạn đã từ chối quyền truy cập Google. Vui lòng cho phép truy cập để đăng nhập.";
       } else if (errorMessage.includes("Token") || errorMessage.includes("token")) {
-        displayMessage = "❌ Google authentication error. Please try again.";
+        displayMessage = "❌ Lỗi xác thực Google. Vui lòng thử lại.";
       } else if (!errorMessage || errorMessage === "Đăng nhập Google thất bại") {
-        displayMessage = "❌ Google login failed. Please check your connection and try again.";
+        displayMessage = "❌ Đăng nhập Google thất bại. Vui lòng kiểm tra kết nối và thử lại.";
       }
       
       setSnackbar({
@@ -204,7 +204,7 @@ const GoogleLoginButton = ({ onSuccess, onError }: GoogleLoginButtonProps) => {
           fullWidth={isMobile}
           sx={getButtonStyles()}
         >
-          {loading ? "Logging in..." : "Login"}
+          {loading ? "Đang đăng nhập..." : "Đăng nhập"}
         </Button>
 
 

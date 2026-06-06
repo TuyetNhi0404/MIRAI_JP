@@ -159,11 +159,11 @@ const ListeningFormPage = () => {
         sx={{ mb: 3, color: 'text.secondary', fontWeight: 'bold' }}
         disabled={saving || uploading}
       >
-        Back to List
+        Quay lại danh sách
       </Button>
 
       <Typography variant="h4" fontWeight="bold" sx={{ color: '#B90000', mb: 4 }}>
-        {isEditMode ? 'Edit Listening Content' : 'Create New Listening Content'}
+        {isEditMode ? 'Chỉnh sửa nội dung luyện nghe' : 'Tạo mới nội dung luyện nghe'}
       </Typography>
 
       {error && (
@@ -177,7 +177,7 @@ const ListeningFormPage = () => {
           <Grid item xs={12}>
             <TextField
               fullWidth
-              label="Title"
+              label="Tiêu đề"
               name="title"
               value={formData.title}
               onChange={handleChange}
@@ -191,7 +191,7 @@ const ListeningFormPage = () => {
               fullWidth
               multiline
               rows={2}
-              label="Description"
+              label="Mô tả"
               name="description"
               value={formData.description}
               onChange={handleChange}
@@ -202,20 +202,20 @@ const ListeningFormPage = () => {
 
           <Grid item xs={12} sm={6}>
             <FormControl fullWidth>
-              <InputLabel>Topic</InputLabel>
-              <Select name="topic" value={formData.topic} onChange={handleChange as any} label="Topic" disabled={saving || uploading}>
-                <MenuItem value="daily_life">Daily Life</MenuItem>
-                <MenuItem value="travel">Travel</MenuItem>
-                <MenuItem value="business">Business</MenuItem>
-                <MenuItem value="culture">Culture</MenuItem>
+              <InputLabel>Chủ đề</InputLabel>
+              <Select name="topic" value={formData.topic} onChange={handleChange as any} label="Chủ đề" disabled={saving || uploading}>
+                <MenuItem value="daily_life">Đời sống hàng ngày</MenuItem>
+                <MenuItem value="travel">Du lịch</MenuItem>
+                <MenuItem value="business">Công việc</MenuItem>
+                <MenuItem value="culture">Văn hóa</MenuItem>
               </Select>
             </FormControl>
           </Grid>
 
           <Grid item xs={12} sm={6}>
             <FormControl fullWidth>
-              <InputLabel>Level</InputLabel>
-              <Select name="level" value={formData.level} onChange={handleChange as any} label="Level" disabled={saving || uploading}>
+              <InputLabel>Trình độ</InputLabel>
+              <Select name="level" value={formData.level} onChange={handleChange as any} label="Trình độ" disabled={saving || uploading}>
                 <MenuItem value="N5">N5</MenuItem>
                 <MenuItem value="N4">N4</MenuItem>
                 <MenuItem value="N3">N3</MenuItem>
@@ -227,10 +227,10 @@ const ListeningFormPage = () => {
 
           <Grid item xs={12} sm={6}>
             <FormControl fullWidth>
-              <InputLabel>Audio Source</InputLabel>
-              <Select name="audioSource" value={formData.audioSource} onChange={handleChange as any} label="Audio Source" disabled={saving || uploading}>
-                <MenuItem value="upload">Upload File (Cloudinary)</MenuItem>
-                <MenuItem value="tts">Text-to-Speech (ElevenLabs)</MenuItem>
+              <InputLabel>Nguồn âm thanh</InputLabel>
+              <Select name="audioSource" value={formData.audioSource} onChange={handleChange as any} label="Nguồn âm thanh" disabled={saving || uploading}>
+                <MenuItem value="upload">Tải tệp lên (Cloudinary)</MenuItem>
+                <MenuItem value="tts">Chuyển văn bản thành giọng nói (ElevenLabs)</MenuItem>
               </Select>
             </FormControl>
           </Grid>
@@ -248,7 +248,7 @@ const ListeningFormPage = () => {
                 />
                 <label htmlFor="audio-file-input">
                   <Button variant="outlined" component="span" size="small" disabled={saving || uploading}>
-                    Choose Audio File
+                    Chọn tệp âm thanh
                   </Button>
                 </label>
                 <Typography variant="body2" sx={{ ml: 1, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: '180px' }} color="text.secondary">
@@ -258,7 +258,7 @@ const ListeningFormPage = () => {
             ) : (
               <TextField
                 fullWidth
-                label="Audio URL"
+                label="Đường dẫn âm thanh (URL)"
                 name="audioUrl"
                 value={formData.audioUrl}
                 onChange={handleChange}
@@ -274,7 +274,7 @@ const ListeningFormPage = () => {
               fullWidth
               multiline
               rows={5}
-              label="Transcript (Japanese)"
+              label="Nội dung lời thoại (Tiếng Nhật)"
               name="transcript"
               value={formData.transcript}
               onChange={handleChange}
@@ -292,7 +292,7 @@ const ListeningFormPage = () => {
                   disabled={saving || uploading}
                 />
               }
-              label="Publish (visible to students and teachers)"
+              label="Xuất bản (Hiển thị cho học viên và giáo viên)"
             />
           </Grid>
 
@@ -313,7 +313,7 @@ const ListeningFormPage = () => {
                 '&:hover': { bgcolor: '#990000' }
               }}
             >
-              {uploading ? 'Uploading Audio...' : saving ? 'Saving...' : 'Save Content'}
+              {uploading ? 'Đang tải lên âm thanh...' : saving ? 'Đang lưu...' : 'Lưu nội dung'}
             </Button>
           </Grid>
         </Grid>

@@ -78,7 +78,7 @@ const RequestModal: React.FC<RequestLeaveModalProps> = ({
         onClose();
       }, 800);
     } catch (err) {
-      setError('Failed to submit request. Please try again.');
+      setError('Không thể gửi yêu cầu. Vui lòng thử lại.');
       console.error(err);
     } finally {
       setLoading(false);
@@ -111,7 +111,7 @@ const RequestModal: React.FC<RequestLeaveModalProps> = ({
             fontSize: { xs: '1.1rem', sm: '1.25rem' },
           }}
         >
-          Request Teaching Leave
+          Yêu cầu xin nghỉ dạy
         </DialogTitle>
 
         <DialogContent sx={{ mt: 2 }}>
@@ -132,7 +132,7 @@ mb: 2,
               }}
             >
               <Typography variant="body2" sx={{ mb: 0.8, display: 'flex' }}>
-                <strong style={{ minWidth: 100 }}>Date:</strong>
+                <strong style={{ minWidth: 100 }}>Ngày học:</strong>
                 <span>
                   {new Date(scheduleItem.dateStr).toLocaleDateString('vi-VN', {
                     year: 'numeric',
@@ -143,7 +143,7 @@ mb: 2,
               </Typography>
 
               <Typography variant="body2" sx={{ mb: 0.8, display: 'flex' }}>
-                <strong style={{ minWidth: 100 }}>Time Slot:</strong>
+                <strong style={{ minWidth: 100 }}>Ca học:</strong>
                 <span>
                   {session
                     ? `${session.sessionName} (${session.startTime} - ${session.endTime})`
@@ -153,7 +153,7 @@ mb: 2,
 
               {scheduleItem.courseName && (
                 <Typography variant="body2" sx={{ mb: 0.8, display: 'flex' }}>
-                  <strong style={{ minWidth: 100 }}>Course:</strong>
+                  <strong style={{ minWidth: 100 }}>Khóa học:</strong>
                   <span>{scheduleItem.courseName}</span>
                 </Typography>
               )}
@@ -167,13 +167,13 @@ mb: 2,
                     fontWeight: 500,
                   }}
                 >
-                  <strong style={{ minWidth: 100 }}>Time Until Class:</strong>
+                  <strong style={{ minWidth: 100 }}>Thời gian còn lại:</strong>
                   <span style={{ marginLeft: 4 }}>
                     {hoursRemaining < 0
-                      ? 'Already passed'
+                      ? 'Đã trôi qua'
                       : hoursRemaining >= 24
-                        ? `${hoursRemaining} hours remaining`
-                        : `${hoursRemaining} hours (Less than 24h)`}
+                        ? `Còn lại ${hoursRemaining} giờ`
+                        : `Còn lại ${hoursRemaining} giờ (Ít hơn 24 giờ)`}
                   </span>
                 </Typography>
               )}
@@ -182,7 +182,7 @@ mb: 2,
 
           {!canSubmit && hoursRemaining !== null && hoursRemaining >= 0 && (
             <Alert severity="warning" sx={{ mb: 2 }}>
-               Leave requests must be submitted at least 24 hours in advance.
+               Yêu cầu xin nghỉ dạy phải được gửi trước ít nhất 24 giờ.
             </Alert>
           )}
 
@@ -190,17 +190,17 @@ mb: 2,
             fullWidth
             multiline
             rows={4}
-            label="Reason for Leave Request *"
+            label="Lý do xin nghỉ dạy *"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="Please explain why you need to take leave from this teaching session..."
+            placeholder="Vui lòng giải thích lý do bạn cần xin nghỉ dạy ca học này..."
             disabled={loading || !canSubmit}
             error={reason.length > 0 && !isReasonValid}
             helperText={
               !isReasonValid && reason.length > 0
-                ? 'Reason must be at least 5 characters'
+                ? 'Lý do phải có ít nhất 5 ký tự'
                 : !canSubmit && hoursRemaining !== null && hoursRemaining >= 0
-? 'Less than 24 hours notice required'
+                  ? 'Cần báo trước ít nhất 24 giờ'
                   : ''
             }
             sx={{
@@ -214,7 +214,7 @@ mb: 2,
 
         <DialogActions sx={{ p: 2, gap: 1 }}>
           <Button onClick={handleClose} sx={{ color: '#666' }} disabled={loading}>
-            Cancel
+            Hủy
           </Button>
           <Button
             onClick={handleSubmit}
@@ -228,7 +228,7 @@ mb: 2,
               minWidth: 120,
             }}
           >
-            {loading ? 'Submitting...' : 'Submit Request'}
+            {loading ? 'Đang gửi...' : 'Gửi yêu cầu'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -252,7 +252,7 @@ mb: 2,
           }}
           icon={false}
         >
-          Leave request submitted successfully!
+          Gửi yêu cầu xin nghỉ thành công!
         </Alert>
       </Snackbar>
     </>

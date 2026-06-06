@@ -10,8 +10,27 @@ interface QuizFormProps {
 
 const QuizForm: React.FC<QuizFormProps> = ({ initialData, onSave, onCancel }) => {
   const [question, setQuestion] = useState(initialData?.question || '');
-  const [options, setOptions] = useState(initialData?.options || { A: '', B: '', C: '', D: '' });
-  const [correctAnswer, setCorrectAnswer] = useState<'A' | 'B' | 'C' | 'D'>(initialData?.correctAnswer || 'A');
+  const [options, setOptions] = useState<Record<'A' | 'B' | 'C' | 'D', string>>(() => {
+    if (initialData?.options && Array.isArray(initialData.options)) {
+      return {
+        A: initialData.options[0] || '',
+        B: initialData.options[1] || '',
+        C: initialData.options[2] || '',
+        D: initialData.options[3] || '',
+      };
+    }
+    return { A: '', B: '', C: '', D: '' };
+  });
+  const [correctAnswer, setCorrectAnswer] = useState<'A' | 'B' | 'C' | 'D'>(() => {
+    if (initialData && Array.isArray(initialData.options)) {
+      const idx = initialData.options.indexOf(initialData.correctAnswer);
+      if (idx === 0) return 'A';
+      if (idx === 1) return 'B';
+      if (idx === 2) return 'C';
+      if (idx === 3) return 'D';
+    }
+    return 'A';
+  });
   const [explanation, setExplanation] = useState(initialData?.explanation || '');
 
   const isValid = question.trim() !== '' && options.A.trim() !== '' && options.B.trim() !== '' && options.C.trim() !== '' && options.D.trim() !== '';
@@ -22,13 +41,17 @@ const QuizForm: React.FC<QuizFormProps> = ({ initialData, onSave, onCancel }) =>
       id: initialData?.id || `quiz_${Date.now()}`,
       type: 'quiz',
       question: question.trim(),
-      options: {
-        A: options.A.trim(),
-        B: options.B.trim(),
-        C: options.C.trim(),
-        D: options.D.trim(),
-      },
-      correctAnswer,
+      options: [
+        options.A.trim(),
+        options.B.trim(),
+        options.C.trim(),
+        options.D.trim(),
+      ],
+      correctAnswer: 
+        correctAnswer === 'A' ? options.A.trim() :
+        correctAnswer === 'B' ? options.B.trim() :
+        correctAnswer === 'C' ? options.C.trim() :
+        options.D.trim(),
       explanation: explanation.trim() || undefined,
     };
     onSave(exercise);

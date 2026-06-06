@@ -33,7 +33,7 @@ export function AccountLock({ user, onStatusChange }: AccountLockProps) {
 
     } catch (error) {
       console.error(" Failed to toggle user:", error);
-      alert(error instanceof Error ? error.message : "Failed to update account status");
+      alert(error instanceof Error ? error.message : "Không thể cập nhật trạng thái tài khoản");
     } finally {
       setLoading(false);
     }
@@ -48,7 +48,7 @@ export function AccountLock({ user, onStatusChange }: AccountLockProps) {
   }
 
   return (
-    <Tooltip title={user.status === "active" ? "Lock Account" : "Unlock Account"}>
+    <Tooltip title={user.status === "active" ? "Khóa tài khoản" : "Mở khóa tài khoản"}>
       <IconButton
         onClick={handleToggleLock}
         size="small"

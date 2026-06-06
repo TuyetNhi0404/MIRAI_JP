@@ -69,13 +69,13 @@ const StudentStatisticsDashboard: React.FC = () => {
 
   useEffect(() => {
     if (!user || !studentId) {
-      setError("User information not found. Please log in again.")
+      setError("Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.")
       setLoading(false)
       return
     }
 
     if (user.role !== "student") {
-      setError("This feature is only available for students.")
+      setError("Tính năng này chỉ dành cho học sinh.")
       setLoading(false)
       return
     }
@@ -85,7 +85,7 @@ const StudentStatisticsDashboard: React.FC = () => {
 
   const loadCourseAndStatistics = async () => {
     if (!studentId) {
-      setError("User information not found. Please log in again.")
+      setError("Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.")
       setLoading(false)
       return
     }
@@ -98,7 +98,7 @@ const StudentStatisticsDashboard: React.FC = () => {
       const coursesData = coursesResponse.data.data || []
 
       if (coursesData.length === 0) {
-        setError("You have not been approved to join any courses yet.")
+        setError("Bạn chưa được phê duyệt tham gia khóa học nào.")
         setLoading(false)
         return
       }
@@ -137,13 +137,13 @@ const StudentStatisticsDashboard: React.FC = () => {
   const getStatusText = (status?: string): string => {
     switch (status) {
       case "in_progress":
-        return "In Progress"
+        return "Đang học"
       case "not_yet":
-        return "Not Started"
+        return "Chưa bắt đầu"
       case "complete":
-        return "Completed"
+        return "Hoàn thành"
       default:
-        return "Unknown"
+        return "Chưa xác định"
     }
   }
 
@@ -152,17 +152,17 @@ const StudentStatisticsDashboard: React.FC = () => {
     if (!statistics) return []
     return [
       {
-        subject: "Attendance",
+        subject: "Điểm danh",
         score: statistics.scoreComponent.attendanceScore,
         fullMark: 10,
       },
       {
-        subject: "Assignments",
+        subject: "Bài tập",
         score: statistics.scoreComponent.assignmentScore,
         fullMark: 10,
       },
       {
-        subject: "Quizzes",
+        subject: "Kiểm tra",
         score: statistics.scoreComponent.quizScore,
         fullMark: 10,
       },
@@ -173,17 +173,17 @@ const StudentStatisticsDashboard: React.FC = () => {
     if (!statistics) return []
     return [
       {
-        name: "Attendance",
+        name: "Điểm danh",
         points: statistics.scoreComponent.attendanceScore,
         weight: statistics.finalScore.weights.attendance,
       },
       {
-        name: "Assignments",
+        name: "Bài tập",
         points: statistics.scoreComponent.assignmentScore,
         weight: statistics.finalScore.weights.assignment,
       },
       {
-        name: "Quizzes",
+        name: "Kiểm tra",
         points: statistics.scoreComponent.quizScore,
         weight: statistics.finalScore.weights.quiz,
       },
@@ -194,17 +194,17 @@ const StudentStatisticsDashboard: React.FC = () => {
     if (!statistics) return []
     return [
       {
-        name: "Attendance",
+        name: "Điểm danh",
         value: statistics.finalScore.weights.attendance,
         color: "#a44d0fff",
       },
       {
-        name: "Assignments",
+        name: "Bài tập",
         value: statistics.finalScore.weights.assignment,
         color: "#fb923c",
       },
       {
-        name: "Quizzes",
+        name: "Kiểm tra",
         value: statistics.finalScore.weights.quiz,
         color: "#fed7aa",
       },
@@ -215,7 +215,7 @@ const StudentStatisticsDashboard: React.FC = () => {
   if (!user) {
     return (
       <Container maxWidth="xl" sx={{ py: 4 }}>
-        <Alert severity="error">Please log in to view performance statistics.</Alert>
+        <Alert severity="error">Vui lòng đăng nhập để xem thống kê học tập.</Alert>
       </Container>
     )
   }
@@ -243,7 +243,7 @@ const StudentStatisticsDashboard: React.FC = () => {
             fontSize: { xs: "1.75rem", sm: "2.25rem", md: "3rem" }
           }}
         >
-          Learning Performance Dashboard
+          Thống kê kết quả học tập
         </Typography>
         <Typography 
           variant="body1" 
@@ -252,7 +252,7 @@ const StudentStatisticsDashboard: React.FC = () => {
             fontSize: { xs: "0.9rem", md: "1.05rem" }
           }}
         >
-          Track your academic progress and achievements
+          Theo dõi tiến độ học tập và thành tích của bạn
         </Typography>
       </Box>
 
@@ -312,7 +312,7 @@ const StudentStatisticsDashboard: React.FC = () => {
                       fontSize: { xs: "0.8rem", md: "0.875rem" }
                     }}
                   >
-                    <strong>Instructor:</strong> {course.homeroomTeacher}
+                    <strong>Giáo viên:</strong> {course.homeroomTeacher}
                   </Typography>
                 )}
               </Grid>
@@ -343,7 +343,7 @@ const StudentStatisticsDashboard: React.FC = () => {
                         fontSize: { xs: "0.7rem", md: "0.75rem" }
                       }}
                     >
-                      Started:{" "}
+                      Bắt đầu:{" "}
                       {new Date(course.startDate).toLocaleDateString("vi-VN", {
                         year: "numeric",
                         month: "short",
@@ -360,8 +360,8 @@ const StudentStatisticsDashboard: React.FC = () => {
                         fontSize: { xs: "0.7rem", md: "0.75rem" }
                       }}
                     >
-                      Ends:{" "}
-                      {new Date(course.endDate).toLocaleDateString("en-US", {
+                      Kết thúc:{" "}
+                      {new Date(course.endDate).toLocaleDateString("vi-VN", {
                         year: "numeric",
                         month: "short",
                         day: "numeric",
@@ -378,7 +378,7 @@ const StudentStatisticsDashboard: React.FC = () => {
       {/* No Course Message */}
       {!course && !error && (
         <Alert severity="info" sx={{ borderRadius: 2 }}>
-          You haven't joined any courses yet
+          Bạn chưa tham gia khóa học nào
         </Alert>
       )}
 
@@ -412,7 +412,7 @@ const StudentStatisticsDashboard: React.FC = () => {
                         fontSize: { xs: "0.8rem", md: "0.875rem" }
                       }}
                     >
-                      Overall Score
+                      Điểm tổng kết
                     </Typography>
                     <Typography 
                       variant="h4" 
@@ -434,7 +434,7 @@ const StudentStatisticsDashboard: React.FC = () => {
                   <Grid item xs={12}>
                     <Box display="flex" justifyContent="space-between" alignItems="center">
                       <Typography sx={{ color: "rgba(255,255,255,0.9)", fontWeight: 500, fontSize: { xs: "0.85rem", md: "1rem" } }}>
-                        Grade:
+                        Xếp loại:
                       </Typography>
                       <Chip
                         label={statistics.finalScore.grade}
@@ -453,10 +453,10 @@ const StudentStatisticsDashboard: React.FC = () => {
                   <Grid item xs={12}>
                     <Box display="flex" justifyContent="space-between" alignItems="center">
                       <Typography sx={{ color: "rgba(255,255,255,0.9)", fontWeight: 500, fontSize: { xs: "0.85rem", md: "1rem" } }}>
-                        Status:
+                        Trạng thái:
                       </Typography>
                       <Chip
-                        label={statistics.finalScore.passed ? "Passed" : "Not Passed"}
+                        label={statistics.finalScore.passed ? "Đạt" : "Không đạt"}
                         color={statistics.finalScore.passed ? "success" : "error"}
                         sx={{ 
                           fontWeight: 600, 
@@ -470,7 +470,7 @@ const StudentStatisticsDashboard: React.FC = () => {
                   <Grid item xs={12}>
                     <Box display="flex" justifyContent="space-between" alignItems="center">
                       <Typography sx={{ color: "rgba(255,255,255,0.9)", fontWeight: 500, fontSize: { xs: "0.85rem", md: "1rem" } }}>
-                        Rank:
+                        Hạng:
                       </Typography>
                       <Typography sx={{ color: "white", fontWeight: "700", fontSize: { xs: "0.9rem", md: "1rem" }, lineHeight: 1 }}>
                         {statistics.finalScore.rank}/{statistics.finalScore.totalStudents}
@@ -502,8 +502,8 @@ const StudentStatisticsDashboard: React.FC = () => {
                 "& .MuiTabs-indicator": { backgroundColor: "#f97316" },
               }}
             >
-              <Tab icon={<BarChart3 size={18} />} label="Score Details" iconPosition="start" />
-              <Tab icon={<TrendingUp size={18} />} label="Analytics" iconPosition="start" />
+              <Tab icon={<BarChart3 size={18} />} label="Chi tiết điểm" iconPosition="start" />
+              <Tab icon={<TrendingUp size={18} />} label="Phân tích chi tiết" iconPosition="start" />
             </Tabs>
           </Paper>
 
@@ -528,7 +528,7 @@ const StudentStatisticsDashboard: React.FC = () => {
                         <CheckCircle size={24} color="#f97316" />
                       </Box>
                       <Typography variant="h6" fontWeight="700" sx={{ color: "#1f2937", fontSize: { xs: "1rem", md: "1.25rem" } }}>
-                        Attendance
+                        Điểm danh
                       </Typography>
                     </Box>
                     <Typography variant="h3" fontWeight="800" sx={{ color: "#f97316", mb: { xs: 2, md: 3 }, fontSize: { xs: "2rem", md: "3rem" } }}>
@@ -538,7 +538,7 @@ const StudentStatisticsDashboard: React.FC = () => {
                     <Box display="flex" flexDirection="column" gap={{ xs: 1, md: 1.5 }}>
                       <Box display="flex" justifyContent="space-between">
                         <Typography variant="body2" sx={{ color: "#6b7280", fontSize: { xs: "0.8rem", md: "0.875rem" } }}>
-                          Total Sessions:
+                          Tổng số buổi:
                         </Typography>
                         <Typography variant="body2" fontWeight="700" sx={{ color: "#1f2937", fontSize: { xs: "0.8rem", md: "0.875rem" } }}>
                           {statistics.scoreComponent.attendanceDetails.totalSessions}
@@ -546,7 +546,7 @@ const StudentStatisticsDashboard: React.FC = () => {
                       </Box>
                       <Box display="flex" justifyContent="space-between">
                         <Typography variant="body2" sx={{ color: "#6b7280", fontSize: { xs: "0.8rem", md: "0.875rem" } }}>
-                          Present:
+                          Đi học:
                         </Typography>
                         <Typography variant="body2" fontWeight="700" sx={{ color: "#e1762aff", fontSize: { xs: "0.8rem", md: "0.875rem" } }}>
                           {statistics.scoreComponent.attendanceDetails.presentCount}
@@ -554,7 +554,7 @@ const StudentStatisticsDashboard: React.FC = () => {
                       </Box>
                       <Box display="flex" justifyContent="space-between">
                         <Typography variant="body2" sx={{ color: "#6b7280", fontSize: { xs: "0.8rem", md: "0.875rem" } }}>
-                          Absent:
+                          Vắng học:
                         </Typography>
                         <Typography variant="body2" fontWeight="700" sx={{ color: "#ef4444", fontSize: { xs: "0.8rem", md: "0.875rem" } }}>
                           {statistics.scoreComponent.attendanceDetails.absentCount}
@@ -564,7 +564,7 @@ const StudentStatisticsDashboard: React.FC = () => {
                     <Box mt={{ xs: 2, md: 3 }}>
                       <Box display="flex" justifyContent="space-between" mb={1}>
                         <Typography variant="body2" sx={{ color: "#6b7280", fontSize: { xs: "0.8rem", md: "0.875rem" } }}>
-                          Participation Rate
+                          Tỷ lệ tham gia
                         </Typography>
                         <Typography variant="body2" fontWeight="700" sx={{ color: "#1f2937", fontSize: { xs: "0.8rem", md: "0.875rem" } }}>
                           {statistics.scoreComponent.attendanceDetails.percentage.toFixed(0)}%
@@ -582,7 +582,7 @@ const StudentStatisticsDashboard: React.FC = () => {
                       />
                     </Box>
                     <Chip
-                      label={`Weight: ${statistics.finalScore.weights.attendance}%`}
+                      label={`Trọng số: ${statistics.finalScore.weights.attendance}%`}
                       size="small"
                       sx={{ mt: { xs: 2, md: 2.5 }, fontWeight: 500, color: "#6b7280", fontSize: { xs: "0.7rem", md: "0.8125rem" } }}
                       variant="outlined"
@@ -609,7 +609,7 @@ const StudentStatisticsDashboard: React.FC = () => {
                         <BookOpen size={24} color="#ef7c2aff" />
                       </Box>
                       <Typography variant="h6" fontWeight="700" sx={{ color: "#1f2937", fontSize: { xs: "1rem", md: "1.25rem" } }}>
-                        Assignments
+                        Bài tập
                       </Typography>
                     </Box>
                     <Typography variant="h3" fontWeight="800" sx={{ color: "#ec7b30ff", mb: { xs: 2, md: 3 }, fontSize: { xs: "2rem", md: "3rem" } }}>
@@ -619,7 +619,7 @@ const StudentStatisticsDashboard: React.FC = () => {
                     <Box display="flex" flexDirection="column" gap={{ xs: 1, md: 1.5 }}>
                       <Box display="flex" justifyContent="space-between">
                         <Typography variant="body2" sx={{ color: "#6b7280", fontSize: { xs: "0.8rem", md: "0.875rem" } }}>
-                          Total Assignments:
+                          Tổng số bài tập:
                         </Typography>
                         <Typography variant="body2" fontWeight="700" sx={{ color: "#1f2937", fontSize: { xs: "0.8rem", md: "0.875rem" } }}>
                           {statistics.scoreComponent.assignmentDetails.totalAssignments}
@@ -627,7 +627,7 @@ const StudentStatisticsDashboard: React.FC = () => {
                       </Box>
                       <Box display="flex" justifyContent="space-between">
                         <Typography variant="body2" sx={{ color: "#6b7280", fontSize: { xs: "0.8rem", md: "0.875rem" } }}>
-                          Graded:
+                          Đã chấm:
                         </Typography>
                         <Typography variant="body2" fontWeight="700" sx={{ color: "#f6993bff", fontSize: { xs: "0.8rem", md: "0.875rem" } }}>
                           {statistics.scoreComponent.assignmentDetails.gradedAssignments}
@@ -635,7 +635,7 @@ const StudentStatisticsDashboard: React.FC = () => {
                       </Box>
                       <Box display="flex" justifyContent="space-between">
                         <Typography variant="body2" sx={{ color: "#6b7280", fontSize: { xs: "0.8rem", md: "0.875rem" } }}>
-                          Average Score:
+                          Điểm trung bình:
                         </Typography>
                         <Typography variant="body2" fontWeight="700" sx={{ color: "#1f2937", fontSize: { xs: "0.8rem", md: "0.875rem" } }}>
                           {statistics.scoreComponent.assignmentDetails.averageScore.toFixed(1)}
@@ -645,7 +645,7 @@ const StudentStatisticsDashboard: React.FC = () => {
                     <Box mt={{ xs: 2, md: 3 }}>
                       <Box display="flex" justifyContent="space-between" mb={1}>
                         <Typography variant="body2" sx={{ color: "#6b7280", fontSize: { xs: "0.8rem", md: "0.875rem" } }}>
-                          Completion Rate
+                          Tỷ lệ hoàn thành
                         </Typography>
                         <Typography variant="body2" fontWeight="700" sx={{ color: "#1f2937", fontSize: { xs: "0.8rem", md: "0.875rem" } }}>
                           {statistics.scoreComponent.assignmentDetails.totalAssignments > 0
@@ -676,7 +676,7 @@ const StudentStatisticsDashboard: React.FC = () => {
                       />
                     </Box>
                     <Chip
-                      label={`Weight: ${statistics.finalScore.weights.assignment}%`}
+                      label={`Trọng số: ${statistics.finalScore.weights.assignment}%`}
                       size="small"
                       sx={{ mt: { xs: 2, md: 2.5 }, fontWeight: 500, color: "#6b7280", fontSize: { xs: "0.7rem", md: "0.8125rem" } }}
                       variant="outlined"
@@ -703,7 +703,7 @@ const StudentStatisticsDashboard: React.FC = () => {
                         <Target size={24} color="#f97316" />
                       </Box>
                       <Typography variant="h6" fontWeight="700" sx={{ color: "#1f2937", fontSize: { xs: "1rem", md: "1.25rem" } }}>
-                        Quizzes
+                        Kiểm tra
                       </Typography>
                     </Box>
                     <Typography variant="h3" fontWeight="800" sx={{ color: "#f97316", mb: { xs: 2, md: 3 }, fontSize: { xs: "2rem", md: "3rem" } }}>
@@ -713,7 +713,7 @@ const StudentStatisticsDashboard: React.FC = () => {
                     <Box display="flex" flexDirection="column" gap={{ xs: 1, md: 1.5 }}>
                       <Box display="flex" justifyContent="space-between">
                         <Typography variant="body2" sx={{ color: "#6b7280", fontSize: { xs: "0.8rem", md: "0.875rem" } }}>
-                          Total Quizzes:
+                          Tổng số bài kiểm tra:
                         </Typography>
                         <Typography variant="body2" fontWeight="700" sx={{ color: "#1f2937", fontSize: { xs: "0.8rem", md: "0.875rem" } }}>
                           {statistics.scoreComponent.quizDetails.totalQuizzes}
@@ -721,7 +721,7 @@ const StudentStatisticsDashboard: React.FC = () => {
                       </Box>
                       <Box display="flex" justifyContent="space-between">
                         <Typography variant="body2" sx={{ color: "#6b7280", fontSize: { xs: "0.8rem", md: "0.875rem" } }}>
-                          Completed:
+                          Đã làm:
                         </Typography>
                         <Typography variant="body2" fontWeight="700" sx={{ color: "#f97316", fontSize: { xs: "0.8rem", md: "0.875rem" } }}>
                           {statistics.scoreComponent.quizDetails.completedQuizzes}
@@ -729,7 +729,7 @@ const StudentStatisticsDashboard: React.FC = () => {
                       </Box>
                       <Box display="flex" justifyContent="space-between">
                         <Typography variant="body2" sx={{ color: "#6b7280", fontSize: { xs: "0.8rem", md: "0.875rem" } }}>
-                          Average Score:
+                          Điểm trung bình:
                         </Typography>
                         <Typography variant="body2" fontWeight="700" sx={{ color: "#1f2937", fontSize: { xs: "0.8rem", md: "0.875rem" } }}>
                           {statistics.scoreComponent.quizDetails.averageScore.toFixed(1)}
@@ -739,7 +739,7 @@ const StudentStatisticsDashboard: React.FC = () => {
                     <Box mt={{ xs: 2, md: 3 }}>
                       <Box display="flex" justifyContent="space-between" mb={1}>
                         <Typography variant="body2" sx={{ color: "#6b7280", fontSize: { xs: "0.8rem", md: "0.875rem" } }}>
-                          Completion Rate
+                          Tỷ lệ hoàn thành
                         </Typography>
                         <Typography variant="body2" fontWeight="700" sx={{ color: "#1f2937", fontSize: { xs: "0.8rem", md: "0.875rem" } }}>
                           {statistics.scoreComponent.quizDetails.totalQuizzes > 0
@@ -770,7 +770,7 @@ const StudentStatisticsDashboard: React.FC = () => {
                       />
                     </Box>
                     <Chip
-                      label={`Weight: ${statistics.finalScore.weights.quiz}%`}
+                      label={`Trọng số: ${statistics.finalScore.weights.quiz}%`}
                       size="small"
                       sx={{ mt: { xs: 2, md: 2.5 }, fontWeight: 500, color: "#6b7280", fontSize: { xs: "0.7rem", md: "0.8125rem" } }}
                       variant="outlined"
@@ -789,7 +789,7 @@ const StudentStatisticsDashboard: React.FC = () => {
                 <Card elevation={0} sx={{ borderRadius: 2, boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
                   <CardContent sx={{ p: { xs: 2, md: 3 } }}>
                     <Typography variant="h6" fontWeight="700" sx={{ mb: { xs: 2, md: 3 }, color: "#1f2937", fontSize: { xs: "1rem", md: "1.25rem" } }}>
-                      Score Overview
+                      Tổng quan điểm số
                     </Typography>
                     <ResponsiveContainer width="100%" height={window.innerWidth < 600 ? 250 : 300}>
                       <RadarChart data={getRadarData()}>
@@ -817,7 +817,7 @@ const StudentStatisticsDashboard: React.FC = () => {
                 <Card elevation={0} sx={{ borderRadius: 2, boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
                   <CardContent sx={{ p: { xs: 2, md: 3 } }}>
                     <Typography variant="h6" fontWeight="700" sx={{ mb: { xs: 2, md: 3 }, color: "#1f2937", fontSize: { xs: "1rem", md: "1.25rem" } }}>
-                      Score Weight Distribution
+                      Cơ cấu trọng số điểm
                     </Typography>
                     <ResponsiveContainer width="100%" height={window.innerWidth < 600 ? 250 : 300}>
                       <PieChart>
@@ -856,7 +856,7 @@ const StudentStatisticsDashboard: React.FC = () => {
                 <Card elevation={0} sx={{ borderRadius: 2, boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
                   <CardContent sx={{ p: { xs: 2, md: 3 } }}>
                     <Typography variant="h6" fontWeight="700" sx={{ mb: { xs: 2, md: 3 }, color: "#1f2937", fontSize: { xs: "1rem", md: "1.25rem" } }}>
-                      Detailed Score Breakdown
+                      Phân tích điểm chi tiết
                     </Typography>
                     <ResponsiveContainer width="100%" height={window.innerWidth < 600 ? 250 : 300}>
                       <BarChart data={getBarData()}>
@@ -873,8 +873,8 @@ const StudentStatisticsDashboard: React.FC = () => {
                           }}
                         />
                         <Legend wrapperStyle={{ fontSize: window.innerWidth < 600 ? "0.75rem" : "0.875rem" }} />
-                        <Bar dataKey="points" fill="#a33f14ff" radius={[8, 8, 0, 0]} />
-                        <Bar dataKey="weight" fill="#fb923c" radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="points" name="Điểm" fill="#a33f14ff" radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="weight" name="Trọng số" fill="#fb923c" radius={[8, 8, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </CardContent>
@@ -889,7 +889,7 @@ const StudentStatisticsDashboard: React.FC = () => {
       <Box display="flex" alignItems="center" gap={1} justifyContent="flex-end" sx={{ mt: 4 }}>
         <Clock size={16} color="#6b7280" />
         <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: "0.7rem", md: "0.75rem" } }}>
-          Last Calculated:{" "}
+          Tính toán lần cuối:{" "}
           {statistics
             ? new Date(statistics.scoreComponent.lastCalculated).toLocaleString("vi-VN", {
                 year: "numeric",
@@ -898,7 +898,7 @@ const StudentStatisticsDashboard: React.FC = () => {
                 hour: "2-digit",
                 minute: "2-digit",
               })
-            : "N/A"}
+            : "Chưa cập nhật"}
         </Typography>
       </Box>
     </Container>

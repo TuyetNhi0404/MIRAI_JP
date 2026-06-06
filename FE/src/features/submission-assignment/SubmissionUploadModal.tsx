@@ -103,7 +103,7 @@ const SubmissionUploadModal: React.FC<SubmissionUploadModalProps> = ({
     if (!assignment) return;
 
     if (selectedFiles.length === 0) {
-      setError("Please select at least one file");
+      setError("Vui lòng chọn ít nhất một tệp tin");
       return;
     }
 
@@ -122,10 +122,10 @@ const SubmissionUploadModal: React.FC<SubmissionUploadModalProps> = ({
 
       if (mode === "resubmit" && submission?._id) {
         await submissionService.updateSubmission(submission._id, formData);
-        setSuccess("Resubmitted successfully!");
+        setSuccess("Nộp lại bài tập thành công!");
       } else {
         await submissionService.submitAssignment(assignment._id, formData);
-        setSuccess("Submitted successfully!");
+        setSuccess("Nộp bài tập thành công!");
       }
 
       setTimeout(() => {
@@ -134,7 +134,7 @@ const SubmissionUploadModal: React.FC<SubmissionUploadModalProps> = ({
       }, 1500);
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      const errorMsg = error.response?.data?.message || "An error occurred while submitting";
+      const errorMsg = error.response?.data?.message || "Có lỗi xảy ra trong quá trình nộp bài";
       setError(errorMsg);
     } finally {
       setUploading(false);
@@ -160,7 +160,7 @@ const SubmissionUploadModal: React.FC<SubmissionUploadModalProps> = ({
 
   const formatDate = (dateString: string) => {
     try {
-      return format(new Date(dateString), "MMM dd, yyyy 'at' h:mm a");
+      return format(new Date(dateString), "dd/MM/yyyy 'lúc' HH:mm");
     } catch {
       return dateString;
     }
@@ -201,7 +201,7 @@ const SubmissionUploadModal: React.FC<SubmissionUploadModalProps> = ({
         }}
       >
         <Typography variant="h6" fontWeight={600}>
-          {mode === "view" ? "Assignment Submission Details" : mode === "resubmit" ? "Resubmit Assignment" : "Submit Assignment"}
+          {mode === "view" ? "Chi tiết bài nộp" : mode === "resubmit" ? "Nộp lại bài tập" : "Nộp bài tập"}
         </Typography>
         <IconButton onClick={handleClose} size="small" disabled={uploading}>
           <X size={20} />
@@ -226,10 +226,10 @@ const SubmissionUploadModal: React.FC<SubmissionUploadModalProps> = ({
             {assignment.title}
           </Typography>
           <Typography variant="body2" color="text.secondary" gutterBottom>
-            Course: {assignment.courseName}
+            Khóa học: {assignment.courseName}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Due: {formatDate(assignment.dueDate)}
+            Hạn nộp: {formatDate(assignment.dueDate)}
           </Typography>
           {assignment.description && (
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
@@ -241,7 +241,7 @@ const SubmissionUploadModal: React.FC<SubmissionUploadModalProps> = ({
         {assignment.fileUrls && assignment.fileUrls.length > 0 && (
           <Box sx={{ mb: 3 }}>
             <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ color: "#B90000" }}>
-               File Attachments  ({assignment.fileUrls.length})
+             Tệp đính kèm  ({assignment.fileUrls.length})
             </Typography>
             <List dense>
               {assignment.fileUrls.map((fileUrl: string, index: number) => {
@@ -286,7 +286,7 @@ const SubmissionUploadModal: React.FC<SubmissionUploadModalProps> = ({
             <Box sx={{ mb: 2 }}>
               <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
                 <Typography variant="subtitle1" fontWeight={600}>
-                  Your Submission
+                  Bài nộp của bạn
                 </Typography>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <Chip
@@ -295,7 +295,7 @@ const SubmissionUploadModal: React.FC<SubmissionUploadModalProps> = ({
                     color={getStatusColor(submission.status)}
                   />
                   <Typography variant="caption" color="text.secondary">
-                    Submitted on {formatDate(submission.submittedAt)}
+                    Đã nộp vào {formatDate(submission.submittedAt)}
                   </Typography>
                 </Box>
               </Box>
@@ -303,11 +303,11 @@ const SubmissionUploadModal: React.FC<SubmissionUploadModalProps> = ({
               {submission.status === "graded" && (
                 <Alert severity="info" sx={{ mb: 2 }}>
                   <Typography variant="subtitle2">
-                    Score: {submission.score} / {assignment.maxScore}
+                    Điểm số: {submission.score} / {assignment.maxScore}
                   </Typography>
                   {submission.feedback && (
                     <Typography variant="body2" sx={{ mt: 1 }}>
-                      Feedback: {submission.feedback}
+                      Phản hồi: {submission.feedback}
                     </Typography>
                   )}
                 </Alert>
@@ -316,7 +316,7 @@ const SubmissionUploadModal: React.FC<SubmissionUploadModalProps> = ({
               {submission.files && submission.files.length > 0 && (
                 <Box sx={{ mb: 2 }}>
                   <Typography variant="subtitle2" gutterBottom>
-                    Your Submitted Files ({submission.files.length})
+                    Các tệp đã nộp ({submission.files.length})
                   </Typography>
                   <List dense>
                     {submission.files.map((file: string | SubmissionFile, index: number) => {
@@ -365,7 +365,7 @@ const SubmissionUploadModal: React.FC<SubmissionUploadModalProps> = ({
               {submission.note && (
                 <Box sx={{ p: 2, backgroundColor: "#FFFBF0", borderRadius: 1, border: "1px solid #FFE8CC" }}>
                   <Typography variant="subtitle2" gutterBottom>
-                    Your Note
+                    Ghi chú của bạn
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     {submission.note}
@@ -376,7 +376,7 @@ const SubmissionUploadModal: React.FC<SubmissionUploadModalProps> = ({
 
             {isGraded && (
               <Alert severity="info" sx={{ mt: 2 }}>
-                This assignment has been graded. You cannot resubmit.
+                Bài tập này đã được chấm điểm. Bạn không thể nộp lại.
               </Alert>
             )}
 
@@ -397,7 +397,7 @@ const SubmissionUploadModal: React.FC<SubmissionUploadModalProps> = ({
                       },
                     }}
                   >
-                    Resubmit Assignment
+                    Nộp lại bài tập
                   </Button>
                 </Box>
               </>
@@ -405,7 +405,7 @@ const SubmissionUploadModal: React.FC<SubmissionUploadModalProps> = ({
 
             {isAssignmentClosed && !isGraded && (
               <Alert severity="info" sx={{ mt: 2 }}>
-                This assignment is closed. You cannot resubmit.
+                Hạn nộp bài tập đã đóng. Bạn không thể nộp lại.
               </Alert>
             )}
           </>
@@ -415,7 +415,7 @@ const SubmissionUploadModal: React.FC<SubmissionUploadModalProps> = ({
           <>
             {mode === "resubmit" && (
               <Alert severity="info" sx={{ mb: 2 }}>
-                You are resubmitting this assignment. Your previous submission will be replaced.
+                Bạn đang nộp lại bài tập này. Bài nộp trước đó sẽ bị ghi đè.
               </Alert>
             )}
 
@@ -448,17 +448,17 @@ const SubmissionUploadModal: React.FC<SubmissionUploadModalProps> = ({
                 style={{ marginBottom: 8 }}
               />
               <Typography variant="body1" fontWeight={500} gutterBottom>
-                Upload files
+                Tải tệp lên
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                Click to browse or drag and drop files here
+                Nhấp để chọn tệp hoặc kéo thả tệp vào đây
               </Typography>
             </Box>
 
             {selectedFiles.length > 0 && (
               <Box sx={{ mt: 2 }}>
                 <Typography variant="subtitle2" gutterBottom>
-                  Selected Files ({selectedFiles.length})
+                  Các tệp đã chọn ({selectedFiles.length})
                 </Typography>
                 <List dense>
                   {selectedFiles.map((file, index) => (
@@ -502,8 +502,8 @@ const SubmissionUploadModal: React.FC<SubmissionUploadModalProps> = ({
                 fullWidth
                 multiline
                 rows={3}
-                label="Note (Optional)"
-                placeholder="Add a note for your teacher..."
+                label="Ghi chú (Tùy chọn)"
+                placeholder="Thêm ghi chú cho giáo viên của bạn..."
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 disabled={uploading}
@@ -520,7 +520,7 @@ const SubmissionUploadModal: React.FC<SubmissionUploadModalProps> = ({
           color="inherit"
           disabled={uploading}
         >
-          {mode === "view" ? "Close" : "Cancel"}
+          {mode === "view" ? "Đóng" : "Hủy"}
         </Button>
         
         {mode === "view" && !isAssignmentClosed && !isGraded && (
@@ -533,7 +533,7 @@ const SubmissionUploadModal: React.FC<SubmissionUploadModalProps> = ({
               "&:hover": { backgroundColor: "#D66410" },
             }}
           >
-            Resubmit
+            Nộp lại
           </Button>
         )}
 
@@ -550,12 +550,12 @@ const SubmissionUploadModal: React.FC<SubmissionUploadModalProps> = ({
             {uploading ? (
               <>
                 <CircularProgress size={20} sx={{ mr: 1, color: "white" }} />
-                Uploading...
+                Đang tải lên...
               </>
             ) : mode === "resubmit" ? (
-              "Resubmit"
+              "Nộp lại"
             ) : (
-              "Submit"
+              "Nộp bài"
             )}
           </Button>
         )}

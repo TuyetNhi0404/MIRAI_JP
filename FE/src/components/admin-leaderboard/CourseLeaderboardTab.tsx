@@ -68,7 +68,7 @@ const CourseLeaderboardTab: React.FC = () => {
       }
     } catch (err) {
       console.error('Error fetching courses:', err);
-      setError('Failed to load course list');
+      setError('Không thể tải danh sách khóa học');
     }
   };
 
@@ -81,8 +81,8 @@ const CourseLeaderboardTab: React.FC = () => {
     } catch (err) {
       console.error('Error fetching course leaderboard:', err);
       const errorMessage = err instanceof Error && 'response' in err 
-        ? (err as { response?: { data?: { message?: string } } }).response?.data?.message || 'Failed to load leaderboard'
-        : 'Failed to load leaderboard';
+        ? (err as { response?: { data?: { message?: string } } }).response?.data?.message || 'Không thể tải bảng xếp hạng'
+        : 'Không thể tải bảng xếp hạng';
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -137,7 +137,7 @@ const CourseLeaderboardTab: React.FC = () => {
               <Box display="flex" justifyContent="space-around" alignItems="center">
                 <Box textAlign="center">
                   <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                    Final Score
+                    Điểm tổng kết
                   </Typography>
                   <Typography variant="h5" fontWeight="bold" color="#ff6b35" mt={0.5}>
                     {formatScore(student.finalScore)}
@@ -148,7 +148,7 @@ const CourseLeaderboardTab: React.FC = () => {
 
                 <Box textAlign="center">
                   <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                    Grade
+                    Xếp loại
                   </Typography>
                   <Box mt={0.5}>
                     <Chip
@@ -176,7 +176,7 @@ const CourseLeaderboardTab: React.FC = () => {
     return (
       <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" minHeight="400px" gap={2}>
         <CircularProgress sx={{ color: '#ff6b35' }} size={45} />
-        <Typography variant="body1" color="text.secondary">Loading leaderboard...</Typography>
+        <Typography variant="body1" color="text.secondary">Đang tải bảng xếp hạng...</Typography>
       </Box>
     );
   }
@@ -195,11 +195,11 @@ const CourseLeaderboardTab: React.FC = () => {
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} md={8}>
               <FormControl fullWidth size={isMobile ? 'small' : 'medium'}>
-                <InputLabel>Select Course</InputLabel>
+                <InputLabel>Chọn khóa học</InputLabel>
                 <Select
                   value={selectedCourse}
                   onChange={(e) => setSelectedCourse(e.target.value)}
-                  label="Select Course"
+                  label="Chọn khóa học"
                 >
                   {courses.map((course) => (
                     <MenuItem key={course._id} value={course._id}>
@@ -211,11 +211,11 @@ const CourseLeaderboardTab: React.FC = () => {
             </Grid>
             <Grid item xs={12} md={4}>
               <FormControl fullWidth size={isMobile ? 'small' : 'medium'}>
-                <InputLabel>Limit</InputLabel>
+                <InputLabel>Giới hạn</InputLabel>
                 <Select
                   value={limit}
                   onChange={(e) => setLimit(Number(e.target.value))}
-                  label="Limit"
+                  label="Giới hạn"
                 >
                   <MenuItem value={5}>Top 5</MenuItem>
                   <MenuItem value={10}>Top 10</MenuItem>
@@ -244,7 +244,7 @@ const CourseLeaderboardTab: React.FC = () => {
                     <Users size={isMobile ? 16 : 18} color="#fff" />
                   </Box>
                   <Typography variant="caption" color="text.secondary" fontWeight={600} fontSize={isMobile ? '0.65rem' : '0.75rem'}>
-                    Total
+                    Tổng số học viên
                   </Typography>
                 </Box>
                 <Typography variant={isMobile ? 'h6' : 'h5'} fontWeight="bold" color="#ff6b35">
@@ -266,7 +266,7 @@ const CourseLeaderboardTab: React.FC = () => {
                     <TrendingUp size={isMobile ? 16 : 18} color="#fff" />
                   </Box>
                   <Typography variant="caption" color="text.secondary" fontWeight={600} fontSize={isMobile ? '0.65rem' : '0.75rem'}>
-                    Average
+                    Điểm trung bình
                   </Typography>
                 </Box>
                 <Typography variant={isMobile ? 'h6' : 'h5'} fontWeight="bold" color="#ff8c42">
@@ -288,7 +288,7 @@ const CourseLeaderboardTab: React.FC = () => {
                     <Award size={isMobile ? 16 : 18} color="#fff" />
                   </Box>
                   <Typography variant="caption" color="text.secondary" fontWeight={600} fontSize={isMobile ? '0.65rem' : '0.75rem'}>
-                    Highest
+                    Điểm cao nhất
                   </Typography>
                 </Box>
                 <Typography variant={isMobile ? 'h6' : 'h5'} fontWeight="bold" color="#ff6b35">
@@ -310,7 +310,7 @@ const CourseLeaderboardTab: React.FC = () => {
                     <Target size={isMobile ? 16 : 18} color="#fff" />
                   </Box>
                   <Typography variant="caption" color="text.secondary" fontWeight={600} fontSize={isMobile ? '0.65rem' : '0.75rem'}>
-                    Pass Rate
+                    Tỷ lệ đạt
                   </Typography>
                 </Box>
                 <Typography variant={isMobile ? 'h6' : 'h5'} fontWeight="bold" color="#ffa366">
@@ -333,7 +333,7 @@ const CourseLeaderboardTab: React.FC = () => {
         }}>
           <Crown size={isMobile ? 18 : 22} color="#fff" />
           <Typography variant={isMobile ? 'subtitle1' : 'h6'} fontWeight="bold" color="#fff">
-            {isMobile ? 'Top Performers' : `Top Performers - ${leaderboardData.courseName}`}
+            {isMobile ? 'Học viên xuất sắc' : `Học viên xuất sắc - ${leaderboardData.courseName}`}
           </Typography>
         </Box>
 
@@ -346,10 +346,10 @@ const CourseLeaderboardTab: React.FC = () => {
             <Table size={isTablet ? 'small' : 'medium'}>
               <TableHead>
                 <TableRow sx={{ background: 'rgba(255,107,53,0.04)' }}>
-                  <TableCell sx={{ fontWeight: 700, color: '#ff6b35' }}>Rank</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: '#ff6b35' }}>Student</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 700, color: '#ff6b35' }}>Final Score</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 700, color: '#ff6b35' }}>Grade</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: '#ff6b35' }}>Thứ hạng</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: '#ff6b35' }}>Học viên</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, color: '#ff6b35' }}>Điểm tổng kết</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, color: '#ff6b35' }}>Xếp loại</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>

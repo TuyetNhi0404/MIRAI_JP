@@ -83,7 +83,7 @@ const TeacherCourseStudentsPage: React.FC = () => {
       setData(response.data.data);
     } catch (err: unknown) {
       const apiError = err as ApiError;
-      const errorMsg = apiError.response?.data?.message || 'Failed to load students';
+      const errorMsg = apiError.response?.data?.message || 'Không thể tải danh sách học viên';
       setError(errorMsg);
       console.error('Error fetching course students:', err);
     } finally {
@@ -113,7 +113,7 @@ const TeacherCourseStudentsPage: React.FC = () => {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px', flexDirection: 'column', gap: 2 }}>
         <CircularProgress sx={{ color: '#B90000' }} />
-        <Typography color="text.secondary">Loading students...</Typography>
+        <Typography color="text.secondary">Đang tải danh sách học viên...</Typography>
       </Box>
     );
   }
@@ -130,7 +130,7 @@ const TeacherCourseStudentsPage: React.FC = () => {
             fontSize: { xs: "1.3rem", sm: "1.6rem", md: "2rem" },
           }}
         >
-          CLASS STUDENTS
+          DANH SÁCH HỌC VIÊN
         </Typography>
       </Box>
 
@@ -161,11 +161,11 @@ const TeacherCourseStudentsPage: React.FC = () => {
                 {data.course.name}
               </Typography>
               <Typography variant="body2" sx={{ opacity: 0.9, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                Homeroom Teacher: {data.course.homeroomTeacher}
+                Giáo viên chủ nhiệm: {data.course.homeroomTeacher}
               </Typography>
             </Box>
             <Chip
-              label={`${data.total} Students`}
+              label={`${data.total} Học viên`}
               sx={{
                 bgcolor: 'rgba(255,255,255,0.2)',
                 color: 'white',
@@ -182,7 +182,7 @@ const TeacherCourseStudentsPage: React.FC = () => {
       <Paper elevation={3} sx={{ p: { xs: 2, sm: 3 }, mb: 3, borderRadius: '12px' }}>
         <TextField
           fullWidth
-          placeholder="Search students by name or email..."
+          placeholder="Tìm kiếm học viên theo tên hoặc email..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           InputProps={{
@@ -212,9 +212,9 @@ const TeacherCourseStudentsPage: React.FC = () => {
         {data && (
           <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
             {searchQuery ? (
-              <>Found <strong>{filteredStudents.length}</strong> of <strong>{data.total}</strong> students</>
+              <>Tìm thấy <strong>{filteredStudents.length}</strong> trên tổng số <strong>{data.total}</strong> học viên</>
             ) : (
-              <>Showing <strong>{data.total}</strong> student{data.total !== 1 ? 's' : ''}</>
+              <>Hiển thị <strong>{data.total}</strong> học viên</>
             )}
           </Typography>
         )}
@@ -242,12 +242,12 @@ const TeacherCourseStudentsPage: React.FC = () => {
             <Users size={48} color="#1976d2" />
           </Avatar>
           <Typography variant="h6" color="text.secondary" gutterBottom sx={{ fontWeight: 600, fontSize: { xs: '1rem', sm: '1.2rem' } }}>
-            {searchQuery ? 'No students match your search' : 'No students enrolled'}
+            {searchQuery ? 'Không tìm thấy học viên nào phù hợp' : 'Chưa có học viên nào tham gia'}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
             {searchQuery
-              ? 'Try adjusting your search keywords'
-              : 'This course has no enrolled students yet'}
+              ? 'Hãy thử thay đổi từ khóa tìm kiếm của bạn'
+              : 'Khóa học này hiện chưa có học viên nào đăng ký'}
           </Typography>
         </Paper>
       ) : (
@@ -268,11 +268,11 @@ const TeacherCourseStudentsPage: React.FC = () => {
                     <TableCell sx={{ fontWeight: 700, color: '#023665', fontSize: '0.95rem', py: 2 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <User size={18} />
-                        Name
+                        Họ và tên
                       </Box>
                     </TableCell>
                     <TableCell sx={{ fontWeight: 700, color: '#023665', fontSize: '0.95rem', py: 2 }}>
-                      Role
+                      Vai trò
                     </TableCell>
                     <TableCell sx={{ fontWeight: 700, color: '#023665', fontSize: '0.95rem', py: 2 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -283,7 +283,7 @@ const TeacherCourseStudentsPage: React.FC = () => {
                     <TableCell sx={{ fontWeight: 700, color: '#023665', fontSize: '0.95rem', py: 2 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Calendar size={18} />
-                        Enrolled Since
+                        Ngày tham gia
                       </Box>
                     </TableCell>
                   </TableRow>
@@ -326,7 +326,7 @@ const TeacherCourseStudentsPage: React.FC = () => {
                       </TableCell>
                       <TableCell sx={{ py: 2 }}>
                         <Chip
-                          label={student.role}
+                          label={student.role === 'student' ? 'Học viên' : student.role}
                           size="small"
                           sx={{
                             bgcolor: '#e3f2fd',
@@ -413,7 +413,7 @@ const TeacherCourseStudentsPage: React.FC = () => {
                           {student.name}
                         </Typography>
                         <Chip
-                          label={student.role}
+                          label={student.role === 'student' ? 'Học viên' : student.role}
                           size="small"
                           sx={{
                             mt: 0.5,
@@ -460,7 +460,7 @@ const TeacherCourseStudentsPage: React.FC = () => {
                         <Calendar size={16} color="#6b7280" style={{ marginTop: '2px', flexShrink: 0 }} />
                         <Box sx={{ flex: 1 }}>
                           <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: '0.7rem' }}>
-                            Enrolled Since
+                            Ngày tham gia
                           </Typography>
                           <Typography
                             variant="body2"
