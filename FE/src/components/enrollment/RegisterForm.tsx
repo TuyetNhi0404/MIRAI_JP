@@ -13,6 +13,7 @@ import {
 } from "@mui/material";
 import { Close } from "@mui/icons-material";
 import { useEnrollment } from "../../hooks/useEnrollment";
+import { getApiBaseUrl } from "../../utils/apiBase";
 import type { Course } from "../../types/enrollment.types";
 
 interface RegisterFormProps {
@@ -43,7 +44,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
     if (!coursesProp || coursesProp.length === 0) {
       const fetchCourses = async () => {
         try {
-          const res = await fetch("http://localhost:5000/api/courses/available");
+          const res = await fetch(`${getApiBaseUrl()}/courses/available`);
           const data = await res.json();
           if (data?.data) {
             setCourses(data.data);
