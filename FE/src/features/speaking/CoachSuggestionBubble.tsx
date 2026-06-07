@@ -1,14 +1,21 @@
 import { Box, Chip, CircularProgress, Typography } from "@mui/material";
+import { Sparkles } from "lucide-react";
 import type { CoachReview } from "./types";
 import { SEVERITY_LABEL } from "./speakingUtils";
 
-const BRAND = "#c83c3c";
+const BRAND = "#B90000";
 
 type CoachSuggestionBubbleProps = {
   loading?: boolean;
   review?: CoachReview;
   error?: string;
   onViewErrors?: () => void;
+};
+
+const SEVERITY_PALETTE: Record<CoachReview["severity"], { color: string; bg: string; label: string }> = {
+  important: { color: "#DC2626", bg: "#FEE2E2", label: "Lỗi nặng" },
+  should_fix: { color: "#D97706", bg: "#FEF3C7", label: "Nên sửa" },
+  minor: { color: "#16A34A", bg: "#DCFCE7", label: "Tốt rồi" },
 };
 
 export function CoachSuggestionBubble({
@@ -21,20 +28,20 @@ export function CoachSuggestionBubble({
     return (
       <Box
         sx={{
-          mt: 0.75,
-          px: 1.5,
-          py: 1,
-          borderRadius: 2,
-          bgcolor: "#FFFAF0",
-          border: "1px dashed rgba(234, 88, 12, 0.35)",
+          mt: 0.5,
+          px: 1.25,
+          py: 0.85,
+          borderRadius: 1.5,
+          bgcolor: "rgba(15, 23, 42, 0.04)",
+          border: "1px solid rgba(15, 23, 42, 0.08)",
           display: "flex",
           alignItems: "center",
-          gap: 1,
+          gap: 0.75,
         }}
       >
-        <CircularProgress size={14} sx={{ color: "#ea580c" }} />
-        <Typography variant="caption" color="text.secondary">
-          Mirai đang kiểm tra ngữ pháp...
+        <CircularProgress size={12} sx={{ color: BRAND }} thickness={5} />
+        <Typography variant="caption" sx={{ color: "#64748B", fontSize: "0.75rem" }}>
+          Mirai đang kiểm tra...
         </Typography>
       </Box>
     );
@@ -50,74 +57,61 @@ export function CoachSuggestionBubble({
 
   if (!hasFix) return null;
 
-  const severityColor =
-    review.severity === "important"
-      ? "#dc2626"
-      : review.severity === "should_fix"
-        ? "#ea580c"
-        : "#16a34a";
+  const severity = SEVERITY_PALETTE[review.severity] ?? SEVERITY_PALETTE.minor;
 
   return (
     <Box
       sx={{
-        mt: 0.75,
-        px: 1.5,
-        py: 1.25,
-        borderRadius: 2,
-        bgcolor: "#FFFAF0",
-        border: "1px solid rgba(234, 88, 12, 0.25)",
+        mt: 0.5,
+        px: 1.25,
+        py: 1.1,
+        borderRadius: 1.75,
+        bgcolor: "#FAFAFA",
+        border: "1px solid rgba(15, 23, 42, 0.08)",
         maxWidth: "100%",
       }}
     >
-      <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 0.75 }}>
-        <Typography variant="caption" fontWeight={700} sx={{ color: "#c2410c" }}>
-          Gợi ý sửa
+      <Box sx={{ display: "flex", alignItems: "center", gap: 0.6, mb: 0.6 }}>
+        <Sparkles size={11} color={BRAND} />
+        <Typography variant="caption" fontWeight={700} sx={{ color: BRAND, fontSize: "0.7rem" }}>
+          Gợi ý
         </Typography>
         <Chip
-          label={SEVERITY_LABEL[review.severity] ?? review.severity}
+          label={SEVERITY_LABEL[review.severity] ?? severity.label}
           size="small"
           sx={{
-            height: 20,
-            fontSize: "0.65rem",
+            height: 18,
+            fontSize: "0.62rem",
             fontWeight: 600,
-            bgcolor: `${severityColor}18`,
-            color: severityColor,
+            bgcolor: severity.bg,
+            color: severity.color,
+            ml: "auto",
+            border: "none",
           }}
         />
       </Box>
 
       <Typography
         variant="body2"
-        sx={{ fontFamily: '"Noto Sans JP", sans-serif', fontWeight: 600, color: BRAND, lineHeight: 1.5 }}
+        sx={{
+          fontFamily: '"Noto Sans JP", sans-serif',
+          fontWeight: 600,
+          color: "#0F172A",
+          lineHeight: 1.5,
+          fontSize: "0.85rem",
+        }}
       >
         {corrected}
       </Typography>
 
       {review.explanation_vi && (
-        <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.75, lineHeight: 1.45 }}>
+        <Typography
+          variant="caption"
+          display="block"
+          sx={{ mt: 0.5, lineHeight: 1.5, color: "#64748B", fontSize: "0.72rem" }}
+        >
           {review.explanation_vi}
         </Typography>
-      )}
-
-      {onViewErrors && (
-        <Box
-          component="button"
-          type="button"
-          onClick={onViewErrors}
-          sx={{
-            mt: 1,
-            border: "none",
-            bgcolor: "transparent",
-            color: BRAND,
-            fontSize: "0.72rem",
-            fontWeight: 600,
-            cursor: "pointer",
-            p: 0,
-            textDecoration: "underline",
-          }}
-        >
-          Xem trong Lỗi gặp phải →
-        </Box>
       )}
     </Box>
   );

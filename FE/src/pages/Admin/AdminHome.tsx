@@ -842,7 +842,7 @@ function EnrollmentTrendCard({
         </div>
       ) : (
         <div style={{ width: "100%", height: 240, marginTop: 8 }}>
-          <ResponsiveContainer>
+          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
             <AreaChart data={data} margin={{ top: 10, right: 8, left: -16, bottom: 0 }}>
               <defs>
                 <linearGradient id="enrollGradient" x1="0" y1="0" x2="0" y2="1">
@@ -934,7 +934,7 @@ function TopLearnersCard({
             onClick={onViewAll}
             style={{ color: brandColors.red, fontSize: 12, fontWeight: 500 }}
             icon={<ChevronRight size={14} />}
-            iconPosition="end"
+            iconPlacement="end"
           >
             Xem tất cả
           </Button>
@@ -1122,7 +1122,7 @@ function RoleDistributionCard({
       ) : (
         <div style={{ display: "flex", alignItems: "center", gap: 18, marginTop: 8 }}>
           <div style={{ width: 140, height: 140, flexShrink: 0, position: "relative" }}>
-            <ResponsiveContainer>
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <PieChart>
                 <Pie
                   data={data}
@@ -1265,7 +1265,7 @@ function CourseDistributionCard({
         </div>
       ) : (
         <div style={{ width: "100%", height: 200, marginTop: 8 }}>
-          <ResponsiveContainer>
+          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
             <BarChart data={data} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
               <CartesianGrid stroke={CHART_PALETTE.grid} vertical={false} strokeDasharray="3 3" />
               <XAxis
@@ -1513,7 +1513,7 @@ function PendingRequestsCard({
               block
               style={{ marginTop: 8, color: brandColors.red, fontSize: 12, fontWeight: 500 }}
               icon={<ChevronRight size={14} />}
-              iconPosition="end"
+              iconPlacement="end"
             >
               Xem tất cả
             </Button>

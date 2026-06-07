@@ -50,14 +50,14 @@ function SpeakingCircle({
   }, [isSpeaking]);
 
   useEffect(() => {
-    const N = 44;
+    const N = 64;
     const half = N / 2;
     const ps: Particle[] = [];
     for (let i = 0; i < N; i++) {
       for (let j = 0; j < N; j++) {
         const x = (i - half) / half;
         const y = (j - half) / half;
-        if (x * x + y * y <= 0.94) {
+        if (x * x + y * y <= 0.96) {
           const angle = Math.random() * Math.PI * 2;
           const r = Math.random() * 0.85;
           ps.push({
@@ -78,19 +78,21 @@ function SpeakingCircle({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const dpr = Math.min(window.devicePixelRatio, 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
     canvas.width = size * dpr;
     canvas.height = size * dpr;
     canvas.style.width = `${size}px`;
     canvas.style.height = `${size}px`;
     const ctx = canvas.getContext("2d")!;
     ctx.scale(dpr, dpr);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.globalCompositeOperation = "lighter";
 
     const particles = particlesRef.current;
     const cx = size / 2;
     const cy = size / 2;
     const R = (size / 2) * 0.92;
-
     const easeOutCubic = (t: number) => 1 - (1 - t) ** 3;
 
     let animId: number;
@@ -107,14 +109,24 @@ function SpeakingCircle({
 
       ctx.clearRect(0, 0, size, size);
 
-      // Giữ nguyên breathing/pulse gốc của bạn
+      // Soft radial backdrop glow
+      const breathScale = 1 + Math.sin(t * 0.45) * 0.018;
+      const backdropR = R * 1.05 * breathScale;
+      const backdrop = ctx.createRadialGradient(cx, cy, 0, cx, cy, backdropR);
+      backdrop.addColorStop(0, rgbaFromColor(color, speaking ? 0.18 : 0.08));
+      backdrop.addColorStop(0.55, rgbaFromColor(color, speaking ? 0.06 : 0.025));
+      backdrop.addColorStop(1, rgbaFromColor(color, 0));
+      ctx.fillStyle = backdrop;
+      ctx.beginPath();
+      ctx.arc(cx, cy, backdropR, 0, Math.PI * 2);
+      ctx.fill();
+
       const idleBreath = 1 + Math.sin(t * 0.45) * 0.012;
       const voicePulse = speaking ? Math.sin(t * 3.2) * 0.055 : 0;
       const voiceBreath = speaking ? Math.sin(t * 1.6) * 0.025 : 0;
       const scale = idleBreath + voicePulse + voiceBreath;
       const radius = R * scale;
 
-      // Speed 8 + amplitude động khi speaking
       const spd = speaking ? 2.5 : 1.5;
       const amp = speaking ? 0.055 + Math.sin(t * 1.8) * 0.012 : 0.032;
 
@@ -125,8 +137,7 @@ function SpeakingCircle({
         const dist = Math.sqrt(px0 * px0 + py0 * py0);
         const edge = Math.max(0, 1 - dist * 1.08);
 
-        // 3-layer low-frequency wave — không sọc chéo
-       const w1 = Math.sin(px0 * 1.8 + py0 * 0.75 + t * spd + p.phase * 0.25);
+        const w1 = Math.sin(px0 * 1.8 + py0 * 0.75 + t * spd + p.phase * 0.25);
         const w2 =
           Math.sin(px0 * 0.6 - py0 * 1.1 + t * spd * 0.62 + p.phase * 0.18) *
           0.38;
@@ -135,7 +146,6 @@ function SpeakingCircle({
           0.18;
         const h = (w1 + w2 + w3) * amp * edge * formation;
 
-        // Displacement theo gradient w1
         const dh = Math.cos(px0 * 1.3 + py0 * 0.55 + t * spd + p.phase * 0.25);
         const gx = dh * 1.3 * amp * edge * formation * 0.55;
         const gy = dh * 0.55 * amp * edge * formation * 0.55;
@@ -143,42 +153,48 @@ function SpeakingCircle({
         const px = cx + (px0 + gx + h * 0.3) * radius;
         const py = cy + (py0 + gy + h * 0.22) * radius;
 
-        // Normalize height → brightness
         const hn = Math.max(0, Math.min(1, h / (amp * 1.56 + 0.001) + 0.5));
 
-        // Dot size + alpha — contrast rõ crest/trough
         const dotSize =
-          (0.48 + hn * 2.4 * (speaking ? 1.18 : 1.0)) *
+          (0.42 + hn * 2.6 * (speaking ? 1.18 : 1.0)) *
           (0.38 + formation * 0.62);
 
         const alpha =
-          (0.18 + hn * 0.72) *
+          (0.12 + hn * 0.78) *
           (0.3 + formation * 0.7) *
-          (speaking ? 1.0 : 0.78) ;
+          (speaking ? 1.0 : 0.82);
 
+        const r = Math.max(0.32, dotSize);
+        const grad = ctx.createRadialGradient(px, py, 0, px, py, r * 1.8);
+        grad.addColorStop(0, rgbaFromColor(color, alpha));
+        grad.addColorStop(0.4, rgbaFromColor(color, alpha * 0.55));
+        grad.addColorStop(1, rgbaFromColor(color, 0));
+
+        ctx.fillStyle = grad;
         ctx.beginPath();
-        ctx.arc(px, py, Math.max(0.28, dotSize), 0, Math.PI * 2);
-        ctx.fillStyle = rgbaFromColor(color, alpha);
+        ctx.arc(px, py, r * 1.8, 0, Math.PI * 2);
         ctx.fill();
       }
 
       if (formation > 0.85) {
-        ctx.save();
-        ctx.shadowColor = rgbaFromColor(color, speaking ? 0.18 : 0.08);
-        ctx.shadowBlur = speaking ? 10 : 6;
+        const ringGrad = ctx.createRadialGradient(cx, cy, radius * 0.85, cx, cy, radius);
+        ringGrad.addColorStop(0, rgbaFromColor(color, 0));
+        ringGrad.addColorStop(1, rgbaFromColor(color, speaking ? 0.18 : 0.1));
+        ctx.strokeStyle = ringGrad;
+        ctx.lineWidth = speaking ? 1.2 : 0.8;
         ctx.beginPath();
         ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-        ctx.strokeStyle = rgbaFromColor(color, speaking ? 0.12 : 0.06);
-        ctx.lineWidth = speaking ? 0.6 : 0.4;
         ctx.stroke();
-        ctx.restore();
       }
 
       animId = requestAnimationFrame(animate);
     };
     animId = requestAnimationFrame(animate);
 
-    return () => cancelAnimationFrame(animId);
+    return () => {
+      cancelAnimationFrame(animId);
+      ctx.globalCompositeOperation = "source-over";
+    };
   }, [size, color]);
 
   return (

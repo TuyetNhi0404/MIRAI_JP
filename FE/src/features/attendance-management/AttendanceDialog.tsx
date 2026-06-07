@@ -51,18 +51,12 @@ interface ApiErrorResponse {
 }
 
 const isSessionActive = (date: Date, startTime?: string, endTime?: string): boolean => {
-  if (!startTime || !endTime) {
-    console.warn('⚠️ isSessionActive: Missing time data', { startTime, endTime });
-    return false;
-  }
+  if (!startTime || !endTime) return false;
 
   const now = new Date();
   const sessionDate = new Date(date);
 
-  if (sessionDate.toDateString() !== now.toDateString()) {
-    console.log('📅 Different day - session not active');
-    return false;
-  }
+  if (sessionDate.toDateString() !== now.toDateString()) return false;
 
   const [startHour, startMin] = startTime.trim().split(':').map(s => Number(s.trim()));
   const [endHour, endMin] = endTime.trim().split(':').map(s => Number(s.trim()));
@@ -71,57 +65,24 @@ const isSessionActive = (date: Date, startTime?: string, endTime?: string): bool
   const sessionStart = startHour * 60 + startMin;
   const sessionEnd = endHour * 60 + endMin;
 
-  const isActive = currentMinutes >= sessionStart && currentMinutes <= sessionEnd;
-  console.log('⏰ Session time check:', {
-    currentMinutes,
-    sessionStart,
-    sessionEnd,
-    isActive
-  });
-
-  return isActive;
+  return currentMinutes >= sessionStart && currentMinutes <= sessionEnd;
 };
 
 const canEditAttendance = (date: Date, startTime?: string, endTime?: string): boolean => {
-  console.log('🔍 canEditAttendance check:', {
-    date: date.toISOString(),
-    startTime,
-    endTime,
-    now: new Date().toISOString()
-  });
-
-  if (!startTime || !endTime) {
-    console.warn('⚠️ Missing time data - cannot edit');
-    return false;
-  }
+  if (!startTime || !endTime) return false;
 
   const sessionDate = new Date(date);
   const now = new Date();
 
-  if (sessionDate > now) {
-    console.log('🔮 Session in future - cannot edit');
-    return false;
-  }
-
-  if (isSessionActive(sessionDate, startTime, endTime)) {
-    console.log('✅ Session is active - can edit');
-    return true;
-  }
+  if (sessionDate > now) return false;
+  if (isSessionActive(sessionDate, startTime, endTime)) return true;
 
   const [endHour, endMin] = endTime.split(':').map(Number);
   const sessionEnd = new Date(sessionDate);
   sessionEnd.setHours(endHour, endMin, 0, 0);
 
   const hoursSinceEnd = (now.getTime() - sessionEnd.getTime()) / (1000 * 60 * 60);
-  const canEdit = hoursSinceEnd <= 24;
-
-  console.log('⏱️ Time since session end:', {
-    sessionEnd: sessionEnd.toISOString(),
-    hoursSinceEnd,
-    canEdit
-  });
-
-  return canEdit;
+  return hoursSinceEnd <= 24;
 };
 
 const getStatusColor = (status: AttendanceStatus): 'success' | 'error' | 'default' => {
@@ -183,8 +144,6 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
     if (open && calendar) {
       if (calendar._id) {
         fetchStudents(calendar._id);
-      } else {
-        console.error('❌ Calendar ID is missing!');
       }
 
       setUpdateError('');
@@ -200,22 +159,17 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
     ? isSessionActive(sessionDate, session.startTime, session.endTime)
     : false;
 
-  console.log('🔐 Permissions:', { canEdit, isActive });
-
   const handleStatusUpdate = async (userId: string, newStatus: AttendanceStatus) => {
     try {
       if (!calendar?._id) return;
       setUpdateError('');
       setSuccessMessage('');
 
-      console.log('🔄 Updating status:', { calendarId: calendar._id, userId, newStatus });
-
       await updateStatus(calendar._id, userId, newStatus);
 
       setSuccessMessage('Cập nhật điểm danh thành công');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
-      console.error('❌ Update failed:', err);
       const error = err as ApiErrorResponse;
       setUpdateError(error.response?.data?.message || error.message || 'Cập nhật điểm danh thất bại');
     }

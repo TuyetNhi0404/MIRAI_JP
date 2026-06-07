@@ -136,13 +136,13 @@ export function NotePracticeDialog({ note, open, onClose, onMastered }: NotePrac
 
         {result && (
           <Box sx={{ mt: 2 }}>
-            <Typography variant="body2">
-              Nghe được: <span style={{ fontFamily: '"Noto Sans JP", sans-serif' }}>{result.heard || "—"}</span>
-            </Typography>
-            <Typography variant="body2" sx={{ mt: 0.5 }}>
-              Độ khớp: {Math.round(result.score * 100)}%
-              {result.score >= 0.75 ? " — Tốt! Đã đánh dấu thuần." : " — Thử lại nhé."}
-            </Typography>
+          <Typography variant="body2">
+            Nghe được: <span style={{ fontFamily: '"Noto Sans JP", sans-serif' }}>{result.heard || "Chưa rõ"}</span>
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 0.5 }}>
+            Độ khớp {Math.round(result.score * 100)}%
+            {result.score >= 0.75 ? " · Tốt! Đã đánh dấu thuần." : " · Thử lại nhé."}
+          </Typography>
           </Box>
         )}
       </DialogContent>
