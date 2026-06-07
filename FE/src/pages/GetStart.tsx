@@ -5,6 +5,7 @@ import GoogleLogin from '../components/GoogleLogin';
 import RegisterForm from '../components/enrollment/RegisterForm';
 import { Modal, Box, IconButton, useMediaQuery, useTheme } from "@mui/material";
 import { ArrowBackIos, ArrowForwardIos } from "@mui/icons-material";
+import { getApiBaseUrl } from "../utils/apiBase";
 
 const MiraiJpCenter: React.FC = () => {
   const theme = useTheme();
@@ -35,7 +36,7 @@ const MiraiJpCenter: React.FC = () => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/courses/available");
+        const res = await fetch(`${getApiBaseUrl()}/courses/available`);
         const data = await res.json();
         if (data?.data) setCourses(data.data);
       } catch (err: unknown) {
