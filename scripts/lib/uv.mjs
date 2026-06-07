@@ -12,7 +12,7 @@ import { join } from "node:path";
 import { pipeline } from "node:stream/promises";
 import { uvBinPath, uvInstallDir } from "./paths.mjs";
 
-const UV_VERSION = "0.6.17";
+const UV_VERSION = "0.11.19";
 
 function uvTargetTriple() {
   const arch = process.arch === "arm64" ? "aarch64" : "x86_64";
@@ -27,16 +27,16 @@ async function downloadFile(url, dest) {
   await pipeline(res.body, createWriteStream(dest));
 }
 
-function extractZip(zipPath, destDir) {
+function extractArchive(archivePath, destDir) {
   mkdirSync(destDir, { recursive: true });
   if (process.platform === "win32") {
     execSync(
-      `powershell -NoProfile -Command "Expand-Archive -Path '${zipPath.replace(/'/g, "''")}' -DestinationPath '${destDir.replace(/'/g, "''")}' -Force"`,
+      `powershell -NoProfile -Command "Expand-Archive -Path '${archivePath.replace(/'/g, "''")}' -DestinationPath '${destDir.replace(/'/g, "''")}' -Force"`,
       { stdio: "inherit" },
     );
     return;
   }
-  execSync(`unzip -o -q "${zipPath}" -d "${destDir}"`, { stdio: "inherit" });
+  execSync(`tar -xzf "${archivePath}" -C "${destDir}"`, { stdio: "inherit" });
 }
 
 export async function ensureUv() {
@@ -47,14 +47,15 @@ export async function ensureUv() {
   mkdirSync(uvInstallDir, { recursive: true });
 
   const triple = uvTargetTriple();
-  const zipName = `uv-${triple}.zip`;
-  const url = `https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/${zipName}`;
-  const zipPath = join(uvInstallDir, zipName);
+  const ext = process.platform === "win32" ? "zip" : "tar.gz";
+  const archiveName = `uv-${triple}.${ext}`;
+  const url = `https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/${archiveName}`;
+  const archivePath = join(uvInstallDir, archiveName);
   const extractDir = join(uvInstallDir, "_extract");
 
-  await downloadFile(url, zipPath);
+  await downloadFile(url, archivePath);
   rmSync(extractDir, { recursive: true, force: true });
-  extractZip(zipPath, extractDir);
+  extractArchive(archivePath, extractDir);
 
   const uvName = process.platform === "win32" ? "uv.exe" : "uv";
   const found = join(extractDir, uvName);
@@ -68,7 +69,7 @@ export async function ensureUv() {
 
   if (process.platform !== "win32") chmodSync(bin, 0o755);
   rmSync(extractDir, { recursive: true, force: true });
-  rmSync(zipPath, { force: true });
+  rmSync(archivePath, { force: true });
 
   return bin;
 }
