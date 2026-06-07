@@ -1,125 +1,128 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from "react";
 import {
-  Box,
-  Button,
-  Typography,
-  Paper,
-  Card,
-  CardContent,
-  Chip,
-  CircularProgress,
   Alert,
-  useTheme,
-  useMediaQuery,
+  Button,
+  Card,
+  Col,
   Drawer,
+  Grid,
   List,
-  ListItemButton,
-  ListItemText,
-  Divider,
-  Stack,
-  IconButton,
-} from '@mui/material';
+  Row,
+  Segmented,
+  Space,
+  Spin,
+  Tag,
+  Tooltip,
+  Typography,
+  Empty,
+  DatePicker,
+} from "antd";
+import dayjs, { type Dayjs } from "dayjs";
 import {
+  CalendarDays,
   ChevronLeft,
   ChevronRight,
-  CalendarDays,
   Clock,
-  RotateCcw,
-  User,
   Menu as MenuIcon,
+  RotateCcw,
   UserCheck,
-} from 'lucide-react';
-import { useScheduleData } from '../../hooks/useScheduleData';
-import { AttendanceDialog } from '../../features/attendance-management/AttendanceDialog';
-import type { Calendar, PopulatedCourse, PopulatedSession, PopulatedTeacher } from '../../types/schedule.types';
+  ClipboardCheck,
+  TrendingUp,
+  CheckCircle2,
+  Hourglass,
+  Calendar as CalendarIcon,
+  LayoutGrid,
+  Columns,
+} from "lucide-react";
+import { useScheduleData } from "../../hooks/useScheduleData";
+import { AttendanceDialog } from "../../features/attendance-management/AttendanceDialog";
+import type {
+  Calendar,
+  PopulatedCourse,
+  PopulatedSession,
+  PopulatedTeacher,
+} from "../../types/schedule.types";
+import { PageHeader, StatCard } from "../../components/ui";
+import { brandColors } from "../../theme/theme";
 
-type ViewMode = 'day' | 'week';
+const { useBreakpoint } = Grid;
+const { Text, Title } = Typography;
+
+type ViewMode = "day" | "week" | "month";
+
+const COURSE_COLORS = [
+  { accent: "#B90000", soft: "#FFF1F0" },
+  { accent: "#1677FF", soft: "#E6F4FF" },
+  { accent: "#52C41A", soft: "#F6FFED" },
+  { accent: "#FAAD14", soft: "#FFFBE6" },
+  { accent: "#722ED1", soft: "#F9F0FF" },
+  { accent: "#EB2F96", soft: "#FFF0F6" },
+  { accent: "#13C2C2", soft: "#E6FFFB" },
+  { accent: "#FA541C", soft: "#FFF2E8" },
+];
+
+const STATUS_META: Record<string, { label: string; color: string; bg: string; dot: string }> = {
+  not_yet: { label: "Chưa bắt đầu", color: brandColors.textSecondary, bg: brandColors.borderLight, dot: "#BFBFBF" },
+  in_progress: { label: "Đang học", color: brandColors.warning, bg: "#FFFBE6", dot: "#FAAD14" },
+  completed: { label: "Đã xong", color: brandColors.success, bg: "#F6FFED", dot: "#52C41A" },
+  cancelled: { label: "Đã hủy", color: brandColors.error, bg: "#FFF1F0", dot: "#FF4D4F" },
+};
+
+const getStatusMeta = (status?: string) => {
+  if (!status) return { label: "—", color: brandColors.textSecondary, bg: brandColors.borderLight, dot: "#BFBFBF" };
+  return STATUS_META[status] || { label: status.replace(/_/g, " "), color: brandColors.textSecondary, bg: brandColors.borderLight, dot: "#BFBFBF" };
+};
 
 export default function ManageScheduleWithAttendance() {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const isTablet = useMediaQuery(theme.breakpoints.down('lg'));
-  
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
+  const isTablet = !screens.lg;
+
   const { calendars, loading, error: fetchError } = useScheduleData();
-
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<ViewMode>(isMobile ? 'day' : 'week');
+  const [currentDate, setCurrentDate] = useState<Dayjs>(dayjs());
+  const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
-  // Attendance Dialog State
   const [attendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
-  const [selectedCalendarForAttendance, setSelectedCalendarForAttendance] = useState<Calendar | null>(null);
+  const [selectedCalendarForAttendance, setSelectedCalendarForAttendance] =
+    useState<Calendar | null>(null);
+  const [courseFilter, setCourseFilter] = useState<string>("all");
 
-  const formatDate = (date: Date | string) => {
-    const d = typeof date === 'string' ? new Date(date) : date;
-    return d.toISOString().split('T')[0];
-  };
+  useEffect(() => {
+    if (isMobile) setViewMode("day");
+    else if (isTablet) setViewMode("week");
+  }, [isMobile, isTablet]);
 
-  const formatDateDisplay = (date: Date | string) => {
-    const d = typeof date === 'string' ? new Date(date) : date;
-    const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const year = d.getFullYear();
-    return `${day}/${month}/${year}`;
-  };
-
-  const extractId = (value: string | PopulatedCourse | PopulatedSession | PopulatedTeacher | undefined): string => {
-    if (!value) return '';
-    if (typeof value === 'string') return value;
-    if (typeof value === 'object' && '_id' in value) return value._id;
-    return '';
-  };
-
-  const getWeekDates = () => {
-    const week = [];
-    const start = new Date(currentDate);
-    const day = start.getDay();
-    const diff = start.getDate() - day + (day === 0 ? -6 : 1);
-    start.setDate(diff);
-
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(start);
-      date.setDate(start.getDate() + i);
-      week.push(date);
-    }
-    return week;
-  };
-
-  const getDayDate = () => [new Date(currentDate)];
-
-  const getCurrentDates = () => {
-    if (viewMode === 'day') return getDayDate();
-    return getWeekDates();
-  };
-
-  const handlePrev = () => {
-    const newDate = new Date(currentDate);
-    if (viewMode === 'week') newDate.setDate(newDate.getDate() - 7);
-    else newDate.setDate(newDate.getDate() - 1);
-    setCurrentDate(newDate);
-  };
-
-  const handleNext = () => {
-    const newDate = new Date(currentDate);
-    if (viewMode === 'week') newDate.setDate(newDate.getDate() + 7);
-    else newDate.setDate(newDate.getDate() + 1);
-    setCurrentDate(newDate);
+  const extractId = (
+    value: string | PopulatedCourse | PopulatedSession | PopulatedTeacher | undefined
+  ): string => {
+    if (!value) return "";
+    if (typeof value === "string") return value;
+    if (typeof value === "object" && "_id" in value) return value._id;
+    return "";
   };
 
   const getScheduleColor = (courseId: string) => {
-    const colors = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ec4899', '#06b6d4'];
-    const uniqueCourses = [...new Set(calendars.map((c: Calendar) => extractId(c.courseId)))];
+    const uniqueCourses = [
+      ...new Set(calendars.map((c: Calendar) => extractId(c.courseId))),
+    ];
     const index = uniqueCourses.indexOf(courseId);
-    return colors[index % colors.length];
+    return COURSE_COLORS[index % COURSE_COLORS.length];
   };
 
-  const getViewTitle = () => {
-    if (viewMode === 'week') {
-      const weekDates = getWeekDates();
-      const format = isMobile ? 'numeric' : 'long';
-      return `${weekDates[0].getDate()} - ${weekDates[6].getDate()} ${weekDates[0].toLocaleDateString('vi-VN', { month: format, year: 'numeric' })}`;
-    }
-    return formatDateDisplay(currentDate);
+  const handlePrev = () => {
+    if (viewMode === "month") setCurrentDate((d) => d.subtract(1, "month"));
+    else if (viewMode === "week") setCurrentDate((d) => d.subtract(1, "week"));
+    else setCurrentDate((d) => d.subtract(1, "day"));
+  };
+
+  const handleNext = () => {
+    if (viewMode === "month") setCurrentDate((d) => d.add(1, "month"));
+    else if (viewMode === "week") setCurrentDate((d) => d.add(1, "week"));
+    else setCurrentDate((d) => d.add(1, "day"));
+  };
+
+  const handleDateSelect = (d: Dayjs) => {
+    setCurrentDate(d);
   };
 
   const handleOpenAttendance = (schedule: Calendar) => {
@@ -127,613 +130,447 @@ export default function ManageScheduleWithAttendance() {
     setAttendanceDialogOpen(true);
   };
 
-  const renderScheduleCard = (schedule: Calendar) => {
-    const course = typeof schedule.courseId === 'object' ? schedule.courseId as PopulatedCourse : null;
-    const teacher = typeof schedule.teacherId === 'object' ? schedule.teacherId as PopulatedTeacher : null;
+  const uniqueCourses = useMemo(() => {
+    const map = new Map<string, PopulatedCourse>();
+    calendars.forEach((c) => {
+      if (typeof c.courseId === "object" && c.courseId) {
+        const id = extractId(c.courseId);
+        if (!map.has(id)) map.set(id, c.courseId);
+      }
+    });
+    return Array.from(map.values());
+  }, [calendars, extractId]);
+
+  const stats = useMemo(() => {
+    const today = dayjs().format("YYYY-MM-DD");
+    const todaySessions = calendars.filter((c) => dayjs(c.date as any).format("YYYY-MM-DD") === today);
+    const completed = todaySessions.filter((c) => c.status === "completed").length;
+    const inProgress = todaySessions.filter((c) => c.status === "in_progress").length;
+    const upcoming = todaySessions.filter((c) => c.status === "not_yet").length;
+    const completionRate = todaySessions.length > 0
+      ? Math.round((completed / todaySessions.length) * 100)
+      : 0;
+    return { total: todaySessions.length, completed, inProgress, upcoming, completionRate };
+  }, [calendars]);
+
+  const filteredCalendars = useMemo(() => {
+    if (courseFilter === "all") return calendars;
+    return calendars.filter((c) => extractId(c.courseId) === courseFilter);
+  }, [calendars, courseFilter, extractId]);
+
+  const getHeaderTitle = () => {
+    if (viewMode === "month") return currentDate.format("Tháng M, YYYY");
+    if (viewMode === "week") {
+      const start = currentDate.startOf("week");
+      const end = currentDate.endOf("week");
+      if (start.month() === end.month()) {
+        return `${start.format("D")} – ${end.format("D")} ${end.format("M, YYYY")}`;
+      }
+      return `${start.format("D/M")} – ${end.format("D/M/YYYY")}`;
+    }
+    return currentDate.format("dddd, D MMMM YYYY");
+  };
+
+  const renderScheduleCard = (schedule: Calendar, compact = false) => {
+    const course =
+      typeof schedule.courseId === "object"
+        ? (schedule.courseId as PopulatedCourse)
+        : null;
+    const teacher =
+      typeof schedule.teacherId === "object"
+        ? (schedule.teacherId as PopulatedTeacher)
+        : null;
+    const session =
+      typeof schedule.sessionId === "object"
+        ? (schedule.sessionId as PopulatedSession)
+        : null;
     const courseId = extractId(schedule.courseId);
-    const color = getScheduleColor(courseId);
+    const palette = getScheduleColor(courseId);
+    const status = getStatusMeta(schedule.status);
+    const timeRange = session?.startTime && session?.endTime
+      ? `${session.startTime} – ${session.endTime}`
+      : session?.startTime || null;
+
+    if (compact) {
+      return (
+        <div
+          key={schedule._id}
+          className="mira-fade-in"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleOpenAttendance(schedule);
+          }}
+          style={{
+            background: palette.soft,
+            borderLeft: `2px solid ${palette.accent}`,
+            borderRadius: 4,
+            padding: "3px 6px",
+            marginBottom: 2,
+            cursor: "pointer",
+            fontSize: 10.5,
+            lineHeight: 1.3,
+            transition: "transform 160ms ease, box-shadow 160ms ease",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "translateX(2px)";
+            e.currentTarget.style.boxShadow = `0 2px 6px ${palette.accent}25`;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "translateX(0)";
+            e.currentTarget.style.boxShadow = "none";
+          }}
+          title={`${timeRange || ""} · ${course?.name || ""} · ${status.label}`}
+        >
+          {timeRange && (
+            <span style={{ fontWeight: 600, color: palette.accent, marginRight: 4 }}>
+              {timeRange}
+            </span>
+          )}
+          <span style={{ color: brandColors.textPrimary }}>
+            {course?.name || "Khóa học"}
+          </span>
+        </div>
+      );
+    }
 
     return (
-      <Card
+      <div
         key={schedule._id}
-        sx={{
-          bgcolor: color,
-          color: "white",
-          mb: 1,
-          borderRadius: 1.5,
-          boxShadow: 1,
-          transition: "all 0.2s",
-          "&:hover": {
-            transform: "translateY(-1px)",
-            boxShadow: 2,
-          },
+        className="mira-fade-in mira-card-hover"
+        style={{
+          background: brandColors.paper,
+          border: `1px solid ${brandColors.border}`,
+          borderLeft: `3px solid ${palette.accent}`,
+          marginBottom: 8,
+          borderRadius: 8,
+          padding: "10px 12px",
+          cursor: "pointer",
         }}
+        onClick={() => handleOpenAttendance(schedule)}
       >
-        <CardContent
-          sx={{
-            p: 1.25,
-            "&:last-child": { pb: 1.25 },
-          }}
-        >
-          {/* Course Name */}
-          <Typography
-            variant="body2"
-            fontWeight={600}
-            sx={{ fontSize: "0.85rem", mb: 0.5, lineHeight: 1.2 }}
-          >
-            {course?.name || course?.courseName || "Khóa học chưa xác định"}
-          </Typography>
-
-          {/* Teacher */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
-            <User size={12} />
-            <Typography
-              variant="caption"
-              sx={{ fontSize: "0.7rem", opacity: 0.9 }}
-            >
-              GV: {teacher?.name || "Chưa xác định"}
-            </Typography>
-          </Box>
-
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 1,
-              mt: 1,
-            }}
-          >
-            {/* Status Chip */}
-            <Chip
-              label={
-                schedule.status === 'not_yet' ? 'Chưa bắt đầu' :
-                schedule.status === 'completed' ? 'Đã xong' :
-                schedule.status === 'in_progress' ? 'Đang học' :
-                schedule.status === 'cancelled' ? 'Đã hủy' : 
-                (schedule.status as string).replace(/_/g, " ")
-              }
-              size="small"
-              sx={{
-                height: 20,
-                fontSize: "0.65rem",
-                bgcolor: "rgba(255,255,255,0.25)",
-                color: "white",
-                fontWeight: 600,
-                border: "1px solid rgba(255,255,255,0.2)",
-                alignSelf: 'flex-start',
-                px: 0.5
-              }}
-            />
-
-            {/* Compact Attendance Button */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 6 }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{
+              fontWeight: 600,
+              fontSize: 13,
+              lineHeight: 1.25,
+              color: brandColors.textPrimary,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+            }}>
+              {course?.name || course?.courseName || "Khóa học"}
+            </div>
+          </div>
+          <Tooltip title="Điểm danh">
             <Button
               size="small"
-              variant="contained"
-              fullWidth
-              sx={{
-                py: 0.5,
-                bgcolor: "white",
-                color: color,
-                fontSize: "0.75rem",
-                fontWeight: 700,
-                '&:hover': { 
-                  bgcolor: "rgba(255,255,255,0.9)",
-                },
-                boxShadow: "none",
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.5
-              }}
+              type="primary"
+              icon={<UserCheck size={12} />}
               onClick={(e) => {
                 e.stopPropagation();
                 handleOpenAttendance(schedule);
               }}
-            >
-              <UserCheck size={14} />
-              <span>Điểm danh</span>
-            </Button>
-          </Box>
-        </CardContent>
-      </Card>
-    );
-  };
-
-  // Mobile Week View - theo layout mẫu (Morning/Afternoon)
-  const renderMobileWeekView = () => {
-    const weekDates = getWeekDates();
-    
-    // Group sessions by time period
-    const morningSessions = [...new Set(calendars.map((c: Calendar) => extractId(c.sessionId)))]
-      .map(id => calendars.find((c: Calendar) => extractId(c.sessionId) === id))
-      .filter((c): c is Calendar => !!c && typeof c.sessionId === 'object')
-      .map(c => c.sessionId as PopulatedSession)
-      .filter(s => {
-        const startHour = parseInt(s.startTime?.split(':')[0] || '0');
-        return startHour < 12;
-      })
-      .sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""));
-    
-    const afternoonSessions = [...new Set(calendars.map((c: Calendar) => extractId(c.sessionId)))]
-      .map(id => calendars.find((c: Calendar) => extractId(c.sessionId) === id))
-      .filter((c): c is Calendar => !!c && typeof c.sessionId === 'object')
-      .map(c => c.sessionId as PopulatedSession)
-      .filter(s => {
-        const startHour = parseInt(s.startTime?.split(':')[0] || '0');
-        return startHour >= 12;
-      })
-      .sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""));
-
-    return (
-      <Box>
-        {weekDates.map((date, dateIdx) => {
-          const dateStr = formatDate(date);
-          const isToday = formatDate(date) === formatDate(new Date());
-          
-          return (
-            <Paper 
-              key={dateIdx} 
-              sx={{ 
-                mb: 2,
-                overflow: 'hidden',
-                border: isToday ? 2 : 1,
-                borderColor: isToday ? 'primary.main' : 'divider',
+              style={{
+                height: 26,
+                padding: "0 10px",
+                fontSize: 12,
+                fontWeight: 600,
+                flexShrink: 0,
               }}
             >
-              {/* Date Header */}
-              <Box 
-                sx={{ 
-                  p: 2, 
-                  bgcolor: isToday ? 'primary.main' : 'grey.100',
-                  color: isToday ? 'white' : 'text.primary',
-                  borderBottom: 1,
-                  borderColor: 'divider'
-                }}
-              >
-                <Typography variant="h6" fontWeight={700}>
-                  {date.toLocaleDateString('vi-VN', { weekday: 'long' })}
-                </Typography>
-                <Typography variant="body2">
-                  {formatDateDisplay(date)}
-                </Typography>
-              </Box>
+              {!isMobile && "Điểm danh"}
+            </Button>
+          </Tooltip>
+        </div>
 
-              {/* Morning Section */}
-              <Box sx={{ p: 2 }}>
-                <Typography 
-                  variant="subtitle2" 
-                  fontWeight={600} 
-                  sx={{ 
-                    mb: 1.5,
-                    color: '#d97706',
-                    fontSize: '0.875rem'
-                  }}
-                >
-                  Buổi Sáng
-                </Typography>
-                
-                {morningSessions.map((session) => {
-                  const schedules = calendars.filter((cal: Calendar) => {
-                    const calDate = formatDate(cal.date);
-                    const calSessionId = extractId(cal.sessionId);
-                    return calDate === dateStr && calSessionId === session._id;
-                  });
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          {timeRange && (
+            <span style={{
+              fontSize: 11,
+              fontWeight: 500,
+              color: brandColors.textSecondary,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 3,
+            }}>
+              <Clock size={11} strokeWidth={2.2} />
+              {timeRange}
+            </span>
+          )}
+          {teacher?.name && (
+            <span style={{
+              fontSize: 11,
+              color: brandColors.textTertiary,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              maxWidth: 120,
+            }}>
+              · {teacher.name}
+            </span>
+          )}
+        </div>
 
-                  return schedules.length > 0 ? (
-                    <Box key={session._id}>
-                      {schedules.map((schedule: Calendar) => renderScheduleCard(schedule))}
-                    </Box>
-                  ) : null;
-                })}
-                
-                {morningSessions.every((session) => {
-                  const schedules = calendars.filter((cal: Calendar) => {
-                    const calDate = formatDate(cal.date);
-                    const calSessionId = extractId(cal.sessionId);
-                    return calDate === dateStr && calSessionId === session._id;
-                  });
-                  return schedules.length === 0;
-                }) && (
-                  <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ py: 2 }}>
-                    -
-                  </Typography>
-                )}
-              </Box>
-
-              <Divider />
-
-              {/* Afternoon Section */}
-              <Box sx={{ p: 2 }}>
-                <Typography 
-                  variant="subtitle2" 
-                  fontWeight={600} 
-                  sx={{ 
-                    mb: 1.5,
-                    color: '#d97706',
-                    fontSize: '0.875rem'
-                  }}
-                >
-                  Buổi Chiều
-                </Typography>
-                
-                {afternoonSessions.map((session) => {
-                  const schedules = calendars.filter((cal: Calendar) => {
-                    const calDate = formatDate(cal.date);
-                    const calSessionId = extractId(cal.sessionId);
-                    return calDate === dateStr && calSessionId === session._id;
-                  });
-
-                  return schedules.length > 0 ? (
-                    <Box key={session._id}>
-                      {schedules.map((schedule: Calendar) => renderScheduleCard(schedule))}
-                    </Box>
-                  ) : null;
-                })}
-                
-                {afternoonSessions.every((session) => {
-                  const schedules = calendars.filter((cal: Calendar) => {
-                    const calDate = formatDate(cal.date);
-                    const calSessionId = extractId(cal.sessionId);
-                    return calDate === dateStr && calSessionId === session._id;
-                  });
-                  return schedules.length === 0;
-                }) && (
-                  <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ py: 2 }}>
-                    -
-                  </Typography>
-                )}
-              </Box>
-            </Paper>
-          );
-        })}
-      </Box>
-    );
-  };
-
-  const renderWeekView = () => {
-    if (isMobile) return renderMobileWeekView();
-
-    const weekDates = getWeekDates();
-    const allSessions = [...new Set(calendars.map((c: Calendar) => extractId(c.sessionId)))];
-    const sessionMap = new Map<string, PopulatedSession>();
-    
-    calendars.forEach((cal: Calendar) => {
-      const sessionId = extractId(cal.sessionId);
-      if (!sessionMap.has(sessionId) && typeof cal.sessionId === 'object') {
-        sessionMap.set(sessionId, cal.sessionId);
-      }
-    });
-
-    const sortedSessionIds = allSessions.sort((idA, idB) => {
-      const sessionA = sessionMap.get(idA);
-      const sessionB = sessionMap.get(idB);
-      return (sessionA?.startTime || "").localeCompare(sessionB?.startTime || "");
-    });
-
-    return (
-      <Box sx={{ overflowX: 'auto' }}>
-        <Box sx={{ display: 'grid', gridTemplateColumns: `${isTablet ? '100px' : '120px'} repeat(7, 1fr)`, minWidth: 'fit-content', width: '100%' }}>
-          <Box sx={{ p: 2, borderBottom: 1, borderRight: 1, borderColor: 'divider', bgcolor: 'grey.50', fontWeight: 600 }}>
-            Thời gian
-          </Box>
-          {weekDates.map((date, idx) => {
-            const isToday = formatDate(date) === formatDate(new Date());
-            return (
-              <Box key={idx} sx={{ p: isTablet ? 1.5 : 2, borderBottom: 1, borderRight: 1, borderColor: 'divider', bgcolor: isToday ? 'primary.50' : 'grey.50', textAlign: 'center', minWidth: 140 }}>
-                <Typography sx={{ fontWeight: 600, color: isToday ? 'primary.main' : 'text.primary', fontSize: isTablet ? '0.875rem' : '1rem' }}>
-                  {date.toLocaleDateString('vi-VN', { weekday: 'short' })}
-                </Typography>
-                <Typography variant="body2" sx={{ color: isToday ? 'primary.main' : 'text.secondary' }}>
-                  {formatDateDisplay(date)}
-                </Typography>
-              </Box>
-            );
-          })}
-
-          {sortedSessionIds.map((sessionId: string) => {
-            const session = sessionMap.get(sessionId);
-            
-            return (
-              <React.Fragment key={sessionId}>
-                <Box sx={{ p: 2, borderBottom: 1, borderRight: 1, borderColor: 'divider', bgcolor: 'grey.50' }}>
-                  <Typography variant="body2" fontWeight={600}>
-                    {session?.sessionName || 'Ca học'}
-                  </Typography>
-                  {session?.startTime && (
-                    <Typography variant="caption" color="text.secondary">
-                      {session.startTime} - {session.endTime}
-                    </Typography>
-                  )}
-                </Box>
-                {weekDates.map((date, idx) => {
-                  const dateStr = formatDate(date);
-                  
-                  const schedules = calendars.filter((cal: Calendar) => {
-                    const calDate = formatDate(cal.date);
-                    const calSessionId = extractId(cal.sessionId);
-                    return calDate === dateStr && calSessionId === sessionId;
-                  });
-
-                  return (
-                    <Box key={idx} sx={{ p: 1.5, borderBottom: 1, borderRight: 1, borderColor: 'divider', minHeight: 120, bgcolor: 'background.paper', minWidth: 140 }}>
-                      {schedules.map((schedule: Calendar) => renderScheduleCard(schedule))}
-                    </Box>
-                  );
-                })}
-              </React.Fragment>
-            );
-          })}
-        </Box>
-      </Box>
-    );
-  };
-
-  const renderDayView = () => {
-    const date = getCurrentDates()[0];
-    const dateStr = formatDate(date);
-    const isToday = formatDate(date) === formatDate(new Date());
-
-    // Group sessions by time period for mobile
-    const morningSessions = [...new Set(calendars.map((c: Calendar) => extractId(c.sessionId)))]
-      .map(id => calendars.find((c: Calendar) => extractId(c.sessionId) === id))
-      .filter((c): c is Calendar => !!c && typeof c.sessionId === 'object')
-      .map(c => c.sessionId as PopulatedSession)
-      .filter(s => {
-        const startHour = parseInt(s.startTime?.split(':')[0] || '0');
-        return startHour < 12;
-      })
-      .sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""));
-    
-    const afternoonSessions = [...new Set(calendars.map((c: Calendar) => extractId(c.sessionId)))]
-      .map(id => calendars.find((c: Calendar) => extractId(c.sessionId) === id))
-      .filter((c): c is Calendar => !!c && typeof c.sessionId === 'object')
-      .map(c => c.sessionId as PopulatedSession)
-      .filter(s => {
-        const startHour = parseInt(s.startTime?.split(':')[0] || '0');
-        return startHour >= 12;
-      })
-      .sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""));
-
-    if (isMobile) {
-      return (
-        <Paper sx={{ overflow: 'hidden' }}>
-          {/* Date Header */}
-          <Box sx={{ p: 2, bgcolor: isToday ? 'primary.main' : 'grey.100', color: isToday ? 'white' : 'text.primary' }}>
-            <Typography variant="h6" fontWeight={600}>
-              {date.toLocaleDateString('vi-VN', { weekday: 'long' })}
-            </Typography>
-            <Typography variant="body1">
-              {formatDateDisplay(date)}
-            </Typography>
-          </Box>
-
-          {/* Morning Section */}
-          <Box sx={{ p: 2 }}>
-            <Typography 
-              variant="subtitle2" 
-              fontWeight={600} 
-              sx={{ mb: 1.5, color: '#d97706', fontSize: '0.875rem' }}
-            >
-              Buổi sáng
-            </Typography>
-            
-            {morningSessions.map((session) => {
-              const schedules = calendars.filter((cal: Calendar) => {
-                const calDate = formatDate(cal.date);
-                const calSessionId = extractId(cal.sessionId);
-                return calDate === dateStr && calSessionId === session._id;
-              });
-
-              return schedules.length > 0 ? (
-                <Box key={session._id}>
-                  {schedules.map((schedule: Calendar) => renderScheduleCard(schedule))}
-                </Box>
-              ) : null;
-            })}
-            
-            {morningSessions.every((session) => {
-              const schedules = calendars.filter((cal: Calendar) => {
-                const calDate = formatDate(cal.date);
-                const calSessionId = extractId(cal.sessionId);
-                return calDate === dateStr && calSessionId === session._id;
-              });
-              return schedules.length === 0;
-            }) && (
-              <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ py: 2 }}>
-                -
-              </Typography>
-            )}
-          </Box>
-
-          <Divider />
-
-          {/* Afternoon Section */}
-          <Box sx={{ p: 2 }}>
-            <Typography 
-              variant="subtitle2" 
-              fontWeight={600} 
-              sx={{ mb: 1.5, color: '#d97706', fontSize: '0.875rem' }}
-            >
-              Buổi chiều
-            </Typography>
-            
-            {afternoonSessions.map((session) => {
-              const schedules = calendars.filter((cal: Calendar) => {
-                const calDate = formatDate(cal.date);
-                const calSessionId = extractId(cal.sessionId);
-                return calDate === dateStr && calSessionId === session._id;
-              });
-
-              return schedules.length > 0 ? (
-                <Box key={session._id}>
-                  {schedules.map((schedule: Calendar) => renderScheduleCard(schedule))}
-                </Box>
-              ) : null;
-            })}
-            
-            {afternoonSessions.every((session) => {
-              const schedules = calendars.filter((cal: Calendar) => {
-                const calDate = formatDate(cal.date);
-                const calSessionId = extractId(cal.sessionId);
-                return calDate === dateStr && calSessionId === session._id;
-              });
-              return schedules.length === 0;
-            }) && (
-              <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ py: 2 }}>
-                -
-              </Typography>
-            )}
-          </Box>
-        </Paper>
-      );
-    }
-
-    // Desktop day view
-    const allSessions = [...new Set(calendars.map((c: Calendar) => extractId(c.sessionId)))];
-    const sessionMap = new Map<string, PopulatedSession>();
-    
-    calendars.forEach((cal: Calendar) => {
-      const sessionId = extractId(cal.sessionId);
-      if (!sessionMap.has(sessionId) && typeof cal.sessionId === 'object') {
-        sessionMap.set(sessionId, cal.sessionId);
-      }
-    });
-
-    const sortedSessionIds = allSessions.sort((idA, idB) => {
-      const sessionA = sessionMap.get(idA);
-      const sessionB = sessionMap.get(idB);
-      return (sessionA?.startTime || "").localeCompare(sessionB?.startTime || "");
-    });
-
-    return (
-      <Box sx={{ overflowX: 'auto' }}>
-        <Box sx={{ display: 'grid', gridTemplateColumns: `${isTablet ? '100px' : '120px'} 1fr`, minWidth: 'fit-content', width: '100%' }}>
-          <Box sx={{ p: 2, borderBottom: 1, borderRight: 1, borderColor: 'divider', bgcolor: 'grey.50', fontWeight: 600 }}>
-            Thời gian
-          </Box>
-          <Box sx={{ p: 2, borderBottom: 1, borderRight: 1, borderColor: 'divider', bgcolor: isToday ? 'primary.50' : 'grey.50', textAlign: 'center', minWidth: 300 }}>
-            <Typography sx={{ fontWeight: 600, color: isToday ? 'primary.main' : 'text.primary' }}>
-              {date.toLocaleDateString('vi-VN', { weekday: 'long' })}
-            </Typography>
-            <Typography variant="body2" sx={{ color: isToday ? 'primary.main' : 'text.secondary' }}>
-              {formatDateDisplay(date)}
-            </Typography>
-          </Box>
-
-          {sortedSessionIds.map((sessionId: string) => {
-            const session = sessionMap.get(sessionId);
-            
-            return (
-              <React.Fragment key={sessionId}>
-                <Box sx={{ p: 2, borderBottom: 1, borderRight: 1, borderColor: 'divider', bgcolor: 'grey.50' }}>
-                  <Typography variant="body2" fontWeight={600}>
-                    {session?.sessionName || 'Ca học'}
-                  </Typography>
-                  {session?.startTime && (
-                    <Typography variant="caption" color="text.secondary">
-                      {session.startTime} - {session.endTime}
-                    </Typography>
-                  )}
-                </Box>
-                <Box sx={{ p: 1.5, borderBottom: 1, borderRight: 1, borderColor: 'divider', minHeight: 120, bgcolor: 'background.paper', minWidth: 300 }}>
-                  {calendars
-                    .filter((cal: Calendar) => {
-                      const calDate = formatDate(cal.date);
-                      const calSessionId = extractId(cal.sessionId);
-                      return calDate === dateStr && calSessionId === sessionId;
-                    })
-                    .map((schedule: Calendar) => renderScheduleCard(schedule))}
-                </Box>
-              </React.Fragment>
-            );
-          })}
-        </Box>
-      </Box>
+        <div style={{ marginTop: 6 }}>
+          <span style={{
+            fontSize: 10.5,
+            fontWeight: 600,
+            padding: "2px 7px",
+            borderRadius: 4,
+            background: status.bg,
+            color: status.color,
+            letterSpacing: 0.2,
+          }}>
+            {status.label}
+          </span>
+        </div>
+      </div>
     );
   };
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-        <CircularProgress />
-      </Box>
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: 80 }}>
+        <Spin size="large" />
+      </div>
     );
   }
 
   return (
-    <Box>
+    <div>
+      <PageHeader
+        icon={ClipboardCheck}
+        title="Quản lý điểm danh"
+        subtitle="Theo dõi buổi học và điểm danh học viên theo lịch"
+        extra={
+          <Space wrap>
+            <Button
+              icon={<RotateCcw size={16} />}
+              onClick={() => {
+                setCurrentDate(dayjs());
+              }}
+            >
+              Hôm nay
+            </Button>
+            <Segmented
+              value={viewMode}
+              onChange={(v) => setViewMode(v as ViewMode)}
+              options={[
+                { label: "Ngày", value: "day" },
+                { label: "Tuần", value: "week" },
+                { label: "Tháng", value: "month" },
+              ]}
+            />
+          </Space>
+        }
+      />
+
       {fetchError && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {fetchError}
-        </Alert>
+        <Alert
+          type="error"
+          message={fetchError}
+          showIcon
+          style={{ marginBottom: 16, borderRadius: 10 }}
+        />
       )}
 
-      {/* Header Controls */}
-      <Paper sx={{ p: isMobile ? 1.5 : 2, mb: 2 }}>
-        <Stack direction={isMobile ? 'column' : 'row'} spacing={2} justifyContent="space-between" alignItems="center">
-          <Button 
-            variant="outlined" 
-            onClick={() => setCurrentDate(new Date())}
-            size={isMobile ? 'small' : 'medium'}
-            startIcon={<RotateCcw size={16} />}
-            fullWidth={isMobile}
+      <Row gutter={[12, 12]} style={{ marginBottom: 16 }} className="mira-stagger">
+        <Col xs={12} sm={12} md={6}>
+          <StatCard
+            label="Buổi học hôm nay"
+            value={stats.total}
+            icon={CalendarDays}
+            accent="primary"
+            hint="Tổng số ca hôm nay"
+          />
+        </Col>
+        <Col xs={12} sm={12} md={6}>
+          <StatCard
+            label="Đã hoàn thành"
+            value={stats.completed}
+            icon={CheckCircle2}
+            accent="success"
+            hint={`${stats.completed}/${stats.total} buổi`}
+          />
+        </Col>
+        <Col xs={12} sm={12} md={6}>
+          <StatCard
+            label="Đang diễn ra"
+            value={stats.inProgress}
+            icon={Hourglass}
+            accent="warning"
+            hint="Đang trong giờ học"
+          />
+        </Col>
+        <Col xs={12} sm={12} md={6}>
+          <StatCard
+            label="Tỷ lệ hoàn thành"
+            value={`${stats.completionRate}%`}
+            icon={TrendingUp}
+            accent="info"
+            hint="Trong ngày hôm nay"
+          />
+        </Col>
+      </Row>
+
+      <Row gutter={[12, 12]}>
+        <Col xs={24}>
+          <Card
+            style={{
+              borderRadius: 12,
+              border: `1px solid ${brandColors.border}`,
+              marginBottom: 12,
+            }}
+            styles={{ body: { padding: 12 } }}
           >
-            {isMobile ? 'Hôm nay' : 'Quay lại hôm nay'}
-          </Button>
+            <Row gutter={[8, 8]} align="middle">
+              <Col xs={24} md={14}>
+                <Space size={6} wrap>
+                  <Tooltip title="Trước">
+                    <Button shape="circle" type="text" icon={<ChevronLeft size={18} />} onClick={handlePrev} />
+                  </Tooltip>
+                  <div style={{
+                    padding: "6px 14px",
+                    borderRadius: 8,
+                    background: brandColors.bg,
+                    border: `1px solid ${brandColors.borderLight}`,
+                    textAlign: "center",
+                    minWidth: 180,
+                    textTransform: "capitalize",
+                  }}>
+                    <Text strong style={{ fontSize: 14, color: brandColors.textPrimary }}>
+                      {getHeaderTitle()}
+                    </Text>
+                  </div>
+                  <Tooltip title="Sau">
+                    <Button shape="circle" type="text" icon={<ChevronRight size={18} />} onClick={handleNext} />
+                  </Tooltip>
+                  <DatePicker
+                    value={currentDate}
+                    onChange={(d) => d && handleDateSelect(d)}
+                    allowClear={false}
+                    format="DD/MM/YYYY"
+                    size="middle"
+                    style={{ minWidth: 130 }}
+                    suffixIcon={<CalendarIcon size={14} />}
+                  />
+                </Space>
+              </Col>
+              <Col xs={24} md={10} style={{ textAlign: isMobile ? "left" : "right" }}>
+                <Space size={6} wrap>
+                  {uniqueCourses.length > 0 && (
+                    <Segmented
+                      value={courseFilter}
+                      onChange={(v) => setCourseFilter(v as string)}
+                      options={[
+                        { label: `Tất cả (${calendars.length})`, value: "all" },
+                        ...uniqueCourses.slice(0, 4).map((c) => ({
+                          label: c.name,
+                          value: c._id,
+                        })),
+                      ]}
+                    />
+                  )}
+                  {isMobile && (
+                    <Button icon={<MenuIcon size={16} />} onClick={() => setMobileMenuOpen(true)}>
+                      Lọc
+                    </Button>
+                  )}
+                </Space>
+              </Col>
+            </Row>
+          </Card>
 
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ width: isMobile ? '100%' : 'auto' }}>
-            <IconButton onClick={handlePrev} size="small">
-              <ChevronLeft />
-            </IconButton>
-            <Typography sx={{ flex: 1, textAlign: 'center', fontWeight: 600, fontSize: isMobile ? '0.875rem' : '1rem' }}>
-              {getViewTitle()}
-            </Typography>
-            <IconButton onClick={handleNext} size="small">
-              <ChevronRight />
-            </IconButton>
-          </Stack>
+          <Card
+            style={{
+              borderRadius: 12,
+              border: `1px solid ${brandColors.border}`,
+              overflow: "hidden",
+            }}
+            styles={{ body: { padding: 0 } }}
+          >
+            {filteredCalendars.length === 0 ? (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={
+                  <Text type="secondary">
+                    {courseFilter !== "all"
+                      ? "Không có buổi học nào cho khóa học này"
+                      : "Chưa có buổi học nào được lên lịch"}
+                  </Text>
+                }
+                style={{ padding: "60px 20px" }}
+              />
+            ) : viewMode === "day" ? (
+              <DayTimeline
+                currentDate={currentDate}
+                calendars={filteredCalendars}
+                isMobile={isMobile}
+                renderScheduleCard={renderScheduleCard}
+              />
+            ) : viewMode === "week" ? (
+              <WeekBoard
+                currentDate={currentDate}
+                calendars={filteredCalendars}
+                isMobile={isMobile}
+                isTablet={isTablet}
+                renderScheduleCard={renderScheduleCard}
+                onSelectDate={(d) => {
+                  handleDateSelect(d);
+                  setViewMode("day");
+                }}
+              />
+            ) : (
+              <MonthGrid
+                currentDate={currentDate}
+                calendars={filteredCalendars}
+                onSelectDate={(d) => {
+                  handleDateSelect(d);
+                  setViewMode("day");
+                }}
+                getScheduleColor={getScheduleColor}
+                extractId={extractId}
+              />
+            )}
+          </Card>
+        </Col>
+      </Row>
 
-          {isMobile ? (
-            <IconButton onClick={() => setMobileMenuOpen(true)}>
-              <MenuIcon />
-            </IconButton>
-          ) : (
-            <Stack direction="row" spacing={1}>
-              <Button variant={viewMode === 'day' ? 'contained' : 'outlined'} onClick={() => setViewMode('day')} size="small" startIcon={<Clock size={16} />}>
-                Ngày
-              </Button>
-              <Button variant={viewMode === 'week' ? 'contained' : 'outlined'} onClick={() => setViewMode('week')} size="small" startIcon={<CalendarDays size={16} />}>
-                Tuần
-              </Button>
-            </Stack>
+      <Drawer
+        title="Chọn chế độ xem"
+        placement="bottom"
+        open={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+      >
+        <List
+          dataSource={[
+            { key: "day", label: "Xem theo ngày", icon: <Clock size={18} /> },
+            { key: "week", label: "Xem theo tuần", icon: <Columns size={18} /> },
+            { key: "month", label: "Xem theo tháng", icon: <LayoutGrid size={18} /> },
+          ]}
+          renderItem={(item) => (
+            <List.Item
+              onClick={() => {
+                setViewMode(item.key as ViewMode);
+                setMobileMenuOpen(false);
+              }}
+              style={{ cursor: "pointer" }}
+            >
+              <Space>
+                {item.icon}
+                <Text>{item.label}</Text>
+              </Space>
+            </List.Item>
           )}
-        </Stack>
-      </Paper>
-
-      {/* Mobile View Selector Drawer */}
-      <Drawer anchor="bottom" open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)}>
-        <Box sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>Chọn chế độ xem</Typography>
-          <List>
-            <ListItemButton onClick={() => { setViewMode('day'); setMobileMenuOpen(false); }}>
-              <Clock size={20} style={{ marginRight: 12 }} />
-              <ListItemText primary="Xem theo ngày" />
-            </ListItemButton>
-            <Divider />
-            <ListItemButton onClick={() => { setViewMode('week'); setMobileMenuOpen(false); }}>
-              <CalendarDays size={20} style={{ marginRight: 12 }} />
-              <ListItemText primary="Xem theo tuần" />
-            </ListItemButton>
-          </List>
-        </Box>
+        />
       </Drawer>
 
-      {/* Calendar View */}
-      <Paper sx={{ overflow: 'hidden', p: isMobile ? 2 : 0 }}>
-        {viewMode === 'day' && renderDayView()}
-        {viewMode === 'week' && renderWeekView()}
-      </Paper>
-
-      {/* Attendance Dialog */}
       <AttendanceDialog
         open={attendanceDialogOpen}
         onClose={() => {
@@ -742,6 +579,482 @@ export default function ManageScheduleWithAttendance() {
         }}
         calendar={selectedCalendarForAttendance}
       />
-    </Box>
+    </div>
+  );
+}
+
+interface DayTimelineProps {
+  currentDate: Dayjs;
+  calendars: Calendar[];
+  isMobile: boolean;
+  renderScheduleCard: (s: Calendar, compact?: boolean) => React.ReactNode;
+}
+
+function DayTimeline({ currentDate, calendars, isMobile, renderScheduleCard }: DayTimelineProps) {
+  const dateKey = currentDate.format("YYYY-MM-DD");
+  const isToday = currentDate.isSame(dayjs(), "day");
+
+  const daySchedules = calendars
+    .filter((c) => dayjs(c.date as any).format("YYYY-MM-DD") === dateKey)
+    .sort((a, b) => {
+      const sa = typeof a.sessionId === "object" ? a.sessionId.startTime || "" : "";
+      const sb = typeof b.sessionId === "object" ? b.sessionId.startTime || "" : "";
+      return sa.localeCompare(sb);
+    });
+
+  const hours = Array.from({ length: 14 }, (_, i) => i + 7);
+
+  const getSessionForHour = (hour: number) => {
+    return daySchedules.filter((s) => {
+      if (typeof s.sessionId !== "object") return false;
+      const start = parseInt(s.sessionId.startTime?.split(":")[0] || "0");
+      const end = parseInt(s.sessionId.endTime?.split(":")[0] || "0");
+      return start <= hour && hour < end;
+    });
+  };
+
+  return (
+    <div className="mira-fade-in">
+      <div
+        style={{
+          padding: "16px 20px",
+          background: isToday
+            ? `linear-gradient(135deg, ${brandColors.red}, ${brandColors.redDark})`
+            : brandColors.bg,
+          color: isToday ? "#fff" : brandColors.textPrimary,
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "radial-gradient(circle at 90% 20%, rgba(255,255,255,0.18), transparent 50%)",
+            pointerEvents: "none",
+          }}
+        />
+        <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 12 }}>
+          {isToday && (
+            <Tag color="white" style={{ color: brandColors.red, border: "none", fontWeight: 700, fontSize: 10, margin: 0 }}>
+              HÔM NAY
+            </Tag>
+          )}
+          <div>
+            <Text strong style={{ color: "inherit", display: "block", fontSize: 16, textTransform: "capitalize" }}>
+              {currentDate.format("dddd")}
+            </Text>
+            <Text style={{ color: "inherit", fontSize: 13, opacity: 0.9 }}>
+              {daySchedules.length} buổi học
+            </Text>
+          </div>
+        </div>
+      </div>
+
+      {daySchedules.length === 0 ? (
+        <div style={{ padding: "60px 20px", textAlign: "center" }}>
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={<Text type="secondary">Chưa có buổi học nào trong ngày này</Text>}
+          />
+        </div>
+      ) : isMobile ? (
+        <div style={{ padding: 12 }} className="mira-stagger">
+          {daySchedules.map((s) => renderScheduleCard(s, false))}
+        </div>
+      ) : (
+        <div style={{ padding: 20, position: "relative" }}>
+          <div style={{ position: "absolute", left: 76, top: 20, bottom: 20, width: 1, background: brandColors.borderLight }} />
+          <div className="mira-stagger">
+            {hours.map((hour) => {
+              const sessions = getSessionForHour(hour);
+              return (
+                <div
+                  key={hour}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "56px 1fr",
+                    gap: 16,
+                    minHeight: sessions.length > 0 ? 60 : 36,
+                    alignItems: "flex-start",
+                    padding: "4px 0",
+                  }}
+                >
+                  <div style={{
+                    textAlign: "right",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: brandColors.textTertiary,
+                    paddingTop: sessions.length > 0 ? 8 : 0,
+                  }}>
+                    {String(hour).padStart(2, "0")}:00
+                  </div>
+                  <div style={{ position: "relative", paddingLeft: 12 }}>
+                    {sessions.length > 0 && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          left: -4,
+                          top: 14,
+                          width: 9,
+                          height: 9,
+                          borderRadius: "50%",
+                          background: brandColors.red,
+                          border: `2px solid ${brandColors.paper}`,
+                          boxShadow: `0 0 0 2px ${brandColors.redSoft}`,
+                        }}
+                      />
+                    )}
+                    {sessions.map((s) => renderScheduleCard(s, false))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface WeekBoardProps {
+  currentDate: Dayjs;
+  calendars: Calendar[];
+  isMobile: boolean;
+  isTablet: boolean;
+  renderScheduleCard: (s: Calendar, compact?: boolean) => React.ReactNode;
+  onSelectDate: (d: Dayjs) => void;
+}
+
+function WeekBoard({ currentDate, calendars, isMobile, isTablet, renderScheduleCard, onSelectDate }: WeekBoardProps) {
+  const start = currentDate.startOf("week");
+  const days = Array.from({ length: 7 }, (_, i) => start.add(i, "day"));
+
+  if (isMobile) {
+    return (
+      <div style={{ padding: 12 }} className="mira-stagger">
+        {days.map((d) => {
+          const isToday = d.isSame(dayjs(), "day");
+          const daySchedules = calendars.filter((c) => dayjs(c.date as any).format("YYYY-MM-DD") === d.format("YYYY-MM-DD"));
+          return (
+            <div
+              key={d.format("YYYY-MM-DD")}
+              onClick={() => onSelectDate(d)}
+              style={{
+                marginBottom: 12,
+                borderRadius: 10,
+                overflow: "hidden",
+                border: `1px solid ${isToday ? brandColors.red : brandColors.border}`,
+                background: brandColors.paper,
+                cursor: "pointer",
+                transition: "all 200ms ease",
+              }}
+              className="mira-card-hover"
+            >
+              <div
+                style={{
+                  padding: "12px 16px",
+                  background: isToday
+                    ? `linear-gradient(135deg, ${brandColors.red}, ${brandColors.redDark})`
+                    : brandColors.bg,
+                  color: isToday ? "white" : brandColors.textPrimary,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  position: "relative",
+                }}
+              >
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    background: "radial-gradient(circle at 90% 50%, rgba(255,255,255,0.15), transparent 50%)",
+                    pointerEvents: "none",
+                  }}
+                />
+                <div style={{ position: "relative" }}>
+                  <Text strong style={{ color: "inherit", display: "block", fontSize: 14, textTransform: "capitalize" }}>
+                    {d.format("dddd")}
+                  </Text>
+                  <Text style={{ color: "inherit", fontSize: 12, opacity: 0.9 }}>
+                    {d.format("DD/MM")}
+                  </Text>
+                </div>
+                <Tag
+                  style={{
+                    position: "relative",
+                    background: isToday ? "rgba(255,255,255,0.25)" : brandColors.paper,
+                    color: isToday ? "#fff" : brandColors.textSecondary,
+                    border: isToday ? "none" : `1px solid ${brandColors.border}`,
+                    fontWeight: 600,
+                  }}
+                >
+                  {daySchedules.length} buổi
+                </Tag>
+              </div>
+              <div style={{ padding: 10 }}>
+                {daySchedules.length > 0 ? (
+                  <div className="mira-stagger">
+                    {daySchedules.map((s) => renderScheduleCard(s, false))}
+                  </div>
+                ) : (
+                  <div style={{ padding: 8, textAlign: "center" }}>
+                    <Text type="secondary" style={{ fontSize: 12 }}>Chưa có buổi học</Text>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mira-fade-in">
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: `repeat(7, 1fr)`,
+          minWidth: "fit-content",
+          width: "100%",
+          borderBottom: `1px solid ${brandColors.borderLight}`,
+        }}
+      >
+        {days.map((d) => {
+          const isToday = d.isSame(dayjs(), "day");
+          return (
+            <div
+              key={d.format("YYYY-MM-DD")}
+              style={{
+                padding: isTablet ? 10 : 12,
+                background: isToday ? brandColors.redSoft : brandColors.bg,
+                textAlign: "center",
+                borderRight: `1px solid ${brandColors.borderLight}`,
+                position: "relative",
+                minWidth: 130,
+                textTransform: "capitalize",
+              }}
+            >
+              {isToday && (
+                <div style={{
+                  position: "absolute",
+                  top: 6,
+                  right: 6,
+                  width: 6,
+                  height: 6,
+                  borderRadius: "50%",
+                  background: brandColors.red,
+                }} />
+              )}
+              <Text strong style={{ display: "block", color: isToday ? brandColors.red : brandColors.textPrimary, fontSize: 12, textTransform: "uppercase", letterSpacing: 0.4 }}>
+                {d.format("ddd")}
+              </Text>
+              <Text type="secondary" style={{ color: isToday ? brandColors.red : undefined, fontSize: 11, fontWeight: isToday ? 600 : undefined }}>
+                {d.format("DD/MM")}
+              </Text>
+            </div>
+          );
+        })}
+      </div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: `repeat(7, 1fr)`,
+          minWidth: "fit-content",
+          width: "100%",
+        }}
+      >
+        {days.map((d) => {
+          const isToday = d.isSame(dayjs(), "day");
+          const daySchedules = calendars
+            .filter((c) => dayjs(c.date as any).format("YYYY-MM-DD") === d.format("YYYY-MM-DD"))
+            .sort((a, b) => {
+              const sa = typeof a.sessionId === "object" ? a.sessionId.startTime || "" : "";
+              const sb = typeof b.sessionId === "object" ? b.sessionId.startTime || "" : "";
+              return sa.localeCompare(sb);
+            });
+          return (
+            <div
+              key={d.format("YYYY-MM-DD")}
+              onClick={() => onSelectDate(d)}
+              style={{
+                padding: 6,
+                borderRight: `1px solid ${brandColors.borderLight}`,
+                minHeight: 380,
+                background: isToday ? "#FFF8F8" : brandColors.paper,
+                minWidth: 130,
+                cursor: "pointer",
+                transition: "background 200ms ease",
+              }}
+            >
+              {daySchedules.length > 0 ? (
+                <div className="mira-stagger">
+                  {daySchedules.map((s) => renderScheduleCard(s, true))}
+                </div>
+              ) : (
+                <div style={{ padding: "40px 0", textAlign: "center", color: brandColors.textTertiary, fontSize: 11 }}>
+                  —
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+interface MonthGridProps {
+  currentDate: Dayjs;
+  calendars: Calendar[];
+  onSelectDate: (d: Dayjs) => void;
+  getScheduleColor: (id: string) => { accent: string; soft: string };
+  extractId: (v: any) => string;
+}
+
+function MonthGrid({ currentDate, calendars, onSelectDate, getScheduleColor, extractId }: MonthGridProps) {
+  const start = currentDate.startOf("month").startOf("week");
+  const end = currentDate.endOf("month").endOf("week");
+  const days: Dayjs[] = [];
+  let cur = start;
+  while (cur.isBefore(end) || cur.isSame(end, "day")) {
+    days.push(cur);
+    cur = cur.add(1, "day");
+  }
+
+  const getSessions = (d: Dayjs) => calendars.filter((c) => dayjs(c.date as any).format("YYYY-MM-DD") === d.format("YYYY-MM-DD"));
+
+  const weekdayLabels = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+
+  return (
+    <div className="mira-fade-in">
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(7, 1fr)",
+          background: brandColors.bg,
+          borderBottom: `1px solid ${brandColors.borderLight}`,
+        }}
+      >
+        {weekdayLabels.map((label, i) => (
+          <div
+            key={label}
+            style={{
+              padding: "10px 8px",
+              textAlign: "center",
+              fontSize: 11,
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: 0.4,
+              color: i === 6 ? brandColors.error : brandColors.textSecondary,
+              borderRight: i < 6 ? `1px solid ${brandColors.borderLight}` : "none",
+            }}
+          >
+            {label}
+          </div>
+        ))}
+      </div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(7, 1fr)",
+          gridAutoRows: "minmax(96px, auto)",
+        }}
+      >
+        {days.map((d) => {
+          const isToday = d.isSame(dayjs(), "day");
+          const isCurrentMonth = d.month() === currentDate.month();
+          const isWeekend = d.day() === 0 || d.day() === 6;
+          const sessions = getSessions(d);
+          return (
+            <div
+              key={d.format("YYYY-MM-DD")}
+              onClick={() => onSelectDate(d)}
+              className="mira-row-hover"
+              style={{
+                padding: 6,
+                borderRight: `1px solid ${brandColors.borderLight}`,
+                borderBottom: `1px solid ${brandColors.borderLight}`,
+                background: isToday ? brandColors.redSoft : isCurrentMonth ? brandColors.paper : brandColors.bg,
+                cursor: "pointer",
+                position: "relative",
+                minHeight: 96,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                <span style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 24,
+                  height: 24,
+                  borderRadius: "50%",
+                  background: isToday ? brandColors.red : "transparent",
+                  color: isToday ? "#fff" : isCurrentMonth ? (isWeekend ? brandColors.error : brandColors.textPrimary) : brandColors.textTertiary,
+                  fontSize: 12,
+                  fontWeight: isToday ? 700 : 500,
+                  fontVariantNumeric: "tabular-nums",
+                }}>
+                  {d.format("D")}
+                </span>
+                {sessions.length > 0 && (
+                  <span style={{
+                    fontSize: 9,
+                    fontWeight: 600,
+                    color: brandColors.textSecondary,
+                    background: isToday ? "rgba(255,255,255,0.6)" : brandColors.bg,
+                    padding: "0 5px",
+                    borderRadius: 8,
+                    border: `1px solid ${brandColors.borderLight}`,
+                  }}>
+                    {sessions.length}
+                  </span>
+                )}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                {sessions.slice(0, 3).map((s) => {
+                  const palette = getScheduleColor(extractId(s.courseId));
+                  const time = typeof s.sessionId === "object" ? s.sessionId.startTime : "";
+                  const status = getStatusMeta(s.status);
+                  return (
+                    <div
+                      key={s._id}
+                      style={{
+                        fontSize: 10,
+                        lineHeight: 1.3,
+                        padding: "2px 5px",
+                        borderRadius: 3,
+                        background: palette.soft,
+                        borderLeft: `2px solid ${palette.accent}`,
+                        color: brandColors.textPrimary,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                      title={`${time} · ${typeof s.courseId === "object" ? s.courseId.name : "Khóa học"} · ${status.label}`}
+                    >
+                      <span style={{ width: 4, height: 4, borderRadius: "50%", background: status.dot, flexShrink: 0 }} />
+                      {time && <span style={{ fontWeight: 600, color: palette.accent }}>{time}</span>}
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {typeof s.courseId === "object" ? s.courseId.name : "Khóa học"}
+                      </span>
+                    </div>
+                  );
+                })}
+                {sessions.length > 3 && (
+                  <div style={{ fontSize: 10, color: brandColors.textTertiary, fontWeight: 600, padding: "1px 5px" }}>
+                    +{sessions.length - 3} khác
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }

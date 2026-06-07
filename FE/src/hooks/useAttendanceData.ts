@@ -27,28 +27,19 @@ export function useAttendanceData(): UseAttendanceDataReturn {
       setLoading(true);
       setError(null);
 
-      console.log('🔄 Fetching attendance data for calendar:', calendarId);
-
       const response = await attendanceService.getStudentsForCalendar(calendarId);
 
       const studentsData = response.data?.students || [];
 
-      console.log('✅ Extracted students:', studentsData);
-
       setStudents(studentsData);
     } catch (err) {
       const axiosError = err as AxiosError<ErrorResponse>;
-      const errorMessage = 
-        axiosError.response?.data?.message || 
-        axiosError.message || 
+      const errorMessage =
+        axiosError.response?.data?.message ||
+        axiosError.message ||
         'Failed to fetch attendance data';
-      
+
       setError(errorMessage);
-      console.error('❌ Error fetching attendance:', {
-        message: axiosError.message,
-        status: axiosError.response?.status,
-        data: axiosError.response?.data,
-      });
     } finally {
       setLoading(false);
     }
@@ -59,33 +50,25 @@ export function useAttendanceData(): UseAttendanceDataReturn {
       setUpdating(true);
       setError(null);
 
-      console.log('🔄 Updating attendance:', { calendarId, userId, status });
-
       await attendanceService.updateAttendanceStatus(calendarId, userId, { status });
 
-      setStudents(prev => 
+      setStudents(prev =>
         prev.map((student: AttendanceRecord) => {
-          // Check if userId is just string or an object with _id
           const currentUserId = typeof student.userId === 'string' ? student.userId : student.userId?._id;
-          return currentUserId === userId 
-            ? { ...student, status } 
+          return currentUserId === userId
+            ? { ...student, status }
             : student;
         })
       );
     } catch (err) {
       const axiosError = err as AxiosError<ErrorResponse>;
-      const errorMessage = 
-        axiosError.response?.data?.message || 
-        axiosError.message || 
+      const errorMessage =
+        axiosError.response?.data?.message ||
+        axiosError.message ||
         'Failed to update attendance';
-      
+
       setError(errorMessage);
-      console.error('❌ Error updating attendance:', {
-        message: axiosError.message,
-        status: axiosError.response?.status,
-        data: axiosError.response?.data,
-      });
-      throw err; 
+      throw err;
     } finally {
       setUpdating(false);
     }

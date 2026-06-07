@@ -50,8 +50,8 @@ export function CoachReviewPanel({
     <Drawer anchor="bottom" open={open} onClose={onClose} PaperProps={{ sx: { borderRadius: "16px 16px 0 0" } }}>
       <Box sx={{ p: 2, pb: 3, maxWidth: 720, mx: "auto", width: "100%" }}>
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1.5 }}>
-          <Typography variant="subtitle1" fontWeight={700} color={BRAND}>
-            Coach — Chỉnh sửa ngữ pháp
+            <Typography variant="subtitle1" fontWeight={700} color={BRAND}>
+            Coach · Chỉnh sửa ngữ pháp
           </Typography>
           <IconButton size="small" onClick={onClose} aria-label="Đóng">
             <X size={18} />

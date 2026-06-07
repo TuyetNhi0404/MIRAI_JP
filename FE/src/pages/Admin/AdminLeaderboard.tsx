@@ -1,102 +1,60 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Card,
-  Container,
-  Tabs,
-  Tab,
-  Typography,
-  useTheme,
-  useMediaQuery,
-} from '@mui/material';
-import { Trophy, School, Globe } from 'lucide-react';
-import CourseLeaderboardTab from '../../components/admin-leaderboard/CourseLeaderboardTab';
-import GlobalLeaderboardTab from '../../components/admin-leaderboard/GlobalLeaderboardTab';
-import CourseComparisonTab from '../../components/admin-leaderboard/CourseComparisonTab';
+import React, { useState } from "react";
+import { Trophy, School, Globe, Crown, Medal } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../components/ui/shadcn";
+import CourseLeaderboardTab from "../../components/admin-leaderboard/CourseLeaderboardTab";
+import GlobalLeaderboardTab from "../../components/admin-leaderboard/GlobalLeaderboardTab";
+import CourseComparisonTab from "../../components/admin-leaderboard/CourseComparisonTab";
+import { PageHeader } from "../../components/ui";
 
 const AdminLeaderboard: React.FC = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeTab, setActiveTab] = useState("course");
 
   return (
-    <Box sx={{ 
-      minHeight: '100vh', 
-      background: 'linear-gradient(135deg, #fff5f0 0%, #ffffff 50%, #fff8f3 100%)', 
-      py: isMobile ? 2 : 4,
-      px: isMobile ? 2 : 0,
-    }}>
-      <Container maxWidth="xl">
-        {/* Header */}
-        <Box sx={{ 
-          background: 'linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%)', 
-          borderRadius: isMobile ? 2 : 3, 
-          p: isMobile ? 2 : 3, 
-          mb: 3, 
-          boxShadow: '0 8px 32px rgba(255,107,53,0.2)' 
-        }}>
-            <Box display="flex" alignItems="center" gap={isMobile ? 1.5 : 2}>
-            <Trophy size={isMobile ? 28 : 36} color="#fff" />
-            <Box>
-              <Typography variant={isMobile ? 'h5' : 'h4'} fontWeight="bold" color="#fff">
-                {isMobile ? 'Bảng xếp hạng Admin' : 'Bảng xếp hạng học tập'}
-              </Typography>
-              <Typography variant={isMobile ? 'body2' : 'body1'} sx={{ color: 'rgba(255,255,255,0.9)' }}>
-                {isMobile ? 'Theo dõi kết quả học tập' : 'Quản lý và theo dõi kết quả học tập của học viên'}
-              </Typography>
-            </Box>
-          </Box>
-        </Box>
+    <div>
+      <PageHeader
+        icon={Crown}
+        title="Bảng xếp hạng học tập"
+        subtitle="Theo dõi kết quả, xếp hạng và sự tiến bộ của học viên trong từng khóa học và toàn hệ thống"
+      />
 
-        {/* Tabs Navigation */}
-        <Card sx={{ borderRadius: isMobile ? 2 : 3, mb: 3, boxShadow: '0 4px 20px rgba(255,107,53,0.08)' }}>
-          <Tabs 
-            value={activeTab} 
-            onChange={(_, newValue) => setActiveTab(newValue)}
-            variant={isMobile ? 'scrollable' : 'fullWidth'}
-            scrollButtons={isMobile ? 'auto' : false}
-            sx={{
-              '& .MuiTab-root': { 
-                fontWeight: 600, 
-                fontSize: isMobile ? '0.875rem' : '1rem',
-                textTransform: 'none',
-                minHeight: isMobile ? 48 : 64,
-              },
-              '& .Mui-selected': { 
-                color: '#ff6b35',
-              },
-              '& .MuiTabs-indicator': {
-                backgroundColor: '#ff6b35',
-                height: 3,
-              },
-            }}
-          >
-            <Tab 
-              label={isMobile ? 'Lớp học' : 'Bảng xếp hạng lớp học'} 
-              icon={<School size={isMobile ? 18 : 20} />} 
-              iconPosition="start" 
-            />
-            <Tab 
-              label={isMobile ? 'Hệ thống' : 'Bảng xếp hạng hệ thống'} 
-              icon={<Globe size={isMobile ? 18 : 20} />} 
-              iconPosition="start" 
-            />
-            <Tab 
-              label={isMobile ? 'So sánh' : 'So sánh thủ khoa'} 
-              icon={<Trophy size={isMobile ? 18 : 20} />} 
-              iconPosition="start" 
-            />
-          </Tabs>
-        </Card>
+      <div className="mira-fade-in">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="bg-[#F5F5F5] p-1 rounded-lg mb-6 inline-flex h-auto">
+            <TabsTrigger
+              value="course"
+              className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md py-2 px-4 text-sm font-medium flex items-center gap-2"
+            >
+              <School size={16} strokeWidth={2} />
+              Theo lớp học
+            </TabsTrigger>
+            <TabsTrigger
+              value="global"
+              className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md py-2 px-4 text-sm font-medium flex items-center gap-2"
+            >
+              <Globe size={16} strokeWidth={2} />
+              Toàn hệ thống
+            </TabsTrigger>
+            <TabsTrigger
+              value="compare"
+              className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md py-2 px-4 text-sm font-medium flex items-center gap-2"
+            >
+              <Trophy size={16} strokeWidth={2} />
+              So sánh thủ khoa
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Tab Content */}
-        <Box>
-          {activeTab === 0 && <CourseLeaderboardTab />}
-          {activeTab === 1 && <GlobalLeaderboardTab />}
-          {activeTab === 2 && <CourseComparisonTab />}
-        </Box>
-      </Container>
-    </Box>
+          <TabsContent value="course" className="mt-0 focus-visible:outline-none">
+            <CourseLeaderboardTab />
+          </TabsContent>
+          <TabsContent value="global" className="mt-0 focus-visible:outline-none">
+            <GlobalLeaderboardTab />
+          </TabsContent>
+          <TabsContent value="compare" className="mt-0 focus-visible:outline-none">
+            <CourseComparisonTab />
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
   );
 };
 

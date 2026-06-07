@@ -1,225 +1,170 @@
-'use client';
-
-import React, { useState } from 'react';
-import { 
-  Box, 
-  Button, 
-  Typography, 
-  Tabs, 
-  Tab, 
-  Paper, 
-  useTheme, 
-  useMediaQuery,
+import React, { useState } from "react";
+import {
+  Button,
   Drawer,
   List,
-  ListItemButton,
-  ListItemText,
-  IconButton,
-  Divider
-} from '@mui/material';
-import { Plus, CalendarDays, List as ListIcon, Menu as MenuIcon } from 'lucide-react';
-import ScheduleCreatorCalendar from './add-ui-schedule';
-import ManageScheduleCalendar from '../components/index';
+  Space,
+  Typography,
+  Grid,
+} from "antd";
+import { Plus, CalendarDays, List as ListIcon, Menu as MenuIcon } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../../components/ui/shadcn";
+import ScheduleCreatorCalendar from "./add-ui-schedule";
+import ManageScheduleCalendar from "../components/index";
+import { PageHeader } from "../../../components/ui";
+import { brandColors } from "../../../theme/theme";
 
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
-
-function TabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
-
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`schedule-tabpanel-${index}`}
-      aria-labelledby={`schedule-tab-${index}`}
-      {...other}
-    >
-      {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
-    </div>
-  );
-}
+const { useBreakpoint } = Grid;
 
 const tabs = [
-  { label: 'Lịch học', icon: <CalendarDays size={16} /> },
-  { label: 'Xem lịch học', icon: <ListIcon size={16} /> },
+  { label: "Lịch thêm", icon: CalendarDays, key: "add" },
+  { label: "Xem lịch học", icon: ListIcon, key: "view" },
 ];
 
 export default function AddSchedule() {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  
-  const [activeTab, setActiveTab] = useState(0);
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
+  const [activeTab, setActiveTab] = useState("add");
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
-
-
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setActiveTab(newValue);
-    setMobileDrawerOpen(false);
-  };
-
-  const handleMobileTabSelect = (index: number) => {
-    setActiveTab(index);
+  const handleMobileTabSelect = (key: string) => {
+    setActiveTab(key);
     setMobileDrawerOpen(false);
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'grey.50', p: isMobile ? 1.5 : 3 }}>
-      <Paper sx={{ p: isMobile ? 2 : 3 }}>
-        {/* Header */}
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          mb: 3,
-          flexWrap: 'wrap',
-          gap: 2
-        }}>
-          <Typography variant={isMobile ? 'h5' : 'h4'} fontWeight={700}>
-            Quản lý lịch học
-          </Typography>
-          
-          {!isMobile && (
-            <Button 
-              variant="contained" 
-              onClick={() => setActiveTab(0)}
-              startIcon={<Plus size={18} />}
+    <div>
+      <PageHeader
+        icon={CalendarDays}
+        title="Quản lý lịch học"
+        subtitle="Tạo và quản lý lịch học cho các khóa học trong hệ thống"
+        extra={
+          !isMobile && (
+            <Button
+              type="primary"
+              icon={<Plus size={16} />}
+              onClick={() => setActiveTab("add")}
             >
               Thêm lịch học
             </Button>
-          )}
-          
+          )
+        }
+      />
 
-        </Box>
-
-        {/* Desktop Tabs */}
-        {!isMobile ? (
-          <Tabs 
-            value={activeTab} 
-            onChange={handleTabChange} 
-            sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}
-            variant="scrollable"
-            scrollButtons="auto"
-          >
-            {tabs.map((tab, index) => (
-              <Tab 
-                key={index}
-                label={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {tab.icon}
-                    {tab.label}
-                  </Box>
-                }
-              />
-            ))}
-          </Tabs>
-        ) : (
-          // Mobile: Show current tab with menu button
-          <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            mb: 2,
-            p: 2,
-            bgcolor: 'primary.50',
-            borderRadius: 1
-          }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              {tabs[activeTab].icon}
-              <Typography variant="body1" fontWeight={600}>
-                {tabs[activeTab].label}
-              </Typography>
-            </Box>
-            <IconButton onClick={() => setMobileDrawerOpen(true)} size="small">
-              <MenuIcon />
-            </IconButton>
-          </Box>
-        )}
-
-        {/* Mobile Tab Drawer */}
-        <Drawer
-          anchor="bottom"
-          open={mobileDrawerOpen}
-          onClose={() => setMobileDrawerOpen(false)}
-        >
-          <Box sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Chọn phần
-            </Typography>
-            <List>
-              {tabs.map((tab, index) => (
-                <React.Fragment key={index}>
-                  <ListItemButton 
-                    selected={activeTab === index}
-                    onClick={() => handleMobileTabSelect(index)}
+      <div className="mira-fade-in">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          {!isMobile && (
+            <TabsList className="bg-[#F5F5F5] p-1 rounded-lg mb-5 inline-flex h-auto">
+              {tabs.map((t) => {
+                const Icon = t.icon;
+                return (
+                  <TabsTrigger
+                    key={t.key}
+                    value={t.key}
+                    className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md py-2 px-4 text-sm font-medium flex items-center gap-2"
                   >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
-                      {tab.icon}
-                      <ListItemText primary={tab.label} />
-                    </Box>
-                  </ListItemButton>
-                  {index < tabs.length - 1 && <Divider />}
-                </React.Fragment>
-              ))}
-            </List>
-          </Box>
-        </Drawer>
+                    <Icon size={16} strokeWidth={2} />
+                    {t.label}
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
+          )}
 
-        <TabPanel value={activeTab} index={0}>
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Lịch thêm lịch học
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Nhấp vào một ca học trên lịch dưới đây để tạo lịch học
-            </Typography>
-          </Box>
-          <ScheduleCreatorCalendar />
-        </TabPanel>
-
-        <TabPanel value={activeTab} index={1}>
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Lịch xem lịch học
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Xem và quản lý các lịch học hiện tại
-            </Typography>
-          </Box>
-          <ManageScheduleCalendar />
-        </TabPanel>
-
-        {/* Mobile FAB for Add Schedule */}
-        {isMobile && activeTab === 1 && (
-          <Box
-            sx={{
-              position: 'fixed',
-              bottom: 16,
-              right: 16,
-              zIndex: 1000,
-            }}
-          >
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => setActiveTab(0)}
-              sx={{
-                borderRadius: '50%',
-                width: 56,
-                height: 56,
-                minWidth: 56,
-                boxShadow: 3,
+          {isMobile && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "12px 16px",
+                background: brandColors.redSoft,
+                borderRadius: 10,
+                marginBottom: 16,
+                border: `1px solid #FFD6D6`,
               }}
             >
-              <Plus size={24} />
-            </Button>
-          </Box>
-        )}
-      </Paper>
-    </Box>
+              <Space>
+                {(() => {
+                  const Icon = tabs.find((t) => t.key === activeTab)?.icon;
+                  return Icon ? <Icon size={16} /> : null;
+                })()}
+                <Typography.Text strong style={{ fontSize: 14 }}>
+                  {tabs.find((t) => t.key === activeTab)?.label}
+                </Typography.Text>
+              </Space>
+              <Button
+                type="text"
+                icon={<MenuIcon size={18} />}
+                onClick={() => setMobileDrawerOpen(true)}
+              />
+            </div>
+          )}
+
+          <Drawer
+            title="Chọn phần"
+            placement="bottom"
+            open={mobileDrawerOpen}
+            onClose={() => setMobileDrawerOpen(false)}
+          >
+            <List
+              dataSource={tabs}
+              renderItem={(item) => {
+                const Icon = item.icon;
+                return (
+                  <List.Item
+                    onClick={() => handleMobileTabSelect(item.key)}
+                    style={{
+                      cursor: "pointer",
+                      background:
+                        activeTab === item.key ? brandColors.redSoft : "transparent",
+                      borderRadius: 8,
+                      padding: "12px 16px",
+                    }}
+                  >
+                    <Space>
+                      <Icon size={16} />
+                      <Typography.Text
+                        strong={activeTab === item.key}
+                        style={{
+                          color:
+                            activeTab === item.key ? brandColors.red : undefined,
+                        }}
+                      >
+                        {item.label}
+                      </Typography.Text>
+                    </Space>
+                  </List.Item>
+                );
+              }}
+            />
+          </Drawer>
+
+          <TabsContent value="add" className="mt-0 focus-visible:outline-none">
+            <div
+              style={{
+                background: brandColors.paper,
+                border: `1px solid ${brandColors.border}`,
+                borderRadius: 12,
+                padding: isMobile ? 14 : 22,
+              }}
+            >
+              <Typography.Title level={5} style={{ marginBottom: 4, fontSize: 16, fontWeight: 600 }}>
+                Lịch thêm lịch học
+              </Typography.Title>
+              <Typography.Text type="secondary" style={{ fontSize: 13 }}>
+                Nhấp vào một ca học trên lịch dưới đây để tạo lịch học
+              </Typography.Text>
+              <div style={{ marginTop: 16 }}>
+                <ScheduleCreatorCalendar />
+              </div>
+            </div>
+          </TabsContent>
+          <TabsContent value="view" className="mt-0 focus-visible:outline-none">
+            <ManageScheduleCalendar />
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
   );
 }

@@ -220,7 +220,7 @@ export async function listAvailableCourses(req: Request, res: Response) {
     }
 
     const skip = (page - 1) * limit;
-    const projection = "name description status startDate endDate homeroomTeacherId homeroomTeacher capacity session enrolledCount createdAt";
+    const projection = "name description status startDate endDate homeroomTeacherId homeroomTeacher capacity enrolledCount session createdAt";
     const courses = await Course.find(filter)
       .select(projection)
       .sort({ startDate: 1 })

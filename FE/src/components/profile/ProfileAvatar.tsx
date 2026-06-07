@@ -107,7 +107,7 @@ export const ProfileAvatar: React.FC<ProfileAvatarProps> = ({
       {/* Avatar Container */}
       <Box position="relative">
         <Avatar
-          src={avatarPreview || ""}
+          src={avatarPreview || undefined}
           sx={{
             width: responsiveSize,
             height: responsiveSize,

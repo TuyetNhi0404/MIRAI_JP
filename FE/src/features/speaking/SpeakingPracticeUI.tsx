@@ -35,7 +35,7 @@ export function SegmentedControl<T extends string>({
         bgcolor: sp.surfaceMuted,
         p: "4px",
         borderRadius: `${sp.radiusMd}px`,
-        border: `1px solid ${sp.border}`,
+        border: `1px solid ${sp.hairline}`,
         gap: 0.25,
       }}
     >
@@ -64,17 +64,17 @@ export function SegmentedControl<T extends string>({
               fontFamily: "inherit",
               lineHeight: 1.3,
               transition: sp.transition,
-              bgcolor: active ? sp.brand : "transparent",
-              color: active ? "#fff" : sp.textSoft,
-              boxShadow: active ? sp.shadowSm : "none",
-              minHeight: 36,
-              "&:hover": {
-                bgcolor: active ? sp.brandMid : "rgba(185,0,0,0.06)",
-              },
-              "&:focus-visible": {
-                outline: "none",
-                boxShadow: sp.focusRing,
-              },
+        bgcolor: active ? sp.brand : "transparent",
+        color: active ? "#fff" : sp.textSoft,
+        boxShadow: active ? sp.shadowSm : "none",
+        minHeight: 36,
+        "&:hover": {
+          bgcolor: active ? sp.brandMid : "rgba(15, 23, 42, 0.04)",
+        },
+        "&:focus-visible": {
+          outline: "none",
+          boxShadow: sp.focusRing,
+        },
             }}
           >
             {opt.icon}
@@ -153,23 +153,23 @@ export function RecordButton({
         transition: sp.transition,
         opacity: disabled ? 0.5 : 1,
         background: active
-          ? `linear-gradient(135deg, ${sp.brandLight} 0%, ${sp.brand} 100%)`
+          ? `linear-gradient(135deg, ${sp.brandSoft} 0%, ${sp.brand} 100%)`
           : `linear-gradient(135deg, ${sp.brandMid} 0%, ${sp.brand} 100%)`,
         boxShadow: active
-          ? `0 6px 24px rgba(185, 0, 0, 0.35), 0 0 0 4px rgba(250, 157, 157, 0.35)`
-          : sp.shadowMd,
+          ? `0 8px 24px rgba(185, 0, 0, 0.32), 0 0 0 4px rgba(185, 0, 0, 0.12)`
+          : sp.shadowBrand,
         transform: active ? "scale(0.98)" : "scale(1)",
         "@media (prefers-reduced-motion: reduce)": {
           transform: "none",
           transition: "opacity 0.2s",
         },
         "&:hover:not(:disabled)": {
-          boxShadow: `0 8px 28px rgba(185, 0, 0, 0.32)`,
+          boxShadow: `0 10px 28px rgba(185, 0, 0, 0.28)`,
           filter: "brightness(1.03)",
         },
         "&:focus-visible": {
           outline: "none",
-          boxShadow: `${sp.focusRing}, ${sp.shadowMd}`,
+          boxShadow: `${sp.focusRing}, ${sp.shadowBrand}`,
         },
         "&::before": active
           ? {
@@ -177,7 +177,7 @@ export function RecordButton({
               position: "absolute",
               inset: -4,
               borderRadius: sp.radiusPill,
-              border: `2px solid rgba(250, 157, 157, 0.5)`,
+              border: `2px solid ${sp.brandBorder}`,
               animation: "speaking-pulse 1.6s ease-out infinite",
               pointerEvents: "none",
               "@media (prefers-reduced-motion: reduce)": {
@@ -214,11 +214,11 @@ export function RecordButton({
   );
 }
 
-export function panelSx(): SxProps<Theme> {
+export function panelSx(opts?: { elevated?: boolean }): SxProps<Theme> {
   return {
     bgcolor: sp.surface,
-    borderRadius: `${sp.radiusLg}px`,
-    border: `1px solid ${sp.border}`,
-    boxShadow: sp.shadowSm,
+    borderRadius: `${opts?.elevated ? sp.radiusXl : sp.radiusLg}px`,
+    border: `1px solid ${sp.hairline}`,
+    boxShadow: opts?.elevated ? sp.shadowMd : sp.shadowSm,
   };
 }

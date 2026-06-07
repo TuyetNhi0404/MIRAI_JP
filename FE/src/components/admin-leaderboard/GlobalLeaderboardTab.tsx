@@ -25,15 +25,20 @@ import {
   Divider,
 } from '@mui/material';
 import { Globe, Star } from 'lucide-react';
-import { 
-  adminLeaderboardService, 
-  formatScore, 
-  getRankIcon 
+import { CountUp } from '../ui';
+import {
+  adminLeaderboardService,
+  formatScore,
+  getRankIcon,
 } from '../../services/admin-leaderboard.service';
-import type { 
-  GlobalLeaderboardData, 
-  GlobalStudent 
+import type {
+  GlobalLeaderboardData,
+  GlobalStudent,
 } from '../../types/admin-leaderboard.types';
+
+const BRAND_RED = '#B90000';
+const BRAND_RED_SOFT = 'rgba(185, 0, 0, 0.08)';
+const BRAND_RED_TINT = 'rgba(185, 0, 0, 0.04)';
 
 const GlobalLeaderboardTab: React.FC = () => {
   const theme = useTheme();
@@ -71,18 +76,18 @@ const GlobalLeaderboardTab: React.FC = () => {
       {leaderboardData?.topStudents.map((student: GlobalStudent) => (
         <Card
           key={student.student.id}
+          className="mira-card-hover"
           sx={{
             mb: 2,
             borderRadius: 2,
-            border: '1px solid',
-            borderColor: 'divider',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+            border: '1px solid rgba(185,0,0,0.08)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
           }}
         >
           <CardContent sx={{ p: 2 }}>
             <Stack spacing={2}>
               <Box display="flex" alignItems="center" gap={1.5}>
-                <Typography variant="h5" fontWeight="bold" color="#ff6b35">
+                <Typography variant="h5" fontWeight="bold" color="#B90000">
                   {getRankIcon(student.rank)}
                 </Typography>
                 
@@ -91,7 +96,7 @@ const GlobalLeaderboardTab: React.FC = () => {
                   sx={{
                     width: 48,
                     height: 48,
-                    background: 'linear-gradient(135deg, #ff6b35, #ff8c42)',
+                    background: 'linear-gradient(135deg, #B90000, #E53935)',
                   }}
                 >
                   {student.student.name.charAt(0)}
@@ -115,7 +120,7 @@ const GlobalLeaderboardTab: React.FC = () => {
                     <Typography variant="caption" color="text.secondary" fontWeight={600}>
                       Điểm trung bình
                     </Typography>
-                    <Typography variant="h6" fontWeight="bold" color="#ff6b35" mt={0.5}>
+                    <Typography variant="h6" fontWeight="bold" color="#B90000" mt={0.5}>
                       {formatScore(student.averageFinalScore)}
                     </Typography>
                   </Box>
@@ -130,8 +135,8 @@ const GlobalLeaderboardTab: React.FC = () => {
                       <Chip 
                         label={student.passedCourses} 
                         sx={{ 
-                          bgcolor: 'rgba(255,140,66,0.15)', 
-                          color: '#ff6b35', 
+                          bgcolor: 'rgba(185,0,0,0.15)', 
+                          color: '#B90000', 
                           fontWeight: 600,
                           fontSize: '0.9rem',
                         }} 
@@ -149,7 +154,7 @@ const GlobalLeaderboardTab: React.FC = () => {
                       variant="h6" 
                       fontWeight="bold" 
                       mt={0.5}
-                      sx={{ color: student.passRate >= 80 ? '#ff6b35' : '#B90000' }}
+                      sx={{ color: student.passRate >= 80 ? '#B90000' : '#B90000' }}
                     >
                       {student.passRate.toFixed(1)}%
                     </Typography>
@@ -166,7 +171,7 @@ const GlobalLeaderboardTab: React.FC = () => {
   if (loading) {
     return (
       <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" minHeight="400px" gap={2}>
-        <CircularProgress sx={{ color: '#ff6b35' }} size={45} />
+        <CircularProgress sx={{ color: '#B90000' }} size={45} />
         <Typography variant="body1" color="text.secondary">Đang tải bảng xếp hạng hệ thống...</Typography>
       </Box>
     );
@@ -181,13 +186,13 @@ const GlobalLeaderboardTab: React.FC = () => {
   return (
     <Box>
       {/* Controls */}
-      <Card sx={{ borderRadius: isMobile ? 2 : 3, mb: 3, boxShadow: '0 4px 20px rgba(255,107,53,0.08)' }}>
+      <Card sx={{ borderRadius: isMobile ? 2 : 3, mb: 3, boxShadow: '0 4px 20px rgba(185,0,0,0.08)' }}>
         <CardContent sx={{ p: isMobile ? 2 : 3 }}>
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} md={6}>
               <Box display="flex" alignItems="center" gap={isMobile ? 1.5 : 2}>
-                <Globe size={isMobile ? 20 : 24} color="#ff6b35" />
-                <Typography variant={isMobile ? 'subtitle1' : 'h6'} fontWeight="bold" color="#ff6b35">
+                <Globe size={isMobile ? 20 : 24} color="#B90000" />
+                <Typography variant={isMobile ? 'subtitle1' : 'h6'} fontWeight="bold" color="#B90000">
                   Bảng xếp hạng hệ thống
                 </Typography>
               </Box>
@@ -208,50 +213,84 @@ const GlobalLeaderboardTab: React.FC = () => {
       </Card>
 
       {/* Leaderboard Table/List */}
-      <Card sx={{ borderRadius: isMobile ? 2 : 3, boxShadow: '0 8px 28px rgba(255,107,53,0.1)', overflow: 'hidden' }}>
-        <Box sx={{ 
-          background: 'linear-gradient(90deg, #ff6b35, #ff8c42)', 
-          p: isMobile ? 1.5 : 2, 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: 1.2 
+      <Card
+        className="mira-fade-in-up"
+        sx={{
+          borderRadius: isMobile ? 2 : 3,
+          boxShadow: '0 8px 28px rgba(185,0,0,0.08)',
+          overflow: 'hidden',
+          border: '1px solid rgba(185,0,0,0.06)',
+        }}
+      >
+        <Box sx={{
+          background: 'linear-gradient(135deg, #B90000, #E53935)',
+          p: isMobile ? 1.5 : 2,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1.2,
+          position: 'relative',
+          overflow: 'hidden',
         }}>
-          <Star size={isMobile ? 18 : 22} color="#fff" />
-          <Typography variant={isMobile ? 'subtitle1' : 'h6'} fontWeight="bold" color="#fff">
+          <Box
+            sx={{
+              position: 'absolute',
+              inset: 0,
+              background: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.12), transparent 50%)',
+              pointerEvents: 'none',
+            }}
+          />
+          <Star size={isMobile ? 18 : 22} color="#fff" style={{ position: 'relative' }} />
+          <Typography
+            variant={isMobile ? 'subtitle1' : 'h6'}
+            fontWeight="bold"
+            color="#fff"
+            sx={{ position: 'relative' }}
+          >
             Học viên xuất sắc toàn hệ thống
           </Typography>
         </Box>
 
         {isMobile ? (
-          <Box sx={{ p: 2 }}>
+          <Box sx={{ p: 2 }} className="mira-stagger">
             {renderMobileLeaderboard()}
           </Box>
         ) : (
           <TableContainer>
             <Table size={isTablet ? 'small' : 'medium'}>
               <TableHead>
-                <TableRow sx={{ background: 'rgba(255,107,53,0.04)' }}>
-                  <TableCell sx={{ fontWeight: 700, color: '#ff6b35' }}>Thứ hạng</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: '#ff6b35' }}>Học viên</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 700, color: '#ff6b35' }}>Điểm trung bình</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 700, color: '#ff6b35' }}>Đã đạt</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 700, color: '#ff6b35' }}>Tỷ lệ đạt</TableCell>
+                <TableRow sx={{ background: 'rgba(185,0,0,0.04)' }}>
+                  <TableCell sx={{ fontWeight: 700, color: '#B90000' }}>Thứ hạng</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: '#B90000' }}>Học viên</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, color: '#B90000' }}>Điểm trung bình</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, color: '#B90000' }}>Đã đạt</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, color: '#B90000' }}>Tỷ lệ đạt</TableCell>
                 </TableRow>
               </TableHead>
-              <TableBody>
+              <TableBody className="mira-stagger">
                 {leaderboardData.topStudents.map((student: GlobalStudent) => (
-                  <TableRow key={student.student.id} sx={{ '&:hover': { background: 'rgba(255,107,53,0.04)' } }}>
+                  <TableRow
+                    key={student.student.id}
+                    className="mira-row-hover"
+                    sx={{
+                      transition: 'background-color 200ms ease, transform 200ms ease',
+                    }}
+                  >
                     <TableCell>
                       <Typography variant="h6" fontWeight="bold">{getRankIcon(student.rank)}</Typography>
                     </TableCell>
                     <TableCell>
                       <Box display="flex" alignItems="center" gap={1.5}>
-                        <Avatar 
-                          src={student.student.avatar || undefined} 
-                          sx={{ 
-                            width: isTablet ? 36 : 42, 
-                            height: isTablet ? 36 : 42, 
-                            background: 'linear-gradient(135deg, #ff6b35, #ff8c42)' 
+                        <Avatar
+                          src={student.student.avatar || undefined}
+                          sx={{
+                            width: isTablet ? 36 : 42,
+                            height: isTablet ? 36 : 42,
+                            background: 'linear-gradient(135deg, #B90000, #E53935)',
+                            transition: 'transform 200ms ease, box-shadow 200ms ease',
+                            '&:hover': {
+                              transform: 'scale(1.1)',
+                              boxShadow: '0 4px 12px rgba(185,0,0,0.25)',
+                            },
                           }}
                         >
                           {student.student.name.charAt(0)}
@@ -267,18 +306,18 @@ const GlobalLeaderboardTab: React.FC = () => {
                       </Box>
                     </TableCell>
                     <TableCell align="center">
-                      <Typography variant={isTablet ? 'body1' : 'h6'} fontWeight="bold" sx={{ color: '#ff6b35' }}>
+                      <Typography variant={isTablet ? 'body1' : 'h6'} fontWeight="bold" sx={{ color: '#B90000' }}>
                         {formatScore(student.averageFinalScore)}
                       </Typography>
                     </TableCell>
                     <TableCell align="center">
                       <Chip 
                         label={student.passedCourses} 
-                        sx={{ bgcolor: 'rgba(255,140,66,0.15)', color: '#ff6b35', fontWeight: 600 }} 
+                        sx={{ bgcolor: 'rgba(185,0,0,0.15)', color: '#B90000', fontWeight: 600 }} 
                       />
                     </TableCell>
                     <TableCell align="center">
-                      <Typography fontWeight="bold" sx={{ color: student.passRate >= 80 ? '#ff6b35' : '#B90000' }}>
+                      <Typography fontWeight="bold" sx={{ color: student.passRate >= 80 ? '#B90000' : '#B90000' }}>
                         {student.passRate.toFixed(1)}%
                       </Typography>
                     </TableCell>

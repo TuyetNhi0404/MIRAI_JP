@@ -48,7 +48,10 @@ export function AccountLock({ user, onStatusChange }: AccountLockProps) {
   }
 
   return (
-    <Tooltip title={user.status === "active" ? "Khóa tài khoản" : "Mở khóa tài khoản"}>
+    <Tooltip
+      title={user.status === "active" ? "Khóa tài khoản" : "Mở khóa tài khoản"}
+      placement="top"
+    >
       <IconButton
         onClick={handleToggleLock}
         size="small"

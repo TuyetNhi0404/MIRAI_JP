@@ -1,31 +1,22 @@
-// Header.tsx
-import { useState } from "react";
-import {
-  AppBar,
-  Toolbar,
-  IconButton,
-  Typography,
-  Box,
-  Avatar,
-  Menu,
-  MenuItem,
-  Paper,
-  useMediaQuery,
-} from "@mui/material";
-import {
-  Menu as MenuIcon,
-  MoreVert,
-  KeyboardArrowDown,
-  Person,
-  Logout,
-} from "@mui/icons-material";
+import React, { useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { Avatar, Button, Dropdown, Layout, Space } from "antd";
+import {
+  MenuOutlined,
+  LogoutOutlined,
+  UserOutlined,
+  DownOutlined,
+} from "@ant-design/icons";
+import { Menu as MenuIcon } from "lucide-react";
 import { logoutUser } from "../redux/slices/authSlice";
 import type { AppDispatch } from "../redux/store";
 import { ProfileModal } from "../components/profile/ProfileModal";
 import { useAppSelector } from "../hooks/hooks";
 import NotificationDropdown from "../components/notification/NotificationDropdown";
+import { brandColors } from "../theme/theme";
+
+const { Header: AntHeader } = Layout;
 
 interface HeaderProps {
   onToggleSidebar: () => void;
@@ -33,194 +24,159 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ onToggleSidebar, sidebarOpen }) => {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const open = Boolean(anchorEl);
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-  const isDesktop = useMediaQuery("(min-width:900px)");
-  const isSmallMobile = useMediaQuery("(max-width:430px)");
   const [openProfile, setOpenProfile] = useState(false);
 
-  // ✅ Lấy user từ Redux - ưu tiên profile nếu đã load
   const authUser = useAppSelector((state) => state.auth.user);
   const profile = useAppSelector((state) => state.profile.profile);
-
-  // Sử dụng profile nếu có, fallback về authUser
   const user = profile || authUser;
   const userName = user?.name || "Người dùng";
-  const avatarUrl = user?.avatar && user.avatar.startsWith("http") ? user.avatar : "";
-
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) =>
-    setAnchorEl(event.currentTarget);
-  const handleMenuClose = () => setAnchorEl(null);
+  const avatarUrl =
+    user?.avatar && user.avatar.startsWith("http") ? user.avatar : undefined;
 
   const handleLogout = async () => {
-    setAnchorEl(null);
     await dispatch(logoutUser());
     navigate("/", { replace: true });
   };
 
+  const userMenuItems = [
+    {
+      key: "profile",
+      label: (
+        <Space>
+          <UserOutlined />
+          <span>Hồ sơ</span>
+        </Space>
+      ),
+      onClick: () => {
+        setTimeout(() => setOpenProfile(true), 150);
+      },
+    },
+    { type: "divider" as const },
+    {
+      key: "logout",
+      label: (
+        <Space style={{ color: brandColors.error }}>
+          <LogoutOutlined />
+          <span>Đăng xuất</span>
+        </Space>
+      ),
+      onClick: handleLogout,
+    },
+  ];
+
   return (
-    <AppBar
-      position="fixed"
-      elevation={2}
-      sx={{
-        backgroundColor: "#fff",
-        borderBottom: "2px solid #B90000",
-        height: { xs: 60, sm: 68 },
-        justifyContent: "center",
-        zIndex: 1300,
+    <AntHeader
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 100,
+        background: brandColors.paper,
+        borderBottom: `1px solid ${brandColors.border}`,
+        padding: "0 20px",
+        height: 64,
+        lineHeight: "64px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.03)",
       }}
     >
-      <Toolbar
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          position: "relative",
-          px: { xs: 1.2, sm: 2.5 },
-          gap: { xs: 1, sm: 2 },
-          minHeight: "unset",
-          transition: "all 0.3s ease",
-        }}
-      >
-        {/* Left Section */}
-        <Box
-          sx={{
+      <Space size={14} align="center">
+        <Button
+          type="text"
+          shape="circle"
+          icon={sidebarOpen ? <MenuIcon size={20} /> : <MenuOutlined />}
+          onClick={onToggleSidebar}
+          aria-label="Toggle sidebar"
+          style={{ color: brandColors.textPrimary }}
+        />
+        <div
+          style={{
             display: "flex",
             alignItems: "center",
-            gap: { xs: 1, sm: 1.5 },
-            flexShrink: 1,
+            gap: 6,
+            fontWeight: 700,
+            fontSize: 16,
+            letterSpacing: 0.2,
           }}
         >
-          <IconButton onClick={onToggleSidebar} sx={{ color: "#B90000", p: 1 }}>
-            {sidebarOpen && isDesktop ? (
-              <MenuIcon sx={{ fontSize: 22 }} />
-            ) : (
-              <MoreVert sx={{ fontSize: 22 }} />
-            )}
-          </IconButton>
-
-          <Typography
-            variant="h6"
-            sx={{
-              fontSize: { xs: "0.9rem", sm: "1.05rem" },
+          <span style={{ color: brandColors.red }}>MIRAI</span>
+          <span style={{ color: brandColors.textPrimary }}>JAPANESE</span>
+          <span
+            style={{
+              color: brandColors.textSecondary,
               fontWeight: 600,
-              letterSpacing: 0.5,
-              whiteSpace: "nowrap",
-              display: "flex",
-              alignItems: "center",
-              gap: 0.5,
+              fontSize: 13,
+              marginLeft: 2,
             }}
           >
-            <Box component="span" sx={{ color: "#B90000" }}>
-              {isSmallMobile ? "MIRAI" : "MIRAI JAPANESE "}
-              <Box component="span" sx={{ color: "#333" }}>
-                {isSmallMobile ? "LMS" : "LMS"}
-              </Box>
-            </Box>
-          </Typography>
-        </Box>
+            LMS
+          </span>
+        </div>
+      </Space>
 
-        {/* Right Section */}
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: { xs: 1, sm: 2 },
-            flexShrink: 0,
-            ml: "auto",
-            position: { sm: sidebarOpen && !isDesktop ? "absolute" : "static" },
-            right: { sm: sidebarOpen && !isDesktop ? "12px" : "auto" },
-            top: 0,
-            height: "100%",
-          }}
+      <Space size={6} align="center">
+        <NotificationDropdown />
+        <Dropdown
+          menu={{ items: userMenuItems }}
+          trigger={["click"]}
+          placement="bottomRight"
         >
-
-          {/* Notifications */}
-          <NotificationDropdown />
-          {/* User Menu */}
-          <Box>
-            <Paper
-              onClick={handleMenuOpen}
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: { xs: 0.8, sm: 1.2 },
-                px: { xs: 0.8, sm: 1.2 },
-                py: { xs: 0.4, sm: 0.6 },
-                borderRadius: 2,
-                cursor: "pointer",
-                boxShadow: "none",
-                "&:hover": { backgroundColor: "#f5f5f5" },
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "4px 10px 4px 4px",
+              borderRadius: 999,
+              cursor: "pointer",
+              transition: "background 200ms ease",
+            }}
+            className="mira-button-hover"
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.background = brandColors.bg;
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.background = "transparent";
+            }}
+          >
+            <Avatar
+              size={36}
+              src={avatarUrl}
+              style={{
+                background: brandColors.red,
+                fontWeight: 600,
+                flexShrink: 0,
               }}
             >
-              <Avatar
-                src={avatarUrl}
-                alt={userName}
-                sx={{
-                  width: { xs: 36, sm: 40 },
-                  height: { xs: 36, sm: 40 },
-                  bgcolor: "#B90000",
-                  fontWeight: "bold",
-                  fontSize: { xs: "0.85rem", sm: "0.95rem" },
-                  border: "2px solid #fff",
-                  boxShadow: "0 0 0 2px #B90000",
-                }}
-              >
-                {!avatarUrl && userName.charAt(0).toUpperCase()}
-              </Avatar>
-
-              {isDesktop && (
-                <Typography variant="body2" sx={{ color: "#333" }}>
-                  {userName}
-                </Typography>
-              )}
-              <KeyboardArrowDown sx={{ fontSize: 18, color: "#666" }} />
-            </Paper>
-
-            <Menu
-              anchorEl={anchorEl}
-              open={open}
-              onClose={handleMenuClose}
-              PaperProps={{
-                sx: {
-                  mt: 1,
-                  borderRadius: 2,
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                  minWidth: 200,
-                },
+              {!avatarUrl && userName.charAt(0).toUpperCase()}
+            </Avatar>
+            <span
+              className="mira-user-name"
+              style={{
+                color: brandColors.textPrimary,
+                fontSize: 14,
+                fontWeight: 500,
               }}
             >
-              <MenuItem
-                onClick={() => {
-                  handleMenuClose();
-                  setTimeout(() => setOpenProfile(true), 200);
-                }}
-              >
-                <Person sx={{ fontSize: 18, mr: 1.25 }} /> Hồ sơ
-              </MenuItem>
+              {userName}
+            </span>
+            <DownOutlined style={{ fontSize: 10, color: brandColors.textTertiary }} />
+          </div>
+        </Dropdown>
+        <ProfileModal open={openProfile} onClose={() => setOpenProfile(false)} />
+      </Space>
 
-              <MenuItem
-                onClick={handleLogout}
-                sx={{
-                  color: "#d9534f",
-                  "&:hover": { backgroundColor: "#fff5f5" },
-                }}
-              >
-                <Logout sx={{ fontSize: 18, mr: 1.25 }} /> Đăng xuất
-              </MenuItem>
-            </Menu>
-
-            {/* ✅ Profile Modal luôn đồng bộ avatar và user */}
-            <ProfileModal
-              open={openProfile}
-              onClose={() => setOpenProfile(false)}
-            />
-          </Box>
-        </Box>
-      </Toolbar>
-    </AppBar>
+      <style>{`
+        @media (max-width: 640px) {
+          .mira-user-name { display: none; }
+        }
+      `}</style>
+    </AntHeader>
   );
 };
 

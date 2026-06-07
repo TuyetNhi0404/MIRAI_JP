@@ -10,18 +10,24 @@ type TranslatableMessageBubbleProps = {
 const tooltipSlotProps = {
   tooltip: {
     sx: {
-      maxWidth: 340,
+      maxWidth: 320,
       fontSize: "0.85rem",
-      lineHeight: 1.5,
+      lineHeight: 1.55,
       fontFamily: '"Inter", sans-serif',
-      bgcolor: "rgba(30,30,30,0.92)",
+      bgcolor: "#FFFFFF",
+      color: "#0F172A",
+      border: "1px solid rgba(15, 23, 42, 0.1)",
+      boxShadow: "0 8px 24px rgba(15, 23, 42, 0.12)",
+      px: 1.5,
+      py: 1,
     },
   },
+  arrow: { sx: { color: "#FFFFFF", "&::before": { border: "1px solid rgba(15, 23, 42, 0.1)" } } },
 };
 
 const hoverableSx: SxProps<Theme> = {
   cursor: "help",
-  transition: "background-color 0.2s ease, border-color 0.2s ease",
+  transition: "all 0.2s ease",
 };
 
 function variantSx(
@@ -30,28 +36,29 @@ function variantSx(
 ): SxProps<Theme> {
   if (variant === "system") {
     return {
-      bgcolor: "#F8F9FA",
-      color: "text.primary",
+      bgcolor: "#FFFFFF",
+      color: "#0F172A",
       borderBottomLeftRadius: 4,
-      border: "1px solid rgba(0,0,0,0.05)",
+      border: "1px solid rgba(15, 23, 42, 0.08)",
+      boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)",
       "&:hover": {
-        bgcolor: "#F0F4F8",
-        borderColor: "rgba(185,0,0,0.12)",
+        borderColor: "rgba(185, 0, 0, 0.18)",
+        boxShadow: "0 4px 12px rgba(15, 23, 42, 0.06)",
       },
     };
   }
   return {
-    bgcolor: partial ? "rgba(255,240,240,0.6)" : "#FFF0F0",
-    color: partial ? "text.secondary" : "#4A1515",
+    bgcolor: partial ? "rgba(185, 0, 0, 0.04)" : "#B90000",
+    color: partial ? "#94A3B8" : "#FFFFFF",
     borderBottomRightRadius: 4,
     border: partial
-      ? "1.5px dashed rgba(185,0,0,0.35)"
-      : "1px solid rgba(185,0,0,0.1)",
+      ? "1.5px dashed rgba(185, 0, 0, 0.35)"
+      : "1px solid rgba(185, 0, 0, 0.85)",
     fontStyle: partial ? "italic" : "normal",
-    opacity: partial ? 0.9 : 1,
+    opacity: partial ? 0.85 : 1,
+    boxShadow: partial ? "none" : "0 4px 12px rgba(185, 0, 0, 0.22)",
     "&:hover": {
-      bgcolor: partial ? "rgba(255,235,235,0.85)" : "#FFE8E8",
-      borderColor: "rgba(185,0,0,0.2)",
+      filter: partial ? "none" : "brightness(1.05)",
     },
   };
 }
@@ -77,11 +84,11 @@ export function TranslatableMessageBubble({
   const bubble = (
     <Box
       sx={{
-        px: 2,
-        py: 1.25,
-        borderRadius: 2.5,
-        fontSize: "0.9rem",
-        lineHeight: 1.5,
+        px: 1.75,
+        py: 1.15,
+        borderRadius: 2.25,
+        fontSize: "0.92rem",
+        lineHeight: 1.55,
         fontFamily: '"Noto Sans JP", "Inter", sans-serif',
         ...variantSx(variant, partial),
         ...(translatable && hoverableSx),
