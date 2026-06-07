@@ -171,7 +171,7 @@ export async function getHomeroomTeacherList(req: Request, res: Response) {
 // DANH SÁCH TẤT CẢ KHÓA HỌC
 export async function listCourses(_req: Request, res: Response) {
   try {
-    const projection = "name description status startDate endDate homeroomTeacherId homeroomTeacher capacity session createdAt";
+    const projection = "name description status startDate endDate homeroomTeacherId homeroomTeacher capacity enrolledCount session createdAt";
     const courses = await Course.find()
       .select(projection)
       .sort({ createdAt: -1 });
@@ -220,7 +220,7 @@ export async function listAvailableCourses(req: Request, res: Response) {
     }
 
     const skip = (page - 1) * limit;
-    const projection = "name description status startDate endDate homeroomTeacherId homeroomTeacher capacity session createdAt";
+    const projection = "name description status startDate endDate homeroomTeacherId homeroomTeacher capacity enrolledCount session createdAt";
     const courses = await Course.find(filter)
       .select(projection)
       .sort({ startDate: 1 })
@@ -522,7 +522,7 @@ export async function listStudentCourses(req: Request, res: Response) {
       });
     }
 
-    const projection = "name description status startDate endDate homeroomTeacherId homeroomTeacher capacity session createdAt";
+    const projection = "name description status startDate endDate homeroomTeacherId homeroomTeacher capacity enrolledCount session createdAt";
     const courses = await Course.find({
       _id: { $in: courseIds },
     })
@@ -565,7 +565,7 @@ export async function listTeacherCourses(req: Request, res: Response) {
     const objectTeacherId = new mongoose.Types.ObjectId(teacherId);
     
     // Tìm khóa học mà giáo viên này là giáo viên chủ nhiệm (homeroomTeacherId)
-    const projection = "name description status startDate endDate homeroomTeacherId homeroomTeacher capacity session createdAt";
+    const projection = "name description status startDate endDate homeroomTeacherId homeroomTeacher capacity enrolledCount session createdAt";
     const courses = await Course.find({
       homeroomTeacherId: objectTeacherId,
     })
