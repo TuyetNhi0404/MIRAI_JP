@@ -685,7 +685,8 @@ export const getCourseTeachers = async (req: Request, res: Response) => {
 
 export const addCourseMember = async (req: Request, res: Response) => {
   try {
-    const { courseId, userId, role } = req.body;
+    const { userId, role } = req.body;
+    const courseId = req.body.courseId || req.params.courseId;
     const member = await CourseService.addMember(courseId, userId, role);
     res.status(201).json(member);
   } catch (error) {
