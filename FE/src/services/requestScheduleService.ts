@@ -1,8 +1,8 @@
 import axios, { AxiosError } from "axios";
 import type { RequestSchedule } from "../types/requestSchedule.types";
+import { getApiBaseUrl } from "../utils/apiBase";
 
-const BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
-const API_BASE_URL = `${BASE}/api`;
+const API_BASE_URL = getApiBaseUrl();
 
 interface RefreshConfig {
   _retry?: boolean;
@@ -11,33 +11,22 @@ interface RefreshConfig {
 const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
-  headers: { 
+  headers: {
     "Content-Type": "application/json"
   },
 });
-
-api.interceptors.request.use(
-  (config) => {
-    console.log('Request:', config.method?.toUpperCase(), config.url);
-    return config;
-  },
-  (error: AxiosError) => Promise.reject(error)
-);
 
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as typeof error.config & RefreshConfig;
-    
+
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        console.log('Token expired, trying to refresh...');
         await axios.post(`${API_BASE_URL}/auth/refresh-token`, {}, { withCredentials: true });
-        console.log('Token refreshed, retrying original request');
         return api(originalRequest);
       } catch (refreshError) {
-        console.error('Refresh token failed, redirecting to login');
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }
@@ -50,56 +39,26 @@ export const requestScheduleService = {
   getAllRequests: async (status?: string): Promise<RequestSchedule[]> => {
     try {
       const params = status ? { status } : {};
-      console.log("Fetching all requests with params:", params);
-      
       const response = await api.get<RequestSchedule[]>("/request-schedules", { params });
-      console.log("Requests fetched:", response.data);
-      
       return response.data || [];
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.error("getAllRequests error:", error.response?.data || error.message);
-      } else {
-        console.error("getAllRequests error:", error);
+        const data = error.response?.data;
+        const message = typeof data === "string" ? data : (data as { message?: string })?.message ?? error.message;
+        throw new Error(message);
       }
       throw error;
     }
   },
 
   acceptRequest: async (requestId: string): Promise<RequestSchedule> => {
-    try {
-      console.log("Accepting request:", requestId);
-      
-      const response = await api.patch<RequestSchedule>(`/request-schedules/${requestId}/accept`);
-      console.log("Request accepted:", response.data);
-      
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        console.error("acceptRequest error:", error.response?.data || error.message);
-      } else {
-        console.error("acceptRequest error:", error);
-      }
-      throw error;
-    }
+    const response = await api.patch<RequestSchedule>(`/request-schedules/${requestId}/accept`);
+    return response.data;
   },
 
   rejectRequest: async (requestId: string): Promise<RequestSchedule> => {
-    try {
-      console.log("Rejecting request:", requestId);
-      
-      const response = await api.patch<RequestSchedule>(`/request-schedules/${requestId}/reject`);
-      console.log("Request rejected:", response.data);
-      
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        console.error("rejectRequest error:", error.response?.data || error.message);
-      } else {
-        console.error("rejectRequest error:", error);
-      }
-      throw error;
-    }
+    const response = await api.patch<RequestSchedule>(`/request-schedules/${requestId}/reject`);
+    return response.data;
   },
 };
 

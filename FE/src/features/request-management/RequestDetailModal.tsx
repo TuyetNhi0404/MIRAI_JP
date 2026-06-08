@@ -131,7 +131,7 @@ export const RequestDetailModal: React.FC<RequestDetailModalProps> = ({
       <Box sx={{ py: { xs: 1.5, sm: 2, md: 2.5 }, px: { xs: 2, sm: 2.5, md: 3 }, maxHeight: '60vh', overflowY: 'auto' }}>
         <Box display="flex" alignItems="center" gap={1.5} mb={2}>
           <Avatar
-            src={request.createdBy?.avatar}
+            src={request.createdBy?.avatar || undefined}
             sx={{
               width: { xs: 38, sm: 48, md: 52 },
               height: { xs: 38, sm: 48, md: 52 },

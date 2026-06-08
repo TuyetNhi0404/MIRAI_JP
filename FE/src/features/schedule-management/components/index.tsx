@@ -16,6 +16,7 @@ import {
   DialogActions,
   CircularProgress,
   Alert,
+  Avatar,
   FormControl,
   InputLabel,
   Select,
@@ -43,6 +44,9 @@ import {
   Trash2,
   Menu as MenuIcon,
   BookOpen,
+  Users,
+  Settings,
+  GraduationCap,
 } from 'lucide-react';
 import { useScheduleData } from '../../../hooks/useScheduleData';
 import { calendarAPI } from '../../../services/scheduleManagementAPI';
@@ -57,6 +61,8 @@ interface Course {
   name?: string;
   courseName?: string;
   status?: string;
+  enrolledCount?: number;
+  capacity?: number;
 }
 
 interface Session {
@@ -348,41 +354,84 @@ export default function ManageScheduleCalendar() {
     const teacher = getTeacherFromSchedule(schedule);
     const courseId = extractId(schedule.courseId);
     const color = getScheduleColor(courseId);
+    const studentCount = course?.enrolledCount ?? 0;
+    const capacity = course?.capacity;
 
     return (
-      <Card 
-        key={schedule._id} 
-        sx={{ 
-          bgcolor: color, 
-          color: 'white', 
-          cursor: 'pointer', 
-          '&:hover': { opacity: 0.9, transform: 'translateY(-2px)' },
-          transition: 'all 0.2s',
+      <Card
+        key={schedule._id}
+        sx={{
+          bgcolor: color,
+          color: 'white',
+          cursor: 'pointer',
+          position: 'relative',
+          '&:hover': {
+            opacity: 0.96,
+            transform: 'translateY(-2px)',
+            boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
+            '& .mira-slot-settings': { opacity: 1, transform: 'translateX(0)' },
+          },
+          transition: 'all 0.2s ease',
           mb: 1,
           borderRadius: 2,
         }}
         onClick={onClick}
       >
         <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-          <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.875rem', mb: 0.5 }}>
-            {course?.name || course?.courseName || 'Khóa học chưa xác định'}
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1, mb: 0.5 }}>
+            <Typography variant="body2" fontWeight={700} sx={{ fontSize: '0.875rem', lineHeight: 1.3, flex: 1 }}>
+              {course?.name || course?.courseName || 'Khóa học chưa xác định'}
+            </Typography>
+            <Box
+              className="mira-slot-settings"
+              sx={{
+                opacity: 0,
+                transform: 'translateX(4px)',
+                transition: 'all 0.2s ease',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 0.25,
+                bgcolor: 'rgba(255,255,255,0.22)',
+                borderRadius: 1,
+                px: 0.6,
+                py: 0.25,
+                flexShrink: 0,
+              }}
+            >
+              <Settings size={10} />
+              <Typography variant="caption" sx={{ fontSize: '0.6rem', fontWeight: 700, lineHeight: 1 }}>
+                Cài đặt
+              </Typography>
+            </Box>
+          </Box>
+
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
-            <User size={12} />
-            <Typography variant="caption" sx={{ fontSize: '0.75rem' }}>
+            <User size={11} />
+            <Typography variant="caption" sx={{ fontSize: '0.72rem', fontWeight: 500, lineHeight: 1.3 }}>
               {teacher?.name || 'Chưa xác định'}
             </Typography>
           </Box>
-          <Chip 
-            label={formatStatus(schedule.status)} 
-            size="small" 
-            sx={{ 
-              mt: 0.5, 
-              height: 18, 
-              fontSize: '0.65rem', 
-              bgcolor: 'rgba(255,255,255,0.3)', 
-              color: 'white' 
-            }} 
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.35 }}>
+            <Users size={11} />
+            <Typography variant="caption" sx={{ fontSize: '0.72rem', fontWeight: 600, lineHeight: 1.3 }}>
+              {studentCount} học viên
+              {capacity ? <Box component="span" sx={{ opacity: 0.85, fontWeight: 500 }}>{` / ${capacity}`}</Box> : null}
+            </Typography>
+          </Box>
+
+          <Chip
+            label={formatStatus(schedule.status)}
+            size="small"
+            sx={{
+              mt: 0.75,
+              height: 18,
+              fontSize: '0.65rem',
+              fontWeight: 600,
+              bgcolor: 'rgba(255,255,255,0.28)',
+              color: 'white',
+              backdropFilter: 'blur(4px)',
+            }}
           />
         </CardContent>
       </Card>
@@ -974,21 +1023,60 @@ export default function ManageScheduleCalendar() {
       </Paper>
 
       {/* Schedule Detail/Edit Dialog */}
-      <Dialog 
-        open={!!selectedSchedule} 
-        onClose={() => { setSelectedSchedule(null); setIsEditing(false); }} 
-        maxWidth="sm" 
+      <Dialog
+        open={!!selectedSchedule}
+        onClose={() => { setSelectedSchedule(null); setIsEditing(false); }}
+        maxWidth="sm"
         fullWidth
         fullScreen={isMobile}
+        PaperProps={{ sx: { borderRadius: isMobile ? 0 : 3 } }}
       >
         {selectedSchedule && (
           <>
-            <DialogTitle>
-              <Stack direction="row" spacing={1} alignItems="center">
-                {isEditing ? <Edit size={24} /> : <CalendarDays size={24} />}
-                <Typography variant="h6">
-                  {isEditing ? 'Sửa lịch học' : 'Chi tiết lịch học'}
-                </Typography>
+            <DialogTitle sx={{ pb: 1.5 }}>
+              <Stack direction="row" spacing={1.5} alignItems="center" justifyContent="space-between">
+                <Stack direction="row" spacing={1.5} alignItems="center">
+                  <Box
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 2,
+                      bgcolor: isEditing ? 'warning.50' : 'primary.50',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {isEditing ? <Edit size={20} color={theme.palette.warning.main} /> : <CalendarDays size={20} color={theme.palette.primary.main} />}
+                  </Box>
+                  <Box>
+                    <Typography variant="h6" fontWeight={700} sx={{ lineHeight: 1.2 }}>
+                      {isEditing ? 'Sửa lịch học' : 'Chi tiết lịch học'}
+                    </Typography>
+                    {!isEditing && (
+                      <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.3 }}>
+                        Nhấn Cài đặt để cập nhật thông tin
+                      </Typography>
+                    )}
+                  </Box>
+                </Stack>
+                {!isEditing && (
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={handleEdit}
+                    startIcon={<Settings size={16} />}
+                    sx={{
+                      borderRadius: 2,
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      px: 1.5,
+                      boxShadow: '0 2px 8px rgba(185, 0, 0, 0.18)',
+                    }}
+                  >
+                    Cài đặt
+                  </Button>
+                )}
               </Stack>
             </DialogTitle>
             <DialogContent>
@@ -999,11 +1087,13 @@ export default function ManageScheduleCalendar() {
               )}
 
               {!isEditing ? (
-                <Stack spacing={2.5} sx={{ pt: 2 }}>
+                <Stack spacing={2.25} sx={{ pt: 1 }}>
                   <Box>
                     <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
-                      <BookOpen size={16} color={theme.palette.text.secondary} />
-                      <Typography variant="caption" color="text.secondary">Khóa học</Typography>
+                      <BookOpen size={15} color={theme.palette.text.secondary} />
+                      <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                        Khóa học
+                      </Typography>
                     </Stack>
                     <Typography variant="body1" fontWeight={600}>
                       {getSelectedCourse()?.name || getSelectedCourse()?.courseName || 'Khóa học chưa xác định'}
@@ -1014,27 +1104,90 @@ export default function ManageScheduleCalendar() {
 
                   <Box>
                     <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
-                      <User size={16} color={theme.palette.text.secondary} />
-                      <Typography variant="caption" color="text.secondary">Giáo viên</Typography>
-                    </Stack>
-                    <Typography variant="body1">
-                      {getSelectedTeacher()?.name || 'Chưa xác định'}
-                    </Typography>
-                    {getSelectedTeacher()?.email && (
-                      <Typography variant="caption" color="text.secondary">
-                        {getSelectedTeacher()?.email}
+                      <GraduationCap size={15} color={theme.palette.text.secondary} />
+                      <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                        Giáo viên phụ trách
                       </Typography>
-                    )}
+                    </Stack>
+                    <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: 0.75 }}>
+                      <Avatar
+                        sx={{
+                          width: 38,
+                          height: 38,
+                          bgcolor: 'primary.main',
+                          fontSize: '0.95rem',
+                          fontWeight: 700,
+                        }}
+                      >
+                        {getSelectedTeacher()?.name?.charAt(0).toUpperCase() || '?'}
+                      </Avatar>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography variant="body1" fontWeight={600} noWrap>
+                          {getSelectedTeacher()?.name || 'Chưa xác định'}
+                        </Typography>
+                        {getSelectedTeacher()?.email && (
+                          <Typography variant="caption" color="text.secondary" noWrap>
+                            {getSelectedTeacher()?.email}
+                          </Typography>
+                        )}
+                      </Box>
+                    </Stack>
                   </Box>
 
                   <Divider />
 
                   <Box>
                     <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
-                      <Clock size={16} color={theme.palette.text.secondary} />
-                      <Typography variant="caption" color="text.secondary">Ca học</Typography>
+                      <Users size={15} color={theme.palette.text.secondary} />
+                      <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                        Sĩ số học viên
+                      </Typography>
                     </Stack>
-                    <Typography variant="body1">
+                    <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: 0.75 }}>
+                      <Box
+                        sx={{
+                          width: 38,
+                          height: 38,
+                          borderRadius: 2,
+                          bgcolor: 'rgba(185, 0, 0, 0.08)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Users size={18} color={theme.palette.primary.main} />
+                      </Box>
+                      <Box>
+                        <Typography variant="body1" fontWeight={700}>
+                          {getSelectedCourse()?.enrolledCount ?? 0}
+                          {getSelectedCourse()?.capacity ? (
+                            <Box component="span" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                              {` / ${getSelectedCourse()?.capacity}`}
+                            </Box>
+                          ) : null}
+                          <Box component="span" sx={{ ml: 0.75, fontSize: '0.78rem', color: 'text.secondary', fontWeight: 500 }}>
+                            học viên
+                          </Box>
+                        </Typography>
+                        {getSelectedCourse()?.capacity && (
+                          <Typography variant="caption" color="text.secondary">
+                            Còn {(getSelectedCourse()?.capacity ?? 0) - (getSelectedCourse()?.enrolledCount ?? 0)} chỗ trống
+                          </Typography>
+                        )}
+                      </Box>
+                    </Stack>
+                  </Box>
+
+                  <Divider />
+
+                  <Box>
+                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
+                      <Clock size={15} color={theme.palette.text.secondary} />
+                      <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                        Ca học
+                      </Typography>
+                    </Stack>
+                    <Typography variant="body1" fontWeight={500}>
                       {getSelectedSession()?.sessionName || 'Chưa xác định'}
                     </Typography>
                     {getSelectedSession()?.startTime && (
@@ -1048,8 +1201,10 @@ export default function ManageScheduleCalendar() {
 
                   <Box>
                     <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
-                      <CalendarDays size={16} color={theme.palette.text.secondary} />
-                      <Typography variant="caption" color="text.secondary">Ngày</Typography>
+                      <CalendarDays size={15} color={theme.palette.text.secondary} />
+                      <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                        Ngày
+                      </Typography>
                     </Stack>
                     <Typography variant="body1">
                       {formatDateDisplay(selectedSchedule.date)}
@@ -1059,11 +1214,13 @@ export default function ManageScheduleCalendar() {
                   <Divider />
 
                   <Box>
-                    <Typography variant="caption" color="text.secondary" gutterBottom>Trạng thái</Typography>
+                    <Typography variant="caption" color="text.secondary" fontWeight={600} gutterBottom>
+                      Trạng thái
+                    </Typography>
                     <Box sx={{ mt: 0.5 }}>
-                      <Chip 
-                        label={formatStatus(selectedSchedule.status)} 
-                        size="small" 
+                      <Chip
+                        label={formatStatus(selectedSchedule.status)}
+                        size="small"
                         color={getStatusColor(selectedSchedule.status)}
                       />
                     </Box>
@@ -1073,7 +1230,9 @@ export default function ManageScheduleCalendar() {
                     <>
                       <Divider />
                       <Box>
-                        <Typography variant="caption" color="text.secondary" gutterBottom>Ghi chú</Typography>
+                        <Typography variant="caption" color="text.secondary" fontWeight={600} gutterBottom>
+                          Ghi chú
+                        </Typography>
                         <Typography variant="body2" sx={{ mt: 0.5, p: 1.5, bgcolor: 'grey.50', borderRadius: 1 }}>
                           {selectedSchedule.note}
                         </Typography>
@@ -1082,7 +1241,7 @@ export default function ManageScheduleCalendar() {
                   )}
                 </Stack>
               ) : (
-                <Stack spacing={3} sx={{ pt: 2 }}>
+                <Stack spacing={3} sx={{ pt: 1 }}>
                   <FormControl fullWidth required>
                     <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                       <BookOpen size={18} />
@@ -1173,56 +1332,50 @@ export default function ManageScheduleCalendar() {
                 </Stack>
               )}
             </DialogContent>
-            <DialogActions sx={{ flexDirection: isMobile ? 'column' : 'row', gap: 1, p: 2 }}>
+            <DialogActions sx={{ flexDirection: isMobile ? 'column' : 'row', gap: 1, p: 2, borderTop: 1, borderColor: 'divider' }}>
               {!isEditing ? (
                 <>
-                  <Button 
-                    onClick={() => { setSelectedSchedule(null); setIsEditing(false); }} 
+                  <Button
+                    onClick={() => { setSelectedSchedule(null); setIsEditing(false); }}
                     disabled={deleting}
                     fullWidth={isMobile}
                     variant="outlined"
+                    sx={{ textTransform: 'none', fontWeight: 600 }}
                   >
                     Đóng
                   </Button>
                   <Box sx={{ flex: 1 }} />
-                  <Button 
+                  <Button
                     variant="outlined"
-                    color="primary"
-                    onClick={handleEdit}
-                    disabled={deleting}
-                    startIcon={<Edit size={18} />}
-                    fullWidth={isMobile}
-                  >
-                    Sửa
-                  </Button>
-                  <Button 
-                    variant="contained" 
-                    color="error" 
+                    color="error"
                     onClick={handleDeleteClick}
                     disabled={deleting}
                     startIcon={deleting ? <CircularProgress size={20} /> : <Trash2 size={18} />}
                     fullWidth={isMobile}
+                    sx={{ textTransform: 'none', fontWeight: 600 }}
                   >
-                    {deleting ? 'Đang xóa...' : 'Xóa'}
+                    {deleting ? 'Đang xóa...' : 'Xóa lịch học'}
                   </Button>
                 </>
               ) : (
                 <>
-                  <Button 
-                    onClick={() => setIsEditing(false)} 
+                  <Button
+                    onClick={() => setIsEditing(false)}
                     disabled={updating}
                     fullWidth={isMobile}
                     variant="outlined"
+                    sx={{ textTransform: 'none', fontWeight: 600 }}
                   >
                     Hủy
                   </Button>
-                  <Button 
-                    variant="contained" 
-                    color="primary" 
+                  <Button
+                    variant="contained"
+                    color="primary"
                     onClick={handleUpdate}
                     disabled={updating}
                     startIcon={updating ? <CircularProgress size={20} /> : null}
                     fullWidth={isMobile}
+                    sx={{ textTransform: 'none', fontWeight: 600 }}
                   >
                     {updating ? 'Đang lưu...' : 'Lưu thay đổi'}
                   </Button>

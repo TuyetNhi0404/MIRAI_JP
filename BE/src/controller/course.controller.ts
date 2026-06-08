@@ -229,7 +229,7 @@ export async function listAvailableCourses(req: Request, res: Response) {
 
     const total = await Course.countDocuments(filter);
 
-    const availableItems = courses.filter((course) => course.enrolledCount < course.capacity);
+    const availableItems = courses.filter((course) => (course.enrolledCount ?? 0) < course.capacity);
 
     return res.json({
       data: availableItems,

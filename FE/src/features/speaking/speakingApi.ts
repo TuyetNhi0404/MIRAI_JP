@@ -51,9 +51,9 @@ export function getSpeakingErrorMessage(error: unknown): string {
     if (status === 401) return "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.";
     if (status === 503) return msg || "Dịch vụ luyện giọng chưa chạy (port 8000).";
     if (status === 404) return "API speaking chưa bật trên BE (ENABLE_SPEAKING_PRACTICE).";
-    if (error.code === "ECONNABORTED") return "Hết thời gian chờ — lần đầu load model Whisper có thể mất 1–2 phút, thử lại.";
+    if (error.code === "ECONNABORTED") return "Hết thời gian chờ. Lần đầu load model Whisper có thể mất 1–2 phút, thử lại.";
     if (error.code === "ERR_NETWORK") {
-      return "Không kết nối được API speaking — kiểm tra container backend và ocr đang chạy.";
+      return "Không kết nối được API speaking. Kiểm tra container backend và ocr đang chạy.";
     }
     if (msg) return msg;
     if (status) return `Lỗi server (${status}).`;

@@ -1,374 +1,294 @@
-// src/pages/Admin/EnrollmentRequestsPage.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
-import type { RootState } from "../../redux/store";
 import {
-    Box,
-    Typography,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Paper,
-    Chip,
-    Button,
-    CircularProgress,
-    Alert,
-    Tabs,
-    Tab,
-    Card,
-    CardContent,
-    Stack,
-    useTheme,
-    useMediaQuery,
-} from "@mui/material";
-import { Visibility } from "@mui/icons-material";
+  App,
+  Avatar,
+  Button,
+  Card,
+  Col,
+  Empty,
+  Input,
+  Row,
+  Segmented,
+  Space,
+  Table,
+  Tag,
+  Typography,
+} from "antd";
+import type { ColumnsType } from "antd/es/table";
+import { Search, RefreshCw, FileText, Inbox } from "lucide-react";
+import type { RootState } from "../../redux/store";
 import axiosInstance from "../../api/axiosInstance";
 import EnrollmentDetailModal from "../../components/enrollment/EnrollmentDetailModal";
 import type { Enrollment } from "../../types/enrollment.types";
+import { PageHeader, StatusTag } from "../../components/ui";
+import { brandColors } from "../../theme/theme";
+
+const { Text } = Typography;
 
 const EnrollmentRequestsPage: React.FC = () => {
-    const navigate = useNavigate();
-    const user = useSelector((state: RootState) => state.auth.user);
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-    const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+  const navigate = useNavigate();
+  const user = useSelector((state: RootState) => state.auth.user);
+  const { message: msgApi } = App.useApp();
 
-    const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
-    const [statusFilter, setStatusFilter] = useState("pending");
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("pending");
+  const [selectedEnrollment, setSelectedEnrollment] = useState<Enrollment | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
-    const [selectedEnrollment, setSelectedEnrollment] = useState<Enrollment | null>(null);
-    const [modalOpen, setModalOpen] = useState(false);
-
-    // ✅ Check authentication
-    useEffect(() => {
-        if (!user) {
-            navigate("/", { replace: true });
-            return;
-        }
-
-        if (user.role !== "admin") {
-            alert("Bạn không có quyền truy cập trang này");
-            const redirectPath = user.role === "teacher"
-                ? "/dashboard/teacher"
-                : "/dashboard/student";
-            navigate(redirectPath, { replace: true });
-            return;
-        }
-    }, [user, navigate]);
-
-    // ✅ Fetch enrollments
-    useEffect(() => {
-        if (user && user.role === "admin") {
-            fetchEnrollments();
-        }
-    }, [statusFilter, user]);
-
-    const fetchEnrollments = async () => {
-        setLoading(true);
-        setError("");
-
-        try {
-            const params = statusFilter ? { status: statusFilter } : {};
-            const response = await axiosInstance.get("/enrollments", { params });
-
-            console.log("✅ Enrollments fetched:", response.data);
-            setEnrollments(response.data.data || []);
-        } catch (err: unknown) {
-            console.error("❌ Error fetching enrollments:", err);
-
-            if (err && typeof err === 'object' && 'response' in err) {
-                const axiosError = err as { response?: { data?: { message?: string } } };
-                setError(axiosError.response?.data?.message || "Không thể tải danh sách đăng ký học");
-            } else if (err instanceof Error) {
-                setError(err.message);
-            } else {
-                setError("Không thể tải danh sách đăng ký học");
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleViewDetail = (enrollment: Enrollment) => {
-        setSelectedEnrollment(enrollment);
-        setModalOpen(true);
-    };
-
-    const handleCloseModal = () => {
-        setModalOpen(false);
-        setSelectedEnrollment(null);
-        fetchEnrollments();
-    };
-
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case "approved":
-                return "success";
-            case "rejected":
-                return "error";
-            default:
-                return "warning";
-        }
-    };
-
-    const getStatusLabel = (status: string) => {
-        switch (status) {
-            case "approved":
-                return "Đã phê duyệt";
-            case "rejected":
-                return "Đã từ chối";
-            default:
-                return "Đang chờ duyệt";
-        }
-    };
-
-    // ✅ Helper function to get course name safely
-    const getCourseName = (courseId: Enrollment['courseId']): string => {
-        if (!courseId) return "Khóa học đã bị xóa";
-
-        if (typeof courseId === "object" && courseId !== null && 'name' in courseId) {
-            return courseId.name;
-        }
-
-        return "N/A";
-    };
-
-    // ✅ Mobile Card Component
-    const MobileEnrollmentCard: React.FC<{ enrollment: Enrollment }> = ({ enrollment }) => {
-        const courseName = getCourseName(enrollment.courseId);
-
-        return (
-            <Card sx={{ mb: 2 }}>
-                <CardContent>
-                    <Stack spacing={1.5}>
-                        <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1}>
-                            <Typography variant="subtitle1" fontWeight="bold">
-                                {enrollment.studentName || "N/A"}
-                            </Typography>
-                            <Chip
-                                label={getStatusLabel(enrollment.status)}
-                                color={getStatusColor(enrollment.status)}
-                                size="small"
-                            />
-                        </Box>
-
-                        <Typography variant="body2" color="text.secondary" sx={{ wordBreak: 'break-word' }}>
-                            {enrollment.studentEmail || "N/A"}
-                        </Typography>
-
-                        <Box>
-                            <Typography variant="body2" fontWeight="500">
-                                {courseName}
-                            </Typography>
-                            {courseName === "Khóa học đã bị xóa" && (
-                                <Chip
-                                    label="Đã xóa"
-                                    size="small"
-                                    color="error"
-                                    variant="outlined"
-                                    sx={{ mt: 0.5 }}
-                                />
-                            )}
-                        </Box>
-
-                        <Typography variant="caption" color="text.secondary">
-                            {enrollment.createdAt
-                                ? new Date(enrollment.createdAt).toLocaleDateString("vi-VN")
-                                : "N/A"
-                            }
-                        </Typography>
-
-                        <Button
-                            variant="outlined"
-                            size="small"
-                            startIcon={<Visibility />}
-                            onClick={() => handleViewDetail(enrollment)}
-                            fullWidth
-                            sx={{
-                                color: "#B90000",
-                                borderColor: "#B90000",
-                                "&:hover": {
-                                    borderColor: "#d66a0d",
-                                    backgroundColor: "#FFF5E6",
-                                },
-                            }}
-                        >
-                            Xem chi tiết
-                        </Button>
-                    </Stack>
-                </CardContent>
-            </Card>
-        );
-    };
-
-    if (!user || user.role !== "admin") {
-        return null;
+  useEffect(() => {
+    if (!user) {
+      navigate("/", { replace: true });
+      return;
     }
+    if (user.role !== "admin") {
+      msgApi.warning("Bạn không có quyền truy cập trang này");
+      const redirectPath =
+        user.role === "teacher" ? "/dashboard/teacher" : "/dashboard/student";
+      navigate(redirectPath, { replace: true });
+      return;
+    }
+  }, [user, navigate]);
 
-    return (
-        <Box sx={{ p: { xs: 2, sm: 3 } }}>
-            <Typography
-                variant={isMobile ? "h5" : "h4"}
-                fontWeight="bold"
-                color="#023665"
-                mb={{ xs: 2, sm: 3 }}
-            >
-                Quản lý đăng ký học
-            </Typography>
+  useEffect(() => {
+    if (user && user.role === "admin") {
+      fetchEnrollments();
+    }
+  }, [statusFilter, user]);
 
-            {error && (
-                <Alert severity="error" sx={{ mb: 2 }}>
-                    {error}
-                </Alert>
-            )}
+  const fetchEnrollments = async () => {
+    setLoading(true);
+    try {
+      const params = statusFilter ? { status: statusFilter } : {};
+      const response = await axiosInstance.get("/enrollments", { params });
+      setEnrollments(response.data.data || []);
+    } catch (err: unknown) {
+      console.error("Error fetching enrollments:", err);
+      if (err && typeof err === "object" && "response" in err) {
+        const axiosError = err as { response?: { data?: { message?: string } } };
+        msgApi.error(axiosError.response?.data?.message || "Không thể tải danh sách");
+      } else {
+        msgApi.error("Không thể tải danh sách đăng ký học");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
-            <Box sx={{ borderBottom: 1, borderColor: "divider", mb: { xs: 2, sm: 3 } }}>
-                <Tabs
-                    value={statusFilter}
-                    onChange={(_, newValue) => setStatusFilter(newValue)}
-                    textColor="inherit"
-                    variant={isMobile ? "scrollable" : "standard"}
-                    scrollButtons={isMobile ? "auto" : false}
-                    sx={{
-                        "& .MuiTab-root": {
-                            color: "#666",
-                            fontSize: { xs: 13, sm: 14 },
-                            minWidth: { xs: 80, sm: 120 },
-                            px: { xs: 1, sm: 2 }
-                        },
-                        "& .Mui-selected": { color: "#B90000" },
-                        "& .MuiTabs-indicator": { backgroundColor: "#B90000" },
-                    }}
-                >
-                    <Tab label="Chờ duyệt" value="pending" />
-                    <Tab label="Đã phê duyệt" value="approved" />
-                    <Tab label="Đã từ chối" value="rejected" />
-                    <Tab label="Tất cả" value="" />
-                </Tabs>
-            </Box>
+  const getStatusInfo = (status: string) => {
+    if (status === "approved") return { label: "Đã phê duyệt", type: "success" as const };
+    if (status === "rejected") return { label: "Đã từ chối", type: "error" as const };
+    return { label: "Đang chờ duyệt", type: "warning" as const };
+  };
 
-            {loading ? (
-                <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-                    <CircularProgress sx={{ color: "#B90000" }} />
-                </Box>
-            ) : enrollments.length === 0 ? (
-                <Alert severity="info">Không có yêu cầu đăng ký học nào</Alert>
-            ) : (
-                <>
-                    {/* Mobile View - Cards */}
-                    {isMobile ? (
-                        <Box>
-                            {enrollments.map((enrollment) => (
-                                <MobileEnrollmentCard key={enrollment._id} enrollment={enrollment} />
-                            ))}
-                        </Box>
-                    ) : (
-                        /* Tablet & Desktop View - Table */
-                        <TableContainer component={Paper} elevation={2}>
-                            <Table>
-                                <TableHead sx={{ backgroundColor: "#F5F3EE" }}>
-                                    <TableRow>
-                                        <TableCell sx={{ fontSize: { sm: 13, md: 14 } }}>
-                                            <strong>Họ tên</strong>
-                                        </TableCell>
-                                        <TableCell sx={{ fontSize: { sm: 13, md: 14 } }}>
-                                            <strong>Email</strong>
-                                        </TableCell>
-                                        <TableCell sx={{ fontSize: { sm: 13, md: 14 } }}>
-                                            <strong>Khóa học</strong>
-                                        </TableCell>
-                                        <TableCell sx={{ fontSize: { sm: 13, md: 14 } }}>
-                                            <strong>Ngày đăng ký</strong>
-                                        </TableCell>
-                                        <TableCell sx={{ fontSize: { sm: 13, md: 14 } }}>
-                                            <strong>Trạng thái</strong>
-                                        </TableCell>
-                                        <TableCell align="center" sx={{ fontSize: { sm: 13, md: 14 } }}>
-                                            <strong>Hành động</strong>
-                                        </TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {enrollments.map((enrollment) => {
-                                        const courseName = getCourseName(enrollment.courseId);
+  const getCourseName = (courseId: Enrollment["courseId"]): { name: string; isDeleted: boolean } => {
+    if (!courseId) return { name: "Khóa học đã bị xóa", isDeleted: true };
+    if (typeof courseId === "object" && courseId !== null && "name" in courseId) {
+      return { name: courseId.name, isDeleted: false };
+    }
+    return { name: "N/A", isDeleted: false };
+  };
 
-                                        return (
-                                            <TableRow key={enrollment._id} hover>
-                                                <TableCell sx={{ fontSize: { sm: 13, md: 14 } }}>
-                                                    {enrollment.studentName || "N/A"}
-                                                </TableCell>
-                                                <TableCell sx={{ fontSize: { sm: 13, md: 14 }, wordBreak: 'break-word' }}>
-                                                    {enrollment.studentEmail || "N/A"}
-                                                </TableCell>
-                                                <TableCell sx={{ fontSize: { sm: 13, md: 14 } }}>
-                                                    {courseName}
-                                                    {courseName === "Khóa học đã bị xóa" && (
-                                                        <Chip
-                                                            label="Đã xóa"
-                                                            size="small"
-                                                            color="error"
-                                                            variant="outlined"
-                                                            sx={{ ml: 1 }}
-                                                        />
-                                                    )}
-                                                </TableCell>
-                                                <TableCell sx={{ fontSize: { sm: 13, md: 14 } }}>
-                                                    {enrollment.createdAt
-                                                        ? new Date(enrollment.createdAt).toLocaleDateString("vi-VN")
-                                                        : "N/A"
-                                                    }
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Chip
-                                                        label={getStatusLabel(enrollment.status)}
-                                                        color={getStatusColor(enrollment.status)}
-                                                        size={isTablet ? "small" : "medium"}
-                                                    />
-                                                </TableCell>
-                                                <TableCell align="center">
-                                                    <Button
-                                                        variant="outlined"
-                                                        size="small"
-                                                        startIcon={<Visibility />}
-                                                        onClick={() => handleViewDetail(enrollment)}
-                                                        sx={{
-                                                            color: "#B90000",
-                                                            borderColor: "#B90000",
-                                                            fontSize: { sm: 12, md: 13 },
-                                                            "&:hover": {
-                                                                borderColor: "#d66a0d",
-                                                                backgroundColor: "#FFF5E6",
-                                                            },
-                                                        }}
-                                                    >
-                                                        {isTablet ? "Xem" : "Xem chi tiết"}
-                                                    </Button>
-                                                </TableCell>
-                                            </TableRow>
-                                        );
-                                    })}
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
-                    )}
-                </>
-            )}
+  const handleViewDetail = (enrollment: Enrollment) => {
+    setSelectedEnrollment(enrollment);
+    setModalOpen(true);
+  };
 
-            {selectedEnrollment && (
-                <EnrollmentDetailModal
-                    open={modalOpen}
-                    enrollment={selectedEnrollment}
-                    onClose={handleCloseModal}
-                />
-            )}
-        </Box>
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    setSelectedEnrollment(null);
+    fetchEnrollments();
+  };
+
+  const filteredEnrollments = useMemo(() => {
+    if (!searchQuery.trim()) return enrollments;
+    const q = searchQuery.toLowerCase();
+    return enrollments.filter(
+      (e) =>
+        e.studentName?.toLowerCase().includes(q) ||
+        e.studentEmail?.toLowerCase().includes(q) ||
+        (typeof e.courseId === "object" &&
+          e.courseId !== null &&
+          "name" in e.courseId &&
+          e.courseId.name?.toLowerCase().includes(q))
     );
+  }, [enrollments, searchQuery]);
+
+  const columns: ColumnsType<Enrollment> = [
+    {
+      title: "Họ tên",
+      dataIndex: "studentName",
+      key: "studentName",
+      width: 220,
+      render: (name: string, record) => (
+        <Space size={10}>
+          <Avatar
+            size={36}
+            style={{
+              background: brandColors.redSoft,
+              color: brandColors.red,
+              fontWeight: 600,
+            }}
+          >
+            {(name || "U").charAt(0).toUpperCase()}
+          </Avatar>
+          <div>
+            <div style={{ fontWeight: 500 }}>{name || "N/A"}</div>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {record.studentEmail || "N/A"}
+            </Text>
+          </div>
+        </Space>
+      ),
+    },
+    {
+      title: "Khóa học",
+      key: "course",
+      render: (_, record) => {
+        const { name, isDeleted } = getCourseName(record.courseId);
+        return (
+          <Space size={4} wrap>
+            <Text style={{ fontWeight: isDeleted ? 400 : 500 }}>{name}</Text>
+            {isDeleted && (
+              <Tag color="error" style={{ margin: 0 }}>
+                Đã xóa
+              </Tag>
+            )}
+          </Space>
+        );
+      },
+    },
+    {
+      title: "Ngày đăng ký",
+      key: "createdAt",
+      width: 140,
+      render: (_, record) =>
+        record.createdAt
+          ? new Date(record.createdAt).toLocaleDateString("vi-VN")
+          : "N/A",
+    },
+    {
+      title: "Trạng thái",
+      key: "status",
+      width: 160,
+      render: (_, record) => {
+        const info = getStatusInfo(record.status);
+        return <StatusTag status={info.type} text={info.label} />;
+      },
+    },
+    {
+      title: "",
+      key: "actions",
+      width: 140,
+      align: "right",
+      render: (_, record) => (
+        <Button
+          type="default"
+          size="small"
+          icon={<FileText size={14} />}
+          onClick={() => handleViewDetail(record)}
+        >
+          Chi tiết
+        </Button>
+      ),
+    },
+  ];
+
+  const statusOptions = [
+    { label: "Chờ duyệt", value: "pending" },
+    { label: "Đã duyệt", value: "approved" },
+    { label: "Đã từ chối", value: "rejected" },
+    { label: "Tất cả", value: "" },
+  ];
+
+  return (
+    <div>
+      <PageHeader
+        icon={Inbox}
+        title="Yêu cầu ghi danh"
+        subtitle="Quản lý và phê duyệt các yêu cầu đăng ký khóa học từ học viên"
+      />
+
+      <Card
+        style={{
+          borderRadius: 12,
+          border: `1px solid ${brandColors.border}`,
+          marginBottom: 20,
+        }}
+        styles={{ body: { padding: 16 } }}
+      >
+        <Row gutter={[12, 12]} align="middle">
+          <Col xs={24} md={12} lg={10}>
+            <Input
+              allowClear
+              size="large"
+              prefix={<Search size={16} color={brandColors.textTertiary} />}
+              placeholder="Tìm theo tên, email, khóa học..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </Col>
+          <Col xs={24} md={12} lg={14}>
+            <Space wrap style={{ width: "100%", justifyContent: "flex-end" }}>
+              <Segmented
+                value={statusFilter}
+                onChange={(v) => setStatusFilter(v as string)}
+                options={statusOptions}
+              />
+              <Button
+                icon={<RefreshCw size={16} />}
+                onClick={fetchEnrollments}
+                loading={loading}
+              >
+                Làm mới
+              </Button>
+            </Space>
+          </Col>
+        </Row>
+      </Card>
+
+      <Card
+        style={{
+          borderRadius: 12,
+          border: `1px solid ${brandColors.border}`,
+        }}
+        styles={{ body: { padding: 0 } }}
+      >
+        <Table
+          rowKey="_id"
+          columns={columns}
+          dataSource={filteredEnrollments}
+          loading={loading}
+          scroll={{ x: 800 }}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showTotal: (total) => `Tổng ${total} yêu cầu`,
+            size: "small",
+          }}
+          locale={{
+            emptyText: (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description="Không có yêu cầu đăng ký học nào"
+              />
+            ),
+          }}
+        />
+      </Card>
+
+      {selectedEnrollment && (
+        <EnrollmentDetailModal
+          open={modalOpen}
+          enrollment={selectedEnrollment}
+          onClose={handleCloseModal}
+        />
+      )}
+    </div>
+  );
 };
 
 export default EnrollmentRequestsPage;
