@@ -81,8 +81,8 @@ const MiraiJpCenter: React.FC = () => {
     courses.length <= coursesPerView
       ? courses
       : Array.from({ length: coursesPerView }, (_, i) => {
-          return courses[(currentIndex + i) % courses.length];
-        });
+        return courses[(currentIndex + i) % courses.length];
+      });
 
   const galleryImages = [
     "/img/im1.png",
@@ -237,13 +237,13 @@ const MiraiJpCenter: React.FC = () => {
             <Pin size={20} />
           </a>
           <a
-            href="https://www.facebook.com/fsoftacademy.dn"
+            href="https://www.facebook.com/profile.php?id=61560247499806"
             style={{ color: "#B90000", textDecoration: "none" }}
           >
             <Facebook size={20} />
           </a>
           <a
-            href="https://www.instagram.com/fptsoftwareacademy?igsh=MXIzOTdycmxraTJodw=="
+            href="https://www.facebook.com/profile.php?id=61560247499806"
             style={{ color: "#B90000", textDecoration: "none" }}
           >
             <Instagram size={20} />
@@ -1100,7 +1100,6 @@ const MiraiJpCenter: React.FC = () => {
             selectedCourse={selectedCourse}
             courses={courses}
             onClose={handleCloseForm}
-            onStepChange={setFormStep}
           />
         </Box>
       </Modal>

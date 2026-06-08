@@ -177,8 +177,6 @@ export const getAllEnrollments = async (req: Request, res: Response) => {
     // Populate thêm thông tin khóa học để admin xem rõ
     const enrollments = await Enrollment.find(filter)
       .populate("courseId", "name managerName startDate endDate")
-      .populate("studentName")
-      .populate("studentEmail")
       .sort({ createdAt: -1 });
 
     res.status(200).json({
@@ -196,7 +194,12 @@ export const getMyEnrollments = async (req: Request, res: Response) => {
   try {
     const studentId = req.id; // lấy từ middleware verifyToken
 
-    const enrollments = await Enrollment.find({ studentId })
+    const user = await User.findById(studentId);
+    if (!user) {
+      return res.status(404).json({ message: "Không tìm thấy thông tin sinh viên." });
+    }
+
+    const enrollments = await Enrollment.find({ studentEmail: user.email })
       .populate("courseId", "name startDate endDate managerName status")
       .sort({ createdAt: -1 });
 

@@ -20,6 +20,7 @@ import {
   Col,
   Dropdown,
   Input,
+  Pagination,
   Row,
   Segmented,
   Skeleton,
@@ -84,6 +85,13 @@ const CoursesPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [, setError] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(6); // 6 courses per page (2 rows of 3 on desktop)
+
+  // Reset page to 1 when filters or search change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterStatus]);
 
   const loadCourses = async () => {
     setLoading(true);
@@ -161,8 +169,8 @@ const CoursesPage: React.FC = () => {
     }
   };
 
-  const handleEdit = (id: string) => navigate(`/admin/courses/${id}/edit`);
-  const handleCreate = () => navigate("/admin/courses/new");
+  const handleEdit = (id: string) => navigate(`/dashboard/admin/courses/${id}/edit`);
+  const handleCreate = () => navigate("/dashboard/admin/courses/new");
   const handleViewStudents = (course: Course) => {
     const courseId = course._id || course.id || "";
     navigate(`/dashboard/admin/courses/${courseId}/students`);
@@ -176,6 +184,11 @@ const CoursesPage: React.FC = () => {
       }),
     [courses, filterStatus]
   );
+
+  const paginatedCourses = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredCourses.slice(startIndex, startIndex + pageSize);
+  }, [filteredCourses, currentPage, pageSize]);
 
   const stats = useMemo(() => {
     const total = courses.length;
@@ -308,8 +321,9 @@ const CoursesPage: React.FC = () => {
           action={!searchQuery ? { label: "Tạo khóa học", onClick: handleCreate } : undefined}
         />
       ) : (
-        <Row gutter={[16, 16]} className="mira-stagger">
-          {filteredCourses.map((course) => {
+        <>
+          <Row gutter={[16, 16]} className="mira-stagger">
+            {paginatedCourses.map((course) => {
             const status = STATUS_MAP[course.status];
             const id = course._id || course.id || "";
             const enrolledPct = Math.min(
@@ -386,7 +400,10 @@ const CoursesPage: React.FC = () => {
                     </Space>
                     {isEditable && actionItems.length > 0 && (
                       <Dropdown
-                        menu={{ items: actionItems }}
+                        menu={{
+                          items: actionItems,
+                          onClick: (info) => info.domEvent.stopPropagation(),
+                        }}
                         trigger={["click"]}
                         placement="bottomRight"
                       >
@@ -567,6 +584,26 @@ const CoursesPage: React.FC = () => {
             );
           })}
         </Row>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            marginTop: 32,
+            marginBottom: 16,
+          }}
+        >
+          <Pagination
+            current={currentPage}
+            pageSize={pageSize}
+            total={filteredCourses.length}
+            onChange={(page) => {
+              setCurrentPage(page);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            showSizeChanger={false}
+          />
+        </div>
+        </>
       )}
     </div>
   );
