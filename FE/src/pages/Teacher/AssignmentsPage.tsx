@@ -37,6 +37,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { assignmentService } from '../../services/assignmentService';
+import { brandColors } from '../../theme/theme';
 import type { Assignment, Course, AssignmentQueryParams } from '../../types/assignment.types';
 import AssignmentDialog from './AssignmentDialog';
 import ConfirmDialog from '../../features/assignment-management/ConfirmDialog';
@@ -386,7 +387,7 @@ const AssignmentsPage: React.FC = () => {
   return (
     <Box sx={{ p: 3, pb: 10 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Typography variant="h4" sx={{ color: '#023665', fontWeight: 'bold' }}>
+        <Typography variant="h4" sx={{ color: brandColors.ink, fontWeight: 800, letterSpacing: '-0.5px' }}>
           Quản lý bài tập
         </Typography>
         <IconButton
@@ -697,13 +698,39 @@ const AssignmentsPage: React.FC = () => {
                       count={totalPages}
                       page={currentPage}
                       onChange={handlePageChange}
-                      color="primary"
                       size="large"
                       showFirstButton
                       showLastButton
                       siblingCount={1}
                       boundaryCount={1}
                       disabled={loading}
+                      sx={{
+                        '& .MuiPaginationItem-root': {
+                          color: brandColors.ink,
+                          borderRadius: '8px',
+                          border: `1px solid ${brandColors.border}`,
+                          margin: '0 4px',
+                          transition: 'all 0.2s ease',
+                          '&:hover': {
+                            backgroundColor: brandColors.redSoft,
+                            borderColor: brandColors.red,
+                            color: brandColors.red,
+                          },
+                        },
+                        '& .MuiPaginationItem-root.Mui-selected': {
+                          backgroundColor: brandColors.red,
+                          borderColor: brandColors.red,
+                          color: '#ffffff',
+                          fontWeight: 700,
+                          '&:hover': {
+                            backgroundColor: brandColors.redDark,
+                            borderColor: brandColors.redDark,
+                          },
+                        },
+                        '& .MuiPaginationItem-root.Mui-disabled': {
+                          opacity: 0.5,
+                        }
+                      }}
                     />
                     <Typography variant="body2" color="text.secondary">
                       Trang {currentPage} / {totalPages} • Tổng số: {totalItems} bài tập
@@ -717,9 +744,18 @@ const AssignmentsPage: React.FC = () => {
       )}
 
       <Fab
-        color="success"
         aria-label="add"
-        sx={{ position: 'fixed', bottom: 75, right: 32, zIndex: 1000 }}
+        sx={{ 
+          position: 'fixed', 
+          bottom: 75, 
+          right: 32, 
+          zIndex: 1000,
+          bgcolor: brandColors.red,
+          color: '#ffffff',
+          '&:hover': {
+            bgcolor: brandColors.redDark
+          }
+        }}
         onClick={() => handleOpenDialog()}
         disabled={courses.length === 0}
       >

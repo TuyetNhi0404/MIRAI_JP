@@ -150,9 +150,13 @@ const ListeningDetailPage = () => {
         </>
       )}
 
-      <Divider sx={{ my: 4 }} />
+      {exercises.length > 0 && (
+        <>
+          <Divider sx={{ my: 4 }} />
 
-      <Typography variant="h5" fontWeight="bold" sx={{ mb: 4 }}>Bài tập luyện tập</Typography>
+          <Typography variant="h5" fontWeight="bold" sx={{ mb: 4 }}>Bài tập luyện tập</Typography>
+        </>
+      )}
 
       {exercises.map((ex, index) => {
         const evaluation = result?.answers?.find(ans => ans.exerciseId === ex._id);
@@ -267,43 +271,45 @@ const ListeningDetailPage = () => {
         );
       })}
 
-      {result === null ? (
-        <Button 
-          variant="contained" 
-          color="primary" 
-          size="large" 
-          fullWidth 
-          onClick={handleSubmit}
-          disabled={submitting}
-          sx={{ py: 1.5, borderRadius: 3, fontWeight: 'bold', fontSize: '1.1rem', bgcolor: '#B90000', color: 'white', '&:hover': { bgcolor: '#990000' } }}
-        >
-          {submitting ? <CircularProgress size={24} color="inherit" /> : 'Nộp bài'}
-        </Button>
-      ) : (
-        <Paper elevation={0} sx={{ p: 4, bgcolor: '#fff5f5', borderRadius: 4, textAlign: 'center', border: '1px solid', borderColor: '#fecaca' }}>
-          <CheckCircleOutline sx={{ fontSize: 56, color: '#B90000', mb: 2 }} />
-          <Typography variant="h4" color="#B90000" fontWeight="bold" gutterBottom>
-            Kết quả: {result.totalScore} / {result.maxScore}
-          </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mt: 1, mb: 4 }}>
-            Chúc mừng bạn đã hoàn thành bài tập nghe! Hãy xem lại chi tiết đúng sai của từng câu ở trên nhé.
-          </Typography>
-          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
-            <Button variant="outlined" onClick={() => navigate('/dashboard/student/listening')} sx={{ borderRadius: '12px' }}>
-              Quay lại danh sách
-            </Button>
-            <Button 
-              variant="contained" 
-              onClick={() => {
-                setResult(null);
-                setAnswers({});
-              }} 
-              sx={{ bgcolor: '#B90000', color: 'white', '&:hover': { bgcolor: '#990000' }, borderRadius: '12px' }}
-            >
-              Làm lại bài
-            </Button>
-          </Box>
-        </Paper>
+      {exercises.length > 0 && (
+        result === null ? (
+          <Button 
+            variant="contained" 
+            color="primary" 
+            size="large" 
+            fullWidth 
+            onClick={handleSubmit}
+            disabled={submitting}
+            sx={{ py: 1.5, borderRadius: 3, fontWeight: 'bold', fontSize: '1.1rem', bgcolor: '#B90000', color: 'white', '&:hover': { bgcolor: '#990000' } }}
+          >
+            {submitting ? <CircularProgress size={24} color="inherit" /> : 'Nộp bài'}
+          </Button>
+        ) : (
+          <Paper elevation={0} sx={{ p: 4, bgcolor: '#fff5f5', borderRadius: 4, textAlign: 'center', border: '1px solid', borderColor: '#fecaca' }}>
+            <CheckCircleOutline sx={{ fontSize: 56, color: '#B90000', mb: 2 }} />
+            <Typography variant="h4" color="#B90000" fontWeight="bold" gutterBottom>
+              Kết quả: {result.totalScore} / {result.maxScore}
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mt: 1, mb: 4 }}>
+              Chúc mừng bạn đã hoàn thành bài tập nghe! Hãy xem lại chi tiết đúng sai của từng câu ở trên nhé.
+            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
+              <Button variant="outlined" onClick={() => navigate('/dashboard/student/listening')} sx={{ borderRadius: '12px' }}>
+                Quay lại danh sách
+              </Button>
+              <Button 
+                variant="contained" 
+                onClick={() => {
+                  setResult(null);
+                  setAnswers({});
+                }} 
+                sx={{ bgcolor: '#B90000', color: 'white', '&:hover': { bgcolor: '#990000' }, borderRadius: '12px' }}
+              >
+                Làm lại bài
+              </Button>
+            </Box>
+          </Paper>
+        )
       )}
     </Container>
   );

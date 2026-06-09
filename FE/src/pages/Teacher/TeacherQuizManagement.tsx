@@ -63,6 +63,7 @@ import { getAxiosErrorMessage } from "../../utils/axiosError";
 import courseService from "../../services/courseService";
 import type { Course } from "../../services/courseService";
 import { quizService } from "../../services/quiz.service";
+import { brandColors } from "../../theme/theme";
 
 const TeacherQuizManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -151,7 +152,6 @@ const TeacherQuizManagement: React.FC = () => {
     if (!selectedCourseId) return;
     setLoadingQuizzes(true);
     try {
-      // Gọi API lấy quizzes của khóa học
       const res = await quizService.getQuizzesByCourse(selectedCourseId);
       setTeacherQuizzes(res || []);
       if (res && res.length > 0) {
@@ -309,18 +309,18 @@ const TeacherQuizManagement: React.FC = () => {
   };
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 } }}>
+    <Box sx={{ p: { xs: 2, md: 3 } }} className="mira-fade-in-up">
       {/* Header */}
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, flexWrap: "wrap", gap: 2 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-          <Box sx={{ width: 44, height: 44, borderRadius: "12px", bgcolor: "#B90000", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Box sx={{ width: 44, height: 44, borderRadius: "12px", bgcolor: brandColors.red, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Brain size={22} color="#fff" />
           </Box>
           <Box>
-            <Typography variant="h5" fontWeight={700} color="#1a1a1a">
+            <Typography variant="h5" fontWeight={800} color={brandColors.ink} sx={{ letterSpacing: '-0.3px' }}>
               Quản lý Quiz Ngữ pháp Giáo viên
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color="text.secondary" fontWeight={500}>
               Tạo bài kiểm tra tự động bằng AI từ kho ngữ pháp và theo dõi trực quan điểm số học sinh
             </Typography>
           </Box>
@@ -328,13 +328,23 @@ const TeacherQuizManagement: React.FC = () => {
       </Box>
 
       {/* Select Course globally */}
-      <Card elevation={0} sx={{ border: "1px solid #f0f0f0", borderRadius: "12px", mb: 3 }}>
-        <CardContent sx={{ py: 2 }}>
-          <Grid container spacing={2} alignItems="center">
+      <Card elevation={0} sx={{ border: `1px solid ${brandColors.border}`, borderRadius: "16px", mb: 3, bgcolor: '#ffffff' }}>
+        <CardContent sx={{ py: 2.5 }}>
+          <Grid container spacing={2.5} alignItems="center">
             <Grid item xs={12} md={6}>
               <FormControl size="small" fullWidth>
-                <InputLabel>Chọn Lớp học phụ trách</InputLabel>
-                <Select value={selectedCourseId} onChange={(e) => handleCourseChange(e.target.value)} label="Chọn Lớp học phụ trách">
+                <InputLabel sx={{ '&.Mui-focused': { color: brandColors.red } }}>Chọn Lớp học phụ trách</InputLabel>
+                <Select 
+                  value={selectedCourseId} 
+                  onChange={(e) => handleCourseChange(e.target.value)} 
+                  label="Chọn Lớp học phụ trách"
+                  sx={{
+                    borderRadius: '8px',
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: brandColors.red
+                    }
+                  }}
+                >
                   {courses.map((c) => (
                     <MenuItem key={c._id || c.id} value={c._id || c.id}>
                       {c.name} (JLPT {c.level || "N5"})
@@ -344,9 +354,9 @@ const TeacherQuizManagement: React.FC = () => {
               </FormControl>
             </Grid>
             <Grid item xs={12} md={6}>
-              <Typography variant="body2" color="text.secondary">
-                Lớp đang chọn: <strong>{courses.find((c) => (c._id || c.id) === selectedCourseId)?.name || "Chưa chọn"}</strong>
-                &nbsp;|&nbsp;Trình độ JLPT: <strong>{selectedCourseLevel}</strong>
+              <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                Lớp đang chọn: <strong style={{ color: brandColors.ink }}>{courses.find((c) => (c._id || c.id) === selectedCourseId)?.name || "Chưa chọn"}</strong>
+                &nbsp;|&nbsp;Trình độ JLPT: <strong style={{ color: brandColors.red }}>{selectedCourseLevel}</strong>
               </Typography>
             </Grid>
           </Grid>
@@ -355,234 +365,335 @@ const TeacherQuizManagement: React.FC = () => {
 
       {/* Tab navigation */}
       <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 3 }}>
-        <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)} textColor="inherit" sx={{ "& .MuiTabs-indicator": { bgcolor: "#B90000" } }}>
-          <Tab label="Tạo Quiz bằng AI" sx={{ fontWeight: 600 }} />
-          <Tab label="Kết quả & Thống kê điểm" sx={{ fontWeight: 600 }} />
+        <Tabs 
+          value={activeTab} 
+          onChange={(_, v) => setActiveTab(v)} 
+          textColor="inherit" 
+          sx={{ 
+            "& .MuiTabs-indicator": { bgcolor: brandColors.red, height: '3px' },
+            "& .MuiTab-root": { fontWeight: 700, color: brandColors.textSecondary, '&.Mui-selected': { color: brandColors.red } }
+          }}
+        >
+          <Tab label="Tạo Quiz bằng AI" />
+          <Tab label="Kết quả & Thống kê điểm" />
         </Tabs>
       </Box>
 
       {/* ─── TAB 0: CREATE QUIZ WITH AI ────────────────────────────────────── */}
       {activeTab === 0 && (
-        <Grid container spacing={3}>
-          {/* Select Cards */}
-          <Grid item xs={12} md={4}>
-            <Card elevation={0} sx={{ border: "1px solid #f0f0f0", borderRadius: "12px", maxHeight: "65vh", display: "flex", flexDirection: "column" }}>
-              <CardContent sx={{ overflowY: "auto", flex: 1 }}>
-                <Typography variant="subtitle1" fontWeight={700} gutterBottom>
-                  Chọn Ngữ pháp kiểm tra
-                </Typography>
-                <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
-                  Danh sách ngữ pháp ở cấp độ {selectedCourseLevel} của trung tâm
-                </Typography>
-                <Box sx={{ mb: 2 }}>
-                  <DateRangeFilter value={cardDateFilter} onChange={setCardDateFilter} showSort={false} />
-                  {cardTotalCount !== null && (
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
-                      Tổng: {cardTotalCount} thẻ
-                    </Typography>
-                  )}
-                </Box>
-                <Divider sx={{ mb: 2 }} />
-
-                {loadingCards ? (
-                  <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}><CircularProgress size={24} color="inherit" /></Box>
-                ) : grammarCards.length === 0 ? (
-                  <Typography variant="body2" color="text.secondary">
-                    Chưa có cấu trúc ngữ pháp {selectedCourseLevel} được cấu hình.
+        <Card
+          elevation={0}
+          sx={{
+            border: `1px solid ${brandColors.border}`,
+            borderRadius: "16px",
+            bgcolor: "#ffffff",
+            display: "flex",
+            flexDirection: { xs: "column", md: "row" },
+            height: { xs: "auto", md: "72vh" },
+            minHeight: { xs: "auto", md: 550 },
+            overflow: "hidden",
+          }}
+        >
+          {/* Left Panel: Select Cards */}
+          <Box
+            sx={{
+              width: { xs: "100%", md: "35%" },
+              borderRight: { xs: "none", md: `1px solid ${brandColors.borderLight}` },
+              borderBottom: { xs: `1px solid ${brandColors.borderLight}`, md: "none" },
+              display: "flex",
+              flexDirection: "column",
+              height: { xs: "auto", md: "100%" },
+            }}
+          >
+            <Box sx={{ overflowY: { xs: "visible", md: "auto" }, flex: 1, p: 3 }}>
+              <Typography variant="subtitle1" fontWeight={800} color={brandColors.ink} gutterBottom>
+                Chọn Ngữ pháp kiểm tra
+              </Typography>
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2, fontWeight: 500 }}>
+                Danh sách ngữ pháp ở cấp độ {selectedCourseLevel} của trung tâm
+              </Typography>
+              <Box sx={{ mb: 2 }}>
+                <DateRangeFilter value={cardDateFilter} onChange={setCardDateFilter} showSort={false} />
+                {cardTotalCount !== null && (
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block", fontWeight: 600 }}>
+                    Tổng: {cardTotalCount} thẻ
                   </Typography>
-                ) : (
-                  <FormGroup>
-                    {grammarCards.map((card) => (
-                      <FormControlLabel
-                        key={card._id}
-                        control={
-                          <Checkbox
-                            checked={selectedCardIds.includes(card._id)}
-                            onChange={() => handleToggleCardSelection(card._id)}
-                            sx={{ color: "#B90000", "&.Mui-checked": { color: "#B90000" } }}
-                          />
-                        }
-                        label={
-                          <Box>
-                            <Typography fontSize={13} fontWeight={700}>{card.title}</Typography>
-                            <Typography fontSize={11} color="text.secondary">{card.meaningVi}</Typography>
-                          </Box>
-                        }
-                        sx={{ mb: 1, alignItems: "flex-start" }}
-                      />
-                    ))}
-                  </FormGroup>
                 )}
-              </CardContent>
-              <Box sx={{ p: 2, borderTop: "1px solid #f0f0f0" }}>
-                <Box sx={{ display: "flex", gap: 1.5, alignItems: "center", mb: 2 }}>
-                  <TextField
-                    label="Số câu hỏi"
-                    type="number"
-                    size="small"
-                    inputProps={{ min: 1, max: 20 }}
-                    value={numQuestions}
-                    onChange={(e) => setNumQuestions(parseInt(e.target.value) || 5)}
-                    sx={{ width: 100 }}
-                  />
-                  <Typography variant="body2" color="text.secondary">câu</Typography>
-                </Box>
-                <Button
-                  variant="contained"
-                  fullWidth
-                  startIcon={<Sparkles size={16} />}
-                  onClick={handleGenerateQuestions}
-                  disabled={generatingQuestions || selectedCardIds.length === 0}
-                  sx={{ bgcolor: "#B90000", "&:hover": { bgcolor: "#990000" } }}
-                >
-                  {generatingQuestions ? <CircularProgress size={20} color="inherit" /> : "Tạo bằng AI"}
-                </Button>
               </Box>
-            </Card>
-          </Grid>
+              <Divider sx={{ mb: 2 }} />
 
-          {/* AI Questions Review & Publish */}
-          <Grid item xs={12} md={8}>
-            {aiError && <Alert severity="error" sx={{ mb: 2 }}>{aiError}</Alert>}
-            {aiSuccess && <Alert severity="success" sx={{ mb: 2 }}>{aiSuccess}</Alert>}
-
-            {generatedQuestions.length === 0 ? (
-              <Paper elevation={0} sx={{ p: 6, textAlign: "center", border: "1px dashed #ccc", borderRadius: "12px" }}>
-                <Sparkles size={48} color="#ccc" style={{ marginBottom: 12 }} />
-                <Typography color="text.secondary">
-                  Chọn mẫu ngữ pháp ở cột bên trái và bấm <strong>Tạo bằng AI</strong> để soạn đề thi trắc nghiệm ngay lập tức.
+              {loadingCards ? (
+                <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}><CircularProgress size={24} sx={{ color: brandColors.red }} /></Box>
+              ) : grammarCards.length === 0 ? (
+                <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                  Chưa có cấu trúc ngữ pháp {selectedCourseLevel} được cấu hình.
                 </Typography>
-              </Paper>
-            ) : (
-              <Box>
-                {/* Quiz settings */}
-                <Card elevation={0} sx={{ border: "1px solid #f0f0f0", borderRadius: "12px", mb: 3 }}>
-                  <CardContent>
-                    <Typography variant="subtitle1" fontWeight={700} gutterBottom>Cấu hình bài Quiz</Typography>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12} md={8}>
-                        <TextField
-                          label="Tiêu đề bài kiểm tra *"
-                          fullWidth
-                          size="small"
-                          value={quizTitle}
-                          onChange={(e) => setQuizTitle(e.target.value)}
+              ) : (
+                <FormGroup>
+                  {grammarCards.map((card) => (
+                    <FormControlLabel
+                      key={card._id}
+                      control={
+                        <Checkbox
+                          checked={selectedCardIds.includes(card._id)}
+                          onChange={() => handleToggleCardSelection(card._id)}
+                          sx={{ color: brandColors.border, "&.Mui-checked": { color: brandColors.red } }}
                         />
-                      </Grid>
-                      <Grid item xs={12} md={4}>
-                        <TextField
-                          label="Thời lượng làm bài (phút) *"
-                          type="number"
-                          fullWidth
-                          size="small"
-                          value={quizDuration}
-                          onChange={(e) => setQuizDuration(parseInt(e.target.value) || 15)}
-                        />
-                      </Grid>
-                    </Grid>
-                  </CardContent>
-                </Card>
-
-                {/* Question List Review */}
-                <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>Xem trước câu hỏi đề xuất ({generatedQuestions.length})</Typography>
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 3 }}>
-                  {generatedQuestions.map((q, idx) => (
-                    <Card variant="outlined" key={idx} sx={{ borderRadius: "8px" }}>
-                      <CardContent>
-                        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 1.5 }}>
-                          <Typography fontWeight={700} color="#111">Câu {idx + 1}: {q.questionText}</Typography>
-                          <Box sx={{ display: "flex", gap: 1 }}>
-                            <Button size="small" variant="outlined" onClick={() => handleOpenEditQuestion(idx)}>Sửa</Button>
-                            <IconButton size="small" color="error" onClick={() => handleDeleteQuestion(idx)}><Trash2 size={16} /></IconButton>
-                          </Box>
+                      }
+                      label={
+                        <Box sx={{ py: 0.5 }}>
+                          <Typography fontSize={13} fontWeight={700} color={brandColors.ink}>{card.title}</Typography>
+                          <Typography fontSize={11} color="text.secondary" fontWeight={500}>{card.meaningVi}</Typography>
                         </Box>
-
-                        <Grid container spacing={1} sx={{ pl: 2 }}>
-                          <Grid item xs={6}>
-                            <Typography fontSize={13} color={q.correctAnswer === 1 ? "success.main" : "text.secondary"} sx={{ fontWeight: q.correctAnswer === 1 ? 700 : 400 }}>
-                              1. {q.answer1} {q.correctAnswer === 1 && "✓"}
-                            </Typography>
-                          </Grid>
-                          <Grid item xs={6}>
-                            <Typography fontSize={13} color={q.correctAnswer === 2 ? "success.main" : "text.secondary"} sx={{ fontWeight: q.correctAnswer === 2 ? 700 : 400 }}>
-                              2. {q.answer2} {q.correctAnswer === 2 && "✓"}
-                            </Typography>
-                          </Grid>
-                          <Grid item xs={6}>
-                            <Typography fontSize={13} color={q.correctAnswer === 3 ? "success.main" : "text.secondary"} sx={{ fontWeight: q.correctAnswer === 3 ? 700 : 400 }}>
-                              3. {q.answer3} {q.correctAnswer === 3 && "✓"}
-                            </Typography>
-                          </Grid>
-                          <Grid item xs={6}>
-                            <Typography fontSize={13} color={q.correctAnswer === 4 ? "success.main" : "text.secondary"} sx={{ fontWeight: q.correctAnswer === 4 ? 700 : 400 }}>
-                              4. {q.answer4} {q.correctAnswer === 4 && "✓"}
-                            </Typography>
-                          </Grid>
-                        </Grid>
-                      </CardContent>
-                    </Card>
+                      }
+                      sx={{ mb: 1, alignItems: "flex-start", mr: 0 }}
+                    />
                   ))}
-                </Box>
+                </FormGroup>
+              )}
+            </Box>
+            <Box sx={{ p: 3, borderTop: `1px solid ${brandColors.borderLight}`, bgcolor: "#ffffff" }}>
+              <Box sx={{ display: "flex", gap: 1.5, alignItems: "center", mb: 2 }}>
+                <TextField
+                  label="Số câu hỏi"
+                  type="number"
+                  size="small"
+                  inputProps={{ min: 1, max: 20 }}
+                  value={numQuestions}
+                  onChange={(e) => setNumQuestions(parseInt(e.target.value) || 5)}
+                  sx={{ 
+                    width: 100,
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '8px',
+                      backgroundColor: '#ffffff',
+                      '&.Mui-focused fieldset': {
+                        borderColor: brandColors.red
+                      }
+                    }
+                  }}
+                />
+                <Typography variant="body2" color="text.secondary" fontWeight={600}>câu</Typography>
+              </Box>
+              <Button
+                variant="contained"
+                fullWidth
+                className="mira-button-hover"
+                startIcon={<Sparkles size={16} />}
+                onClick={handleGenerateQuestions}
+                disabled={generatingQuestions || selectedCardIds.length === 0}
+                sx={{ 
+                  bgcolor: brandColors.red, 
+                  borderRadius: '8px', 
+                  py: 1, 
+                  fontWeight: 700,
+                  textTransform: 'none',
+                  "&:hover": { bgcolor: brandColors.redDark } 
+                }}
+              >
+                {generatingQuestions ? <CircularProgress size={20} color="inherit" /> : "Tạo bằng AI"}
+              </Button>
+            </Box>
+          </Box>
 
+          {/* Right Panel: Workspace (AI Questions Review & Publish) */}
+          <Box
+            sx={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              height: { xs: "auto", md: "100%" },
+              bgcolor: "#ffffff",
+            }}
+          >
+            {/* Main content scroll area */}
+            <Box sx={{ overflowY: { xs: "visible", md: "auto" }, flex: 1, p: 3 }}>
+              {aiError && <Alert severity="error" sx={{ mb: 2, borderRadius: '12px' }}>{aiError}</Alert>}
+              {aiSuccess && <Alert severity="success" sx={{ mb: 2, borderRadius: '12px' }}>{aiSuccess}</Alert>}
+
+              {generatedQuestions.length === 0 ? (
+                <Box
+                  sx={{
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    textAlign: "center",
+                    py: { xs: 6, md: 0 },
+                  }}
+                >
+                  <Sparkles size={48} color={brandColors.border} style={{ marginBottom: 12 }} />
+                  <Typography color="text.secondary" fontWeight={500} sx={{ maxWidth: 400 }}>
+                    Chọn mẫu ngữ pháp ở cột bên trái và bấm <strong>Tạo bằng AI</strong> để soạn đề thi trắc nghiệm ngay lập tức.
+                  </Typography>
+                </Box>
+              ) : (
+                <Box className="mira-stagger" sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                  {/* Quiz settings */}
+                  <Card elevation={0} sx={{ border: `1px solid ${brandColors.border}`, borderRadius: "16px", bgcolor: '#ffffff' }}>
+                    <CardContent sx={{ p: 3 }}>
+                      <Typography variant="subtitle1" fontWeight={800} color={brandColors.ink} gutterBottom>Cấu hình bài Quiz</Typography>
+                      <Grid container spacing={2.5}>
+                        <Grid item xs={12} md={8}>
+                          <TextField
+                            label="Tiêu đề bài kiểm tra *"
+                            fullWidth
+                            size="small"
+                            value={quizTitle}
+                            onChange={(e) => setQuizTitle(e.target.value)}
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px', '&.Mui-focused fieldset': { borderColor: brandColors.red } } }}
+                          />
+                        </Grid>
+                        <Grid item xs={12} md={4}>
+                          <TextField
+                            label="Thời lượng làm bài (phút) *"
+                            type="number"
+                            fullWidth
+                            size="small"
+                            value={quizDuration}
+                            onChange={(e) => setQuizDuration(parseInt(e.target.value) || 15)}
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px', '&.Mui-focused fieldset': { borderColor: brandColors.red } } }}
+                          />
+                        </Grid>
+                      </Grid>
+                    </CardContent>
+                  </Card>
+
+                  {/* Question List Review */}
+                  <Typography variant="subtitle1" fontWeight={800} color={brandColors.ink}>
+                    Xem trước câu hỏi đề xuất ({generatedQuestions.length})
+                  </Typography>
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    {generatedQuestions.map((q, idx) => (
+                      <Card variant="outlined" key={idx} sx={{ borderRadius: "12px", borderColor: brandColors.border, bgcolor: '#ffffff' }}>
+                        <CardContent sx={{ p: 3 }}>
+                          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 1.5 }}>
+                            <Typography fontWeight={700} color={brandColors.ink}>Câu {idx + 1}: {q.questionText}</Typography>
+                            <Box sx={{ display: "flex", gap: 1 }}>
+                              <Button 
+                                size="small" 
+                                variant="outlined" 
+                                onClick={() => handleOpenEditQuestion(idx)}
+                                sx={{ 
+                                  borderRadius: '6px', 
+                                  fontSize: '0.75rem',
+                                  color: brandColors.textPrimary,
+                                  borderColor: brandColors.border,
+                                  textTransform: 'none',
+                                  fontWeight: 600,
+                                  '&:hover': { borderColor: brandColors.red, color: brandColors.red }
+                                }}
+                              >
+                                Sửa
+                              </Button>
+                              <IconButton size="small" color="error" onClick={() => handleDeleteQuestion(idx)} sx={{ border: `1px solid ${brandColors.borderLight}`, borderRadius: '6px', p: 0.5 }}>
+                                <Trash2 size={16} />
+                              </IconButton>
+                            </Box>
+                          </Box>
+
+                          <Grid container spacing={1.5} sx={{ pl: 1, mt: 1 }}>
+                            <Grid item xs={12} sm={6}>
+                              <Typography fontSize={13} color={q.correctAnswer === 1 ? "success.main" : brandColors.textSecondary} sx={{ fontWeight: q.correctAnswer === 1 ? 700 : 500 }}>
+                                1. {q.answer1} {q.correctAnswer === 1 && "✓"}
+                              </Typography>
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                              <Typography fontSize={13} color={q.correctAnswer === 2 ? "success.main" : brandColors.textSecondary} sx={{ fontWeight: q.correctAnswer === 2 ? 700 : 500 }}>
+                                2. {q.answer2} {q.correctAnswer === 2 && "✓"}
+                              </Typography>
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                              <Typography fontSize={13} color={q.correctAnswer === 3 ? "success.main" : brandColors.textSecondary} sx={{ fontWeight: q.correctAnswer === 3 ? 700 : 500 }}>
+                                3. {q.answer3} {q.correctAnswer === 3 && "✓"}
+                              </Typography>
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                              <Typography fontSize={13} color={q.correctAnswer === 4 ? "success.main" : brandColors.textSecondary} sx={{ fontWeight: q.correctAnswer === 4 ? 700 : 500 }}>
+                                4. {q.answer4} {q.correctAnswer === 4 && "✓"}
+                              </Typography>
+                            </Grid>
+                          </Grid>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </Box>
+                </Box>
+              )}
+            </Box>
+
+            {/* Bottom publish actions bar */}
+            {generatedQuestions.length > 0 && (
+              <Box sx={{ p: 3, borderTop: `1px solid ${brandColors.borderLight}`, bgcolor: "#ffffff" }}>
                 <Button
                   variant="contained"
                   size="large"
+                  className="mira-button-hover"
                   startIcon={<Save size={18} />}
                   onClick={handlePublishQuiz}
                   fullWidth
-                  sx={{ bgcolor: "#B90000", "&:hover": { bgcolor: "#990000" }, py: 1.5, fontWeight: 700 }}
+                  sx={{ 
+                    bgcolor: brandColors.red, 
+                    borderRadius: '10px', 
+                    py: 1.5, 
+                    fontWeight: 700,
+                    textTransform: 'none',
+                    "&:hover": { bgcolor: brandColors.redDark } 
+                  }}
                 >
                   Lưu & Xuất bản bài Quiz
                 </Button>
               </Box>
             )}
-          </Grid>
-        </Grid>
+          </Box>
+        </Card>
       )}
 
       {/* ─── TAB 1: SCORES & STATISTICS ────────────────────────────────────── */}
       {activeTab === 1 && (
         <Box>
           {loadingQuizzes ? (
-            <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}><CircularProgress color="inherit" /></Box>
+            <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}><CircularProgress sx={{ color: brandColors.red }} /></Box>
           ) : teacherQuizzes.length === 0 ? (
-            <Paper elevation={0} sx={{ p: 6, textAlign: "center", border: "1px dashed #ccc", borderRadius: "12px" }}>
-              <ClipboardList size={48} color="#ccc" style={{ marginBottom: 12 }} />
-              <Typography color="text.secondary">Lớp học này chưa có bài thi trắc nghiệm nào.</Typography>
+            <Paper elevation={0} sx={{ p: 6, textAlign: "center", border: `1px dashed ${brandColors.border}`, borderRadius: "16px", bgcolor: '#ffffff' }}>
+              <ClipboardList size={48} color={brandColors.border} style={{ marginBottom: 12, marginLeft: 'auto', marginRight: 'auto' }} />
+              <Typography color="text.secondary" fontWeight={500}>Lớp học này chưa có bài thi trắc nghiệm nào.</Typography>
             </Paper>
           ) : (
             <Grid container spacing={3}>
               {/* Select Quiz */}
               <Grid item xs={12} md={4}>
-                <Card elevation={0} sx={{ border: "1px solid #f0f0f0", borderRadius: "12px" }}>
-                  <CardContent>
-                    <Typography variant="subtitle1" fontWeight={700} gutterBottom>Danh sách đề thi</Typography>
+                <Card elevation={0} sx={{ border: `1px solid ${brandColors.border}`, borderRadius: "16px", bgcolor: '#ffffff' }}>
+                  <CardContent sx={{ p: 3 }}>
+                    <Typography variant="subtitle1" fontWeight={800} color={brandColors.ink} gutterBottom>Danh sách đề thi</Typography>
                     <Divider sx={{ mb: 2 }} />
-                    <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
                       {teacherQuizzes.map((quiz) => (
                         <Paper
                           key={quiz._id || quiz.id}
                           elevation={0}
                           onClick={() => setSelectedQuizId(quiz._id || quiz.id)}
                           sx={{
-                            p: 1.5,
+                            p: 2,
+                            borderRadius: '12px',
                             border: "1px solid",
-                            borderColor: selectedQuizId === (quiz._id || quiz.id) ? "#B90000" : "#eef0f2",
-                            bgcolor: selectedQuizId === (quiz._id || quiz.id) ? "#fff5f5" : "#fff",
+                            borderColor: selectedQuizId === (quiz._id || quiz.id) ? brandColors.red : brandColors.borderLight,
+                            bgcolor: selectedQuizId === (quiz._id || quiz.id) ? brandColors.redSoft : "#ffffff",
                             cursor: "pointer",
-                            "&:hover": { bgcolor: selectedQuizId === (quiz._id || quiz.id) ? "#fff5f5" : "#fafafa" },
+                            transition: 'all 0.2s ease',
+                            "&:hover": { bgcolor: selectedQuizId === (quiz._id || quiz.id) ? brandColors.redSoft : brandColors.bg },
                             display: "flex",
                             justifyContent: "space-between",
                             alignItems: "center",
                           }}
                         >
                           <Box>
-                            <Typography fontSize={13} fontWeight={700}>{quiz.title}</Typography>
-                            <Typography fontSize={11} color="text.secondary">
+                            <Typography fontSize={13} fontWeight={700} color={brandColors.ink}>{quiz.title}</Typography>
+                            <Typography fontSize={11} color="text.secondary" fontWeight={600} sx={{ mt: 0.5 }}>
                               Số câu: {quiz.totalQuestions} | Hạn: {quiz.durationMinutes} phút
                             </Typography>
                           </Box>
-                          <ChevronRight size={16} color={selectedQuizId === (quiz._id || quiz.id) ? "#B90000" : "#ccc"} />
+                          <ChevronRight size={16} color={selectedQuizId === (quiz._id || quiz.id) ? brandColors.red : brandColors.textTertiary} />
                         </Paper>
                       ))}
                     </Box>
@@ -593,15 +704,15 @@ const TeacherQuizManagement: React.FC = () => {
               {/* Stats and attempts table */}
               <Grid item xs={12} md={8}>
                 {loadingAttempts ? (
-                  <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}><CircularProgress color="inherit" /></Box>
+                  <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}><CircularProgress sx={{ color: brandColors.red }} /></Box>
                 ) : (
-                  <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }} className="mira-stagger">
                     {/* Visual Analytics with Recharts */}
                     {attempts.length > 0 && (
-                      <Card elevation={0} sx={{ border: "1px solid #f0f0f0", borderRadius: "12px" }}>
-                        <CardContent>
-                          <Typography variant="subtitle1" fontWeight={700} gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                            <BarChart2 size={18} color="#B90000" />
+                      <Card elevation={0} sx={{ border: `1px solid ${brandColors.border}`, borderRadius: "16px", bgcolor: '#ffffff' }}>
+                        <CardContent sx={{ p: 3 }}>
+                          <Typography variant="subtitle1" fontWeight={800} color={brandColors.ink} gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                            <BarChart2 size={18} color={brandColors.red} />
                             Phân bố điểm số của Học viên
                           </Typography>
                           <Divider sx={{ mb: 2 }} />
@@ -609,12 +720,12 @@ const TeacherQuizManagement: React.FC = () => {
                             <ResponsiveContainer>
                               <BarChart data={getDistributionData()} margin={{ top: 10, right: 30, left: -20, bottom: 0 }}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                <XAxis dataKey="range" tick={{ fontSize: 11 }} />
-                                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                                <XAxis dataKey="range" tick={{ fontSize: 11, fontWeight: 600 }} />
+                                <YAxis tick={{ fontSize: 11, fontWeight: 600 }} allowDecimals={false} />
                                 <RechartsTooltip />
                                 <Bar dataKey="Số học viên" radius={[4, 4, 0, 0]}>
                                   {getDistributionData().map((_, index) => (
-                                    <Cell key={`cell-${index}`} fill={index === 4 ? "#2e7d32" : "#B90000"} />
+                                    <Cell key={`cell-${index}`} fill={index === 4 ? brandColors.success : brandColors.red} />
                                   ))}
                                 </Bar>
                               </BarChart>
@@ -625,42 +736,42 @@ const TeacherQuizManagement: React.FC = () => {
                     )}
 
                     {/* Table list attempts */}
-                    <Paper elevation={0} sx={{ border: "1px solid #f0f0f0", borderRadius: "12px", overflow: "hidden" }}>
+                    <Paper elevation={0} sx={{ border: `1px solid ${brandColors.border}`, borderRadius: "16px", overflow: "hidden", bgcolor: '#ffffff' }}>
                       <TableContainer>
-                        <Table size="small">
+                        <Table size="medium">
                           <TableHead>
-                            <TableRow sx={{ bgcolor: "#FAFAFA" }}>
-                              <TableCell sx={{ fontWeight: 700 }}><UserCheck size={14} style={{ marginRight: 4, verticalAlign: "middle" }} /> Học sinh</TableCell>
-                              <TableCell sx={{ fontWeight: 700 }}>Email</TableCell>
-                              <TableCell sx={{ fontWeight: 700 }} align="center"><Award size={14} style={{ marginRight: 4, verticalAlign: "middle" }} /> Điểm số</TableCell>
-                              <TableCell sx={{ fontWeight: 700 }} align="center">Phần trăm</TableCell>
-                              <TableCell sx={{ fontWeight: 700 }} align="center">Trạng thái</TableCell>
-                              <TableCell sx={{ fontWeight: 700 }} align="center"><Clock size={14} style={{ marginRight: 4, verticalAlign: "middle" }} /> Nộp bài</TableCell>
+                            <TableRow sx={{ bgcolor: brandColors.bg }}>
+                              <TableCell sx={{ fontWeight: 700, color: brandColors.ink }}><UserCheck size={14} style={{ marginRight: 4, display: 'inline-block', verticalAlign: "middle" }} /> Học sinh</TableCell>
+                              <TableCell sx={{ fontWeight: 700, color: brandColors.ink }}>Email</TableCell>
+                              <TableCell sx={{ fontWeight: 700, color: brandColors.ink }} align="center"><Award size={14} style={{ marginRight: 4, display: 'inline-block', verticalAlign: "middle" }} /> Điểm số</TableCell>
+                              <TableCell sx={{ fontWeight: 700, color: brandColors.ink }} align="center">Phần trăm</TableCell>
+                              <TableCell sx={{ fontWeight: 700, color: brandColors.ink }} align="center">Trạng thái</TableCell>
+                              <TableCell sx={{ fontWeight: 700, color: brandColors.ink }} align="center"><Clock size={14} style={{ marginRight: 4, display: 'inline-block', verticalAlign: "middle" }} /> Nộp bài</TableCell>
                             </TableRow>
                           </TableHead>
                           <TableBody>
                             {attempts.length === 0 ? (
                               <TableRow>
                                 <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
-                                  <Typography color="text.secondary">Chưa có học sinh nào hoàn thành bài thi này.</Typography>
+                                  <Typography color="text.secondary" fontWeight={500}>Chưa có học sinh nào hoàn thành bài thi này.</Typography>
                                 </TableCell>
                               </TableRow>
                             ) : (
                               attempts.map((att) => (
-                                <TableRow key={att._id} hover>
-                                  <TableCell><Typography fontWeight={600}>{att.studentId?.name || "Học viên"}</Typography></TableCell>
-                                  <TableCell><Typography variant="body2" color="text.secondary">{att.studentId?.email || "—"}</Typography></TableCell>
-                                  <TableCell align="center"><Typography fontWeight={700} color="#B90000">{att.score} điểm</Typography></TableCell>
-                                  <TableCell align="center"><Typography fontWeight={600}>{att.percentage}%</Typography></TableCell>
+                                <TableRow key={att._id} hover className="mira-row-hover">
+                                  <TableCell><Typography fontWeight={700} color={brandColors.ink}>{att.studentId?.name || "Học viên"}</Typography></TableCell>
+                                  <TableCell><Typography variant="body2" color="text.secondary" fontWeight={500}>{att.studentId?.email || "—"}</Typography></TableCell>
+                                  <TableCell align="center"><Typography fontWeight={800} color={brandColors.red}>{att.score} điểm</Typography></TableCell>
+                                  <TableCell align="center"><Typography fontWeight={700}>{att.percentage}%</Typography></TableCell>
                                   <TableCell align="center">
                                     {att.passed ? (
-                                      <Chip label="Đạt" color="success" size="small" />
+                                      <Chip label="Đạt" color="success" size="small" sx={{ fontWeight: 700, borderRadius: '6px' }} />
                                     ) : (
-                                      <Chip label="Chưa đạt" color="error" size="small" />
+                                      <Chip label="Chưa đạt" color="error" size="small" sx={{ fontWeight: 700, borderRadius: '6px' }} />
                                     )}
                                   </TableCell>
                                   <TableCell align="center">
-                                    <Typography fontSize={11} color="text.secondary">
+                                    <Typography fontSize={11} color="text.secondary" fontWeight={600}>
                                       {new Date(att.completedAt).toLocaleDateString()}
                                     </Typography>
                                   </TableCell>
@@ -680,10 +791,10 @@ const TeacherQuizManagement: React.FC = () => {
       )}
 
       {/* ─── DIALOG EDIT QUESTION ───────────────────────────────────────────── */}
-      <Dialog open={editingQuestionIdx !== null} onClose={() => setEditingQuestionIdx(null)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: "12px" } }}>
-        <DialogTitle sx={{ fontWeight: 700 }}>Chỉnh sửa câu hỏi trắc nghiệm</DialogTitle>
+      <Dialog open={editingQuestionIdx !== null} onClose={() => setEditingQuestionIdx(null)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: "16px" } }}>
+        <DialogTitle sx={{ fontWeight: 800, color: brandColors.ink }}>Chỉnh sửa câu hỏi trắc nghiệm</DialogTitle>
         <Divider />
-        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 2.5 }}>
+        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: 2.5 }}>
           <TextField
             label="Nội dung câu hỏi *"
             fullWidth
@@ -692,15 +803,26 @@ const TeacherQuizManagement: React.FC = () => {
             rows={2}
             value={editingQuestionText}
             onChange={(e) => setEditingQuestionText(e.target.value)}
+            sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px', '&.Mui-focused fieldset': { borderColor: brandColors.red } } }}
           />
-          <TextField label="Lựa chọn 1 *" fullWidth size="small" value={editingAnswer1} onChange={(e) => setEditingAnswer1(e.target.value)} />
-          <TextField label="Lựa chọn 2 *" fullWidth size="small" value={editingAnswer2} onChange={(e) => setEditingAnswer2(e.target.value)} />
-          <TextField label="Lựa chọn 3 *" fullWidth size="small" value={editingAnswer3} onChange={(e) => setEditingAnswer3(e.target.value)} />
-          <TextField label="Lựa chọn 4 *" fullWidth size="small" value={editingAnswer4} onChange={(e) => setEditingAnswer4(e.target.value)} />
+          <TextField label="Lựa chọn 1 *" fullWidth size="small" value={editingAnswer1} onChange={(e) => setEditingAnswer1(e.target.value)} sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px', '&.Mui-focused fieldset': { borderColor: brandColors.red } } }} />
+          <TextField label="Lựa chọn 2 *" fullWidth size="small" value={editingAnswer2} onChange={(e) => setEditingAnswer2(e.target.value)} sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px', '&.Mui-focused fieldset': { borderColor: brandColors.red } } }} />
+          <TextField label="Lựa chọn 3 *" fullWidth size="small" value={editingAnswer3} onChange={(e) => setEditingAnswer3(e.target.value)} sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px', '&.Mui-focused fieldset': { borderColor: brandColors.red } } }} />
+          <TextField label="Lựa chọn 4 *" fullWidth size="small" value={editingAnswer4} onChange={(e) => setEditingAnswer4(e.target.value)} sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px', '&.Mui-focused fieldset': { borderColor: brandColors.red } } }} />
 
           <FormControl size="small" fullWidth>
-            <InputLabel>Đáp án chính xác</InputLabel>
-            <Select value={editingCorrect} onChange={(e) => setEditingCorrect(e.target.value as number)} label="Đáp án chính xác">
+            <InputLabel sx={{ '&.Mui-focused': { color: brandColors.red } }}>Đáp án chính xác</InputLabel>
+            <Select 
+              value={editingCorrect} 
+              onChange={(e) => setEditingCorrect(e.target.value as number)} 
+              label="Đáp án chính xác"
+              sx={{
+                borderRadius: '8px',
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: brandColors.red
+                }
+              }}
+            >
               <MenuItem value={1}>Lựa chọn 1</MenuItem>
               <MenuItem value={2}>Lựa chọn 2</MenuItem>
               <MenuItem value={3}>Lựa chọn 3</MenuItem>
@@ -708,9 +830,9 @@ const TeacherQuizManagement: React.FC = () => {
             </Select>
           </FormControl>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setEditingQuestionIdx(null)} sx={{ color: "#888" }}>Hủy</Button>
-          <Button variant="contained" onClick={handleSaveEditedQuestion} sx={{ bgcolor: "#B90000", "&:hover": { bgcolor: "#990000" } }}>Lưu thay đổi</Button>
+        <DialogActions sx={{ p: 2.5 }}>
+          <Button onClick={() => setEditingQuestionIdx(null)} sx={{ color: brandColors.textSecondary, fontWeight: 600, textTransform: 'none' }}>Hủy</Button>
+          <Button variant="contained" onClick={handleSaveEditedQuestion} sx={{ bgcolor: brandColors.red, borderRadius: '8px', fontWeight: 700, textTransform: 'none', "&:hover": { bgcolor: brandColors.redDark } }}>Lưu thay đổi</Button>
         </DialogActions>
       </Dialog>
     </Box>

@@ -20,6 +20,7 @@ import {
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
 import axiosInstance from '../../api/axiosInstance';
+import { brandColors } from '../../theme/theme';
 
 interface Course {
   _id: string;
@@ -74,7 +75,6 @@ const TeacherCoursesPage: React.FC = () => {
   };
 
   const handleSearch = () => {
-    // Search logic is handled by filteredCourses
     setPage(1);
   };
 
@@ -96,7 +96,7 @@ const TeacherCoursesPage: React.FC = () => {
   const filteredCourses = courses.filter((course) => {
     const matchesSearch = searchQuery.trim() === '' ||
       course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-course.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      course.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       course.homeroomTeacher.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesStatus = filterStatus === 'all' || course.status === filterStatus;
@@ -135,15 +135,16 @@ course.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
   };
 
   return (
-    <Box sx={{ padding: '20px' }}>
+    <Box sx={{ padding: '20px' }} className="mira-fade-in-up">
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', flexDirection: { xs: 'column', sm: 'row' }, gap: 1.5, mb: 3 }}>
         <Typography
           variant={isMobile ? "h5" : "h4"}
           sx={{
-            color: "#023665",
-            fontWeight: "bold",
+            color: brandColors.ink,
+            fontWeight: 800,
             fontSize: { xs: "1.5rem", sm: "2rem" },
+            letterSpacing: '-0.5px'
           }}
         >
           KHÓA HỌC CỦA TÔI
@@ -172,14 +173,14 @@ course.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
               borderRadius: '12px',
               backgroundColor: '#ffffff',
               '& fieldset': {
-                borderColor: '#e5e7eb',
+                borderColor: brandColors.border,
               },
               '&:hover fieldset': {
-                borderColor: '#d1d5db',
+                borderColor: brandColors.textTertiary,
               },
               '&.Mui-focused fieldset': {
-                borderColor: '#B90000',
-borderWidth: '2px'
+                borderColor: brandColors.red,
+                borderWidth: '2px'
               }
             }
           }}
@@ -192,16 +193,15 @@ borderWidth: '2px'
             height: { xs: 38, sm: 44 },
             borderRadius: '12px',
             color: '#6b7280',
-            border: '1px solid #e5e7eb',
+            border: `1px solid ${brandColors.border}`,
             backgroundColor: '#ffffff',
             '&:hover': {
-              borderColor: '#B90000',
-              backgroundColor: '#fff5e6',
-              color: '#B90000'
+              borderColor: brandColors.red,
+              backgroundColor: brandColors.redSoft,
+              color: brandColors.red
             },
             transition: 'all 0.2s ease'
           }}
-
         >
           <RefreshCw size={18} />
         </IconButton>
@@ -212,12 +212,12 @@ borderWidth: '2px'
             height: 44,
             borderRadius: '12px',
             color: '#6b7280',
-            border: '1px solid #e5e7eb',
+            border: `1px solid ${brandColors.border}`,
             backgroundColor: '#ffffff',
             '&:hover': {
-              borderColor: '#B90000',
-              backgroundColor: '#fff5e6',
-              color: '#B90000'
+              borderColor: brandColors.red,
+              backgroundColor: brandColors.redSoft,
+              color: brandColors.red
             },
             transition: 'all 0.2s ease'
           }}
@@ -234,7 +234,7 @@ borderWidth: '2px'
 
       {/* Error Message */}
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
+        <Alert severity="error" sx={{ mb: 3, borderRadius: '12px' }}>
           {error}
         </Alert>
       )}
@@ -242,28 +242,29 @@ borderWidth: '2px'
       {/* Card list */}
       {loading ? (
         <Box sx={{ padding: 8, textAlign: 'center', color: '#6b7280' }}>
-          <CircularProgress sx={{ mb: 2, color: '#B90000' }} />
-          <Typography variant="body1" sx={{ fontSize: '0.875rem' }}>Đang tải danh sách khóa học...</Typography>
+          <CircularProgress sx={{ mb: 2, color: brandColors.red }} />
+          <Typography variant="body1" sx={{ fontSize: '0.875rem', fontWeight: 500 }}>Đang tải danh sách khóa học...</Typography>
         </Box>
       ) : filteredCourses.length === 0 ? (
         <Box sx={{ padding: 8, textAlign: 'center', color: '#6b7280' }}>
-          <Typography variant="body1" sx={{ fontSize: '0.875rem' }}>
+          <Typography variant="body1" sx={{ fontSize: '0.875rem', fontWeight: 500 }}>
             {searchQuery || filterStatus !== 'all'
               ? 'Không tìm thấy khóa học nào phù hợp với bộ lọc.'
-              : 'Bạn chưa được phân công làm giáo viên chủ nhiệm cho khóa học nào'}
+              : 'Bạn chưa được phân công làm giáo viên chủ nhiệm cho khóa học nào.'}
           </Typography>
         </Box>
       ) : (
         <Box
+          className="mira-stagger"
           sx={{
             display: 'grid',
             gridTemplateColumns: {
-              xs: '1fr',        // Mobile: 1 cột
-              sm: '1fr 1fr',    // Tablet nhỏ: 2 cột
-              md: '1fr 1fr',    // Desktop giữ nguyên
+              xs: '1fr',
+              sm: '1fr 1fr',
+              md: '1fr 1fr',
               lg: '1fr 1fr 1fr'
             },
-gap: { xs: 1.5, sm: 2, md: 2.5 },
+            gap: { xs: 2, sm: 2.5, md: 3 },
             px: { xs: 1, sm: 0 }
           }}
         >
@@ -272,39 +273,36 @@ gap: { xs: 1.5, sm: 2, md: 2.5 },
             return (
               <Card
                 key={course._id || course.id}
-                variant="outlined"
+                className="mira-card-hover"
                 onClick={() => handleViewStudents(course)}
                 sx={{
                   borderRadius: '16px',
                   overflow: 'hidden',
-                  border: '1px solid #e8eaed',
+                  border: `1px solid ${brandColors.border}`,
                   backgroundColor: '#ffffff',
                   transition: 'all 0.3s ease',
                   cursor: 'pointer',
-
                   width: '100%',
                   minHeight: { xs: 'auto', sm: 'auto', md: 280 },
-                  p: { xs: 0.5, sm: 1, md: 0 },
-
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                  p: 0,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.01)',
                   '&:hover': {
-                    boxShadow: '0 8px 24px rgba(2,54,101,0.15)',
-                    transform: { xs: 'none', md: 'translateY(-4px)' },
-                    borderColor: '#d0d7de'
+                    borderColor: brandColors.redLight,
                   }
                 }}
               >
                 <CardContent sx={{ p: { xs: 2, sm: 2.5, md: 3 }, position: 'relative' }}>
                   {/* Course Name */}
-                  <Box sx={{ mb: 2.5 }}>
+                  <Box sx={{ mb: 2 }}>
                     <Typography
                       variant="h6"
                       sx={{
-                        color: '#023665',
-                        fontWeight: 700,
+                        color: brandColors.ink,
+                        fontWeight: 800,
                         fontSize: { xs: '1rem', sm: '1.1rem', md: '1.125rem' },
                         lineHeight: 1.4,
-                        wordBreak: 'break-word'
+                        wordBreak: 'break-word',
+                        letterSpacing: '-0.2px'
                       }}
                     >
                       {course.name}
@@ -312,16 +310,16 @@ gap: { xs: 1.5, sm: 2, md: 2.5 },
                   </Box>
 
                   {/* Divider */}
-                  <Box sx={{ height: '1px', backgroundColor: '#f0f0f0', mb: 2 }} />
+                  <Box sx={{ height: '1px', backgroundColor: brandColors.borderLight, mb: 2 }} />
 
                   {/* Info Grid */}
-                  <Box sx={{ display: 'grid', gap: { xs: 1.25, sm: 1.5, md: 1.75 }, mt: { xs: 1, sm: 1.5 } }}>
+                  <Box sx={{ display: 'grid', gap: 1.5 }}>
                     {/* Homeroom Teacher */}
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500 }}>
+                      <Typography variant="body2" sx={{ color: brandColors.textSecondary, fontSize: '0.875rem', fontWeight: 500 }}>
                         Giáo viên chủ nhiệm
                       </Typography>
-                      <Typography variant="body2" sx={{ color: '#111827', fontSize: '0.875rem', fontWeight: 600, textAlign: 'right', maxWidth: '60%' }}>
+                      <Typography variant="body2" sx={{ color: brandColors.ink, fontSize: '0.875rem', fontWeight: 700, textAlign: 'right', maxWidth: '60%' }}>
                         {course.homeroomTeacher || '-'}
                       </Typography>
                     </Box>
@@ -329,18 +327,18 @@ gap: { xs: 1.5, sm: 2, md: 2.5 },
                     {/* Session & Capacity Row */}
                     <Box sx={{ display: 'flex', gap: 2 }}>
                       <Box sx={{ flex: 1 }}>
-                        <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500, mb: 0.25 }}>
+                        <Typography variant="body2" sx={{ color: brandColors.textSecondary, fontSize: '0.875rem', fontWeight: 500, mb: 0.25 }}>
                           Ca học
-</Typography>
-                        <Typography variant="body2" sx={{ color: '#111827', fontSize: '0.875rem', fontWeight: 600 }}>
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: brandColors.ink, fontSize: '0.875rem', fontWeight: 700 }}>
                           {course.session ?? 0}
                         </Typography>
                       </Box>
                       <Box sx={{ flex: 1 }}>
-                        <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500, mb: 0.25 }}>
+                        <Typography variant="body2" sx={{ color: brandColors.textSecondary, fontSize: '0.875rem', fontWeight: 500, mb: 0.25 }}>
                           Sức chứa
                         </Typography>
-                        <Typography variant="body2" sx={{ color: '#111827', fontSize: '0.875rem', fontWeight: 600 }}>
+                        <Typography variant="body2" sx={{ color: brandColors.ink, fontSize: '0.875rem', fontWeight: 700 }}>
                           {course.capacity}
                         </Typography>
                       </Box>
@@ -351,24 +349,24 @@ gap: { xs: 1.5, sm: 2, md: 2.5 },
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                       p: 1.5,
                       borderRadius: '8px',
-                      backgroundColor: '#f9fafb',
-                      border: '1px solid #f0f0f0'
+                      backgroundColor: brandColors.bg,
+                      border: `1px solid ${brandColors.borderLight}`
                     }}>
-                      <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500 }}>
+                      <Typography variant="body2" sx={{ color: brandColors.textSecondary, fontSize: '0.875rem', fontWeight: 500 }}>
                         Đã ghi danh
                       </Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         <Typography
                           variant="body1"
                           sx={{
-                            color: '#B90000',
+                            color: brandColors.red,
                             fontSize: '1rem',
-                            fontWeight: 700
+                            fontWeight: 800
                           }}
                         >
                           {course.enrolledCount}
                         </Typography>
-                        <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.75rem' }}>
+                        <Typography variant="body2" sx={{ color: brandColors.textSecondary, fontSize: '0.75rem', fontWeight: 600 }}>
                           / {course.capacity}
                         </Typography>
                       </Box>
@@ -377,26 +375,26 @@ gap: { xs: 1.5, sm: 2, md: 2.5 },
                     {/* Dates */}
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                       {/* Start Date */}
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexDirection: { xs: 'row', sm: 'row' }, gap: { xs: 1, sm: 0 } }}>
-                        <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body2" sx={{ color: brandColors.textSecondary, fontSize: '0.875rem', fontWeight: 500 }}>
                           Ngày bắt đầu
                         </Typography>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0, justifyContent: 'flex-end', width: { xs: 160, sm: 180 }, flexShrink: 0 }}>
-                          <CalendarDays size={16} color="#6b7280" />
-                          <Typography variant="body2" sx={{ color: '#111827', fontSize: '0.875rem', fontWeight: 500, fontVariantNumeric: 'tabular-nums', ml: 0 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-end' }}>
+                          <CalendarDays size={14} className="text-gray-500" />
+                          <Typography variant="body2" sx={{ color: brandColors.ink, fontSize: '0.875rem', fontWeight: 600 }}>
                             {formatDateFixed(course.startDate)}
-</Typography>
+                          </Typography>
                         </Box>
                       </Box>
 
                       {/* End Date */}
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexDirection: { xs: 'row', sm: 'row' }, gap: { xs: 1, sm: 0 } }}>
-                        <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body2" sx={{ color: brandColors.textSecondary, fontSize: '0.875rem', fontWeight: 500 }}>
                           Ngày kết thúc
                         </Typography>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0, justifyContent: 'flex-end', width: { xs: 160, sm: 180 }, flexShrink: 0 }}>
-                          <CalendarDays size={16} color="#6b7280" />
-                          <Typography variant="body2" sx={{ color: '#111827', fontSize: '0.875rem', fontWeight: 500, fontVariantNumeric: 'tabular-nums', ml: 0 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-end' }}>
+                          <CalendarDays size={14} className="text-gray-500" />
+                          <Typography variant="body2" sx={{ color: brandColors.ink, fontSize: '0.875rem', fontWeight: 600 }}>
                             {formatDateFixed(course.endDate)}
                           </Typography>
                         </Box>
@@ -405,7 +403,7 @@ gap: { xs: 1.5, sm: 2, md: 2.5 },
 
                     {/* Status */}
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 1 }}>
-                      <Typography variant="body2" sx={{ color: '#6b7280', fontSize: '0.875rem', fontWeight: 500 }}>
+                      <Typography variant="body2" sx={{ color: brandColors.textSecondary, fontSize: '0.875rem', fontWeight: 500 }}>
                         Trạng thái
                       </Typography>
                       <Chip
@@ -413,7 +411,7 @@ gap: { xs: 1.5, sm: 2, md: 2.5 },
                         color={status.color}
                         size="small"
                         sx={{
-                          fontWeight: 600,
+                          fontWeight: 700,
                           fontSize: '0.75rem',
                           height: 24,
                           borderRadius: '6px'
@@ -430,24 +428,73 @@ gap: { xs: 1.5, sm: 2, md: 2.5 },
 
       {/* Pagination (hidden on mobile) */}
       {!isMobile && filteredCourses.length > 0 && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 3, gap: { xs: 0.75, md: 1.2 } }}>
-          <Button size="small" variant="outlined" onClick={goPrev} disabled={currentPage === 1} sx={{ borderRadius: '10px', minWidth: { xs: 28, md: 36 } }}>{'<'}</Button>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 5, gap: 1 }}>
+          <Button 
+            size="small" 
+            variant="outlined" 
+            onClick={goPrev} 
+            disabled={currentPage === 1} 
+            sx={{ 
+              borderRadius: '8px', 
+              minWidth: 36, 
+              color: brandColors.textPrimary,
+              borderColor: brandColors.border,
+              '&:hover': { borderColor: brandColors.red, color: brandColors.red }
+            }}
+          >
+            {'<'}
+          </Button>
           {pagesArray.map((p) => (
             p === currentPage ? (
-              <Box key={p} sx={{ px: { xs: 1, md: 1.5 }, py: 0.4, fontWeight: 700, color: '#111827', border: '1px solid #cfd8dc', borderRadius: '10px', backgroundColor: '#f3f4f6', minWidth: { xs: 28, md: 36 }, textAlign: 'center' }}>{p}</Box>
+              <Box 
+                key={p} 
+                sx={{ 
+                  px: 1.5, 
+                  py: 0.5, 
+                  fontWeight: 700, 
+                  color: '#ffffff', 
+                  borderRadius: '8px', 
+                  backgroundColor: brandColors.red, 
+                  minWidth: 36, 
+                  textAlign: 'center',
+                  fontSize: '0.875rem'
+                }}
+              >
+                {p}
+              </Box>
             ) : (
               <Button
                 key={p}
                 size="small"
                 variant="outlined"
                 onClick={() => setPage(p)}
-                sx={{ borderRadius: '10px', minWidth: { xs: 28, md: 36 } }}
+                sx={{ 
+                  borderRadius: '8px', 
+                  minWidth: 36,
+                  color: brandColors.textSecondary,
+                  borderColor: brandColors.border,
+                  '&:hover': { borderColor: brandColors.red, color: brandColors.red }
+                }}
               >
                 {p}
               </Button>
             )
           ))}
-<Button size="small" variant="outlined" onClick={goNext} disabled={currentPage === totalPages} sx={{ borderRadius: '10px', minWidth: { xs: 28, md: 36 } }}>{'>'}</Button>
+          <Button 
+            size="small" 
+            variant="outlined" 
+            onClick={goNext} 
+            disabled={currentPage === totalPages} 
+            sx={{ 
+              borderRadius: '8px', 
+              minWidth: 36,
+              color: brandColors.textPrimary,
+              borderColor: brandColors.border,
+              '&:hover': { borderColor: brandColors.red, color: brandColors.red }
+            }}
+          >
+            {'>'}
+          </Button>
         </Box>
       )}
     </Box>
