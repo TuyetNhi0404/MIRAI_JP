@@ -10,10 +10,12 @@ import {
   Stack,
   Tooltip,
   IconButton,
+  Grid,
 } from "@mui/material";
 import { Calendar, RotateCcw } from "lucide-react";
 import dayjs, { Dayjs } from "dayjs";
 import type { DateRangePreset } from "../../services/grammar.service";
+import { brandColors } from "../../theme/theme";
 
 export interface DateRangeValue {
   dateFrom?: string;
@@ -109,22 +111,13 @@ const DateRangeFilter: React.FC<DateRangeFilterProps> = ({ value, onChange, show
   }, [preset]);
 
   return (
-    <Stack
-      direction={{ xs: "column", md: "row" }}
-      spacing={1.5}
-      alignItems={{ md: "center" }}
-      sx={{ flexWrap: "wrap" }}
-    >
-      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, color: "#666" }}>
-        <Calendar size={16} />
-        <Box component="span" sx={{ fontSize: 13, fontWeight: 600 }}>Khoảng ngày:</Box>
-      </Box>
-
-      <FormControl size="small" sx={{ minWidth: 150 }}>
-        <InputLabel id="date-preset-label">Nhanh</InputLabel>
+    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, alignItems: "center" }}>
+      {/* Khoảng ngày preset */}
+      <FormControl size="small" sx={{ width: 130 }}>
+        <InputLabel id="date-preset-label">Khoảng ngày</InputLabel>
         <Select
           labelId="date-preset-label"
-          label="Nhanh"
+          label="Khoảng ngày"
           value={preset}
           onChange={(e) => handlePresetChange(e.target.value as DateRangePreset)}
         >
@@ -136,28 +129,32 @@ const DateRangeFilter: React.FC<DateRangeFilterProps> = ({ value, onChange, show
         </Select>
       </FormControl>
 
-      <TextField
-        type="date"
-        size="small"
-        label="Từ ngày"
-        value={value.dateFrom || ""}
-        onChange={(e) => handleFromChange(e.target.value)}
-        InputLabelProps={{ shrink: true }}
-        sx={{ minWidth: 160 }}
-      />
-      <TextField
-        type="date"
-        size="small"
-        label="Đến ngày"
-        value={value.dateTo || ""}
-        onChange={(e) => handleToChange(e.target.value)}
-        InputLabelProps={{ shrink: true }}
-        sx={{ minWidth: 160 }}
-      />
+      {/* Từ ngày & Đến ngày nhóm chung 1 Box để luôn nằm cùng 1 hàng */}
+      <Box sx={{ display: "flex", gap: 1.5 }}>
+        <TextField
+          type="date"
+          size="small"
+          label="Từ ngày"
+          value={value.dateFrom || ""}
+          onChange={(e) => handleFromChange(e.target.value)}
+          InputLabelProps={{ shrink: true }}
+          sx={{ width: 145 }}
+        />
+        <TextField
+          type="date"
+          size="small"
+          label="Đến ngày"
+          value={value.dateTo || ""}
+          onChange={(e) => handleToChange(e.target.value)}
+          InputLabelProps={{ shrink: true }}
+          sx={{ width: 145 }}
+        />
+      </Box>
 
       {showSort && (
         <>
-          <FormControl size="small" sx={{ minWidth: 140 }}>
+          {/* Sắp xếp */}
+          <FormControl size="small" sx={{ width: 130 }}>
             <InputLabel id="sort-by-label">Sắp xếp</InputLabel>
             <Select
               labelId="sort-by-label"
@@ -169,31 +166,46 @@ const DateRangeFilter: React.FC<DateRangeFilterProps> = ({ value, onChange, show
               <MenuItem value="title">Tên</MenuItem>
             </Select>
           </FormControl>
-          <Tooltip title={currentOrder === "asc" ? "Tăng dần" : "Giảm dần"}>
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={handleOrderToggle}
-              sx={{ minWidth: 90, textTransform: "none" }}
-            >
-              {currentOrder === "asc" ? "↑ Tăng dần" : "↓ Giảm dần"}
-            </Button>
-          </Tooltip>
+
+          {/* Tăng / Giảm dần */}
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={handleOrderToggle}
+            sx={{
+              height: 38,
+              px: 1.5,
+              textTransform: "none",
+              color: brandColors.red,
+              borderColor: brandColors.red,
+              fontWeight: 600,
+              fontSize: 13,
+              whiteSpace: "nowrap",
+              '&:hover': {
+                borderColor: brandColors.redDark,
+                backgroundColor: brandColors.redSoft,
+              }
+            }}
+          >
+            {currentOrder === "asc" ? "↑ Tăng dần" : "↓ Giảm dần"}
+          </Button>
         </>
       )}
 
+      {/* Reset Button */}
       <Tooltip title={`Đặt lại (hiện tại: ${presetLabel})`}>
         <span>
           <IconButton
             size="small"
             onClick={handleReset}
             disabled={preset === "all" && !value.dateFrom && !value.dateTo}
+            sx={{ border: "1px solid #eee", height: 38, width: 38, borderRadius: "8px" }}
           >
             <RotateCcw size={16} />
           </IconButton>
         </span>
       </Tooltip>
-    </Stack>
+    </Box>
   );
 };
 

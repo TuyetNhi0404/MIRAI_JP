@@ -51,6 +51,7 @@ import DateRangeFilter from "../../components/grammar/DateRangeFilter";
 import type { DateRangeValue } from "../../components/grammar/DateRangeFilter";
 import { getAxiosErrorMessage } from "../../utils/axiosError";
 import { useGrammarDocumentProgress } from "../../hooks/useGrammarDocumentProgress";
+import { brandColors } from "../../theme/theme";
 
 const LEVELS: JLPTLevel[] = ["N5", "N4", "N3", "N2", "N1"];
 
@@ -235,7 +236,19 @@ const TeacherGrammarMaterials: React.FC = () => {
         </Box>
       </Box>
 
-      <Alert severity="info" sx={{ mb: 2 }} icon={<Lock size={18} />}>
+      <Alert
+        severity="info"
+        icon={<Lock size={18} style={{ color: brandColors.red }} />}
+        sx={{
+          mb: 2,
+          bgcolor: brandColors.redSoft,
+          color: brandColors.ink,
+          border: `1px solid ${brandColors.redLight}`,
+          '& .MuiAlert-icon': {
+            color: brandColors.red,
+          }
+        }}
+      >
         Tài liệu bạn upload mặc định ở chế độ <strong>private</strong> (chỉ bạn thấy). Admin có thể
         đánh dấu <strong>shared</strong> để chia sẻ với các giáo viên khác cùng trung tâm.
       </Alert>
@@ -251,32 +264,49 @@ const TeacherGrammarMaterials: React.FC = () => {
       {/* ─── TAB 0: LIST + DATE FILTER (READ-ONLY VIEW) ────────────────────── */}
       {tab === 0 && (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center" }}>
-            <FormControl size="small" sx={{ minWidth: 140 }}>
-              <InputLabel>Cấp độ JLPT</InputLabel>
-              <Select
-                label="Cấp độ JLPT"
-                value={filterLevel}
-                onChange={(e) => setFilterLevel(e.target.value as JLPTLevel | "")}
-              >
-                <MenuItem value="">Tất cả</MenuItem>
-                {LEVELS.map(l => (
-                  <MenuItem key={l} value={l}>{l}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <Tooltip title="Làm mới">
-              <IconButton onClick={fetchDocuments} sx={{ border: "1px solid #eee" }}>
-                <RefreshCw size={18} />
-              </IconButton>
-            </Tooltip>
-          </Box>
-          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
-            <DateRangeFilter value={dateFilter} onChange={setDateFilter} />
-            {totalCount !== null && (
-              <Chip size="small" variant="outlined" label={`Tổng: ${totalCount} tài liệu`} />
-            )}
-          </Box>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2,
+              border: `1px solid ${brandColors.border}`,
+              borderRadius: "12px",
+              bgcolor: "#ffffff",
+            }}
+          >
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, alignItems: "center" }}>
+              {/* JLPT Level filter */}
+              <FormControl size="small" sx={{ width: 140 }}>
+                <InputLabel>Cấp độ JLPT</InputLabel>
+                <Select
+                  label="Cấp độ JLPT"
+                  value={filterLevel}
+                  onChange={(e) => setFilterLevel(e.target.value as JLPTLevel | "")}
+                >
+                  <MenuItem value="">Tất cả</MenuItem>
+                  {LEVELS.map(l => (
+                    <MenuItem key={l} value={l}>{l}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              {/* DateRangeFilter */}
+              <DateRangeFilter value={dateFilter} onChange={setDateFilter} />
+
+              {/* Reload Button */}
+              <Tooltip title="Làm mới">
+                <IconButton onClick={fetchDocuments} sx={{ border: "1px solid #eee", height: 38, width: 38, borderRadius: "8px" }}>
+                  <RefreshCw size={16} />
+                </IconButton>
+              </Tooltip>
+
+              {/* Total count - align to right */}
+              {totalCount !== null && (
+                <Box sx={{ marginLeft: "auto" }}>
+                  <Chip size="small" variant="outlined" label={`Tổng: ${totalCount} tài liệu`} sx={{ fontWeight: 600 }} />
+                </Box>
+              )}
+            </Box>
+          </Paper>
 
           <Paper elevation={0} sx={{ border: "1px solid #f0f0f0", borderRadius: "12px", overflow: "hidden" }}>
             {loading ? (
