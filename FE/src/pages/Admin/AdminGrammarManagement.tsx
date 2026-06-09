@@ -51,6 +51,8 @@ import DateRangeFilter from "../../components/grammar/DateRangeFilter";
 import type { DateRangeValue } from "../../components/grammar/DateRangeFilter";
 import { getAxiosErrorMessage } from "../../utils/axiosError";
 import { useGrammarDocumentProgress } from "../../hooks/useGrammarDocumentProgress";
+import { brandColors } from "../../theme/theme";
+
 
 const LEVELS: JLPTLevel[] = ["N5", "N4", "N3", "N2", "N1"];
 
@@ -442,22 +444,31 @@ const AdminGrammarManagement: React.FC = () => {
 
       {/* Filter and search bar (Visible in Tab 0 and 1) */}
       {tab !== 2 && (
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 3 }}>
-          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center" }}>
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2,
+            border: `1px solid ${brandColors.border}`,
+            borderRadius: "12px",
+            bgcolor: "#ffffff",
+            mb: 3,
+          }}
+        >
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, alignItems: "center" }}>
             {tab === 0 && (
               <TextField
                 placeholder="Tìm kiếm ngữ pháp..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 size="small"
-                sx={{ minWidth: 260, flex: 1 }}
+                sx={{ width: 220 }}
                 InputProps={{
                   startAdornment: <Search size={16} style={{ marginRight: 8, color: "#999" }} />,
                 }}
               />
             )}
 
-            <FormControl size="small" sx={{ minWidth: 140 }}>
+            <FormControl size="small" sx={{ width: 140 }}>
               <InputLabel>Cấp độ JLPT</InputLabel>
               <Select
                 label="Cấp độ JLPT"
@@ -470,20 +481,21 @@ const AdminGrammarManagement: React.FC = () => {
                 ))}
               </Select>
             </FormControl>
-          </Box>
 
-          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
             <DateRangeFilter value={dateFilter} onChange={setDateFilter} />
+
             {totalCount !== null && (
-              <Chip
-                size="small"
-                color="default"
-                variant="outlined"
-                label={`Tổng: ${totalCount} ${tab === 0 ? "thẻ" : "tài liệu"}`}
-              />
+              <Box sx={{ marginLeft: "auto" }}>
+                <Chip
+                  size="small"
+                  variant="outlined"
+                  label={`Tổng: ${totalCount} ${tab === 0 ? "thẻ" : "tài liệu"}`}
+                  sx={{ fontWeight: 600 }}
+                />
+              </Box>
             )}
           </Box>
-        </Box>
+        </Paper>
       )}
 
       {/* ─── TAB 0: CARDS TABLE ──────────────────────────────────────────────── */}
