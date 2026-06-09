@@ -1,19 +1,12 @@
 import React, { useEffect, useState } from "react";
-import {
-  Box,
-  Typography,
-  Button,
-  CircularProgress,
-  Stack,
-  TextField,
-  useMediaQuery,
-  useTheme,
-} from "@mui/material";
 import ScheduleGrid from "../../components/scheduleStudent/ScheduleGrid";
 import dayjs from "dayjs";
 import axios, { AxiosError } from "axios";
 import type { SessionItem, AttendanceStatus } from "../../types/schedule.types";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, Info, LogIn } from "lucide-react";
+import { PageLayout } from "../../components/ui/PageLayout";
+import { BaseCard } from "../../components/ui/BaseCard";
+import { EmptyState } from "../../components/ui/EmptyState";
 
 interface CourseData {
   _id?: string;
@@ -77,9 +70,6 @@ interface ProfileResponse {
   user?: { _id?: string };
 }
 
-const PRIMARY_ORANGE = "#FF5722";
-const LIGHT_ORANGE = "#B90000";
-
 const toYMD = (d: Date | string): string => {
   const dt = typeof d === "string" ? new Date(d) : d;
   const yyyy = dt.getFullYear();
@@ -111,22 +101,16 @@ const inferSlotNumber = (slot: unknown, startTime?: string | null): number => {
 
 const normalizeDateYMD = (anyDate: unknown): string => {
   if (!anyDate) {
-    console.warn("[normalize] No date provided");
     return toYMD(new Date());
   }
-  
   const dateStr = String(anyDate);
-  
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
     return dateStr;
   }
-  
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) {
-    console.warn("[normalize] Invalid date:", anyDate);
     return toYMD(new Date());
   }
-  
   return toYMD(d);
 };
 
@@ -139,7 +123,6 @@ const fetchCourseName = async (courseId: string): Promise<string> => {
   if (courseCache.has(courseId)) {
     return courseCache.get(courseId)!;
   }
-
   try {
     const res = await axios.get(`${BASE}/courses/${courseId}`, {
       withCredentials: true,
@@ -181,111 +164,70 @@ const fetchAllCourses = async (): Promise<Map<string, string>> => {
 const extractTeacherName = (teacherData: unknown): string => {
   if (!teacherData) return "Giáo viên chưa xác định";
   if (typeof teacherData === "string") return "Giáo viên chưa xác định";
-  
   if (typeof teacherData === "object") {
     const teacher = teacherData as TeacherData;
-    const candidates = [
-      teacher.fullName,
-      teacher.name,
-      teacher.displayName,
-      teacher.username,
-    ];
-    
+    const candidates = [teacher.fullName, teacher.name, teacher.displayName, teacher.username];
     for (const candidate of candidates) {
       if (candidate && typeof candidate === "string" && candidate.trim() && !candidate.includes("@")) {
         return candidate.trim();
       }
     }
-    
     if (teacher.email && typeof teacher.email === "string") {
       const emailParts = teacher.email.split("@");
       if (emailParts[0]) return emailParts[0].trim();
     }
   }
-  
   return "Giáo viên chưa xác định";
 };
 
 const fetchMyAttendance = async (): Promise<Map<string, AttendanceStatus>> => {
   try {
-    const profileRes = await axios.get<ProfileResponse>(`${BASE}/profile`, { 
-      withCredentials: true 
+    const profileRes = await axios.get<ProfileResponse>(`${BASE}/profile`, {
+      withCredentials: true,
     });
-    
     const data = profileRes.data?.data || profileRes.data;
     const userId = data?._id || data?.id || data?.userId || data?.user?._id;
-    
     if (!userId) {
-      console.warn("⚠️ Cannot get userId from profile for attendance");
       return new Map();
     }
 
-    console.log(`👤 Fetching attendance for userId: ${userId}`);
-
-    const attendanceRes = await axios.get(`${BASE}/attendances/student/${userId}`, { 
-      withCredentials: true 
+    const attendanceRes = await axios.get(`${BASE}/attendances/student/${userId}`, {
+      withCredentials: true,
     });
-    
     const attendanceData = attendanceRes.data?.data || attendanceRes.data || [];
     const attendanceMap = new Map<string, AttendanceStatus>();
-    
-    if (!Array.isArray(attendanceData)) {
-      console.warn("⚠️ Attendance data is not an array:", attendanceData);
-      return new Map();
-    }
 
-    attendanceData.forEach((record: AttendanceRawRecord, index: number) => {
-      console.log(`\n[Attendance ${index + 1}] Processing:`, record);
-      
+    if (!Array.isArray(attendanceData)) return new Map();
+
+    attendanceData.forEach((record: AttendanceRawRecord) => {
       let calendarId: string | null = null;
-      
       if (record.calendarId) {
-        if (typeof record.calendarId === 'string') {
+        if (typeof record.calendarId === "string") {
           calendarId = record.calendarId;
-        } else if (typeof record.calendarId === 'object' && record.calendarId !== null) {
+        } else if (typeof record.calendarId === "object" && record.calendarId !== null) {
           calendarId = record.calendarId._id || record.calendarId.id || null;
         }
       }
-      
       const rawStatus = record.status || "not_yet";
       const statusLower = String(rawStatus).toLowerCase().trim();
-      
       let status: AttendanceStatus = "not_yet";
       if (statusLower === "present" || statusLower === "attended") {
         status = "present";
       } else if (statusLower === "absent" || statusLower === "missing") {
         status = "absent";
       }
-      
-      if (calendarId && typeof calendarId === 'string') {
+      if (calendarId) {
         attendanceMap.set(String(calendarId), status);
-        console.log(`  ✓ [Attendance ${index + 1}] Mapped: calendarId=${calendarId}, status=${status}`);
-      } else {
-        console.warn(`  ⊗ [Attendance ${index + 1}] Invalid - missing calendarId:`, {
-          recordId: record._id,
-          calendarId: record.calendarId,
-          calendarIdType: typeof record.calendarId,
-          status: record.status
-        });
       }
     });
-    
     return attendanceMap;
   } catch (error) {
-    const err = error as AxiosError;
-    console.error(" Failed to fetch attendance:", {
-      status: err.response?.status,
-      data: err.response?.data,
-      message: err.message
-    });
+    console.error("Failed to fetch attendance:", error);
     return new Map();
   }
 };
 
 const StudentSchedulePage: React.FC = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-
   const [weekStart, setWeekStart] = useState<Date>(() => getMonday());
   const [items, setItems] = useState<SessionItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -294,28 +236,25 @@ const StudentSchedulePage: React.FC = () => {
   const loadSchedule = async () => {
     setLoading(true);
     setAuthRequired(false);
-
     try {
-      
       const attendanceMap = await fetchMyAttendance();
       const res = await axios.get(`${BASE}/calendars`, {
         withCredentials: true,
       });
-
       const raw: CalendarRawItem[] = Array.isArray(res?.data?.data) ? res.data.data : [];
-      console.log(` Received ${raw.length} calendar items`);
 
-      console.log("\n Step 3: Fetching courses...");
-      const courseIds = [...new Set(
-        raw
-          .map((it) => {
-            if (typeof it.courseId === 'object' && it.courseId !== null) {
-              return (it.courseId as CourseData)._id || (it.courseId as CourseData).id;
-            }
-            return it.courseId;
-          })
-          .filter(Boolean)
-      )] as string[];
+      const courseIds = [
+        ...new Set(
+          raw
+            .map((it) => {
+              if (typeof it.courseId === "object" && it.courseId !== null) {
+                return (it.courseId as CourseData)._id || (it.courseId as CourseData).id;
+              }
+              return it.courseId;
+            })
+            .filter(Boolean)
+        ),
+      ] as string[];
 
       let courseMap = new Map<string, string>();
       if (courseIds.length > 0) {
@@ -323,13 +262,7 @@ const StudentSchedulePage: React.FC = () => {
       }
 
       const mapped: SessionItem[] = await Promise.all(
-        raw.map(async (it, idx) => {
-          console.log(`\n[Calendar ${idx + 1}/${raw.length}] Processing:`, {
-            _id: it._id,
-            date: it.date,
-            courseId: it.courseId
-          });
-
+        raw.map(async (it) => {
           const date = normalizeDateYMD(it.date ?? it.day ?? it.startDate);
           const sessionObj = it.sessionId ?? it.session ?? null;
           const startTime = sessionObj?.startTime ?? it.startTime ?? "00:00";
@@ -346,27 +279,21 @@ const StudentSchedulePage: React.FC = () => {
               courseName = courseObj.courseName || courseObj.name || "Chưa xác định";
 
               if (courseName === "Chưa xác định" && courseId) {
-                const cachedName = courseMap.get(String(courseId)) || await fetchCourseName(String(courseId));
+                const cachedName = courseMap.get(String(courseId)) || (await fetchCourseName(String(courseId)));
                 if (cachedName !== "Chưa xác định") courseName = cachedName;
               }
             } else if (typeof it.courseId === "string") {
               courseId = it.courseId;
-              const cachedName = courseMap.get(courseId) || await fetchCourseName(courseId);
+              const cachedName = courseMap.get(courseId) || (await fetchCourseName(courseId));
               if (cachedName !== "Chưa xác định") courseName = cachedName;
             }
           }
 
           const calendarId = String(it._id || it.id || it.calendarId || "");
-          console.log(`  → calendarId: ${calendarId}`);
-          
           let attendanceStatus: AttendanceStatus = "not_yet";
           if (calendarId) {
             const mappedStatus = attendanceMap.get(calendarId);
-            if (mappedStatus) {
-              attendanceStatus = mappedStatus;
-            } else {
-              console.log(`   No attendance found, using default: not_yet`);
-            }
+            if (mappedStatus) attendanceStatus = mappedStatus;
           }
 
           const attendance = {
@@ -375,11 +302,10 @@ const StudentSchedulePage: React.FC = () => {
             s: attendanceStatus,
           };
 
-          let teacher: string = "Giáo viên chưa xác định";
+          let teacher = "Giáo viên chưa xác định";
           if (it.teacherId && typeof it.teacherId === "object") {
             teacher = extractTeacherName(it.teacherId);
           }
-
           if (teacher === "Giáo viên chưa xác định" || teacher.startsWith("Teacher ")) {
             const alt = it.teacher || it.teacherName || it.instructor?.name;
             if (alt && typeof alt === "string" && !alt.includes("@")) {
@@ -389,7 +315,7 @@ const StudentSchedulePage: React.FC = () => {
             }
           }
 
-          const sessionItem: SessionItem = {
+          return {
             calendarId,
             courseId,
             courseName,
@@ -400,16 +326,6 @@ const StudentSchedulePage: React.FC = () => {
             teacher,
             attendance,
           };
-
-          console.log(`   Mapped session:`, {
-            calendarId,
-            courseName,
-            date,
-            slot: slotNumber,
-            attendance: attendanceStatus
-          });
-
-          return sessionItem;
         })
       );
 
@@ -418,24 +334,10 @@ const StudentSchedulePage: React.FC = () => {
         if (a.date > b.date) return 1;
         return (a.slotNumber ?? 0) - (b.slotNumber ?? 0);
       });
-
-      console.log(`\n✅ Total mapped sessions: ${sorted.length}`);
-      console.table(sorted.map(s => ({
-        date: s.date,
-        course: s.courseName,
-        slot: s.slotNumber,
-        attendance: s.attendance?.status
-      })));
-      
       setItems(sorted);
-
     } catch (err) {
       const e = err as AxiosError;
-      console.error(" Error loading schedule:", {
-        status: e.response?.status,
-        message: e.message,
-        data: e.response?.data
-      });
+      console.error("Error loading schedule:", e);
       if (e.response?.status === 401) {
         setAuthRequired(true);
       }
@@ -461,7 +363,7 @@ const StudentSchedulePage: React.FC = () => {
       prev.setDate(s.getDate() - 7);
       return getMonday(prev);
     });
-    
+
   const goNextWeek = () =>
     setWeekStart((s) => {
       const next = new Date(s);
@@ -473,250 +375,106 @@ const StudentSchedulePage: React.FC = () => {
   const weekEndString = dayjs(weekStart).add(6, "day").format("DD/MM/YYYY");
 
   return (
-    <Box
-      p={{ xs: 2, md: 4 }}
-      sx={{
-        backgroundColor: "#fafafa",
-        minHeight: "100vh",
-        boxSizing: "border-box",
-        fontFamily: "Inter, Roboto, sans-serif",
-      }}
+    <PageLayout
+      title="Lịch học của tôi"
+      subtitle="Xem và theo dõi lịch học, lịch chuyên cần của bạn theo từng tuần"
+      extra={
+        <div className="flex items-center gap-2">
+          <button
+            onClick={goPrevWeek}
+            className="p-2 border border-border-color rounded-xl bg-surface-base hover:bg-bg-base transition active:scale-95 shrink-0"
+          >
+            <ChevronLeft size={18} />
+          </button>
+
+          <label className="flex items-center gap-2 border border-border-color rounded-xl px-4 py-1.5 bg-surface-base cursor-pointer hover:border-border-color/80 transition relative shrink-0">
+            <Calendar size={16} className="text-text-secondary" />
+            <span className="text-sm font-bold text-text-main select-none">
+              {weekStartString} – {weekEndString}
+            </span>
+            <input
+              type="date"
+              value={dayjs(weekStart).format("YYYY-MM-DD")}
+              onChange={(e) => handleDatePick(e.target.value)}
+              className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+            />
+          </label>
+
+          <button
+            onClick={goNextWeek}
+            className="p-2 border border-border-color rounded-xl bg-surface-base hover:bg-bg-base transition active:scale-95 shrink-0"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
+      }
     >
-      <Box maxWidth="1400px" mx="auto">
-        <Box display="flex" alignItems="center" mb={{ xs: 2, sm: 3 }}>
-          <Typography
-            variant={isMobile ? "h6" : "h4"}
-            sx={{
-              fontWeight: 800,
-              color: "#222",
-              letterSpacing: "0.5px",
-              fontSize: { xs: "1.1rem", sm: "2.125rem" },
-              whiteSpace: "nowrap",
+      {authRequired && (
+        <BaseCard className="border-l-4 border-amber-500 bg-amber-50/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h4 className="text-sm font-bold text-amber-800">Bạn chưa đăng nhập hoặc phiên làm việc đã hết hạn.</h4>
+            <p className="text-xs text-text-secondary">Vui lòng đăng nhập lại để xem thời khóa biểu cá nhân của bạn.</p>
+          </div>
+          <button
+            onClick={() => {
+              window.location.href = "/login";
             }}
+            className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl transition"
           >
-            LỊCH HỌC CỦA TÔI
-          </Typography>
-        </Box>
+            <LogIn size={14} />
+            Đăng nhập
+          </button>
+        </BaseCard>
+      )}
 
-        {authRequired && (
-          <Box
-            sx={{
-              mb: 2,
-              p: 2,
-              backgroundColor: "#fff3e0",
-              border: "1px solid #ffe0b2",
-              borderRadius: 1,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 2,
-              flexDirection: { xs: "column", sm: "row" },
-            }}
-          >
-            <Box>
-              <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                Bạn chưa đăng nhập hoặc phiên làm việc đã hết hạn.
-              </Typography>
-              <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                Vui lòng đăng nhập để xem lịch học của bạn.
-              </Typography>
-            </Box>
-            <Box>
-              <Button
-                variant="contained"
-                onClick={() => {
-                  window.location.href = "/login";
-                }}
-                sx={{ backgroundColor: PRIMARY_ORANGE }}
-              >
-                Đăng nhập
-              </Button>
-            </Box>
-          </Box>
-        )}
-
-        <Box sx={{ mb: 3 }}>
-          <Typography
-            variant="body1"
-            sx={{ color: "#555", mb: 1, fontWeight: 500, fontSize: { xs: "0.9rem", sm: "1rem" } }}
-          >
-            Chọn tuần:
-          </Typography>
-          <Stack
-            direction="row"
-            alignItems="center"
-            spacing={{ xs: 0.5, sm: 1.5 }}
-            flexWrap="nowrap"
-            sx={{
-              overflowX: "auto",
-              "&::-webkit-scrollbar": { display: "none" },
-              msOverflowStyle: "none",
-              scrollbarWidth: "none",
-            }}
-          >
-            <Button
-              variant="outlined"
-              size={isMobile ? "small" : "medium"}
-              onClick={goPrevWeek}
-              sx={{
-                borderColor: "#ccc",
-                color: "#444",
-                minWidth: { xs: "36px", sm: "auto" },
-                px: { xs: 1, sm: 2 },
-                "&:hover": { borderColor: "#999", backgroundColor: "#f5f5f5" },
-              }}
-            >
-              <ChevronLeft size={isMobile ? 18 : 20} />
-            </Button>
-
-            <Box
-              onClick={() => {
-                const input = document.querySelector('input[type="date"]') as HTMLInputElement;
-                input?.showPicker?.();
-              }}
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: { xs: 0.5, sm: 1 },
-                border: "1px solid #ccc",
-                borderRadius: 1,
-                px: { xs: 1, sm: 2 },
-                py: { xs: 0.5, sm: 1 },
-                backgroundColor: "#fff",
-                cursor: "pointer",
-                flexShrink: 0,
-                "&:hover": { borderColor: "#999" },
-              }}
-            >
-              <Typography
-                variant="body2"
-                sx={{
-                  color: "#222",
-                  fontWeight: 500,
-                  fontSize: { xs: "0.8rem", sm: "1rem" },
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {weekStartString} – {weekEndString}
-              </Typography>
-              <TextField
-                type="date"
-                size="small"
-                value={dayjs(weekStart).format("YYYY-MM-DD")}
-                onChange={(e) => handleDatePick(e.target.value)}
-                sx={{ position: "absolute", opacity: 0, width: 1, height: 1, pointerEvents: "none" }}
-              />
-            </Box>
-
-            <Button
-              variant="outlined"
-              size={isMobile ? "small" : "medium"}
-              onClick={goNextWeek}
-              sx={{
-                borderColor: "#ccc",
-                color: "#444",
-                minWidth: { xs: "36px", sm: "auto" },
-                px: { xs: 1, sm: 2 },
-                "&:hover": { borderColor: "#999", backgroundColor: "#f5f5f5" },
-              }}
-            >
-              <ChevronRight size={isMobile ? 18 : 20} />
-            </Button>
-          </Stack>
-        </Box>
-
-        {loading ? (
-          <Box
-            sx={{
-              minHeight: 420,
-              backgroundColor: "#fff",
-              borderRadius: 2,
-              border: "1px solid #e0e0e0",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Box display="flex" alignItems="center" justifyContent="center" gap={2} p={{ xs: 3, sm: 6 }}>
-              <CircularProgress sx={{ color: PRIMARY_ORANGE }} size={isMobile ? 30 : 40} />
-              <Typography variant={isMobile ? "body1" : "h6"} color="text.secondary">
-                Đang tải lịch học...
-              </Typography>
-            </Box>
-          </Box>
-        ) : (
-          <Box
-            sx={{
-              minHeight: 420,
-              backgroundColor: "#fff",
-              borderRadius: 2,
-              border: "1px solid #e0e0e0",
-              overflow: "hidden",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-              p: 0,
-              display: "flex",
-              flexDirection: "column",
-              position: "relative",
-            }}
-          >
-            <ScheduleGrid items={items} weekStart={toYMD(weekStart)} slotColor={LIGHT_ORANGE} />
-            
+      {loading ? (
+        <BaseCard className="flex items-center justify-center min-h-[420px]">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 border-4 border-primary-color border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-sm text-text-secondary font-bold">Đang tải lịch học...</span>
+          </div>
+        </BaseCard>
+      ) : (
+        <div className="space-y-6">
+          <BaseCard className="!p-4 relative">
+            <ScheduleGrid items={items} weekStart={toYMD(weekStart)} />
             {items.length === 0 && (
-              <Box
-                sx={{
-                  position: "absolute",
-                  top: "50%",
-                  left: "50%",
-                  transform: "translate(-50%, -50%)",
-                  textAlign: "center",
-                  backgroundColor: "rgba(255, 255, 255, 0.95)",
-                  padding: { xs: 3, sm: 4 },
-                  borderRadius: 2,
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                  zIndex: 10,
-                }}
-              >
-                <Typography variant="h6" color="text.secondary">
-                  Chưa có lịch học
-                </Typography>
-              </Box>
+              <div className="absolute inset-0 bg-surface-base/95 flex items-center justify-center rounded-2xl z-10 p-6">
+                <EmptyState title="Không có lịch học" description="Bạn không có bất kỳ ca học nào được xếp lịch trong tuần này." icon={Calendar} />
+              </div>
             )}
-          </Box>
-        )}
+          </BaseCard>
 
-        <Box sx={{ mt: 3, px: { xs: 2, sm: 0 } }}>
-          <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-            Chú thích điểm danh:
-          </Typography>
-          <Box
-            component="ul"
-            sx={{
-              listStyle: "disc",
-              paddingLeft: { xs: 3, sm: 4 },
-              margin: 0,
-              "& li": { marginBottom: 1, paddingLeft: 0.5 },
-            }}
-          >
-            <li>
-              <Typography variant="body2" sx={{ color: "#333", lineHeight: 1.6, fontSize: { xs: "0.875rem", sm: "1rem" } }}>
-                <strong style={{ color: "#4caf50" }}>(CÓ MẶT)</strong>: Bạn đã tham gia lớp học.
-              </Typography>
-            </li>
-            <li>
-              <Typography variant="body2" sx={{ color: "#333", lineHeight: 1.6, fontSize: { xs: "0.875rem", sm: "1rem" } }}>
-                <strong style={{ color: "#f44336" }}>(VẮNG MẶT)</strong>: Bạn đã vắng mặt trong lớp học.
-              </Typography>
-            </li>
-            <li>
-              <Typography variant="body2" sx={{ color: "#333", lineHeight: 1.6, fontSize: { xs: "0.875rem", sm: "1rem" } }}>
-                <strong style={{ color: "#757575" }}>(CHƯA HỌC)</strong>: Điểm danh chưa được ghi nhận.
-              </Typography>
-            </li>
-          </Box>
-        </Box>
-      </Box>
-    </Box>
+          {/* Guidelines info card */}
+          <BaseCard className="bg-bg-base/50 border border-border-color">
+            <div className="flex items-center gap-2 mb-3">
+              <Info className="text-primary-color" size={16} />
+              <h4 className="text-sm font-bold text-text-main m-0">Chú thích điểm danh</h4>
+            </div>
+            <ul className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-text-secondary pl-0 list-none">
+              <li className="flex items-start gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 mt-1 shrink-0"></span>
+                <span>
+                  <strong className="text-emerald-600 font-extrabold uppercase">CÓ MẶT</strong>: Bạn đã tham gia đầy đủ và được giáo viên điểm danh.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="w-2 h-2 rounded-full bg-red-500 mt-1 shrink-0"></span>
+                <span>
+                  <strong className="text-red-600 font-extrabold uppercase">VẮNG MẶT</strong>: Bạn đã vắng mặt hoặc không tham gia học ca này.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="w-2 h-2 rounded-full bg-slate-400 mt-1 shrink-0"></span>
+                <span>
+                  <strong className="text-text-secondary font-extrabold uppercase">CHƯA HỌC</strong>: Ca học chưa bắt đầu hoặc giáo viên chưa ghi nhận điểm danh.
+                </span>
+              </li>
+            </ul>
+          </BaseCard>
+        </div>
+      )}
+    </PageLayout>
   );
 };
 

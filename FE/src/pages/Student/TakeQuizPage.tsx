@@ -1,42 +1,23 @@
-// src/pages/Student/TakeQuizPage.tsx - FIXED VERSION
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  Box,
-  Typography,
-  Paper,
-  Radio,
-  RadioGroup,
-  FormControlLabel,
-  FormControl,
-  Button,
-  CircularProgress,
-  Alert,
-  Chip,
-  LinearProgress,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Badge,
-  IconButton,
-  Tooltip,
-} from "@mui/material";
-import {
-  Timer as TimerIcon,
-  Send as SubmitIcon,
-  ArrowBack as BackIcon,
-  Fullscreen as FullscreenIcon,
-  FullscreenExit as FullscreenExitIcon,
-  Warning as WarningIcon,
-  Lock as LockIcon,
-  Info as InfoIcon,
-} from "@mui/icons-material";
+  Timer,
+  Send,
+  ArrowLeft,
+  Maximize2,
+  Minimize2,
+  AlertTriangle,
+  Lock,
+  Info,
+  HelpCircle,
+} from "lucide-react";
 import { useQuiz } from "../../hooks/useQuiz";
 import { useAppSelector } from "../../hooks/hooks";
 import { useAntiCheat } from "../../hooks/useAntiCheat";
 import AntiCheatWarning from "../../components/quiz/AntiCheatWarning";
 import type { UserWithId } from "../../types/quiz.types";
+import { PageLayout } from "../../components/ui/PageLayout";
+import { BaseCard } from "../../components/ui/BaseCard";
 
 const TakeQuizPage: React.FC = () => {
   const { quizId } = useParams<{ quizId: string }>();
@@ -44,7 +25,7 @@ const TakeQuizPage: React.FC = () => {
   const user = useAppSelector((state) => state.auth.user);
   const { currentQuiz, loading, error, beginQuiz, submitQuizAnswers } = useQuiz();
 
-  // Anti-Cheat Hook với config
+  // Anti-Cheat Hook config
   const {
     logs,
     violationCount,
@@ -81,18 +62,12 @@ const TakeQuizPage: React.FC = () => {
   const hasStartedMonitoring = useRef(false);
   const autoSubmitTriggered = useRef(false);
 
-  /**
-   * ============================================
-   * LOAD QUIZ & START MONITORING - FIXED
-   * ============================================
-   */
   useEffect(() => {
     if (quizId && !hasStartedMonitoring.current) {
       const userId = user?._id || (user as UserWithId)?.id;
-      
-      beginQuiz(quizId, userId).then(() => {
-        // ✅ FIX: Start monitoring AFTER quiz is loaded
-        console.log('✅ Quiz loaded, starting anti-cheat monitoring...');
+
+      void beginQuiz(quizId, userId).then(() => {
+        console.log("✅ Quiz loaded, starting anti-cheat monitoring...");
         startMonitoring();
         hasStartedMonitoring.current = true;
       });
@@ -106,11 +81,6 @@ const TakeQuizPage: React.FC = () => {
     };
   }, [quizId, beginQuiz, user, startMonitoring, stopMonitoring]);
 
-  /**
-   * ============================================
-   * TIMER SETUP
-   * ============================================
-   */
   useEffect(() => {
     if (currentQuiz?.durationMinutes) {
       setTimeLeft(currentQuiz.durationMinutes * 60);
@@ -122,7 +92,7 @@ const TakeQuizPage: React.FC = () => {
       const timer = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
-            handleAutoSubmit('time_expired');
+            void handleAutoSubmit("time_expired");
             return 0;
           }
           return prev - 1;
@@ -133,78 +103,83 @@ const TakeQuizPage: React.FC = () => {
     }
   }, [timeLeft, isLocked, isSubmitting]);
 
-  /**
-   * ============================================
-   * AUTO-SUBMIT ON MAX VIOLATIONS
-   * ============================================
-   */
   useEffect(() => {
     if (shouldAutoSubmit() && !autoSubmitTriggered.current && !isSubmitting) {
       autoSubmitTriggered.current = true;
       setShowAutoSubmitDialog(true);
-      
-      // Auto submit after 5 seconds
+
       setTimeout(() => {
-        handleAutoSubmit('max_violations');
+        void handleAutoSubmit("max_violations");
       }, 5000);
     }
   }, [shouldAutoSubmit, isSubmitting]);
 
-  /**
-   * ============================================
-   * HANDLE ANSWER CHANGE
-   * ============================================
-   */
-  const handleAnswerChange = useCallback((questionIndex: number, answerValue: number) => {
-    if (isLocked) return;
-    setAnswers((prev) => ({
-      ...prev,
-      [questionIndex]: answerValue,
-    }));
-  }, [isLocked]);
+  const handleAnswerChange = useCallback(
+    (questionIndex: number, answerValue: number) => {
+      if (isLocked) return;
+      setAnswers((prev) => ({
+        ...prev,
+        [questionIndex]: answerValue,
+      }));
+    },
+    [isLocked]
+  );
 
-  /**
-   * ============================================
-   * SUBMIT HANDLERS
-   * ============================================
-   */
-  const handleAutoSubmit = useCallback(async (reason: 'time_expired' | 'max_violations') => {
-    if (isSubmitting) return;
-    await handleSubmitQuiz(true, reason);
-  }, [isSubmitting]);
+  const handleAutoSubmit = useCallback(
+    async (reason: "time_expired" | "max_violations") => {
+      if (isSubmitting) return;
+      await handleSubmitQuiz(true, reason);
+    },
+    [isSubmitting]
+  );
 
-  const handleSubmitQuiz = useCallback(async (isAuto = false, reason?: string) => {
-    if (!currentQuiz || !quizId || isSubmitting) return;
+  const handleSubmitQuiz = useCallback(
+    async (isAuto = false, reason?: string) => {
+      if (!currentQuiz || !quizId || isSubmitting) return;
 
-    setIsSubmitting(true);
-    stopMonitoring();
+      setIsSubmitting(true);
+      stopMonitoring();
 
-    const timeSpentMinutes = Math.round((Date.now() - startTime) / 60000);
-    const answerArray = currentQuiz.questions.map((_, index) => answers[index] || 0);
-    const userId = user?._id || (user as UserWithId)?.id;
+      const timeSpentMinutes = Math.round((Date.now() - startTime) / 60000);
+      const answerArray = currentQuiz.questions.map((_, index) => answers[index] || 0);
+      const userId = user?._id || (user as UserWithId)?.id;
 
-    try {
-      await submitQuizAnswers(quizId, {
-        answers: answerArray,
-        timeSpent: timeSpentMinutes,
-        studentId: userId,
-        antiCheatLogs: logs,
-      });
+      try {
+        await submitQuizAnswers(quizId, {
+          answers: answerArray,
+          timeSpent: timeSpentMinutes,
+          studentId: userId,
+          antiCheatLogs: logs,
+        });
 
-      navigate("/dashboard/student/quizzes", {
-        state: {
-          message: isAuto
-            ? `Bài kiểm tra tự động nộp do: ${reason === 'time_expired' ? 'Hết giờ làm bài' : 'Vi phạm quy chế thi nhiều lần'}`
-            : "Nộp bài kiểm tra thành công!",
-          isAutoSubmit: isAuto,
-        },
-      });
-    } catch (err) {
-      console.error("Failed to submit quiz:", err);
-      setIsSubmitting(false);
-      startMonitoring(); // Resume monitoring if failed
-    }
-  }, [currentQuiz, quizId, answers, startTime, user, logs, submitQuizAnswers, navigate, stopMonitoring, isSubmitting, startMonitoring]);
+        navigate("/dashboard/student/quizzes", {
+          state: {
+            message: isAuto
+              ? `Bài kiểm tra tự động nộp do: ${reason === "time_expired" ? "Hết giờ làm bài" : "Vi phạm quy chế thi nhiều lần"}`
+              : "Nộp bài kiểm tra thành công!",
+            isAutoSubmit: isAuto,
+          },
+        });
+      } catch (err) {
+        console.error("Failed to submit quiz:", err);
+        setIsSubmitting(false);
+        startMonitoring(); // Resume monitoring if failed
+      }
+    },
+    [
+      currentQuiz,
+      quizId,
+      answers,
+      startTime,
+      user,
+      logs,
+      submitQuizAnswers,
+      navigate,
+      stopMonitoring,
+      isSubmitting,
+      startMonitoring,
+    ]
+  );
 
   const handleSubmitClick = useCallback(() => {
     if (isLocked) return;
@@ -214,15 +189,10 @@ const TakeQuizPage: React.FC = () => {
     if (unanswered > 0) {
       setShowSubmitDialog(true);
     } else {
-      handleSubmitQuiz();
+      void handleSubmitQuiz();
     }
   }, [currentQuiz, answers, isLocked, handleSubmitQuiz]);
 
-  /**
-   * ============================================
-   * HELPER FUNCTIONS
-   * ============================================
-   */
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -236,306 +206,281 @@ const TakeQuizPage: React.FC = () => {
   };
 
   const getTimeColor = () => {
-    if (timeLeft < 60) return "error";
-    if (timeLeft < 300) return "warning";
-    return "default";
+    if (timeLeft < 60) return "text-red-600 bg-red-50 border-red-200 animate-pulse";
+    if (timeLeft < 300) return "text-amber-600 bg-amber-50 border-amber-200";
+    return "text-text-secondary bg-bg-base border-border-color";
   };
 
   const summary = getSummary();
   const hasViolations = summary.totalViolations > 0;
 
-  /**
-   * ============================================
-   * LOADING & ERROR STATES
-   * ============================================
-   */
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
-        <CircularProgress sx={{ color: "#B90000" }} />
-      </Box>
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
+        <div className="w-10 h-10 border-4 border-primary-color border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-sm text-text-secondary font-medium">Đang chuẩn bị đề thi...</p>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Box>
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-        <Button
-          startIcon={<BackIcon />}
-          onClick={() => navigate("/dashboard/student/quizzes")}
-          sx={{ color: "#B90000" }}
-        >
-          Quay lại trang kiểm tra
-        </Button>
-      </Box>
+      <PageLayout title="Bài kiểm tra" subtitle="Trình làm bài thi trực tuyến">
+        <BaseCard className="bg-red-50 border border-red-150 p-6 space-y-4">
+          <div className="flex items-center gap-2.5 text-red-800 font-bold text-sm">
+            <AlertTriangle size={20} />
+            <span>{error}</span>
+          </div>
+          <button
+            onClick={() => navigate("/dashboard/student/quizzes")}
+            className="flex items-center gap-2 text-text-secondary hover:text-primary-color text-xs font-bold transition"
+          >
+            <ArrowLeft size={16} />
+            Quay lại danh sách bài kiểm tra
+          </button>
+        </BaseCard>
+      </PageLayout>
     );
   }
 
   if (!currentQuiz) {
     return (
-      <Box sx={{ textAlign: "center", py: 8 }}>
-        <Typography variant="h6" color="textSecondary">
-          Không tìm thấy bài kiểm tra
-        </Typography>
-      </Box>
+      <PageLayout title="Bài kiểm tra" subtitle="Trình làm bài thi trực tuyến">
+        <BaseCard>
+          <div className="text-center py-12 text-text-secondary/80 text-sm font-semibold">
+            Không tìm thấy thông tin đề thi.
+          </div>
+        </BaseCard>
+      </PageLayout>
     );
   }
 
-  /**
-   * ============================================
-   * MAIN RENDER
-   * ============================================
-   */
   return (
-    <Box>
-      {/* Anti-Cheat Notice */}
-      <Alert
-        severity="info"
-        sx={{ mb: 3 }}
-        icon={<WarningIcon />}
-        action={
-          <Tooltip title="Xem chi tiết về hệ thống chống gian lận">
-            <IconButton size="small" color="inherit">
-              <InfoIcon />
-            </IconButton>
-          </Tooltip>
-        }
-      >
-        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-          🔒 <strong>Bài kiểm tra này được giám sát để đảm bảo tính trung thực học thuật.</strong> Tất cả hoạt động (chuyển tab, sao chép/dán, rời khỏi cửa sổ, v.v.) đều được ghi lại và gửi cho giáo viên của bạn.
-        </Typography>
-      </Alert>
+    <PageLayout title="Bài kiểm tra" subtitle="Trình làm bài thi trực tuyến - Đọc kỹ hướng dẫn và câu hỏi">
+      {/* 1. Anti-Cheat Security alert banner */}
+      <BaseCard className="bg-accent-color/50 border-l-4 border-primary-color !p-4">
+        <div className="flex items-start gap-3">
+          <Info className="text-primary-color shrink-0 mt-0.5" size={18} />
+          <p className="text-xs text-blue-900 m-0 leading-relaxed font-semibold">
+            🔒 <strong>Hệ thống giám sát thi cử (Anti-Cheat) đang chạy.</strong> Mọi hoạt động của bạn (như chuyển tab,
+            thoát toàn màn hình, sao chép/dán, mở Developer Tools) đều được ghi nhận trực tiếp và báo cáo lại cho giáo viên.
+            Hãy làm bài thi một cách trung thực.
+          </p>
+        </div>
+      </BaseCard>
 
-      {/* Lock Alert */}
+      {/* 2. Lock notification */}
       {isLocked && (
-        <Alert severity="error" sx={{ mb: 3 }} icon={<LockIcon />}>
-          <Typography variant="body1" sx={{ fontWeight: 600 }}>
-            ⚠️ BÀI THI BỊ KHÓA - Phát hiện quá nhiều vi phạm
-          </Typography>
-          <Typography variant="body2">
-            Bạn đã vượt quá giới hạn vi phạm tối đa. Bài thi sẽ tự động được nộp.
-          </Typography>
-        </Alert>
+        <BaseCard className="bg-red-50 border-2 border-red-500 !p-4 animate-pulse">
+          <div className="flex items-start gap-3 text-red-800">
+            <Lock className="shrink-0 mt-0.5" size={20} />
+            <div>
+              <h3 className="text-sm font-black m-0">BÀI THI ĐÃ BỊ KHÓA - Phát hiện quá nhiều lần vi phạm quy chế</h3>
+              <p className="text-xs m-0 mt-1 leading-relaxed">
+                Bạn đã vượt quá giới hạn vi phạm cho phép. Hệ thống sẽ tự động nộp bài thi của bạn ngay lập tức.
+              </p>
+            </div>
+          </div>
+        </BaseCard>
       )}
 
-      {/* Header */}
-      <Paper elevation={2} sx={{ p: 3, mb: 3, backgroundColor: isLocked ? "#FFEBEE" : "#FFF5E6" }}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2, flexWrap: "wrap", gap: 2 }}>
-          <Typography variant="h4" sx={{ color: isLocked ? "#D32F2F" : "#B90000", fontWeight: 700 }}>
-            {currentQuiz.title}
-          </Typography>
+      {/* 3. Header Details & Controls */}
+      <BaseCard className={`border ${isLocked ? "bg-red-50/20 border-red-200" : "bg-surface-base border-border-color"}`}>
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <h2 className={`text-xl font-extrabold m-0 ${isLocked ? "text-red-700" : "text-text-main"}`}>
+              {currentQuiz.title}
+            </h2>
+            {currentQuiz.description && (
+              <p className="text-xs text-text-secondary m-0 leading-relaxed">{currentQuiz.description}</p>
+            )}
+          </div>
 
-          <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-            {/* Violations Badge */}
+          {/* Controls row */}
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Violations */}
             {hasViolations && (
-              <Badge badgeContent={summary.totalViolations} color="error" max={99}>
-                <Chip
-                  icon={<WarningIcon />}
-                  label={`${violationCount}/${maxViolations} Vi phạm`}
-                  color="error"
-                  size="small"
-                  sx={{ fontWeight: 600 }}
-                />
-              </Badge>
+              <span className="bg-red-100 text-red-700 font-extrabold text-xs px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                <AlertTriangle size={14} />
+                {violationCount} / {maxViolations} Vi phạm
+              </span>
             )}
 
-            {/* Fullscreen Toggle */}
-            <Tooltip title={isFullscreen ? "Thoát toàn màn hình" : "Chế độ toàn màn hình"}>
-              <IconButton
-                onClick={isFullscreen ? exitFullscreen : requestFullscreen}
-                disabled={isLocked}
-                sx={{
-                  backgroundColor: isFullscreen ? "#4CAF50" : "#2196F3",
-                  color: "white",
-                  "&:hover": {
-                    backgroundColor: isFullscreen ? "#388E3C" : "#1976D2",
-                  },
-                  "&:disabled": {
-                    backgroundColor: "#BDBDBD",
-                  },
-                }}
-              >
-                {isFullscreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
-              </IconButton>
-            </Tooltip>
+            {/* Fullscreen control */}
+            <button
+              onClick={isFullscreen ? exitFullscreen : requestFullscreen}
+              disabled={isLocked}
+              title={isFullscreen ? "Thoát toàn màn hình" : "Chế độ toàn màn hình"}
+              className={`p-2 rounded-xl text-white transition active:scale-95 disabled:bg-slate-350 disabled:cursor-not-allowed ${
+                isFullscreen ? "bg-emerald-500 hover:bg-emerald-600" : "bg-primary-color hover:bg-primary-color-hover"
+              }`}
+            >
+              {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+            </button>
 
             {/* Timer */}
             {currentQuiz.durationMinutes && (
-              <Chip
-                icon={<TimerIcon />}
-                label={formatTime(timeLeft)}
-                color={getTimeColor()}
-                sx={{
-                  fontSize: "18px",
-                  fontWeight: 600,
-                  px: 2,
-                  py: 3,
-                }}
-              />
+              <div className={`flex items-center gap-1.5 font-black text-sm px-4 py-2 border rounded-xl ${getTimeColor()}`}>
+                <Timer size={16} />
+                <span>{formatTime(timeLeft)}</span>
+              </div>
             )}
-          </Box>
-        </Box>
+          </div>
+        </div>
 
-        {currentQuiz.description && (
-          <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-            {currentQuiz.description}
-          </Typography>
-        )}
+        {/* Progress indicator bar */}
+        <div className="mt-6 pt-4 border-t border-border-color space-y-1.5">
+          <div className="flex justify-between text-xs text-text-secondary font-bold">
+            <span>Tiến độ làm bài</span>
+            <span>
+              {Object.keys(answers).length} / {currentQuiz.questions.length} câu đã chọn
+            </span>
+          </div>
+          <div className="w-full h-2.5 bg-bg-base rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-300 ${isLocked ? "bg-red-500" : "bg-primary-color"}`}
+              style={{ width: `${getProgress()}%` }}
+            ></div>
+          </div>
+        </div>
+      </BaseCard>
 
-        {/* Progress Bar */}
-        <Box sx={{ mb: 1 }}>
-          <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
-            Tiến độ: {Object.keys(answers).length} / {currentQuiz.questions.length} câu đã trả lời
-          </Typography>
-          <LinearProgress
-            variant="determinate"
-            value={getProgress()}
-            sx={{
-              height: 8,
-              borderRadius: 4,
-              backgroundColor: "#E0E0E0",
-              "& .MuiLinearProgress-bar": {
-                backgroundColor: isLocked ? "#D32F2F" : "#B90000",
-              },
-            }}
-          />
-        </Box>
-      </Paper>
+      {/* 4. Questions Grid */}
+      <div className={`space-y-6 transition ${isLocked ? "opacity-50 pointer-events-none select-none" : ""}`}>
+        {currentQuiz.questions.map((question, index) => {
+          const isAnswered = !!answers[index];
+          return (
+            <BaseCard key={question.id} className="space-y-4">
+              <div className="flex items-center gap-3">
+                <span
+                  className={`text-[10px] font-black px-2.5 py-1 rounded-lg text-white ${
+                    isAnswered ? "bg-emerald-500" : "bg-primary-color"
+                  }`}
+                >
+                  Q{question.order}
+                </span>
+                <h3 className="text-sm font-extrabold text-text-main m-0 leading-relaxed">
+                  {question.question}
+                </h3>
+              </div>
 
-      {/* Questions */}
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 3, opacity: isLocked ? 0.5 : 1 }}>
-        {currentQuiz.questions.map((question, index) => (
-          <Paper key={question.id} elevation={2} sx={{ p: 3 }}>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
-              <Chip
-                label={`Q${question.order}`}
-                sx={{
-                  backgroundColor: answers[index] ? "#4CAF50" : "#B90000",
-                  color: "white",
-                  fontWeight: 600,
-                }}
-              />
-              <Typography variant="h6" sx={{ fontSize: "18px", fontWeight: 500 }}>
-                {question.question}
-              </Typography>
-            </Box>
-
-            <FormControl component="fieldset" fullWidth disabled={isLocked}>
-              <RadioGroup
-                value={answers[index] || ""}
-                onChange={(e) => handleAnswerChange(index, parseInt(e.target.value))}
-              >
-                {question.options.map((option, optIndex) => (
-                  <FormControlLabel
-                    key={optIndex}
-                    value={optIndex + 1}
-                    control={
-                      <Radio
-                        sx={{
-                          color: "#B90000",
-                          "&.Mui-checked": { color: "#B90000" },
-                          "&.Mui-disabled": { color: "#BDBDBD" },
-                        }}
+              {/* Options list */}
+              <div className="grid grid-cols-1 gap-2.5">
+                {question.options.map((option, optIndex) => {
+                  const isOptionSelected = answers[index] === optIndex + 1;
+                  return (
+                    <label
+                      key={optIndex}
+                      className={`flex items-center gap-3 border px-4 py-3 rounded-2xl cursor-pointer transition select-none active:scale-[0.99] ${
+                        isOptionSelected
+                          ? "border-primary-color bg-accent-color/10 font-bold text-primary-color"
+                          : "border-border-color hover:bg-bg-base/50 text-text-secondary"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name={`q-${index}`}
+                        value={optIndex + 1}
+                        checked={isOptionSelected}
+                        onChange={() => handleAnswerChange(index, optIndex + 1)}
+                        disabled={isLocked}
+                        className="w-4 h-4 text-primary-color border-border-color focus:ring-primary-color shrink-0"
                       />
-                    }
-                    label={
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <Chip
-                          label={String.fromCharCode(65 + optIndex)}
-                          size="small"
-                          sx={{ backgroundColor: "#E0E0E0", fontWeight: 600 }}
-                        />
-                        <Typography variant="body2">{option}</Typography>
-                      </Box>
-                    }
-                    sx={{
-                      border: "1px solid #E0E0E0",
-                      borderRadius: 1,
-                      px: 2,
-                      py: 1,
-                      mb: 1,
-                      "&:hover": { backgroundColor: isLocked ? "transparent" : "#FAFAFA" },
-                    }}
-                  />
-                ))}
-              </RadioGroup>
-            </FormControl>
-          </Paper>
-        ))}
-      </Box>
+                      <span className="text-[10px] font-black bg-bg-base border border-border-color px-2 py-0.5 rounded text-text-secondary shrink-0">
+                        {String.fromCharCode(65 + optIndex)}
+                      </span>
+                      <span className="text-xs">{option}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </BaseCard>
+          );
+        })}
+      </div>
 
-      {/* Submit Button */}
-      <Box sx={{ display: "flex", justifyContent: "space-between", mt: 4, gap: 2 }}>
-        <Button
-          startIcon={<BackIcon />}
+      {/* 5. Footer Buttons */}
+      <div className="flex justify-between items-center pt-4">
+        <button
           onClick={() => navigate("/dashboard/student/quizzes")}
-          sx={{ color: "#666" }}
           disabled={isSubmitting}
+          className="px-5 py-2.5 border border-border-color hover:border-border-color/80 rounded-xl text-text-secondary hover:text-text-main text-xs font-bold transition active:scale-95 disabled:opacity-50"
         >
-          Hủy
-        </Button>
-        <Button
-          variant="contained"
-          size="large"
-          startIcon={isSubmitting ? <CircularProgress size={20} color="inherit" /> : <SubmitIcon />}
+          Hủy bỏ
+        </button>
+
+        <button
           onClick={handleSubmitClick}
           disabled={isLocked || isSubmitting}
-          sx={{
-            backgroundColor: "#B90000",
-            "&:hover": { backgroundColor: "#d66a0e" },
-            "&:disabled": { backgroundColor: "#BDBDBD" },
-            px: 4,
-          }}
+          className="px-6 py-2.5 bg-primary-color hover:bg-primary-color-hover disabled:bg-slate-350 text-white text-xs font-black rounded-xl active:scale-95 transition flex items-center gap-1.5 shadow-sm disabled:shadow-none disabled:cursor-not-allowed"
         >
-          {isSubmitting ? "Đang nộp bài..." : "Nộp bài"}
-        </Button>
-      </Box>
-
-      {/* Confirmation Dialog */}
-      <Dialog open={showSubmitDialog} onClose={() => setShowSubmitDialog(false)}>
-        <DialogTitle sx={{ color: "#B90000" }}>Xác nhận nộp bài</DialogTitle>
-        <DialogContent>
-          <Typography sx={{ mb: 2 }}>
-            Bạn còn <strong>{currentQuiz.questions.filter((_, index) => !answers[index]).length} câu chưa trả lời</strong>.
-          </Typography>
-          {hasViolations && (
-            <Alert severity="warning" sx={{ mb: 2 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                ⚠️ Phát hiện {summary.totalViolations} vi phạm:
-              </Typography>
-              <Typography variant="body2" component="div" sx={{ mt: 1, fontSize: '13px' }}>
-                • Chuyển tab: {summary.tabSwitches}<br />
-                • Rời cửa sổ: {summary.windowBlurs}<br />
-                • Thao tác sao chép: {summary.copyEvents}<br />
-                • Thao tác dán: {summary.pasteEvents}<br />
-                • Thoát toàn màn hình: {summary.fullscreenExits}<br />
-                • Cố gắng mở DevTools: {summary.devToolsAttempts}
-              </Typography>
-            </Alert>
+          {isSubmitting ? (
+            <>
+              <div className="w-4.5 h-4.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <span>Đang nộp bài...</span>
+            </>
+          ) : (
+            <>
+              <Send size={14} />
+              <span>Nộp bài thi</span>
+            </>
           )}
-          <Typography variant="body2" color="textSecondary">
-            Bạn có chắc chắn muốn nộp bài không?
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowSubmitDialog(false)} sx={{ color: "#666" }}>
-            Xem lại câu trả lời
-          </Button>
-          <Button
-            onClick={() => {
-              setShowSubmitDialog(false);
-              handleSubmitQuiz();
-            }}
-            variant="contained"
-            sx={{ backgroundColor: "#B90000", "&:hover": { backgroundColor: "#d66a0e" } }}
-          >
-            Vẫn nộp bài
-          </Button>
-        </DialogActions>
-      </Dialog>
+        </button>
+      </div>
+
+      {/* --- CONFIRMATION DIALOG MODAL (Tailwind replacement) --- */}
+      {showSubmitDialog && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-surface-base rounded-3xl max-w-md w-full p-6 shadow-2xl border border-border-color space-y-4 animate-scaleUp">
+            <h3 className="text-base font-extrabold text-text-main m-0">Xác nhận nộp bài kiểm tra</h3>
+
+            <div className="space-y-3">
+              <p className="text-xs text-text-secondary m-0">
+                Bạn đang còn{" "}
+                <strong className="text-primary-color">
+                  {currentQuiz.questions.filter((_, index) => !answers[index]).length} câu chưa trả lời
+                </strong>
+                . Bạn có chắc chắn muốn nộp bài thi ngay bây giờ không?
+              </p>
+
+              {hasViolations && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-2 text-amber-900">
+                  <div className="flex items-center gap-1.5 font-bold text-xs">
+                    <AlertTriangle size={14} />
+                    <span>Hệ thống ghi nhận {summary.totalViolations} vi phạm:</span>
+                  </div>
+                  <ul className="list-disc pl-5 text-[11px] space-y-1 font-semibold">
+                    <li>Chuyển tab: {summary.tabSwitches}</li>
+                    <li>Rời khỏi trang thi: {summary.windowBlurs}</li>
+                    <li>Sao chép văn bản: {summary.copyEvents}</li>
+                    <li>Dán văn bản: {summary.pasteEvents}</li>
+                    <li>Thoát chế độ toàn màn hình: {summary.fullscreenExits}</li>
+                    <li>Cố gắng mở DevTools: {summary.devToolsAttempts}</li>
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                onClick={() => setShowSubmitDialog(false)}
+                className="px-4 py-2 border border-border-color hover:bg-bg-base text-text-secondary rounded-xl text-xs font-bold transition active:scale-95"
+              >
+                Xem lại câu hỏi
+              </button>
+              <button
+                onClick={() => {
+                  setShowSubmitDialog(false);
+                  void handleSubmitQuiz();
+                }}
+                className="px-4 py-2 bg-primary-color hover:bg-primary-color-hover text-white rounded-xl text-xs font-extrabold transition active:scale-95"
+              >
+                Vẫn nộp bài
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Auto-Submit Warning Dialog */}
       <AntiCheatWarning
@@ -555,7 +500,7 @@ const TakeQuizPage: React.FC = () => {
         maxViolations={maxViolations}
         onContinue={() => {}}
       />
-    </Box>
+    </PageLayout>
   );
 };
 

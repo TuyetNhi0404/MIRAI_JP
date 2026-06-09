@@ -21,6 +21,19 @@ export const brandColors = {
   info: "#1677FF",
 };
 
+export const globalThemeColors = {
+  primaryColor: "#B90000",
+  primaryColorHover: "#990000",
+  secondaryColor: "#F5F5F5",
+  bgBase: "#FAFAFA",
+  surfaceBase: "#FFFFFF",
+  textMain: "#1F2238",
+  textSecondary: "#595959",
+  borderColor: "#E8E8E8",
+  accentColor: "#FFF1F0",
+  accentColorHover: "#FFE8E6",
+};
+
 export const antdThemeConfig: ThemeConfig = {
   algorithm: antdTheme.defaultAlgorithm,
   token: {

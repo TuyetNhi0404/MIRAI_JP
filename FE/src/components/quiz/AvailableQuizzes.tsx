@@ -1,30 +1,9 @@
-// src/components/quiz/student/AvailableQuizzes.tsx
 import React, { useState } from "react";
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  Chip,
-  Grid,
-  TextField,
-  MenuItem,
-  Alert,
-  useMediaQuery,
-  useTheme,
-  Stack,
-} from "@mui/material";
-import {
-  PlayArrow as StartIcon,
-  Timer as TimerIcon,
-  QuestionAnswer as QuestionIcon,
-  CheckCircle as CompletedIcon,
-  Event as EventIcon,
-  Warning as WarningIcon,
-} from "@mui/icons-material";
+import { Play, Timer, HelpCircle, CheckCircle, AlertTriangle, Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { QuizWithAttempt } from "../../types/quiz.types";
+import { BaseCard } from "../../components/ui/BaseCard";
+import { EmptyState } from "../../components/ui/EmptyState";
 
 interface AvailableQuizzesProps {
   quizzes: QuizWithAttempt[];
@@ -32,9 +11,6 @@ interface AvailableQuizzesProps {
 
 const AvailableQuizzes: React.FC<AvailableQuizzesProps> = ({ quizzes = [] }) => {
   const navigate = useNavigate();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  
   const [showCompleted, setShowCompleted] = useState<boolean>(false);
 
   const isQuizExpired = (dueDate?: string): boolean => {
@@ -45,12 +21,12 @@ const AvailableQuizzes: React.FC<AvailableQuizzesProps> = ({ quizzes = [] }) => 
   const formatDueDate = (dueDate?: string): string => {
     if (!dueDate) return "";
     const date = new Date(dueDate);
-    return date.toLocaleString('vi-VN', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return date.toLocaleString("vi-VN", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -59,35 +35,32 @@ const AvailableQuizzes: React.FC<AvailableQuizzesProps> = ({ quizzes = [] }) => 
     const now = new Date();
     const due = new Date(dueDate);
     const diffMs = due.getTime() - now.getTime();
-    
+
     if (diffMs < 0) return "Đã hết hạn";
-    
+
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     if (diffHours < 24) return `Còn ${diffHours} giờ`;
-    
+
     const diffDays = Math.floor(diffHours / 24);
     return `Còn ${diffDays} ngày`;
   };
 
-  const getDueDateColor = (dueDate?: string): "error" | "warning" | "success" | "default" => {
-    if (!dueDate) return "default";
+  const getDueDateStyle = (dueDate?: string): string => {
+    if (!dueDate) return "bg-slate-50 text-slate-600 border-slate-100";
     const now = new Date();
     const due = new Date(dueDate);
     const diffHours = Math.floor((due.getTime() - now.getTime()) / (1000 * 60 * 60));
-    
-    if (diffHours < 0) return "error";
-    if (diffHours < 24) return "warning";
-    if (diffHours < 72) return "success";
-    return "default";
+
+    if (diffHours < 0) return "bg-red-50 text-red-700 border-red-100";
+    if (diffHours < 24) return "bg-amber-50 text-amber-700 border-amber-100";
+    if (diffHours < 72) return "bg-emerald-50 text-emerald-700 border-emerald-100";
+    return "bg-slate-50 text-slate-600 border-slate-100";
   };
 
-  const courseName = quizzes.length > 0 && quizzes[0].courseName 
-    ? quizzes[0].courseName 
-    : "Khóa học không xác định";
+  const courseName = quizzes.length > 0 && quizzes[0].courseName ? quizzes[0].courseName : "Khóa học của tôi";
 
   const filteredQuizzes = quizzes.filter((quiz) => {
-    const completedMatch = showCompleted || !quiz.hasAttempted;
-    return completedMatch;
+    return showCompleted || !quiz.hasAttempted;
   });
 
   const handleStartQuiz = (quizId: string, hasAttempted: boolean, dueDate?: string) => {
@@ -95,7 +68,7 @@ const AvailableQuizzes: React.FC<AvailableQuizzesProps> = ({ quizzes = [] }) => 
       alert("Bài kiểm tra này đã hết hạn và không thể làm nữa.");
       return;
     }
-    
+
     if (hasAttempted) {
       alert("Bạn đã hoàn thành bài kiểm tra này rồi!");
       return;
@@ -103,310 +76,172 @@ const AvailableQuizzes: React.FC<AvailableQuizzesProps> = ({ quizzes = [] }) => 
     navigate(`/dashboard/student/quiz/${quizId}`);
   };
 
-  const handleViewResult = (quiz: QuizWithAttempt) => {
-    console.log("View result for quiz:", quiz._id);
-  };
-
   if (quizzes.length === 0) {
     return (
-      <Box sx={{ textAlign: "center", py: { xs: 4, sm: 8 } }}>
-        <Alert severity="info">
-          <Typography variant={isMobile ? "body1" : "h6"}>
-            Hiện chưa có bài kiểm tra nào
-          </Typography>
-          <Typography variant="body2" sx={{ mt: 1 }}>
-            Bạn chưa tham gia khóa học nào hoặc chưa có bài kiểm tra nào được tạo
-          </Typography>
-        </Alert>
-      </Box>
+      <BaseCard>
+        <EmptyState
+          title="Hiện chưa có bài kiểm tra nào"
+          description="Bạn chưa tham gia khóa học nào hoặc chưa có bài kiểm tra nào được tạo từ phía giáo viên."
+          icon={AlertTriangle}
+        />
+      </BaseCard>
     );
   }
 
   return (
-    <Box>
-      {/* Header with Course Info */}
-      <Box sx={{ mb: { xs: 2, sm: 3 } }}>
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          justifyContent="space-between"
-          alignItems={{ xs: 'flex-start', sm: 'center' }}
-          spacing={{ xs: 2, sm: 2 }}
+    <div className="space-y-6">
+      {/* Header filter row */}
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+        <div>
+          <h3 className="text-base font-extrabold text-[var(--color-text-main)] m-0">{courseName}</h3>
+          <p className="text-xs text-[var(--color-text-secondary)] m-0 mt-0.5">
+            Tổng số: {quizzes.length} • Chưa làm:{" "}
+            {quizzes.filter((q) => !q.hasAttempted && !isQuizExpired(q.dueDate)).length} • Đã hoàn thành:{" "}
+            {quizzes.filter((q) => q.hasAttempted).length}
+          </p>
+        </div>
+
+        <select
+          value={showCompleted ? "yes" : "no"}
+          onChange={(e) => setShowCompleted(e.target.value === "yes")}
+          className="border border-[var(--color-border-color)] rounded-xl px-4 py-2 bg-[var(--color-surface-base)] text-xs font-bold text-[var(--color-text-secondary)] focus:outline-none focus:border-[var(--color-primary-color)] max-w-[200px]"
         >
-          <Box sx={{ width: { xs: '100%', sm: 'auto' } }}>
-            <Typography 
-              variant={isMobile ? "body1" : "h6"}
-              sx={{ 
-                color: "#B90000", 
-                fontWeight: 600,
-                fontSize: { xs: '1rem', sm: '1.25rem' }
-              }}
-            >
-              {courseName}
-            </Typography>
-            <Typography 
-              variant="body2" 
-              color="textSecondary"
-              sx={{ 
-                fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                mt: 0.5
-              }}
-            >
-              Tổng số: {quizzes.length} • 
-              Chưa làm: {quizzes.filter(q => !q.hasAttempted && !isQuizExpired(q.dueDate)).length} • 
-              Đã hoàn thành: {quizzes.filter(q => q.hasAttempted).length}
-            </Typography>
-          </Box>
-          
-          <TextField
-            select
-            label="Hiển thị trạng thái"
-            value={showCompleted ? "yes" : "no"}
-            onChange={(e) => setShowCompleted(e.target.value === "yes")}
-            sx={{ 
-              minWidth: { xs: '100%', sm: 180 },
-              '& .MuiInputBase-root': {
-                fontSize: { xs: '0.875rem', sm: '1rem' }
-              }
-            }}
-            size="small"
-          >
-            <MenuItem value="no">Chỉ bài chưa làm</MenuItem>
-            <MenuItem value="yes">Hiển thị tất cả</MenuItem>
-          </TextField>
-        </Stack>
-      </Box>
+          <option value="no">Chỉ bài chưa làm</option>
+          <option value="yes">Hiển thị tất cả</option>
+        </select>
+      </div>
 
       {/* Quiz Cards */}
       {filteredQuizzes.length === 0 ? (
-        <Box sx={{ 
-          textAlign: "center", 
-          py: { xs: 4, sm: 8 }, 
-          color: "#666" 
-        }}>
-          <Typography variant={isMobile ? "body1" : "h6"}>
-            {showCompleted ? "Không tìm thấy bài kiểm tra nào" : "Không có bài kiểm tra khả dụng"}
-          </Typography>
-          <Typography variant="body2" sx={{ mt: 1, fontSize: { xs: '0.875rem', sm: '1rem' } }}>
-            {showCompleted 
-              ? "Thử thay đổi bộ lọc để hiển thị bài kiểm tra"
-              : "Bạn đã hoàn thành toàn bộ bài kiểm tra hoặc chưa có bài kiểm tra nào được tạo"}
-          </Typography>
-        </Box>
+        <BaseCard>
+          <EmptyState
+            title="Không tìm thấy bài kiểm tra nào"
+            description={
+              showCompleted
+                ? "Thử thay đổi bộ lọc để hiển thị bài kiểm tra."
+                : "Bạn đã hoàn thành toàn bộ bài kiểm tra hoặc chưa có bài kiểm tra mới."
+            }
+            icon={HelpCircle}
+          />
+        </BaseCard>
       ) : (
-        <Grid container spacing={{ xs: 2, sm: 2, md: 3 }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredQuizzes.map((quiz) => {
             const isExpired = isQuizExpired(quiz.dueDate);
             const timeRemaining = getTimeRemainingText(quiz.dueDate);
-            const dueDateColor = getDueDateColor(quiz.dueDate);
+            const dueStyle = getDueDateStyle(quiz.dueDate);
 
             return (
-              <Grid item xs={12} sm={6} md={4} key={quiz._id}>
-                <Card
-                  sx={{
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    transition: "all 0.3s",
-                    opacity: quiz.hasAttempted || isExpired ? 0.7 : 1,
-                    border: quiz.hasAttempted 
-                      ? "2px solid #4CAF50" 
-                      : isExpired 
-                        ? "2px solid #f44336" 
-                        : "1px solid #e0e0e0",
-                    "&:hover": {
-                      transform: quiz.hasAttempted || isExpired ? "none" : "translateY(-4px)",
-                      boxShadow: quiz.hasAttempted || isExpired
-                        ? "none"
-                        : "0 4px 20px rgba(236, 117, 16, 0.2)",
-                    },
-                  }}
-                >
-                  <CardContent sx={{ 
-                    flexGrow: 1, 
-                    display: "flex", 
-                    flexDirection: "column",
-                    p: { xs: 2, sm: 2, md: 2.5 }
-                  }}>
-                    {/* Status Badges */}
-                    <Box sx={{ 
-                      display: "flex", 
-                      gap: { xs: 0.5, sm: 1 }, 
-                      mb: { xs: 1, sm: 1.5 }, 
-                      flexWrap: "wrap" 
-                    }}>
-                      {quiz.hasAttempted && (
-                        <Chip
-                          icon={<CompletedIcon sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }} />}
-                          label={`Đã hoàn thành - ${quiz.attemptPercentage}%`}
-                          color={quiz.attemptPassed ? "success" : "error"}
-                          size="small"
-                          sx={{ 
-                            fontSize: { xs: '0.7rem', sm: '0.8125rem' },
-                            height: { xs: 24, sm: 28 }
-                          }}
-                        />
-                      )}
-                      {isExpired && !quiz.hasAttempted && (
-                        <Chip
-                          icon={<WarningIcon sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }} />}
-                          label="ĐÃ HẾT HẠN"
-                          color="error"
-                          size="small"
-                          sx={{ 
-                            fontWeight: 600,
-                            fontSize: { xs: '0.7rem', sm: '0.8125rem' },
-                            height: { xs: 24, sm: 28 }
-                          }}
-                        />
-                      )}
-                    </Box>
+              <BaseCard
+                key={quiz._id}
+                className={`flex flex-col justify-between transition border-2 ${
+                  quiz.hasAttempted
+                    ? "border-emerald-250 opacity-90"
+                    : isExpired
+                      ? "border-red-200 opacity-90"
+                      : "border-[var(--color-border-color)] hover:-translate-y-1 hover:shadow-md"
+                }`}
+              >
+                <div className="space-y-4">
+                  {/* Status chips */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {quiz.hasAttempted && (
+                      <span
+                        className={`text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                          quiz.attemptPassed ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"
+                        }`}
+                      >
+                        <CheckCircle size={10} />
+                        Đã hoàn thành - {quiz.attemptPercentage}%
+                      </span>
+                    )}
+                    {isExpired && !quiz.hasAttempted && (
+                      <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-red-50 text-red-700 flex items-center gap-1">
+                        <AlertTriangle size={10} />
+                        ĐÃ HẾT HẠN
+                      </span>
+                    )}
+                  </div>
 
-                    <Typography
-                      variant={isMobile ? "body1" : "h6"}
-                      sx={{
-                        color: quiz.hasAttempted || isExpired ? "#666" : "#B90000",
-                        fontWeight: 600,
-                        fontSize: { xs: '1rem', sm: '1.125rem' },
-                        mb: { xs: 0.5, sm: 1 },
-                        lineHeight: 1.3,
-                      }}
+                  {/* Title & Description */}
+                  <div>
+                    <h4
+                      className={`text-sm font-extrabold m-0 leading-snug ${
+                        quiz.hasAttempted || isExpired ? "text-[var(--color-text-secondary)]" : "text-[var(--color-text-main)]"
+                      }`}
                     >
                       {quiz.title}
-                    </Typography>
-
+                    </h4>
                     {quiz.description && (
-                      <Typography
-                        variant="body2"
-                        sx={{ 
-                          color: "#666", 
-                          mb: { xs: 1.5, sm: 2 }, 
-                          flexGrow: 1,
-                          fontSize: { xs: '0.875rem', sm: '0.875rem' },
-                          lineHeight: 1.5,
-                          display: '-webkit-box',
-                          WebkitLineClamp: { xs: 2, sm: 3 },
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
-                        }}
-                      >
+                      <p className="text-xs text-[var(--color-text-secondary)]/75 m-0 mt-1 line-clamp-2 leading-relaxed">
                         {quiz.description}
-                      </Typography>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Specs & Info */}
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <span className="flex items-center gap-1 text-[10px] font-extrabold text-[var(--color-text-secondary)] bg-[var(--color-bg-base)] border border-[var(--color-border-color)] px-2.5 py-1 rounded-lg">
+                      <HelpCircle size={12} className="text-[var(--color-text-secondary)]/50" />
+                      {quiz.totalQuestions} câu hỏi
+                    </span>
+
+                    {quiz.durationMinutes && (
+                      <span className="flex items-center gap-1 text-[10px] font-extrabold text-[var(--color-text-secondary)] bg-[var(--color-bg-base)] border border-[var(--color-border-color)] px-2.5 py-1 rounded-lg">
+                        <Timer size={12} className="text-[var(--color-text-secondary)]/50" />
+                        {quiz.durationMinutes} phút
+                      </span>
                     )}
 
-                    <Box sx={{ 
-                      display: "flex", 
-                      flexWrap: "wrap", 
-                      gap: { xs: 0.5, sm: 1 }, 
-                      mb: { xs: 1, sm: 1.5 } 
-                    }}>
-                      <Chip
-                        icon={<QuestionIcon sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }} />}
-                        label={`${quiz.totalQuestions} câu hỏi`}
-                        size="small"
-                        sx={{ 
-                          backgroundColor: "#FFF5E6",
-                          fontSize: { xs: '0.7rem', sm: '0.8125rem' },
-                          height: { xs: 24, sm: 28 }
-                        }}
-                      />
-                      {quiz.durationMinutes && (
-                        <Chip
-                          icon={<TimerIcon sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }} />}
-                          label={`${quiz.durationMinutes} phút`}
-                          size="small"
-                          sx={{ 
-                            backgroundColor: "#FFF5E6",
-                            fontSize: { xs: '0.7rem', sm: '0.8125rem' },
-                            height: { xs: 24, sm: 28 }
-                          }}
-                        />
-                      )}
-                      
-                      {quiz.dueDate && (
-                        <Chip
-                          icon={<EventIcon sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }} />}
-                          label={timeRemaining}
-                          color={dueDateColor}
-                          size="small"
-                          sx={{ 
-                            fontWeight: 500,
-                            fontSize: { xs: '0.7rem', sm: '0.8125rem' },
-                            height: { xs: 24, sm: 28 }
-                          }}
-                        />
-                      )}
-                    </Box>
-
-                    {quiz.dueDate && !isExpired && (
-                      <Typography 
-                        variant="caption" 
-                        color="textSecondary" 
-                        sx={{ 
-                          mb: { xs: 1.5, sm: 2 },
-                          fontSize: { xs: '0.7rem', sm: '0.75rem' }
-                        }}
+                    {quiz.dueDate && (
+                      <span
+                        className={`flex items-center gap-1 text-[10px] font-extrabold px-2.5 py-1 border rounded-lg ${dueStyle}`}
                       >
-                        📅 Hạn nộp: {formatDueDate(quiz.dueDate)}
-                      </Typography>
+                        <Calendar size={12} />
+                        {timeRemaining}
+                      </span>
                     )}
+                  </div>
 
-                    {/* Action Buttons */}
-                    {quiz.hasAttempted ? (
-                      <Button
-                        fullWidth
-                        variant="outlined"
-                        onClick={() => handleViewResult(quiz)}
-                        disabled
-                        sx={{
-                          mt: "auto",
-                          color: "#666",
-                          borderColor: "#ccc",
-                          fontSize: { xs: '0.875rem', sm: '0.9375rem' },
-                          py: { xs: 0.75, sm: 1 }
-                        }}
-                      >
-                        Đã hoàn thành
-                      </Button>
-                    ) : isExpired ? (
-                      <Button
-                        fullWidth
-                        variant="outlined"
-                        disabled
-                        sx={{
-                          mt: "auto",
-                          color: "#f44336",
-                          borderColor: "#f44336",
-                          fontSize: { xs: '0.875rem', sm: '0.9375rem' },
-                          py: { xs: 0.75, sm: 1 }
-                        }}
-                      >
-                        Bài thi đã hết hạn
-                      </Button>
-                    ) : (
-                      <Button
-                        fullWidth
-                        variant="contained"
-                        startIcon={<StartIcon sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }} />}
-                        onClick={() => handleStartQuiz(quiz._id, quiz.hasAttempted, quiz.dueDate)}
-                        sx={{
-                          backgroundColor: "#B90000",
-                          "&:hover": { backgroundColor: "#d66a0e" },
-                          mt: "auto",
-                          fontSize: { xs: '0.875rem', sm: '0.9375rem' },
-                          py: { xs: 0.75, sm: 1 }
-                        }}
-                      >
-                        Bắt đầu làm bài
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
-              </Grid>
+                  {quiz.dueDate && !isExpired && (
+                    <span className="block text-[10px] text-[var(--color-text-secondary)]/60 font-medium mt-2">
+                      📅 Hạn nộp: {formatDueDate(quiz.dueDate)}
+                    </span>
+                  )}
+                </div>
+
+                {/* Action Button */}
+                <div className="mt-6">
+                  {quiz.hasAttempted ? (
+                    <button
+                      disabled
+                      className="w-full py-2 rounded-xl border border-[var(--color-border-color)] bg-[var(--color-bg-base)] text-[var(--color-text-secondary)]/40 text-xs font-extrabold cursor-not-allowed"
+                    >
+                      Đã hoàn thành
+                    </button>
+                  ) : isExpired ? (
+                    <button
+                      disabled
+                      className="w-full py-2 rounded-xl border border-red-100 bg-red-50/50 text-red-400 text-xs font-extrabold cursor-not-allowed"
+                    >
+                      Bài thi đã hết hạn
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleStartQuiz(quiz._id, quiz.hasAttempted, quiz.dueDate)}
+                      className="w-full py-2 rounded-xl bg-[var(--color-primary-color)] hover:bg-[var(--color-primary-color-hover)] text-white text-xs font-extrabold transition active:scale-95 flex items-center justify-center gap-1.5 shadow-sm"
+                    >
+                      <Play size={12} fill="white" />
+                      Bắt đầu làm bài
+                    </button>
+                  )}
+                </div>
+              </BaseCard>
             );
           })}
-        </Grid>
+        </div>
       )}
-    </Box>
+    </div>
   );
 };
 

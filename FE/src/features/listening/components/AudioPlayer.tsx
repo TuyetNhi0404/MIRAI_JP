@@ -1,6 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Box, IconButton, Slider, Typography, Paper, Tooltip } from '@mui/material';
-import { PlayArrow, Pause, FastForward, FastRewind, VolumeUp, VolumeOff, Speed } from '@mui/icons-material';
+import React, { useState, useRef, useEffect } from "react";
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Gauge } from "lucide-react";
 
 interface AudioPlayerProps {
   src: string;
@@ -26,7 +25,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, onTimeUpdate, targetStar
     const updateProgress = () => {
       setProgress(audio.currentTime);
       if (onTimeUpdate) onTimeUpdate(audio.currentTime);
-      
+
       // Handle A-B repeat for dictation segments
       if (targetEndTime && audio.currentTime >= targetEndTime) {
         audio.pause();
@@ -44,21 +43,23 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, onTimeUpdate, targetStar
 
     const handleEnded = () => setIsPlaying(false);
 
-    audio.addEventListener('timeupdate', updateProgress);
-    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener("timeupdate", updateProgress);
+    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
+    audio.addEventListener("ended", handleEnded);
 
     return () => {
-      audio.removeEventListener('timeupdate', updateProgress);
-      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener("timeupdate", updateProgress);
+      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      audio.removeEventListener("ended", handleEnded);
     };
   }, [onTimeUpdate, targetStartTime, targetEndTime]);
 
   useEffect(() => {
     if (audioRef.current && targetStartTime !== undefined) {
       audioRef.current.currentTime = targetStartTime;
-      if (isPlaying) audioRef.current.play();
+      if (isPlaying) {
+        void audioRef.current.play();
+      }
     }
   }, [targetStartTime, isPlaying]);
 
@@ -67,21 +68,19 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, onTimeUpdate, targetStar
     if (isPlaying) {
       audioRef.current.pause();
     } else {
-      audioRef.current.play();
+      void audioRef.current.play();
     }
     setIsPlaying(!isPlaying);
   };
 
-  const handleSeek = (_: Event, newValue: number | number[]) => {
-    const time = newValue as number;
+  const handleSeek = (time: number) => {
     if (audioRef.current) {
       audioRef.current.currentTime = time;
       setProgress(time);
     }
   };
 
-  const handleVolumeChange = (_: Event, newValue: number | number[]) => {
-    const vol = newValue as number;
+  const handleVolumeChange = (vol: number) => {
     setVolume(vol);
     if (audioRef.current) {
       audioRef.current.volume = vol;
@@ -105,99 +104,92 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, onTimeUpdate, targetStar
   };
 
   const formatTime = (time: number) => {
-    if (isNaN(time)) return '0:00';
+    if (isNaN(time)) return "0:00";
     const m = Math.floor(time / 60);
     const s = Math.floor(time % 60);
-    return `${m}:${s.toString().padStart(2, '0')}`;
+    return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
   return (
-    <Paper elevation={3} sx={{ 
-      p: 3, 
-      borderRadius: '24px', 
-      background: 'rgba(255, 255, 255, 0.8)',
-      backdropFilter: 'blur(20px)',
-      border: '1px solid rgba(255, 255, 255, 0.5)',
-      boxShadow: '0 10px 40px rgba(0,0,0,0.08)'
-    }}>
+    <div className="p-5 rounded-3xl bg-white border border-slate-150/70 shadow-[0_4px_20px_rgb(0,0,0,0.06)] backdrop-blur-md">
       <audio ref={audioRef} src={src} preload="metadata" />
-      
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-        <Typography variant="body2" sx={{ width: 45, color: 'text.secondary', fontWeight: 600 }}>
-          {formatTime(progress)}
-        </Typography>
-        <Slider
-          value={progress}
-          max={duration}
-          onChange={handleSeek}
-          sx={{
-            mx: 2,
-            color: '#B90000',
-            height: 8,
-            '& .MuiSlider-thumb': {
-              width: 16,
-              height: 16,
-              transition: '0.3s cubic-bezier(.47,1.64,.41,.8)',
-              '&:before': { boxShadow: '0 2px 12px 0 rgba(0,0,0,0.4)' },
-              '&:hover, &.Mui-focusVisible': { boxShadow: '0px 0px 0px 8px rgba(185, 0, 0, 0.16)' },
-              '&.Mui-active': { width: 20, height: 20 }
-            },
-            '& .MuiSlider-rail': { opacity: 0.28 }
-          }}
-        />
-        <Typography variant="body2" sx={{ width: 45, textAlign: 'right', color: 'text.secondary', fontWeight: 600 }}>
-          {formatTime(duration)}
-        </Typography>
-      </Box>
 
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', width: 120 }}>
-          <IconButton size="small" onClick={toggleMute} sx={{ color: 'text.secondary' }}>
-            {isMuted || volume === 0 ? <VolumeOff /> : <VolumeUp />}
-          </IconButton>
-          <Slider
-            size="small"
-            value={isMuted ? 0 : volume}
+      {/* Progress Slider Row */}
+      <div className="flex items-center gap-3 mb-4">
+        <span className="text-[10px] font-bold text-slate-400 w-10 text-left">{formatTime(progress)}</span>
+        <input
+          type="range"
+          min={0}
+          max={duration || 100}
+          value={progress}
+          onChange={(e) => handleSeek(Number(e.target.value))}
+          className="flex-1 h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600 focus:outline-none"
+        />
+        <span className="text-[10px] font-bold text-slate-400 w-10 text-right">{formatTime(duration)}</span>
+      </div>
+
+      {/* Controls Container */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        {/* Volume Controls */}
+        <div className="flex items-center gap-2 w-full sm:w-32 justify-start">
+          <button
+            onClick={toggleMute}
+            className="p-1.5 hover:bg-slate-50 rounded-xl transition text-slate-500 hover:text-slate-700 active:scale-95"
+            title={isMuted ? "Bật âm" : "Tắt âm"}
+          >
+            {isMuted || volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
+          </button>
+          <input
+            type="range"
+            min={0}
             max={1}
             step={0.01}
-            onChange={handleVolumeChange}
-            sx={{ ml: 1, color: 'text.secondary' }}
+            value={isMuted ? 0 : volume}
+            onChange={(e) => handleVolumeChange(Number(e.target.value))}
+            className="w-20 h-1 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-slate-500"
           />
-        </Box>
+        </div>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <IconButton onClick={() => handleSeek(null as any, Math.max(0, progress - 10))} sx={{ color: '#B90000' }}>
-            <FastRewind />
-          </IconButton>
-          <IconButton 
-            onClick={togglePlay} 
-            sx={{ 
-              bgcolor: '#B90000', 
-              color: 'white', 
-              width: 56, 
-              height: 56,
-              boxShadow: '0 4px 14px 0 rgba(185, 0, 0, 0.4)',
-              '&:hover': { bgcolor: '#990000', transform: 'scale(1.05)' },
-              transition: 'all 0.2s'
-            }}
+        {/* Playback Buttons */}
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => handleSeek(Math.max(0, progress - 10))}
+            className="p-2 text-slate-500 hover:text-blue-600 transition active:scale-90 hover:bg-slate-55 rounded-xl"
+            title="Lùi 10s"
           >
-            {isPlaying ? <Pause fontSize="large" /> : <PlayArrow fontSize="large" />}
-          </IconButton>
-          <IconButton onClick={() => handleSeek(null as any, Math.min(duration, progress + 10))} sx={{ color: '#B90000' }}>
-            <FastForward />
-          </IconButton>
-        </Box>
+            <SkipBack size={18} />
+          </button>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', width: 120 }}>
-          <Tooltip title={`Tốc độ: ${playbackRate}x`}>
-            <IconButton onClick={changeSpeed} sx={{ color: 'text.secondary' }}>
-              <Speed fontSize="small" sx={{ mr: 0.5 }} />
-              <Typography variant="caption" fontWeight="bold">{playbackRate}x</Typography>
-            </IconButton>
-          </Tooltip>
-        </Box>
-      </Box>
-    </Paper>
+          <button
+            onClick={togglePlay}
+            className="w-12 h-12 flex items-center justify-center bg-blue-600 hover:bg-blue-750 text-white rounded-full transition-all duration-200 active:scale-95 shadow-md shadow-blue-500/20"
+            title={isPlaying ? "Tạm dừng" : "Phát"}
+          >
+            {isPlaying ? <Pause size={20} className="fill-white text-white" /> : <Play size={20} className="fill-white text-white translate-x-0.5" />}
+          </button>
+
+          <button
+            onClick={() => handleSeek(Math.min(duration, progress + 10))}
+            className="p-2 text-slate-500 hover:text-blue-600 transition active:scale-90 hover:bg-slate-55 rounded-xl"
+            title="Tới 10s"
+          >
+            <SkipForward size={18} />
+          </button>
+        </div>
+
+        {/* Speed Adjustment */}
+        <div className="flex items-center gap-1.5 w-full sm:w-32 justify-end">
+          <button
+            onClick={changeSpeed}
+            className="flex items-center gap-1 px-3 py-1.5 hover:bg-slate-50 border border-slate-200 rounded-xl transition text-slate-655 font-extrabold text-xs active:scale-95 shadow-sm"
+            title="Tốc độ phát"
+          >
+            <Gauge size={14} className="text-slate-400" />
+            <span>{playbackRate}x</span>
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 

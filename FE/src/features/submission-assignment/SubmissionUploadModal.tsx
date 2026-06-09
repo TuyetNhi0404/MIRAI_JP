@@ -1,31 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Typography,
-  Box,
-  IconButton,
-  Alert,
-  CircularProgress,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  TextField,
-  Divider,
-  Chip,
-} from "@mui/material";
-import {
-  X,
-  CloudUpload,
-  Trash2,
-  FileText,
-  Download,
-  Edit,
-} from "lucide-react";
+import { X, CloudUpload, Trash2, FileText, Download, Edit } from "lucide-react";
 import { submissionService } from "../../services/submissionService";
 import type { AssignmentWithSubmission } from "../../types/submission.types";
 import { format } from "date-fns";
@@ -69,13 +43,15 @@ const SubmissionUploadModal: React.FC<SubmissionUploadModalProps> = ({
       } else {
         setMode("submit");
       }
-      
+
       setSelectedFiles([]);
       setNote("");
       setError(null);
       setSuccess(null);
     }
   }, [assignment, open, isSubmitted]);
+
+  if (!open || !assignment) return null;
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -133,8 +109,8 @@ const SubmissionUploadModal: React.FC<SubmissionUploadModalProps> = ({
         handleClose();
       }, 1500);
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      const errorMsg = error.response?.data?.message || "Có lỗi xảy ra trong quá trình nộp bài";
+      const errRes = err as { response?: { data?: { message?: string } } };
+      const errorMsg = errRes.response?.data?.message || "Có lỗi xảy ra trong quá trình nộp bài";
       setError(errorMsg);
     } finally {
       setUploading(false);
@@ -155,7 +131,7 @@ const SubmissionUploadModal: React.FC<SubmissionUploadModalProps> = ({
     const k = 1024;
     const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + sizes[i];
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
   };
 
   const formatDate = (dateString: string) => {
@@ -166,401 +142,326 @@ const SubmissionUploadModal: React.FC<SubmissionUploadModalProps> = ({
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getSubmissionBadgeColor = (status: string) => {
     switch (status) {
       case "graded":
-        return "primary";
+        return "bg-blue-50 text-blue-700 border-blue-200";
       case "late":
-        return "warning";
+        return "bg-amber-50 text-amber-700 border-amber-200";
       case "submitted":
-        return "success";
+        return "bg-emerald-50 text-emerald-700 border-emerald-200";
       default:
-        return "default";
+        return "bg-slate-100 text-slate-655 border-slate-200";
     }
   };
 
-  if (!assignment) return null;
+  const getSubmissionLabel = (status: string) => {
+    switch (status) {
+      case "graded":
+        return "Đã chấm điểm";
+      case "late":
+        return "Nộp muộn";
+      case "submitted":
+        return "Đã nộp";
+      default:
+        return "Chưa nộp";
+    }
+  };
 
   return (
-    <Dialog
-      open={open}
-      onClose={handleClose}
-      maxWidth="md"
-      fullWidth
-      PaperProps={{
-        sx: { borderRadius: 2 },
-      }}
-    >
-      <DialogTitle
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          borderBottom: "2px solid #B90000",
-          pb: 2,
-        }}
-      >
-        <Typography variant="h6" fontWeight={600}>
-          {mode === "view" ? "Chi tiết bài nộp" : mode === "resubmit" ? "Nộp lại bài tập" : "Nộp bài tập"}
-        </Typography>
-        <IconButton onClick={handleClose} size="small" disabled={uploading}>
-          <X size={20} />
-        </IconButton>
-      </DialogTitle>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+      <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col animate-scaleUp">
+        {/* Modal Header */}
+        <div className="flex justify-between items-center px-6 py-4 border-b border-slate-100">
+          <h3 className="text-sm font-black text-slate-800 m-0">
+            {mode === "view" ? "Chi tiết bài nộp" : mode === "resubmit" ? "Nộp lại bài tập" : "Nộp bài tập"}
+          </h3>
+          <button
+            onClick={handleClose}
+            disabled={uploading}
+            className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-450 hover:text-slate-700 transition active:scale-95 disabled:opacity-50"
+          >
+            <X size={18} />
+          </button>
+        </div>
 
-      <DialogContent sx={{ mt: 2 }}>
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-            {error}
-          </Alert>
-        )}
-
-        {success && (
-          <Alert severity="success" sx={{ mb: 2 }}>
-            {success}
-          </Alert>
-        )}
-
-        <Box sx={{ mb: 3, p: 2, backgroundColor: "#f5f5f5", borderRadius: 1 }}>
-          <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-            {assignment.title}
-          </Typography>
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            Khóa học: {assignment.courseName}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Hạn nộp: {formatDate(assignment.dueDate)}
-          </Typography>
-          {assignment.description && (
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              {assignment.description}
-            </Typography>
+        {/* Modal Content */}
+        <div className="p-6 space-y-6 overflow-y-auto flex-1">
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-xs font-semibold text-red-800 flex justify-between items-center">
+              <span>{error}</span>
+              <button onClick={() => setError(null)} className="text-red-550 hover:text-red-750 font-black">
+                ✕
+              </button>
+            </div>
           )}
-        </Box>
 
-        {assignment.fileUrls && assignment.fileUrls.length > 0 && (
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="subtitle2" fontWeight={600} gutterBottom sx={{ color: "#B90000" }}>
-             Tệp đính kèm  ({assignment.fileUrls.length})
-            </Typography>
-            <List dense>
-              {assignment.fileUrls.map((fileUrl: string, index: number) => {
-                const fileName = fileUrl.split('/').pop() || `file-${index + 1}`;
-                return (
-                  <ListItem
-                    key={index}
-                    secondaryAction={
-                      <IconButton
-                        edge="end"
-                        size="small"
+          {success && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-xs font-semibold text-emerald-800">
+              {success}
+            </div>
+          )}
+
+          {/* Details header block */}
+          <div className="bg-slate-50 border border-slate-150 rounded-2xl p-5 space-y-2">
+            <h4 className="text-sm font-extrabold text-slate-800 m-0">{assignment.title}</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-semibold text-slate-500">
+              <span>Khóa học: {assignment.courseName}</span>
+              <span>Hạn nộp: {formatDate(assignment.dueDate)}</span>
+            </div>
+            {assignment.description && (
+              <p className="text-xs text-slate-550 leading-relaxed border-t border-slate-150 pt-2 mt-2 m-0 select-all">
+                {assignment.description}
+              </p>
+            )}
+          </div>
+
+          {/* Attached Files template by Teacher */}
+          {assignment.fileUrls && assignment.fileUrls.length > 0 && (
+            <div className="space-y-2">
+              <h5 className="text-[10px] text-red-650 font-black uppercase tracking-wider">
+                Tệp đính kèm bài tập ({assignment.fileUrls.length})
+              </h5>
+              <div className="space-y-2">
+                {assignment.fileUrls.map((fileUrl: string, idx: number) => {
+                  const fileName = fileUrl.split("/").pop() || `file-${idx + 1}`;
+                  return (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-3 border border-orange-100 bg-amber-50/20 rounded-xl text-xs font-bold"
+                    >
+                      <div className="flex items-center gap-2">
+                        <FileText size={16} className="text-red-550" />
+                        <span className="text-slate-700 truncate max-w-sm">{fileName}</span>
+                      </div>
+                      <button
                         onClick={() => handleDownloadFile(fileUrl, fileName)}
-                        sx={{ color: "#B90000" }}
+                        className="p-1 text-red-650 hover:bg-orange-50 rounded-lg transition"
                       >
-                        <Download size={18} />
-                      </IconButton>
-                    }
-                    sx={{
-                      border: "1px solid #FFE8CC",
-                      borderRadius: 1,
-                      mb: 1,
-                      backgroundColor: "#FFF5E6",
-                    }}
+                        <Download size={16} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Mode View: Student Submitted Homework details */}
+          {mode === "view" && submission && (
+            <div className="space-y-4 border-t border-slate-100 pt-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">Bài nộp của bạn</h4>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${getSubmissionBadgeColor(
+                      submission.status
+                    )}`}
                   >
-                    <ListItemIcon>
-                      <FileText size={20} color="#B90000" />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={fileName}
-                      primaryTypographyProps={{ fontSize: "0.9rem", fontWeight: 500 }}
-                    />
-                  </ListItem>
-                );
-              })}
-            </List>
-          </Box>
-        )}
+                    {getSubmissionLabel(submission.status)}
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-semibold">
+                    Nộp ngày {formatDate(submission.submittedAt)}
+                  </span>
+                </div>
+              </div>
 
-        {mode === "view" && submission && (
-          <>
-            <Divider sx={{ my: 2 }} />
-            <Box sx={{ mb: 2 }}>
-              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-                <Typography variant="subtitle1" fontWeight={600}>
-                  Bài nộp của bạn
-                </Typography>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Chip
-                    label={submission.status.toUpperCase()}
-                    size="small"
-                    color={getStatusColor(submission.status)}
-                  />
-                  <Typography variant="caption" color="text.secondary">
-                    Đã nộp vào {formatDate(submission.submittedAt)}
-                  </Typography>
-                </Box>
-              </Box>
-
+              {/* Feedback and Graded Score Alert */}
               {submission.status === "graded" && (
-                <Alert severity="info" sx={{ mb: 2 }}>
-                  <Typography variant="subtitle2">
+                <div className="bg-blue-50/50 border border-blue-150 rounded-2xl p-4 text-xs">
+                  <p className="font-extrabold text-blue-700 m-0">
                     Điểm số: {submission.score} / {assignment.maxScore}
-                  </Typography>
+                  </p>
                   {submission.feedback && (
-                    <Typography variant="body2" sx={{ mt: 1 }}>
-                      Phản hồi: {submission.feedback}
-                    </Typography>
+                    <p className="text-slate-655 m-0 mt-1.5 leading-relaxed font-semibold">
+                      Nhận xét: {submission.feedback}
+                    </p>
                   )}
-                </Alert>
+                </div>
               )}
 
+              {/* Submitted files list */}
               {submission.files && submission.files.length > 0 && (
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="subtitle2" gutterBottom>
+                <div className="space-y-2">
+                  <h5 className="text-[10px] text-slate-400 font-black uppercase tracking-wider">
                     Các tệp đã nộp ({submission.files.length})
-                  </Typography>
-                  <List dense>
-                    {submission.files.map((file: string | SubmissionFile, index: number) => {
+                  </h5>
+                  <div className="space-y-2">
+                    {submission.files.map((file: string | SubmissionFile, idx: number) => {
                       const fileUrl = typeof file === "string" ? file : file.fileUrl;
-                      const fileName = typeof file === "string" 
-                        ? file.split('/').pop() || 'file' 
-                        : file.fileName;
+                      const fileName = typeof file === "string" ? file.split("/").pop() || "file" : file.fileName;
                       const fileSize = typeof file === "string" ? 0 : file.fileSize;
 
                       return (
-                        <ListItem
-                          key={index}
-                          secondaryAction={
-                            <IconButton
-                              edge="end"
-                              size="small"
-                              onClick={() => handleDownloadFile(fileUrl, fileName)}
-                              sx={{ color: "#B90000" }}
-                            >
-                              <Download size={18} />
-                            </IconButton>
-                          }
-                          sx={{
-                            border: "1px solid #e0e0e0",
-                            borderRadius: 1,
-                            mb: 1,
-                            backgroundColor: "white",
-                          }}
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between p-3 border border-slate-200 rounded-xl text-xs font-bold bg-white"
                         >
-                          <ListItemIcon>
-                            <FileText size={20} color="#B90000" />
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={fileName}
-                            secondary={fileSize > 0 ? formatFileSize(fileSize) : ""}
-                            primaryTypographyProps={{ fontSize: "0.9rem" }}
-                            secondaryTypographyProps={{ fontSize: "0.75rem" }}
-                          />
-                        </ListItem>
+                          <div className="flex items-center gap-2">
+                            <FileText size={16} className="text-red-550" />
+                            <div className="flex flex-col">
+                              <span className="text-slate-700 truncate max-w-sm">{fileName}</span>
+                              {fileSize > 0 && <span className="text-[9px] text-slate-400">{formatFileSize(fileSize)}</span>}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleDownloadFile(fileUrl, fileName)}
+                            className="p-1 text-red-655 hover:bg-slate-50 rounded-lg transition"
+                          >
+                            <Download size={16} />
+                          </button>
+                        </div>
                       );
                     })}
-                  </List>
-                </Box>
+                  </div>
+                </div>
               )}
 
+              {/* Note comment */}
               {submission.note && (
-                <Box sx={{ p: 2, backgroundColor: "#FFFBF0", borderRadius: 1, border: "1px solid #FFE8CC" }}>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Ghi chú của bạn
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {submission.note}
-                  </Typography>
-                </Box>
+                <div className="bg-amber-50/20 border border-amber-100 rounded-2xl p-4 text-xs">
+                  <span className="text-[10px] text-slate-400 font-black block uppercase mb-1">Ghi chú của bạn</span>
+                  <p className="text-slate-655 m-0 leading-relaxed font-semibold">{submission.note}</p>
+                </div>
               )}
-            </Box>
 
-            {isGraded && (
-              <Alert severity="info" sx={{ mt: 2 }}>
-                Bài tập này đã được chấm điểm. Bạn không thể nộp lại.
-              </Alert>
-            )}
+              {isGraded && (
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-center text-xs font-semibold text-slate-500">
+                  Bài tập này đã chấm điểm và đóng. Bạn không thể chỉnh sửa hoặc nộp lại.
+                </div>
+              )}
 
-            {!isGraded && !isAssignmentClosed && (
-              <>
-                <Divider sx={{ my: 2 }} />
-                <Box sx={{ textAlign: "center" }}>
-                  <Button
-                    variant="outlined"
-                    startIcon={<Edit size={18} />}
-                    onClick={() => setMode("resubmit")}
-                    sx={{
-                      borderColor: "#B90000",
-                      color: "#B90000",
-                      "&:hover": {
-                        borderColor: "#D66410",
-                        backgroundColor: "#FFF5E6",
-                      },
-                    }}
-                  >
-                    Nộp lại bài tập
-                  </Button>
-                </Box>
-              </>
-            )}
+              {!isGraded && isAssignmentClosed && (
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-center text-xs font-semibold text-slate-500">
+                  Thời hạn nộp bài đã kết thúc. Không thể nộp lại.
+                </div>
+              )}
+            </div>
+          )}
 
-            {isAssignmentClosed && !isGraded && (
-              <Alert severity="info" sx={{ mt: 2 }}>
-                Hạn nộp bài tập đã đóng. Bạn không thể nộp lại.
-              </Alert>
-            )}
-          </>
-        )}
+          {/* Mode Submit or Resubmit Form */}
+          {(mode === "submit" || mode === "resubmit") && (
+            <div className="space-y-5 border-t border-slate-100 pt-5">
+              {mode === "resubmit" && (
+                <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-xs font-semibold text-blue-800">
+                  Bạn đang chuẩn bị nộp lại bài tập này. Tệp tin cũ và ghi chú cũ sẽ được ghi đè hoàn toàn.
+                </div>
+              )}
 
-        {(mode === "submit" || mode === "resubmit") && (
-          <>
-            {mode === "resubmit" && (
-              <Alert severity="info" sx={{ mb: 2 }}>
-                Bạn đang nộp lại bài tập này. Bài nộp trước đó sẽ bị ghi đè.
-              </Alert>
-            )}
+              {/* Drag and Drop Box */}
+              <div
+                onClick={() => !uploading && fileInputRef.current?.click()}
+                className={`border-2 border-dashed border-red-400 rounded-3xl p-6 text-center bg-orange-50/10 hover:bg-orange-50/20 transition-all cursor-pointer ${
+                  uploading ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  hidden
+                  onChange={handleFileSelect}
+                  accept="*/*"
+                  disabled={uploading}
+                />
+                <CloudUpload size={40} className="mx-auto text-red-550 mb-2" />
+                <p className="text-xs font-extrabold text-slate-800 m-0">Tải tài liệu lên</p>
+                <p className="text-[10px] text-slate-400 font-semibold m-0 mt-0.5">
+                  Nhấp chuột để chọn tệp hoặc kéo thả file vào vùng này
+                </p>
+              </div>
 
-            <Box
-              sx={{
-                border: "2px dashed #B90000",
-                borderRadius: 2,
-                p: 3,
-                textAlign: "center",
-                backgroundColor: "#FFFBF0",
-                cursor: uploading ? "not-allowed" : "pointer",
-                "&:hover": {
-                  backgroundColor: uploading ? "#FFFBF0" : "#FFF5E6",
-                },
-              }}
-              onClick={() => !uploading && fileInputRef.current?.click()}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                hidden
-                onChange={handleFileSelect}
-                accept="*/*"
-                disabled={uploading}
-              />
-              <CloudUpload
-                size={48}
-                color="#B90000"
-                style={{ marginBottom: 8 }}
-              />
-              <Typography variant="body1" fontWeight={500} gutterBottom>
-                Tải tệp lên
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Nhấp để chọn tệp hoặc kéo thả tệp vào đây
-              </Typography>
-            </Box>
-
-            {selectedFiles.length > 0 && (
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="subtitle2" gutterBottom>
-                  Các tệp đã chọn ({selectedFiles.length})
-                </Typography>
-                <List dense>
-                  {selectedFiles.map((file, index) => (
-                    <ListItem
-                      key={index}
-                      secondaryAction={
-                        <IconButton
-                          edge="end"
-                          size="small"
-                          onClick={() => handleRemoveFile(index)}
+              {/* Selected Files Preview List */}
+              {selectedFiles.length > 0 && (
+                <div className="space-y-2 animate-scaleUp">
+                  <h5 className="text-[10px] text-slate-400 font-black uppercase tracking-wider">
+                    Các tệp đã chọn ({selectedFiles.length})
+                  </h5>
+                  <div className="space-y-2">
+                    {selectedFiles.map((file, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between p-3 border border-slate-200 rounded-xl text-xs font-bold bg-white"
+                      >
+                        <div className="flex items-center gap-2">
+                          <FileText size={16} className="text-red-550" />
+                          <div className="flex flex-col">
+                            <span className="text-slate-700 truncate max-w-sm">{file.name}</span>
+                            <span className="text-[9px] text-slate-400">{formatFileSize(file.size)}</span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleRemoveFile(idx)}
                           disabled={uploading}
-                          sx={{ color: "#d32f2f" }}
+                          className="p-1 text-red-650 hover:bg-red-50 rounded-lg transition active:scale-90"
                         >
-                          <Trash2 size={18} />
-                        </IconButton>
-                      }
-                      sx={{
-                        border: "1px solid #e0e0e0",
-                        borderRadius: 1,
-                        mb: 1,
-                        backgroundColor: "white",
-                      }}
-                    >
-                      <ListItemIcon>
-                        <FileText size={20} color="#B90000" />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={file.name}
-                        secondary={formatFileSize(file.size)}
-                        primaryTypographyProps={{ fontSize: "0.9rem" }}
-                        secondaryTypographyProps={{ fontSize: "0.75rem" }}
-                      />
-                    </ListItem>
-                  ))}
-                </List>
-              </Box>
-            )}
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-            <Box sx={{ mt: 2 }}>
-              <TextField
-                fullWidth
-                multiline
-                rows={3}
-                label="Ghi chú (Tùy chọn)"
-                placeholder="Thêm ghi chú cho giáo viên của bạn..."
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                disabled={uploading}
-              />
-            </Box>
-          </>
-        )}
-      </DialogContent>
+              {/* Note textarea input */}
+              <div className="space-y-1">
+                <label className="text-[10px] text-slate-400 font-black uppercase tracking-wider">
+                  Ghi chú (Tùy chọn)
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="Thêm ghi chú/thông điệp gửi tới giáo viên..."
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  disabled={uploading}
+                  className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-medium text-slate-755 focus:outline-none focus:border-blue-500 disabled:opacity-50"
+                />
+              </div>
+            </div>
+          )}
+        </div>
 
-      <DialogActions sx={{ p: 2, borderTop: "1px solid #e0e0e0" }}>
-        <Button
-          onClick={handleClose}
-          variant="outlined"
-          color="inherit"
-          disabled={uploading}
-        >
-          {mode === "view" ? "Đóng" : "Hủy"}
-        </Button>
-        
-        {mode === "view" && !isAssignmentClosed && !isGraded && (
-          <Button
-            onClick={() => setMode("resubmit")}
-            variant="contained"
-            startIcon={<Edit size={18} />}
-            sx={{
-              backgroundColor: "#B90000",
-              "&:hover": { backgroundColor: "#D66410" },
-            }}
+        {/* Modal Footer actions */}
+        <div className="flex justify-end items-center gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+          <button
+            onClick={handleClose}
+            disabled={uploading}
+            className="px-4 py-2 border border-slate-200 hover:bg-slate-100 text-slate-655 rounded-xl text-xs font-bold transition active:scale-95 disabled:opacity-50"
           >
-            Nộp lại
-          </Button>
-        )}
+            {mode === "view" ? "Đóng" : "Hủy"}
+          </button>
 
-        {(mode === "submit" || mode === "resubmit") && (
-          <Button
-            onClick={handleUpload}
-            variant="contained"
-            disabled={uploading || selectedFiles.length === 0}
-            sx={{
-              backgroundColor: "#B90000",
-              "&:hover": { backgroundColor: "#D66410" },
-            }}
-          >
-            {uploading ? (
-              <>
-                <CircularProgress size={20} sx={{ mr: 1, color: "white" }} />
-                Đang tải lên...
-              </>
-            ) : mode === "resubmit" ? (
-              "Nộp lại"
-            ) : (
-              "Nộp bài"
-            )}
-          </Button>
-        )}
-      </DialogActions>
-    </Dialog>
+          {mode === "view" && !isAssignmentClosed && !isGraded && (
+            <button
+              onClick={() => setMode("resubmit")}
+              className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-extrabold transition active:scale-95 shadow-sm"
+            >
+              <Edit size={14} />
+              Nộp lại bài
+            </button>
+          )}
+
+          {(mode === "submit" || mode === "resubmit") && (
+            <button
+              onClick={handleUpload}
+              disabled={uploading || selectedFiles.length === 0}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white rounded-xl text-xs font-black transition active:scale-95 shadow-sm"
+            >
+              {uploading ? (
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  Đang tải lên...
+                </span>
+              ) : mode === "resubmit" ? (
+                "Nộp lại"
+              ) : (
+                "Nộp bài"
+              )}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 
