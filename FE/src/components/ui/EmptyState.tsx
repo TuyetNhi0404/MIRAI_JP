@@ -1,110 +1,41 @@
-import { Box, Typography, Button, type SxProps, type Theme } from "@mui/material";
-import { type ReactNode } from "react";
+import React from "react";
 import { Inbox } from "lucide-react";
 
 interface EmptyStateProps {
   title: string;
   description?: string;
-  icon?: ReactNode;
+  icon?: React.ComponentType<{ size?: number; className?: string }>;
   action?: { label: string; onClick: () => void };
-  illustration?: ReactNode;
-  sx?: SxProps<Theme>;
 }
 
-export function EmptyState({
+export const EmptyState: React.FC<EmptyStateProps> = ({
   title,
   description,
-  icon,
+  icon: Icon = Inbox,
   action,
-  illustration,
-  sx,
-}: EmptyStateProps) {
+}) => {
   return (
-    <Box
-      sx={[
-        {
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          textAlign: "center",
-          py: { xs: 6, sm: 8 },
-          px: 3,
-          borderRadius: 3,
-          backgroundColor: "background.paper",
-          border: "1px dashed",
-          borderColor: "divider",
-          animation: "emptyIn 420ms cubic-bezier(0.4, 0, 0.2, 1) both",
-          "@keyframes emptyIn": {
-            from: { opacity: 0, transform: "scale(0.96)" },
-            to: { opacity: 1, transform: "scale(1)" },
-          },
-        },
-        ...(Array.isArray(sx) ? sx : [sx]),
-      ]}
-    >
-      <Box
-        sx={{
-          width: 84,
-          height: 84,
-          borderRadius: "50%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "linear-gradient(135deg, #FFE4D6 0%, #FFEAEA 100%)",
-          color: "primary.main",
-          mb: 2.5,
-          animation: "floaty 3s ease-in-out infinite",
-          "@keyframes floaty": {
-            "0%, 100%": { transform: "translateY(0)" },
-            "50%": { transform: "translateY(-6px)" },
-          },
-        }}
-      >
-        {illustration ?? icon ?? <Inbox size={36} strokeWidth={1.5} />}
-      </Box>
-      <Typography
-        variant="h6"
-        sx={{
-          fontWeight: 700,
-          color: "text.primary",
-          mb: 0.75,
-          fontSize: { xs: "1rem", sm: "1.15rem" },
-        }}
-      >
+    <div className="flex flex-col items-center justify-center py-12 px-6 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+      <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center text-slate-400 mb-4 border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+        <Icon size={28} className="stroke-[1.5]" />
+      </div>
+      <h3 className="text-base font-semibold text-[#1F2238] mb-1">
         {title}
-      </Typography>
+      </h3>
       {description && (
-        <Typography
-          variant="body2"
-          sx={{
-            color: "text.secondary",
-            maxWidth: 420,
-            mb: action ? 2.5 : 0,
-          }}
-        >
+        <p className="text-sm text-slate-500 max-w-sm mx-auto mb-4 leading-relaxed">
           {description}
-        </Typography>
+        </p>
       )}
       {action && (
-        <Button
-          variant="contained"
+        <button
           onClick={action.onClick}
-          sx={{
-            borderRadius: 2,
-            px: 3,
-            py: 1.1,
-            boxShadow: "0 8px 20px rgba(185, 0, 0, 0.22)",
-            transition: "transform 200ms ease, box-shadow 200ms ease",
-            "&:hover": {
-              transform: "translateY(-2px)",
-              boxShadow: "0 12px 26px rgba(185, 0, 0, 0.28)",
-            },
-          }}
+          className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 active:scale-95 rounded-xl shadow-sm transition-all duration-200"
         >
           {action.label}
-        </Button>
+        </button>
       )}
-    </Box>
+    </div>
   );
-}
+};
+export default EmptyState;

@@ -11,8 +11,9 @@ import {
 import { X } from "lucide-react";
 import type { CoachReview } from "./types";
 import { SEVERITY_LABEL } from "./speakingUtils";
+import { sp } from "./speakingPracticeTheme";
 
-const BRAND = "#c83c3c";
+const BRAND = sp.brand;
 
 type CoachReviewPanelProps = {
   open: boolean;
@@ -162,7 +163,7 @@ export function CoachReviewPanel({
                 fontSize: "0.85rem",
                 fontWeight: 600,
                 cursor: "pointer",
-                bgcolor: "#FFF0F0",
+                bgcolor: sp.brandTint,
                 color: BRAND,
               }}
             >

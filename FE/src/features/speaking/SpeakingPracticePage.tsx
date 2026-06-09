@@ -6,11 +6,13 @@ import {
   Chip,
   CircularProgress,
   FormControl,
+  IconButton,
   LinearProgress,
   MenuItem,
   Select,
   Snackbar,
   Stack,
+  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
@@ -26,8 +28,9 @@ import {
   Lightbulb,
   ChevronRight,
   Volume2,
+  Check,
 } from "lucide-react";
-import VoiceOrb from "../../components/AI_animated/VoiceOrb";
+import AudioWaveSphere3D from "../../components/AI_animated/AudioWaveSphere3D";
 import { TranslatableMessageBubble } from "./TranslatableMessageBubble";
 import { CoachSuggestionBubble } from "./CoachSuggestionBubble";
 import { NotePracticeDialog } from "./NotePracticeDialog";
@@ -65,6 +68,7 @@ const SpeakingPracticePage = () => {
     recordDisabled,
     serviceUnavailable,
     lastError,
+    audioLevel,
     onLevelChange,
     onRecordPointerDown,
     onRecordPointerUp,
@@ -99,13 +103,28 @@ const SpeakingPracticePage = () => {
   const recentNotes = useMemo(
     () =>
       grammarNotes.notes
-        .filter((n) => n.corrected && n.corrected.trim() !== n.original.trim())
+        .filter(
+          (n) =>
+            n.corrected &&
+            n.corrected.trim() !== n.original.trim() &&
+            n.status !== "mastered",
+        )
         .slice(0, 3),
     [grammarNotes.notes],
   );
 
   const totalNotes = grammarNotes.notes.filter(
-    (n) => n.corrected && n.corrected.trim() !== n.original.trim(),
+    (n) =>
+      n.corrected &&
+      n.corrected.trim() !== n.original.trim() &&
+      n.status !== "mastered",
+  ).length;
+
+  const masteredNotes = grammarNotes.notes.filter(
+    (n) =>
+      n.corrected &&
+      n.corrected.trim() !== n.original.trim() &&
+      n.status === "mastered",
   ).length;
 
   if (!enabled) {
@@ -326,15 +345,45 @@ const SpeakingPracticePage = () => {
                 sx={{
                   alignSelf: "center",
                   textAlign: "center",
-                  py: 3,
+                  py: 4,
                   px: 2,
-                  maxWidth: 340,
+                  maxWidth: 320,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 1.25,
                 }}
               >
-                <Volume2 size={20} color={sp.textFaint} style={{ marginBottom: 6 }} />
-                <Typography variant="body2" sx={{ color: sp.textMuted, lineHeight: 1.6 }}>
-                  Nhấn nút mic bên dưới để bắt đầu. Di chuột lên tin nhắn tiếng Nhật để xem nghĩa tiếng Việt.
-                </Typography>
+                <Box
+                  aria-hidden
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: "50%",
+                    bgcolor: sp.brandTint,
+                    border: `1px solid ${sp.brandBorder}`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Volume2 size={22} color={sp.brand} strokeWidth={2.2} />
+                </Box>
+                <Stack spacing={0.5} alignItems="center">
+                  <Typography
+                    sx={{ color: sp.text, fontSize: "0.85rem", fontWeight: 600, lineHeight: 1.4 }}
+                  >
+                    Sẵn sàng luyện nói
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: sp.textSoft, lineHeight: 1.55, fontSize: "0.78rem" }}
+                  >
+                    Nhấn nút mic bên dưới để bắt đầu.
+                    {"\n"}
+                    Di chuột lên tin nhắn tiếng Nhật để xem nghĩa tiếng Việt.
+                  </Typography>
+                </Stack>
               </Box>
             )}
 
@@ -471,15 +520,28 @@ const SpeakingPracticePage = () => {
                 overflow: "hidden",
                 p: 0,
                 flexShrink: 0,
+                background: circleActive
+                  ? `linear-gradient(180deg, ${sp.brandTint} 0%, ${sp.surface} 70%)`
+                  : `linear-gradient(180deg, ${sp.surfaceSunken} 0%, ${sp.surface} 70%)`,
+                transition: sp.transition,
               }}
             >
               <Box
                 aria-hidden
                 sx={{
                   position: "absolute",
-                  inset: 0,
-                  background: `radial-gradient(ellipse at 50% 0%, ${sp.brandTint} 0%, ${sp.brandTint} 38%, transparent 72%)`,
+                  left: "50%",
+                  top: "62%",
+                  transform: "translate(-50%, -50%)",
+                  width: orbSize + 56,
+                  height: orbSize + 56,
+                  borderRadius: "50%",
+                  background: circleActive
+                    ? `radial-gradient(circle, ${sp.brand}26 0%, ${sp.brandAccent}14 38%, transparent 70%)`
+                    : `radial-gradient(circle, ${sp.brand}0F 0%, transparent 65%)`,
+                  filter: "blur(6px)",
                   pointerEvents: "none",
+                  transition: "background 0.4s ease",
                 }}
               />
               <Box sx={{ position: "relative", p: 2, pb: 1.5 }}>
@@ -500,6 +562,7 @@ const SpeakingPracticePage = () => {
                       borderRadius: `${sp.radiusPill}px`,
                       bgcolor: circleActive ? sp.brandTint : sp.surfaceMuted,
                       border: `1px solid ${circleActive ? sp.brandBorder : sp.hairline}`,
+                      transition: sp.transition,
                     }}
                   >
                     <Box
@@ -509,11 +572,20 @@ const SpeakingPracticePage = () => {
                         borderRadius: "50%",
                         bgcolor: circleActive ? sp.brand : sp.textFaint,
                         boxShadow: circleActive ? `0 0 0 3px ${sp.brandTint}` : "none",
-                        animation: circleActive ? "mira-ring-pulse 1.6s ease-out infinite" : "none",
+                        animation: circleActive
+                          ? "mira-ring-pulse 1.6s ease-out infinite"
+                          : "none",
                         "@media (prefers-reduced-motion: reduce)": { animation: "none" },
                       }}
                     />
-                    <Typography sx={{ fontSize: "0.68rem", fontWeight: 600, color: circleActive ? sp.brand : sp.textSoft, letterSpacing: 0.1 }}>
+                    <Typography
+                      sx={{
+                        fontSize: "0.68rem",
+                        fontWeight: 600,
+                        color: circleActive ? sp.brand : sp.textSoft,
+                        letterSpacing: 0.1,
+                      }}
+                    >
                       {circleActive ? "Đang hoạt động" : "Sẵn sàng"}
                     </Typography>
                   </Box>
@@ -523,7 +595,7 @@ const SpeakingPracticePage = () => {
                   sx={{
                     position: "relative",
                     mx: "auto",
-                    my: 0.25,
+                    my: 0.5,
                     width: orbSize + 12,
                     height: orbSize + 12,
                     borderRadius: "50%",
@@ -536,7 +608,7 @@ const SpeakingPracticePage = () => {
                     aria-hidden
                     sx={{
                       position: "absolute",
-                      inset: 6,
+                      inset: 4,
                       borderRadius: "50%",
                       background: circleActive
                         ? `radial-gradient(circle, ${sp.brandTintStrong} 0%, transparent 60%)`
@@ -545,24 +617,17 @@ const SpeakingPracticePage = () => {
                     }}
                   />
                   <Box sx={{ position: "relative" }}>
-                    <VoiceOrb isSpeaking={circleActive} size={orbSize} color={sp.brand} />
-                  </Box>
-                  {isRecording && (
-                    <Box
-                      sx={{
-                        position: "absolute",
-                        bottom: 4,
-                        right: 4,
-                        width: 12,
-                        height: 12,
-                        borderRadius: "50%",
-                        bgcolor: sp.danger,
-                        border: "2px solid #fff",
-                        boxShadow: `0 0 0 3px ${sp.dangerSoft}`,
-                      }}
-                      aria-hidden
+                    <AudioWaveSphere3D
+                      isSpeaking={circleActive}
+                      isResponding={loading}
+                      audioLevel={audioLevel}
+                      size={orbSize}
+                      colorTop={sp.brandLight}
+                      colorMid={sp.brandSoft}
+                      colorBottom={sp.brand}
+                      tone="light"
                     />
-                  )}
+                  </Box>
                 </Box>
 
                 <Typography
@@ -588,7 +653,6 @@ const SpeakingPracticePage = () => {
                   <SessionChip
                     icon={<GraduationCap size={11} />}
                     label={`Cấp ${level}`}
-                    tone="neutral"
                   />
                   <SessionChip
                     icon={mode === "stream" ? <Zap size={11} /> : <Mic size={11} />}
@@ -598,7 +662,6 @@ const SpeakingPracticePage = () => {
                   <SessionChip
                     icon={<MessageSquare size={11} />}
                     label={`${messages.length}`}
-                    tone="neutral"
                   />
                 </Stack>
               </Box>
@@ -641,7 +704,7 @@ const SpeakingPracticePage = () => {
             </Box>
 
             {/* RECENT ERRORS PREVIEW */}
-            <Box sx={{ ...panelSx(), p: 2, flexShrink: 0, maxHeight: 200, display: "flex", flexDirection: "column" }}>
+            <Box sx={{ ...panelSx(), p: 2, flexShrink: 0, maxHeight: 220, display: "flex", flexDirection: "column" }}>
               <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.25 }}>
                 <ClipboardList size={14} color={sp.textSoft} />
                 <Typography sx={{ fontSize: "0.78rem", fontWeight: 700, color: sp.text, letterSpacing: 0.1 }}>
@@ -662,22 +725,41 @@ const SpeakingPracticePage = () => {
                     }}
                   />
                 )}
+                {masteredNotes > 0 && (
+                  <Stack
+                    direction="row"
+                    spacing={0.4}
+                    alignItems="center"
+                    sx={{ ml: "auto", color: sp.success }}
+                  >
+                    <Check size={11} strokeWidth={2.6} />
+                    <Typography sx={{ fontSize: "0.65rem", fontWeight: 600, lineHeight: 1 }}>
+                      {masteredNotes} đã thuần
+                    </Typography>
+                  </Stack>
+                )}
               </Stack>
 
               <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
                 {recentNotes.length === 0 ? (
-                  <Typography sx={{ color: sp.textSoft, fontSize: "0.78rem", py: 1, textAlign: "center" }}>
-                    Chưa có lỗi nào.
-                  </Typography>
+                  <Stack spacing={0.5} alignItems="center" sx={{ py: 1.5 }}>
+                    <Check size={18} color={sp.success} strokeWidth={2.2} />
+                    <Typography sx={{ color: sp.success, fontSize: "0.78rem", fontWeight: 600 }}>
+                      {totalNotes === 0 && masteredNotes === 0
+                        ? "Chưa có lỗi nào."
+                        : "Tuyệt vời! Bạn đã luyện xong tất cả lỗi."}
+                    </Typography>
+                  </Stack>
                 ) : (
                   <Stack spacing={0.75}>
                     {recentNotes.map((n) => (
                       <Box
                         key={n._id}
-                        onClick={() => setPracticeNote(n)}
                         sx={{
+                          position: "relative",
                           px: 1.1,
                           py: 0.85,
+                          pr: 4.5,
                           borderRadius: 1.25,
                           border: `1px solid ${sp.hairline}`,
                           bgcolor: sp.surfaceSunken,
@@ -687,7 +769,11 @@ const SpeakingPracticePage = () => {
                             borderColor: sp.brandBorder,
                             bgcolor: sp.brandTint,
                           },
+                          "&:hover .master-btn": {
+                            opacity: 1,
+                          },
                         }}
+                        onClick={() => setPracticeNote(n)}
                       >
                         <Typography
                           sx={{
@@ -707,6 +793,33 @@ const SpeakingPracticePage = () => {
                             {n.explanationVi}
                           </Typography>
                         )}
+                        <Tooltip title="Đã luyện xong" placement="left" arrow>
+                          <IconButton
+                            className="master-btn"
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void grammarNotes.setStatus(n._id, "mastered");
+                              setSnack("Đã đánh dấu thuần lỗi này");
+                            }}
+                            sx={{
+                              position: "absolute",
+                              right: 4,
+                              top: "50%",
+                              transform: "translateY(-50%)",
+                              opacity: 0.35,
+                              transition: sp.transition,
+                              color: sp.success,
+                              p: 0.5,
+                              "&:hover": {
+                                bgcolor: sp.successSoft,
+                                opacity: 1,
+                              },
+                            }}
+                          >
+                            <Check size={14} strokeWidth={2.6} />
+                          </IconButton>
+                        </Tooltip>
                       </Box>
                     ))}
                   </Stack>

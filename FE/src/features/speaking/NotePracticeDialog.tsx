@@ -12,9 +12,9 @@ import { useCallback, useRef, useState } from "react";
 import speakingApi from "./speakingApi";
 import { speakingApiPath } from "./config";
 import type { GrammarNote } from "./types";
-import { transcriptSimilarity } from "./speakingUtils";
+import { sp } from "./speakingPracticeTheme";
 
-const BRAND = "#c83c3c";
+const BRAND = sp.brand;
 
 type NotePracticeDialogProps = {
   note: GrammarNote | null;

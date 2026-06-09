@@ -1,33 +1,16 @@
 import React, { useState, useEffect } from "react";
-import {
-  Box,
-  Typography,
-  Grid,
-  Card,
-  CardContent,
-  Chip,
-  CircularProgress,
-  Tabs,
-  Tab,
-  Button,
-  Paper,
-  IconButton,
-} from "@mui/material";
-import {
-  BookOpen,
-  ArrowRight,
-  Bookmark,
-  BookmarkCheck,
-  Languages,
-} from "lucide-react";
+import { BookOpen, ArrowRight, Bookmark, BookmarkCheck, Languages } from "lucide-react";
 import { grammarService, type IGrammarCard } from "../../services/grammar.service";
+import { PageLayout } from "../../components/ui/PageLayout";
+import { BaseCard } from "../../components/ui/BaseCard";
+import { EmptyState } from "../../components/ui/EmptyState";
 
-const LEVEL_COLORS: Record<string, string> = {
-  N1: "#7B1FA2",
-  N2: "#1565C0",
-  N3: "#2E7D32",
-  N4: "#F57F17",
-  N5: "#B90000",
+const LEVEL_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  N1: { bg: "bg-purple-50", text: "text-purple-750", border: "border-purple-200" },
+  N2: { bg: "bg-blue-50/50", text: "text-blue-700", border: "border-blue-200" },
+  N3: { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200" },
+  N4: { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200" },
+  N5: { bg: "bg-red-50", text: "text-red-700", border: "border-red-200" },
 };
 
 const StudentGrammarPractice: React.FC = () => {
@@ -59,7 +42,7 @@ const StudentGrammarPractice: React.FC = () => {
         setLoading(false);
       }
     };
-    fetchData();
+    void fetchData();
   }, []);
 
   // Filter cards when level tab changes
@@ -92,282 +75,198 @@ const StudentGrammarPractice: React.FC = () => {
 
   const countLearnedInCurrentLevel = () => {
     if (filteredCards.length === 0) return 0;
-    return filteredCards.filter(c => learnedCards[c._id]).length;
+    return filteredCards.filter((c) => learnedCards[c._id]).length;
   };
 
-  return (
-    <Box sx={{ p: { xs: 2, md: 3 }, minHeight: "85vh", bgcolor: "#fcfcfc" }}>
-      {/* Header section */}
-      <Box sx={{ mb: 4, display: "flex", alignItems: "center", gap: 2 }}>
-        <Box
-          sx={{
-            width: 46,
-            height: 46,
-            borderRadius: "14px",
-            bgcolor: "#B9000015",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <BookOpen size={24} color="#B90000" />
-        </Box>
-        <Box>
-          <Typography variant="h5" fontWeight={800} color="#1a1a1a">
-            Luyện tập Ngữ pháp
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Danh sách cấu trúc ngữ pháp được biên soạn riêng theo trình độ khóa học bạn tham gia.
-          </Typography>
-        </Box>
-      </Box>
+  const currentLevel = activeLevels[selectedLevelTab] || "";
+  const currentColors = LEVEL_COLORS[currentLevel] || { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" };
 
+  return (
+    <PageLayout
+      title="Luyện tập Ngữ pháp"
+      subtitle="Danh sách cấu trúc ngữ pháp được biên soạn riêng theo trình độ khóa học bạn tham gia"
+      icon={BookOpen}
+    >
       {loading ? (
-        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "40vh" }}>
-          <CircularProgress sx={{ color: "#B90000" }} />
-        </Box>
+        <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
+          <div className="w-10 h-10 border-4 border-[var(--color-primary-color)] border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-sm text-[var(--color-text-secondary)] font-medium">Đang tải cấu trúc ngữ pháp...</p>
+        </div>
       ) : activeLevels.length === 0 ? (
-        <Paper elevation={0} sx={{ p: 4, textAlign: "center", border: "1px solid #f0f0f0", borderRadius: "16px" }}>
-          <Typography variant="h6" fontWeight={700} color="text.secondary" gutterBottom>
-            Chưa đăng ký khóa học nào
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Vui lòng đăng ký tham gia các khóa học JLPT tại MIRAI để mở khóa lộ trình học ngữ pháp tương ứng.
-          </Typography>
-        </Paper>
+        <BaseCard>
+          <EmptyState
+            title="Chưa đăng ký khóa học nào"
+            description="Vui lòng đăng ký tham gia các khóa học JLPT tại MIRAI để mở khóa lộ trình học ngữ pháp tương ứng."
+            icon={BookOpen}
+          />
+        </BaseCard>
       ) : (
-        <Box>
+        <div className="space-y-6">
           {/* Level Tabs */}
-          <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 3 }}>
-            <Tabs
-              value={selectedLevelTab}
-              onChange={(_, v) => setSelectedLevelTab(v)}
-              textColor="inherit"
-              sx={{
-                "& .MuiTabs-indicator": { bgcolor: LEVEL_COLORS[activeLevels[selectedLevelTab]] || "#B90000" },
-              }}
-            >
-              {activeLevels.map((lvl) => (
-                <Tab
+          <div className="flex flex-wrap gap-2 border-b border-[var(--color-border-color)] pb-2">
+            {activeLevels.map((lvl, index) => {
+              const lvlColors = LEVEL_COLORS[lvl] || { bg: "bg-blue-50/50", text: "text-blue-700", border: "border-blue-250" };
+              const isSelected = selectedLevelTab === index;
+              return (
+                <button
                   key={lvl}
-                  label={
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Chip
-                        label={lvl}
-                        size="small"
-                        sx={{
-                          bgcolor: LEVEL_COLORS[lvl] + "20",
-                          color: LEVEL_COLORS[lvl],
-                          fontWeight: 800,
-                          cursor: "pointer",
-                        }}
-                      />
-                      <Typography fontWeight={700} fontSize={14}>
-                        Lớp {lvl}
-                      </Typography>
-                    </Box>
-                  }
-                />
-              ))}
-            </Tabs>
-          </Box>
+                  onClick={() => {
+                    setSelectedLevelTab(index);
+                    setFlippedCards({});
+                  }}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition border active:scale-95 ${
+                    isSelected
+                      ? `bg-[var(--color-primary-color)] border-[var(--color-primary-color)] text-white shadow-sm`
+                      : `bg-[var(--color-surface-base)] border-[var(--color-border-color)] hover:border-slate-350 text-[var(--color-text-secondary)]`
+                  }`}
+                >
+                  <span
+                    className={`px-1.5 py-0.5 rounded font-black text-[10px] ${
+                      isSelected ? "bg-white/20 text-white" : `${lvlColors.bg} ${lvlColors.text}`
+                    }`}
+                  >
+                    {lvl}
+                  </span>
+                  Lớp {lvl}
+                </button>
+              );
+            })}
+          </div>
 
           {/* Level Progress Banner */}
-          <Paper
-            elevation={0}
-            sx={{
-              p: 2,
-              mb: 4,
-              borderRadius: "12px",
-              border: "1px solid #eef0f2",
-              bgcolor: "#fff",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              flexWrap: "wrap",
-              gap: 2,
-            }}
-          >
-            <Box>
-              <Typography variant="subtitle1" fontWeight={700}>
-                Tiến độ học tập cấp độ {activeLevels[selectedLevelTab]}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Đã thuộc {countLearnedInCurrentLevel()} / {filteredCards.length} cấu trúc ngữ pháp
-              </Typography>
-            </Box>
-            {filteredCards.length > 0 && (
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Typography fontWeight={800} color="#2e7d32">
-                  {Math.round((countLearnedInCurrentLevel() / filteredCards.length) * 100)}% Hoàn thành
-                </Typography>
-              </Box>
-            )}
-          </Paper>
+          {filteredCards.length > 0 && (
+            <BaseCard className="bg-[var(--color-bg-base)]/50 border border-[var(--color-border-color)] p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h4 className="text-sm font-extrabold text-[var(--color-text-main)] m-0">
+                    Tiến độ học tập cấp độ {currentLevel}
+                  </h4>
+                  <p className="text-xs text-[var(--color-text-secondary)] m-0 mt-0.5">
+                    Đã thuộc {countLearnedInCurrentLevel()} / {filteredCards.length} cấu trúc ngữ pháp
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 w-full sm:w-64">
+                  <div className="flex-1 h-2 bg-[var(--color-secondary-color)] rounded-full overflow-hidden">
+                    <div
+                      className="bg-emerald-550 h-full rounded-full transition-all duration-500"
+                      style={{ width: `${(countLearnedInCurrentLevel() / filteredCards.length) * 100}%` }}
+                    ></div>
+                  </div>
+                  <span className="text-xs font-black text-emerald-600 shrink-0">
+                    {Math.round((countLearnedInCurrentLevel() / filteredCards.length) * 100)}% Hoàn thành
+                  </span>
+                </div>
+              </div>
+            </BaseCard>
+          )}
 
           {/* Cards Grid */}
           {filteredCards.length === 0 ? (
-            <Paper elevation={0} sx={{ p: 6, textAlign: "center", border: "1px dashed #ccc", borderRadius: "12px" }}>
-              <Typography color="text.secondary">
-                Trung tâm chưa cập nhật thẻ ngữ pháp cho trình độ {activeLevels[selectedLevelTab]}.
-              </Typography>
-            </Paper>
+            <BaseCard>
+              <EmptyState
+                title="Chưa có thẻ ngữ pháp"
+                description={`Hệ thống chưa cập nhật thẻ ngữ pháp cho trình độ ${currentLevel}.`}
+                icon={BookOpen}
+              />
+            </BaseCard>
           ) : (
-            <Grid container spacing={3}>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredCards.map((card) => {
                 const isFlipped = !!flippedCards[card._id];
                 const isLearned = !!learnedCards[card._id];
+                const cardColors = LEVEL_COLORS[card.level] || { bg: "bg-blue-50/50", text: "text-blue-700", border: "border-blue-200" };
 
                 return (
-                  <Grid item xs={12} sm={6} md={4} key={card._id}>
-                    {/* Modern Glassmorphic Card Container with flip effect */}
-                    <Box
-                      onClick={() => handleFlipCard(card._id)}
-                      sx={{
-                        perspective: "1000px",
-                        cursor: "pointer",
-                        height: 280,
-                        position: "relative",
+                  <div
+                    key={card._id}
+                    onClick={() => handleFlipCard(card._id)}
+                    className="h-72 cursor-pointer relative select-none"
+                    style={{ perspective: "1000px" }}
+                  >
+                    <div
+                      className="w-full h-full relative transition-transform duration-500"
+                      style={{
+                        transformStyle: "preserve-3d",
+                        transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
                       }}
                     >
-                      <Box
-                        sx={{
-                          width: "100%",
-                          height: "100%",
-                          position: "relative",
-                          transition: "transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                          transformStyle: "preserve-3d",
-                          transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
-                        }}
+                      {/* --- CARD FRONT --- */}
+                      <div
+                        className={`absolute w-full h-full rounded-2xl bg-[var(--color-surface-base)] border p-5 flex flex-col justify-between shadow-sm transition-all duration-300 hover:shadow-md ${
+                          isLearned ? "border-emerald-500 bg-gradient-to-br from-[var(--color-surface-base)] to-emerald-500/5" : "border-[var(--color-border-color)]"
+                        }`}
+                        style={{ backfaceVisibility: "hidden" }}
                       >
-                        {/* ─── CARD FRONT ────────────────────────────────────── */}
-                        <Card
-                          elevation={0}
-                          sx={{
-                            width: "100%",
-                            height: "100%",
-                            position: "absolute",
-                            backfaceVisibility: "hidden",
-                            border: `1px solid ${isLearned ? "#2e7d32" : "#eef0f2"}`,
-                            borderRadius: "16px",
-                            display: "flex",
-                            flexDirection: "column",
-                            justifyContent: "space-between",
-                            boxShadow: "0 4px 20px rgba(0, 0, 0, 0.03)",
-                            background: isLearned
-                              ? "linear-gradient(135deg, #fff 70%, #f1faf2 100%)"
-                              : "linear-gradient(135deg, #fff 80%, #fafafa 100%)",
-                          }}
-                        >
-                          <CardContent sx={{ p: 3, flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-                            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", width: "100%" }}>
-                              <Chip
-                                label={card.level}
-                                size="small"
-                                sx={{
-                                  bgcolor: LEVEL_COLORS[card.level] + "15",
-                                  color: LEVEL_COLORS[card.level],
-                                  fontWeight: 800,
-                                }}
-                              />
-                              <IconButton
-                                size="small"
-                                onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleToggleLearned(e, card._id)}
-                                sx={{
-                                  color: isLearned ? "#2e7d32" : "#ccc",
-                                  "&:hover": { color: "#2e7d32" },
-                                }}
-                              >
-                                {isLearned ? <BookmarkCheck size={20} /> : <Bookmark size={20} />}
-                              </IconButton>
-                            </Box>
+                        <div className="flex justify-between items-start">
+                          <span className={`text-[10px] font-black px-2 py-0.5 rounded ${cardColors.bg} ${cardColors.text}`}>
+                            {card.level}
+                          </span>
+                          <button
+                            onClick={(e) => handleToggleLearned(e, card._id)}
+                            className={`p-1.5 rounded-full hover:bg-[var(--color-bg-base)] transition active:scale-90 ${
+                              isLearned ? "text-emerald-600" : "text-slate-300 hover:text-emerald-500"
+                            }`}
+                          >
+                            {isLearned ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
+                          </button>
+                        </div>
 
-                            <Box sx={{ my: "auto", textAlign: "center" }}>
-                              <Typography variant="h5" fontWeight={800} color="#111" gutterBottom sx={{ letterSpacing: "-0.5px" }}>
-                                {card.title}
-                              </Typography>
-                              <Typography variant="body2" sx={{ fontFamily: "monospace", color: "#666", bgcolor: "#f5f5f5", py: 0.5, px: 1.5, borderRadius: "6px", display: "inline-block", mt: 1 }}>
-                                {card.structure}
-                              </Typography>
-                            </Box>
+                        <div className="text-center my-auto space-y-2">
+                          <h3 className="text-lg font-black text-[var(--color-text-main)] tracking-tight m-0">{card.title}</h3>
+                          <span className="inline-block text-[11px] font-mono text-[var(--color-text-secondary)] bg-[var(--color-bg-base)] border border-[var(--color-border-color)] rounded px-2.5 py-0.5">
+                            {card.structure}
+                          </span>
+                        </div>
 
-                            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 2 }}>
-                              <Typography variant="body2" fontWeight={700} color="#B90000">
-                                {card.meaningVi}
-                              </Typography>
-                              <Button
-                                size="small"
-                                endIcon={<ArrowRight size={14} />}
-                                sx={{ color: "#888", textTransform: "none", fontSize: 12 }}
-                              >
-                                Xem chi tiết
-                              </Button>
-                            </Box>
-                          </CardContent>
-                        </Card>
+                        <div className="flex justify-between items-center mt-2 pt-2 border-t border-[var(--color-border-color)]">
+                          <span className="text-xs font-black text-[var(--color-primary-color)] truncate max-w-[70%]">{card.meaningVi}</span>
+                          <span className="flex items-center gap-1 text-[10px] font-bold text-[var(--color-text-secondary)]/60 hover:text-[var(--color-primary-color)]">
+                            Xem chi tiết <ArrowRight size={12} />
+                          </span>
+                        </div>
+                      </div>
 
-                        {/* ─── CARD BACK ─────────────────────────────────────── */}
-                        <Card
-                          elevation={0}
-                          sx={{
-                            width: "100%",
-                            height: "100%",
-                            position: "absolute",
-                            backfaceVisibility: "hidden",
-                            transform: "rotateY(180deg)",
-                            border: "1px solid #eef0f2",
-                            borderRadius: "16px",
-                            boxShadow: "0 4px 20px rgba(0, 0, 0, 0.03)",
-                            display: "flex",
-                            flexDirection: "column",
-                            bgcolor: "#fafafa",
-                          }}
-                        >
-                          <CardContent sx={{ p: 3, flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 1.5 }}>
-                            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                              <Languages size={16} color="#B90000" />
-                              <Typography variant="subtitle2" fontWeight={800} color="#B90000">
-                                Giải thích Ngữ pháp:
-                              </Typography>
-                            </Box>
-                            <Typography fontSize={13} color="#333" sx={{ lineHeight: 1.5, bgcolor: "#fff", p: 1.5, borderRadius: "8px", border: "1px solid #f0f0f0" }}>
-                              {card.explanation}
-                            </Typography>
+                      {/* --- CARD BACK --- */}
+                      <div
+                        className="absolute w-full h-full rounded-2xl bg-[var(--color-bg-base)] border border-[var(--color-border-color)] p-5 flex flex-col justify-between shadow-sm"
+                        style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
+                      >
+                        <div className="overflow-y-auto space-y-3 flex-1 scrollbar-thin">
+                          <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--color-primary-color)]">
+                            <Languages size={14} />
+                            <span>Giải thích Ngữ pháp:</span>
+                          </div>
+                          <p className="text-xs text-[var(--color-text-secondary)] bg-[var(--color-surface-base)] border border-[var(--color-border-color)] p-3 rounded-xl leading-relaxed m-0">
+                            {card.explanation}
+                          </p>
 
-                            {card.examples && card.examples.length > 0 && (
-                              <Box sx={{ mt: 1 }}>
-                                <Typography variant="subtitle2" fontWeight={800} color="#333" sx={{ mb: 1, fontSize: 12 }}>
-                                  Ví dụ mẫu:
-                                </Typography>
-                                <Box sx={{ pl: 1.5, borderLeft: "2px solid #B90000" }}>
-                                  <Typography fontSize={13} fontWeight={700} color="#111">
-                                    {card.examples[0].japanese}
-                                  </Typography>
-                                  <Typography fontSize={11} color="text.secondary">
-                                    {card.examples[0].furigana}
-                                  </Typography>
-                                  <Typography fontSize={12} color="text.secondary" sx={{ mt: 0.5 }}>
-                                    {card.examples[0].vietnamese}
-                                  </Typography>
-                                </Box>
-                              </Box>
-                            )}
+                          {card.examples && card.examples.length > 0 && (
+                            <div className="space-y-1.5">
+                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Ví dụ mẫu:</span>
+                              <div className="border-l-2 border-[var(--color-primary-color)] pl-3 space-y-1">
+                                <p className="text-xs font-black text-[var(--color-text-main)] m-0">{card.examples[0].japanese}</p>
+                                {card.examples[0].furigana && (
+                                  <p className="text-[9px] text-slate-400 font-medium m-0">{card.examples[0].furigana}</p>
+                                )}
+                                <p className="text-[11px] text-[var(--color-text-secondary)] m-0">{card.examples[0].vietnamese}</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
 
-                            <Typography variant="caption" align="center" color="text.secondary" sx={{ mt: "auto", pt: 1, fontSize: 10 }}>
-                              Nhấp để quay lại mặt trước
-                            </Typography>
-                          </CardContent>
-                        </Card>
-                      </Box>
-                    </Box>
-                  </Grid>
+                        <span className="block text-[9px] text-slate-400 font-medium text-center pt-2 mt-2 border-t border-[var(--color-border-color)]">
+                          Nhấp để quay lại mặt trước
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 );
               })}
-            </Grid>
+            </div>
           )}
-        </Box>
+        </div>
       )}
-    </Box>
+    </PageLayout>
   );
 };
 

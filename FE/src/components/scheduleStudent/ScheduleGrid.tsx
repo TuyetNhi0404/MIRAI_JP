@@ -1,13 +1,4 @@
 import React, { useMemo } from "react";
-import {
-  Box,
-  Grid,
-  Paper,
-  Typography,
-  useTheme,
-  useMediaQuery,
-  Stack,
-} from "@mui/material";
 import type { SessionItem } from "../../types/schedule.types";
 import SessionCard from "./SessionCard";
 
@@ -37,45 +28,16 @@ const formatDayShort = (d: Date) =>
 type SessionType = "morning" | "afternoon";
 
 const EmptySlot: React.FC = () => (
-  <Box
-    sx={{
-      height: "100%",
-      width: "100%",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      bgcolor: "transparent",
-      minHeight: { xs: "60px", sm: "200px" },
-      py: 0.7,
-      px: 1.7,
-    }}
-  >
-    <Typography
-      variant="h4"
-      sx={{
-        color: "#FF5722",
-        fontWeight: 600,
-        fontSize: { xs: "1.5rem", sm: "1.8rem" },
-      }}
-    >
-      -
-    </Typography>
-  </Box>
+  <div className="w-full h-full min-h-[60px] sm:min-h-[140px] flex items-center justify-center bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
+    <span className="text-xl font-light text-slate-300">-</span>
+  </div>
 );
 
 const normalizeDateYMD = (val: unknown): string => {
   if (!val) return "";
-  
-  if (typeof val === "string" && /^\d{4}-\d{2}-\d{2}$/.test(val)) {
-    return val;
-  }
-  
+  if (typeof val === "string" && /^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
   const d = new Date(String(val));
-  if (isNaN(d.getTime())) {
-    console.warn("[ScheduleGrid] Invalid date:", val);
-    return "";
-  }
-  
+  if (isNaN(d.getTime())) return "";
   return ymd(d);
 };
 
@@ -93,9 +55,6 @@ const clampSlot = (slot: number) => {
 };
 
 const ScheduleGrid: React.FC<Props> = ({ items, weekStart }) => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-
   const days = useMemo(() => {
     const monday = parseYMD(weekStart);
     return Array.from({ length: 7 }).map((_, i) => {
@@ -110,53 +69,25 @@ const ScheduleGrid: React.FC<Props> = ({ items, weekStart }) => {
     { type: "afternoon", label: "Buổi chiều" },
   ];
 
-  const weekStartYMD = weekStart; 
+  const weekStartYMD = weekStart;
   const sunday = new Date(parseYMD(weekStart));
-  sunday.setDate(sunday.getDate() + 6); 
+  sunday.setDate(sunday.getDate() + 6);
   const weekEndYMD = ymd(sunday);
 
-  console.log(`\n[ScheduleGrid] 📅 Week range: ${weekStartYMD} to ${weekEndYMD}`);
-
   const validItems = useMemo(() => {
-    console.log(`\n[ScheduleGrid] 🔍 Processing ${items.length} items for week ${weekStartYMD} to ${weekEndYMD}`);
     const out: SessionItem[] = [];
-    
-    items.forEach((it, index) => {
+    items.forEach((it) => {
       const dateNorm = normalizeDateYMD(it.date);
-      
-      if (!dateNorm) {
-        console.warn(`[ScheduleGrid]  Item ${index + 1} - invalid date:`, it.date);
-        return;
-      }
+      if (!dateNorm) return;
 
       let slot = typeof it.slotNumber === "number" ? it.slotNumber : NaN;
       if (!Number.isFinite(slot) || slot < 1 || slot > 5) {
-        const derivedSlot = deriveSlotFromStartTime(it.startTime);
-        console.warn(
-          `[ScheduleGrid]  Item ${index + 1} - invalid slot, deriving from startTime:`,
-          { originalSlot: it.slotNumber, startTime: it.startTime, derivedSlot }
-        );
-        slot = derivedSlot;
+        slot = deriveSlotFromStartTime(it.startTime);
       }
       slot = clampSlot(Math.round(slot));
 
       const isInRange = dateNorm >= weekStartYMD && dateNorm <= weekEndYMD;
-      
-      if (!isInRange) {
-        console.log(`[ScheduleGrid]  Item ${index + 1} - outside week:`, {
-          date: dateNorm,
-          weekStart: weekStartYMD,
-          weekEnd: weekEndYMD,
-        });
-        return;
-      }
-
-      console.log(`[ScheduleGrid]  Item ${index + 1} included:`, {
-        date: dateNorm,
-        course: it.courseName,
-        slot,
-        attendance: it.attendance?.status
-      });
+      if (!isInRange) return;
 
       out.push({
         ...it,
@@ -173,24 +104,12 @@ const ScheduleGrid: React.FC<Props> = ({ items, weekStart }) => {
       return (a.slotNumber ?? 0) - (b.slotNumber ?? 0);
     });
 
-    console.log(`\n[ScheduleGrid]  Valid items: ${out.length}/${items.length}`);
-    if (out.length > 0) {
-      console.table(out.map(item => ({
-        date: item.date,
-        course: item.courseName,
-        slot: item.slotNumber,
-        time: `${item.startTime}-${item.endTime}`,
-        attendance: item.attendance?.status || 'not_yet'
-      })));
-    }
-    
     return out;
   }, [items, weekStartYMD, weekEndYMD]);
 
   const findSession = (dateIso: string, sessionType: SessionType): SessionItem | null => {
     const matched = validItems.filter((it) => it.date === dateIso);
     if (!matched.length) return null;
-
     if (sessionType === "morning") {
       return matched.find((it) => it.slotNumber === 1 || it.slotNumber === 2) ?? null;
     } else {
@@ -198,204 +117,72 @@ const ScheduleGrid: React.FC<Props> = ({ items, weekStart }) => {
     }
   };
 
-  if (isMobile) {
-    return (
-      <Box sx={{ p: 2 }}>
+  return (
+    <div className="w-full">
+      {/* Mobile view - Stacks by day */}
+      <div className="block lg:hidden space-y-6">
         {days.map((d) => {
           const iso = ymd(d);
           return (
-            <Box key={iso} mb={3}>
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: 700,
-                  mb: 1.5,
-                  color: "#333",
-                  fontSize: "1.1rem",
-                  borderBottom: "2px solid #B90000",
-                  pb: 0.5,
-                  fontFamily: "Inter, Roboto, sans-serif",
-                }}
-              >
-                {formatDayShort(d)}
-              </Typography>
-              <Stack spacing={1.5}>
+            <div key={iso} className="border border-slate-150 rounded-2xl bg-white p-4 shadow-sm space-y-3">
+              <h3 className="text-sm font-black text-blue-600 border-b border-blue-100 pb-2 capitalize">
+                {formatDayShort(d)} ({iso.split("-").reverse().join("/")})
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {sessions.map((session) => {
                   const item = findSession(iso, session.type);
                   return (
-                    <Box key={`${iso}-${session.type}`}>
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          color: "#BF360C",
-                          fontWeight: 700,
-                          fontSize: "0.85rem",
-                          mb: 0.5,
-                          display: "block",
-                          fontFamily: "Inter, Roboto, sans-serif",
-                          bgcolor: "#F5F5F5",
-                          p: 1,
-                          borderRadius: 0,
-                        }}
-                      >
+                    <div key={`${iso}-${session.type}`} className="space-y-1.5">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                         {session.label}
-                      </Typography>
+                      </span>
                       {item ? <SessionCard session={item} compact /> : <EmptySlot />}
-                    </Box>
+                    </div>
                   );
                 })}
-              </Stack>
-            </Box>
+              </div>
+            </div>
           );
         })}
-      </Box>
-    );
-  }
+      </div>
 
-  return (
-    <Box sx={{ width: "100%", overflowX: "auto", mx: "auto" }}>
-      <Box sx={{ border: "1px solid #BDBDBD" }}>
-        {/* Header Row */}
-        <Grid
-          container
-          spacing={0}
-          alignItems="center"
-          sx={{
-            width: "100%",
-            minWidth: "800px",
-            borderBottom: "2px solid #B90000",
-          }}
-        >
-          <Grid item sx={{ width: "100px", flexShrink: 0 }}>
-            <Paper elevation={0} sx={{ py: 2, px: 0.5, bgcolor: "#FFFFFF", textAlign: "center", borderRight: "1px solid #BDBDBD" }}>
-              <Typography
-                variant="subtitle2"
-                sx={{
-                  fontWeight: 700,
-                  fontSize: "1rem",
-                  color: "#666",
-                  fontFamily: "Inter, Roboto, sans-serif",
-                }}
-              >
+      {/* Desktop view - Beautiful grid schedule */}
+      <div className="hidden lg:block overflow-x-auto border border-slate-200 rounded-2xl bg-white shadow-sm">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="bg-slate-50 border-b border-slate-200">
+              <th className="py-4 px-4 text-xs font-bold text-slate-400 uppercase text-center w-28 border-r border-slate-100">
                 Ca học
-              </Typography>
-            </Paper>
-          </Grid>
-
-          {days.map((d, idx) => (
-            <Grid item key={d.toISOString()} sx={{ flex: 1, minWidth: 0 }}>
-              <Paper
-                elevation={0}
-                sx={{
-                  textAlign: "center",
-                  bgcolor: "#F5F5F5",
-                  py: 2.5,
-                  borderRight: idx < days.length - 1 ? "1px solid #BDBDBD" : "none",
-                }}
-              >
-                <Typography
-                  variant="subtitle2"
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: "1.1rem",
-                    color: "#333",
-                    fontFamily: "Inter, Roboto, sans-serif",
-                  }}
-                >
-                  {formatDayShort(d)}
-                </Typography>
-              </Paper>
-            </Grid>
-          ))}
-        </Grid>
-
-        {/* Session Rows */}
-        {sessions.map((session, sessionIdx) => (
-          <Grid
-            container
-            spacing={0}
-            alignItems="stretch"
-            key={session.type}
-            sx={{
-              width: "100%",
-              minWidth: "800px",
-              borderBottom: sessionIdx < sessions.length - 1 ? "1px solid #BDBDBD" : "none",
-            }}
-          >
-            {/* Session Label */}
-            <Grid item sx={{ width: "100px", flexShrink: 0 }}>
-              <Paper
-                sx={{
-                  py: 2,
-                  px: 0.5,
-                  height: "100%",
-                  minHeight: "200px",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  textAlign: "center",
-                  bgcolor: "#F5F5F5",
-                  borderLeft: "none",
-                  borderRight: "1px solid #BDBDBD",
-                  borderRadius: 0,
-                }}
-              >
-                <Typography
-                  variant="body1"
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: "0.95rem",
-                    color: "#E65100",
-                    fontFamily: "Inter, Roboto, sans-serif",
-                  }}
-                >
+              </th>
+              {days.map((d) => (
+                <th key={d.toISOString()} className="py-4 px-4 text-xs font-bold text-slate-700 uppercase text-center border-r border-slate-100 last:border-r-0">
+                  <span className="block font-black">{formatDayShort(d)}</span>
+                  <span className="text-[10px] text-slate-400 block mt-0.5 font-medium">{ymd(d).split("-").reverse().slice(0, 2).join("/")}</span>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {sessions.map((session, sIdx) => (
+              <tr key={session.type} className={sIdx < sessions.length - 1 ? "border-b border-slate-100" : ""}>
+                <td className="py-6 px-4 bg-slate-50/50 text-center font-bold text-slate-500 text-xs uppercase border-r border-slate-100 align-middle">
                   {session.label}
-                </Typography>
-              </Paper>
-            </Grid>
-
-            {/* Session Cards */}
-            {days.map((d, dayIdx) => {
-              const iso = ymd(d);
-              const item = findSession(iso, session.type);
-
-              return (
-                <Grid
-                  item
-                  key={`${iso}-${session.type}`}
-                  sx={{
-                    flex: 1,
-                    minWidth: 0,
-                    display: "flex",
-                    alignItems: "stretch",
-                    borderRight: dayIdx < days.length - 1 ? "1px solid #BDBDBD" : "none",
-                    p: 0,
-                  }}
-                >
-                  <Box
-                    sx={{
-                      width: "100%",
-                      minHeight: "200px",
-                      display: "flex",
-                      p: 0,
-                      pt: "4px",
-                      px: 1,
-                    }}
-                  >
-                    {item ? (
-                      <SessionCard session={item} style={{ width: "100%", border: "none" }} />
-                    ) : (
-                      <EmptySlot />
-                    )}
-                  </Box>
-                </Grid>
-              );
-            })}
-          </Grid>
-        ))}
-      </Box>
-    </Box>
+                </td>
+                {days.map((d) => {
+                  const iso = ymd(d);
+                  const item = findSession(iso, session.type);
+                  return (
+                    <td key={`${iso}-${session.type}`} className="p-3 border-r border-slate-100 last:border-r-0 w-40 align-top">
+                      {item ? <SessionCard session={item} /> : <EmptySlot />}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 };
 
