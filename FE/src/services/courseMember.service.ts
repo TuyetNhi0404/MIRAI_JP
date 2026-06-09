@@ -27,17 +27,17 @@ export interface DeleteCourseMemberResponse {
 
 export const courseMemberService = {
   // Get enrolled students for a course (active only)
-  // Backend returns array directly: GET /api/course-members/:courseId/lists
+  // Backend returns array directly: GET /api/courses/:courseId/students
   getStudentsByCourse: async (courseId: string): Promise<CourseMember[]> => {
-    const response = await axiosInstance.get(`/course-members/${courseId}/lists`);
+    const response = await axiosInstance.get(`/courses/${courseId}/students`);
     // Backend returns array directly, not wrapped in { data: [...] }
     return Array.isArray(response.data) ? response.data : [];
   },
 
   // Get deleted students for a course
-  // Backend returns array directly: GET /api/course-members/:courseId/lists/deleted
+  // Backend returns array directly: GET /api/courses/:courseId/deleted-students
   getDeletedStudentsByCourse: async (courseId: string): Promise<CourseMember[]> => {
-    const response = await axiosInstance.get(`/course-members/${courseId}/lists/deleted`);
+    const response = await axiosInstance.get(`/courses/${courseId}/deleted-students`);
     // Backend returns array directly, not wrapped in { data: [...] }
     return Array.isArray(response.data) ? response.data : [];
   },
@@ -47,7 +47,7 @@ export const courseMemberService = {
     courseId: string,
     memberId: string
   ): Promise<DeleteCourseMemberResponse> => {
-    const response = await axiosInstance.delete(`/course-members/${courseId}/members/${memberId}`);
+    const response = await axiosInstance.delete(`/courses/${courseId}/members/${memberId}`);
     return response.data;
   },
 
@@ -159,7 +159,7 @@ export const courseMemberService = {
   },
 
   // Add course member (for manual add or restore)
-  // Backend route: POST /course-members/members
+  // Backend route: POST /courses/:courseId/members
   // Body: { courseId, userId, role }
   addCourseMember: async (
     courseId: string,
@@ -167,8 +167,8 @@ export const courseMemberService = {
     role: "student" | "teacher" = "student"
   ): Promise<CourseMember> => {
     try {
-      // Backend route is /course-members/members (not /course-members)
-      const response = await axiosInstance.post("/course-members/members", {
+      // Backend route is /courses/:courseId/members
+      const response = await axiosInstance.post(`/courses/${courseId}/members`, {
         courseId,
         userId,
         role,
@@ -192,15 +192,15 @@ export const courseMemberService = {
   },
 
   // Get teachers by course
-  // Backend: GET /api/course-members/:courseId/teachers - returns array directly
+  // Backend: GET /api/courses/:courseId/teachers - returns array directly
   getTeachersByCourse: async (courseId: string): Promise<CourseMember[]> => {
-    const response = await axiosInstance.get(`/course-members/${courseId}/teachers`);
+    const response = await axiosInstance.get(`/courses/${courseId}/teachers`);
     // Backend returns array directly, not wrapped in { data: [...] }
     return Array.isArray(response.data) ? response.data : [];
   },
 
   // Transfer student from one course to another (chuyển lớp)
-  // Backend: POST /api/course-members/:studentId/transfer
+  // Backend: PUT /api/courses/:studentId/transfer
   // Body: { fromCourseId, toCourseId }
   // Backend validates: both courses must have status "not_yet", duplicate check (does NOT validate capacity)
   transferStudent: async (
@@ -210,8 +210,8 @@ export const courseMemberService = {
   ): Promise<{ success: boolean; message: string; error?: string; data?: unknown }> => {
     try {
       // Use backend's dedicated transfer endpoint
-      const response = await axiosInstance.post(
-        `/course-members/${studentUserId}/transfer`,
+      const response = await axiosInstance.put(
+        `/courses/${studentUserId}/transfer`,
         {
           fromCourseId,
           toCourseId,

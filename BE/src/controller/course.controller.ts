@@ -171,7 +171,7 @@ export async function getHomeroomTeacherList(req: Request, res: Response) {
 // DANH SÁCH TẤT CẢ KHÓA HỌC
 export async function listCourses(_req: Request, res: Response) {
   try {
-    const projection = "name description status startDate endDate homeroomTeacherId homeroomTeacher capacity session createdAt";
+    const projection = "name description status startDate endDate homeroomTeacherId homeroomTeacher capacity enrolledCount session createdAt";
     const courses = await Course.find()
       .select(projection)
       .sort({ createdAt: -1 });
@@ -522,7 +522,7 @@ export async function listStudentCourses(req: Request, res: Response) {
       });
     }
 
-    const projection = "name description status startDate endDate homeroomTeacherId homeroomTeacher capacity session createdAt";
+    const projection = "name description status startDate endDate homeroomTeacherId homeroomTeacher capacity enrolledCount session createdAt";
     const courses = await Course.find({
       _id: { $in: courseIds },
     })
@@ -565,7 +565,7 @@ export async function listTeacherCourses(req: Request, res: Response) {
     const objectTeacherId = new mongoose.Types.ObjectId(teacherId);
     
     // Tìm khóa học mà giáo viên này là giáo viên chủ nhiệm (homeroomTeacherId)
-    const projection = "name description status startDate endDate homeroomTeacherId homeroomTeacher capacity session createdAt";
+    const projection = "name description status startDate endDate homeroomTeacherId homeroomTeacher capacity enrolledCount session createdAt";
     const courses = await Course.find({
       homeroomTeacherId: objectTeacherId,
     })
@@ -685,7 +685,8 @@ export const getCourseTeachers = async (req: Request, res: Response) => {
 
 export const addCourseMember = async (req: Request, res: Response) => {
   try {
-    const { courseId, userId, role } = req.body;
+    const { userId, role } = req.body;
+    const courseId = req.body.courseId || req.params.courseId;
     const member = await CourseService.addMember(courseId, userId, role);
     res.status(201).json(member);
   } catch (error) {
