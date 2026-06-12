@@ -19,9 +19,7 @@ export const useGoogleAuth = (config: GoogleAuthConfig) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  /**
-   * Exchange authorization code for ID token
-   */
+
   const exchangeCodeForToken = async (code: string): Promise<string> => {
     try {
       const data = new URLSearchParams({
@@ -52,9 +50,7 @@ export const useGoogleAuth = (config: GoogleAuthConfig) => {
     }
   };
 
-  /**
-   * Initialize Google login
-   */
+
   const login = useGoogleLogin({
     flow: "auth-code",
     scope: "openid profile email",
@@ -68,10 +64,8 @@ export const useGoogleAuth = (config: GoogleAuthConfig) => {
           throw new Error("Không nhận được authorization code từ Google");
         }
 
-        // Exchange code for ID token
         const idToken = await exchangeCodeForToken(code);
 
-        // Send ID token to backend
         const result = await dispatch(googleLoginUser(idToken)).unwrap();
 
         setLoading(false);
@@ -93,7 +87,6 @@ export const useGoogleAuth = (config: GoogleAuthConfig) => {
         setError(errorMessage);
         setLoading(false);
 
-        // Call error callback if provided
         if (config.onError) {
           config.onError(errorMessage);
         }
@@ -118,7 +111,6 @@ export const useGoogleAuth = (config: GoogleAuthConfig) => {
       setError(errorMessage);
       setLoading(false);
 
-      // Call error callback if provided
       if (config.onError) {
         config.onError(errorMessage);
       }

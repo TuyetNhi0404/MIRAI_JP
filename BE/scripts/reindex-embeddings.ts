@@ -1,7 +1,4 @@
-/**
- * Phase 4: Re-index all GrammarChunk embeddings when EMBEDDING_MODEL changes.
- * Run: npx ts-node scripts/reindex-embeddings.ts [--dry-run]
- */
+
 import dotenv from "dotenv";
 dotenv.config();
 

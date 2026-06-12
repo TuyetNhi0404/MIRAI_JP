@@ -1,4 +1,3 @@
-// src/hooks/useCourse.ts
 import { useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "./hooks";
 import {
