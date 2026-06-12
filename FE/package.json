@@ -15,7 +15,7 @@
     "@emotion/styled": "^11.14.1",
     "@gsap/react": "^2.1.2",
     "@hookform/resolvers": "^5.2.2",
-    "@mui/icons-material": "^6.1.7",
+    "@mui/icons-material": "^6.5.0",
     "@mui/material": "^6.5.0",
     "@mui/system": "^6.1.7",
     "@mui/utils": "^7.3.3",
