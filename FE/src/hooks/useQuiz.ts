@@ -1,4 +1,3 @@
-// src/hooks/useQuiz.ts
 import { useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "./hooks";
 import {
@@ -151,7 +150,6 @@ export const useQuiz = () => {
   }, [dispatch]);
 
   return {
-    // State
     quizzes,
     currentQuiz,
     quizQuestions,
@@ -164,7 +162,6 @@ export const useQuiz = () => {
     currentQuizId,
     currentStatisticsQuizId,
 
-    // Actions
     loadQuizzes,
     loadQuizzesByCourse,
     loadStudentQuizzes,

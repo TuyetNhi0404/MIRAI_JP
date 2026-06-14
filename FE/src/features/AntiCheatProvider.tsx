@@ -1,17 +1,9 @@
-// src/features/AntiCheatProvider.tsx
 import React, { createContext, useContext } from 'react';
 import type { ReactNode } from 'react';
 import { useAntiCheat } from '../hooks/useAntiCheat';
 import type { AntiCheatLog } from '../types/quiz.types';
 
-/**
- * ============================================
- * CONTEXT TYPE DEFINITIONS
- * ============================================
- */
-
 interface AntiCheatContextValue {
-  // State
   logs: AntiCheatLog[];
   violationCount: number;
   isFullscreen: boolean;
@@ -20,7 +12,6 @@ interface AntiCheatContextValue {
   currentWarningType: string;
   maxViolations: number;
   
-  // Actions
   startMonitoring: () => void;
   stopMonitoring: () => void;
   requestFullscreen: () => void;
@@ -41,12 +32,6 @@ interface AntiCheatContextValue {
 }
 
 const AntiCheatContext = createContext<AntiCheatContextValue | undefined>(undefined);
-
-/**
- * ============================================
- * PROVIDER COMPONENT
- * ============================================
- */
 
 interface AntiCheatProviderProps {
   children: ReactNode;
@@ -74,12 +59,6 @@ export const AntiCheatProvider: React.FC<AntiCheatProviderProps> = ({
   );
 };
 
-/**
- * ============================================
- * HOOK TO USE CONTEXT
- * ============================================
- */
-
 export const useAntiCheatContext = () => {
   const context = useContext(AntiCheatContext);
   
@@ -89,12 +68,6 @@ export const useAntiCheatContext = () => {
   
   return context;
 };
-
-/**
- * ============================================
- * HOC FOR PROTECTED COMPONENTS
- * ============================================
- */
 
 interface WithAntiCheatProps {
   enableAntiCheat?: boolean;

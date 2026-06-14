@@ -1,4 +1,3 @@
-// src/hooks/useChapter.ts
 import { useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "./hooks";
 import {
@@ -44,11 +43,9 @@ export const useChapter = () => {
   }, [dispatch]);
 
   return {
-    // State
     chapters,
     loading,
     error,
-    // Actions
     loadAllChapters,
     createNewChapter,
     updateExistingChapter,

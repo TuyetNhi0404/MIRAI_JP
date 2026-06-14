@@ -71,11 +71,9 @@ export function useScheduleData(): ScheduleData {
       });
 
       const calendarsData = extractArray<Calendar>(calendarsRes).sort((a, b) => {
-        // Sort by date first
         if (a.date < b.date) return -1;
         if (a.date > b.date) return 1;
 
-        // Then by startTime of session
         const timeA = (typeof a.sessionId === 'object' ? a.sessionId?.startTime : (a.session?.startTime ?? "")) || "";
         const timeB = (typeof b.sessionId === 'object' ? b.sessionId?.startTime : (b.session?.startTime ?? "")) || "";
         return timeA.localeCompare(timeB);

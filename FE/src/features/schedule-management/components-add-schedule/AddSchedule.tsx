@@ -7,9 +7,10 @@ import {
   Typography,
   Grid,
 } from "antd";
-import { Plus, CalendarDays, List as ListIcon, Menu as MenuIcon } from "lucide-react";
+import { Plus, CalendarDays, List as ListIcon, Menu as MenuIcon, Zap } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../../components/ui/shadcn";
 import ScheduleCreatorCalendar from "./add-ui-schedule";
+import AddScheduleAuto from "./add-schedule-auto";
 import ManageScheduleCalendar from "../components/index";
 import { PageHeader } from "../../../components/ui";
 import { brandColors } from "../../../theme/theme";
@@ -17,7 +18,8 @@ import { brandColors } from "../../../theme/theme";
 const { useBreakpoint } = Grid;
 
 const tabs = [
-  { label: "Lịch thêm", icon: CalendarDays, key: "add" },
+  { label: "Thêm lịch học", icon: CalendarDays, key: "add" },
+  { label: "Thêm tự động", icon: Zap, key: "auto" },
   { label: "Xem lịch học", icon: ListIcon, key: "view" },
 ];
 
@@ -34,23 +36,6 @@ export default function AddSchedule() {
 
   return (
     <div>
-      <PageHeader
-        icon={CalendarDays}
-        title="Quản lý lịch học"
-        subtitle="Tạo và quản lý lịch học cho các khóa học trong hệ thống"
-        extra={
-          !isMobile && (
-            <Button
-              type="primary"
-              icon={<Plus size={16} />}
-              onClick={() => setActiveTab("add")}
-            >
-              Thêm lịch học
-            </Button>
-          )
-        }
-      />
-
       <div className="mira-fade-in">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           {!isMobile && (
@@ -158,6 +143,18 @@ export default function AddSchedule() {
               <div style={{ marginTop: 16 }}>
                 <ScheduleCreatorCalendar />
               </div>
+            </div>
+          </TabsContent>
+          <TabsContent value="auto" className="mt-0 focus-visible:outline-none">
+            <div
+              style={{
+                background: brandColors.paper,
+                border: `1px solid ${brandColors.border}`,
+                borderRadius: 12,
+                padding: isMobile ? 14 : 22,
+              }}
+            >
+              <AddScheduleAuto onSuccess={() => setActiveTab("view")} />
             </div>
           </TabsContent>
           <TabsContent value="view" className="mt-0 focus-visible:outline-none">
