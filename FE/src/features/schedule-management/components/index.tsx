@@ -328,7 +328,9 @@ export default function ManageScheduleCalendar() {
         key={schedule._id}
         onClick={onClick}
         style={{
-          marginBottom: 6,
+          marginBottom: 0,
+          flex: 1,
+          height: "100%",
           backgroundColor: color,
           borderRadius: 8,
           padding: '8px 10px',
@@ -340,7 +342,7 @@ export default function ManageScheduleCalendar() {
         onMouseLeave={(e) => { e.currentTarget.style.opacity = '1';    e.currentTarget.style.transform = 'translateY(0)'; }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
-          <Text strong style={{ color: 'white', fontSize: '0.8rem', lineHeight: 1.3, flex: 1 }}>
+          <Text strong style={{ color: 'white', fontSize: '0.7rem', lineHeight: 1.3, flex: 1 }}>
             {course?.name || course?.courseName || 'Khóa học chưa xác định'}
           </Text>
           <Tooltip title="Cài đặt">
@@ -475,7 +477,17 @@ export default function ManageScheduleCalendar() {
                   const dateStr = formatDate(date);
                   const schedules = calendarItems.filter((cal) => formatDate(cal.date) === dateStr && extractId(cal.sessionId) === sessionId);
                   return (
-                    <div key={idx} style={{ padding: 8, borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', minHeight: 120, backgroundColor: 'white' }}>
+                    <div key={idx} style={{ 
+                      padding: 8, 
+                      borderBottom: '1px solid #E2E8F0', 
+                      borderRight: '1px solid #E2E8F0', 
+                      minHeight: 120, 
+                      backgroundColor: 'white',
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 6,
+                      height: "100%"
+                    }}>
                       {schedules.map((sch) => renderScheduleCard(sch, () => handleOpenSchedule(sch)))}
                     </div>
                   );
@@ -558,7 +570,7 @@ export default function ManageScheduleCalendar() {
                     <Text type="secondary" style={{ fontSize: 11 }}>{session.startTime} – {session.endTime}</Text>
                   )}
                 </div>
-                <div style={{ padding: 12, borderBottom: '1px solid #E2E8F0', minHeight: 100 }}>
+                <div style={{ padding: 12, borderBottom: '1px solid #E2E8F0', minHeight: 100, display: "flex", flexDirection: "column", gap: 6 }}>
                   {calendarItems
                     .filter((cal) => formatDate(cal.date) === dateStr && extractId(cal.sessionId) === sessionId)
                     .map((sch) => renderScheduleCard(sch, () => handleOpenSchedule(sch)))}

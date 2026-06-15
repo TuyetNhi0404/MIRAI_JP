@@ -111,7 +111,6 @@ const AppRouter = () => {
             <Route path="admin/courses" element={<CoursesPage />} />
             <Route path="admin/courses/new" element={<CourseFormPage />} />
             <Route path="admin/courses/:id/edit" element={<CourseFormPage />} />
-            <Route path="admin/attendance-management" element={<ManageScheduleWithAttendance />} />
             <Route path="admin/courses/:id/students" element={<EnrolledStudentsPage />} />
             <Route path="admin/requests" element={<EnrollmentRequestsPage />} />
             <Route path="admin/schedule-management">
@@ -129,6 +128,7 @@ const AppRouter = () => {
 
             {/* Teacher routes */}
             <Route path="teacher" element={<TeacherDashboard />} />
+            <Route path="teacher/attendance" element={<ManageScheduleWithAttendance />} />
             <Route path="teacher/assignments" element={<AssignmentsPage />} />
             <Route path="teacher/schedule" element={<TeacherSchedule />} />
             <Route path="teacher/courses" element={<TeacherCoursesPage />} />
