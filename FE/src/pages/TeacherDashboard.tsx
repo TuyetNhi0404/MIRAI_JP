@@ -28,7 +28,8 @@ import {
   NotebookText,
   FileQuestion,
   BookOpen,
-  Headphones
+  Headphones,
+  ClipboardCheck
 } from 'lucide-react';
 import type { RootState } from '../redux/store';
 import { brandColors } from '../theme/theme';
@@ -485,7 +486,37 @@ const TeacherDashboard = () => {
                   </Box>
                 </Grid>
 
-                {/* Link 4: Grammar Materials */}
+                {/* Link 4: Attendance */}
+                <Grid item xs={6}>
+                  <Box
+                    onClick={() => navigate('/dashboard/teacher/attendance')}
+                    className="mira-button-hover"
+                    sx={{
+                      p: 2,
+                      borderRadius: '12px',
+                      bgcolor: '#FFF1F0',
+                      color: brandColors.red,
+                      border: `1px solid ${brandColors.redSoft}`,
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      boxShadow: '0 2px 6px rgba(185, 0, 0, 0.02)',
+                      height: 124,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      '&:hover': {
+                        borderColor: brandColors.red,
+                        boxShadow: '0 4px 12px rgba(185, 0, 0, 0.08)'
+                      }
+                    }}
+                  >
+                    <ClipboardCheck size={28} style={{ marginBottom: 8 }} />
+                    <Typography variant="body2" fontWeight={700}>Điểm danh</Typography>
+                  </Box>
+                </Grid>
+
+                {/* Link 5: Grammar Materials */}
                 <Grid item xs={6}>
                   <Box
                     onClick={() => navigate('/dashboard/teacher/grammar-materials')}
@@ -515,7 +546,7 @@ const TeacherDashboard = () => {
                   </Box>
                 </Grid>
 
-                {/* Link 5: Grammar Quiz Creator */}
+                {/* Link 6: Grammar Quiz Creator */}
                 <Grid item xs={6}>
                   <Box
                     onClick={() => navigate('/dashboard/teacher/grammar')}
@@ -545,7 +576,6 @@ const TeacherDashboard = () => {
                   </Box>
                 </Grid>
 
-                {/* Link 6: Listening */}
                 <Grid item xs={6}>
                   <Box
                     onClick={() => navigate('/dashboard/teacher/listening')}

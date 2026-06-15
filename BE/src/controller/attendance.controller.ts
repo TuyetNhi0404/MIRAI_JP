@@ -4,12 +4,14 @@ import { AttendanceService } from "../service/attendance.service";
 
 export const getStudentsForCalendar = async (req: Request, res: Response) => {
   try {
-    // attendance.controller.ts
     const { calendarId } = req.params;
     if (!calendarId)
-    return res.status(400).json({ message: "Missing calendarId" });
+      return res.status(400).json({ message: "Missing calendarId" });
 
-    const data = await AttendanceService.getStudentsForCalendar(calendarId!);
+    const userRole = req.role;
+    const userId = req.id;
+
+    const data = await AttendanceService.getStudentsForCalendar(calendarId!, userRole, userId);
 
 
     return res.status(200).json({

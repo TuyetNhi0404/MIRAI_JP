@@ -3,7 +3,6 @@ import { CourseCalendar, AttendanceStatus } from "../model/calendar.model";
 import { Course } from "../model/course.model";
 import { StatisticsService } from "./statistics.service";
 
-// ✅ Type definitions for populated fields
 interface PopulatedUser {
   _id: mongoose.Types.ObjectId;
   name: string;
@@ -47,8 +46,7 @@ interface CourseMemberWithUser {
 
 export class AttendanceService {
 
-  // ✅ LẤY + AUTO-SYNC ATTENDANCE CHO 1 BUỔI
-  static async getStudentsForCalendar(calendarId: string) {
+  static async getStudentsForCalendar(calendarId: string, userRole?: string, userId?: string) {
     try {
       console.log('📅 Getting attendance for calendar:', calendarId);
 
@@ -56,7 +54,6 @@ export class AttendanceService {
         throw new Error("Invalid calendarId");
       }
 
-      // Populate calendar to get its basic info
       const calendar = await CourseCalendar.findById(calendarId)
         .populate("sessionId", "sessionName startTime endTime")
         .populate("courseId", "name codeName courseName");
@@ -65,9 +62,15 @@ export class AttendanceService {
         throw new Error("Calendar not found");
       }
 
+      if (userRole === "teacher") {
+        if (!userId) throw new Error("Missing teacherId.");
+        if (calendar.teacherId.toString() !== userId.toString()) {
+          throw new Error("You do not have permission to view attendance for this session.");
+        }
+      }
+
       const courseId = calendar.courseId;
 
-      // 1. Tìm toàn bộ học viên của course
       const course = await Course.findById(courseId)
         .populate("members.userId", "name email username")
         .select("members")
@@ -83,7 +86,6 @@ export class AttendanceService {
 
       let isUpdated = false;
 
-      // 2. Tạo attendance cho student chưa có trong mảng
       for (const s of students) {
         if (!s.userId) continue;
 
@@ -107,7 +109,6 @@ export class AttendanceService {
         await calendar.save();
       }
 
-      // 3. Lấy lại dữ liệu đầy đủ
       const finalCalendar = await CourseCalendar.findById(calendarId)
         .populate("sessionId", "sessionName startTime endTime")
         .populate("courseId", "name codeName courseName")
@@ -124,7 +125,7 @@ export class AttendanceService {
         const user = a.userId as PopulatedUser;
         return {
           attendanceId: a._id,
-          userId: user, // Dựa trên FE: userId là nguyên object user (có _id, name, email)
+          userId: user,
           name: user.name || 'Unknown',
           username: user.username || '',
           email: user.email || '',
@@ -138,7 +139,6 @@ export class AttendanceService {
     }
   }
 
-  // ✅ UPDATE ATTENDANCE
   static async updateAttendance(
     calendarId: string,
     userId: string,
@@ -160,7 +160,6 @@ export class AttendanceService {
       const attendanceRecord = calendar.attendances.find(a => a.userId?.toString() === userId);
       if (!attendanceRecord) throw new Error("Attendance sub-record not found.");
 
-      // CHECK QUYỀN TEACHER
       if (userRole === "teacher") {
         if (!teacherId) throw new Error("Missing teacherId.");
 
@@ -188,18 +187,14 @@ export class AttendanceService {
         }
       }
 
-      // VALIDATE STATUS
       if (!Object.values(AttendanceStatus).includes(status as AttendanceStatus)) {
         throw new Error("Invalid attendance status.");
       }
-
-      // UPDATE ATTENDANCE
       attendanceRecord.status = status as AttendanceStatus;
       await calendar.save();
 
       console.log('✅ Attendance updated successfully');
 
-      // Tự động tính lại điểm sau khi điểm danh
       try {
         const courseId = calendar.courseId.toString();
         const studentId = attendanceRecord.userId.toString();
@@ -223,11 +218,10 @@ export class AttendanceService {
     }
   }
 
-  // ✅ STUDENT XEM LỊCH SỬ
   static async getStudentAttendance(studentId: string) {
     try {
       console.log('📚 Getting attendance history for student:', studentId);
-      
+
       const calendars = await CourseCalendar.find({ "attendances.userId": studentId })
         .populate("sessionId", "sessionName startTime endTime")
         .lean();
