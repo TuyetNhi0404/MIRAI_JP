@@ -2,6 +2,21 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export type GrammarDocumentScope = "private" | "shared";
 
+export interface IDocumentChunk {
+  pageNumber: number;
+  text: string;
+  embedding: number[];
+  embeddingModel: string;
+  embeddingDim: number;
+}
+
+export interface IDocumentAuditLog {
+  action: "upload" | "delete" | "edit";
+  userId: mongoose.Types.ObjectId;
+  userRole: string;
+  createdAt: Date;
+}
+
 export interface IGrammarDocument extends Document {
   title: string;
   filePath: string;
@@ -12,9 +27,39 @@ export interface IGrammarDocument extends Document {
   totalPages: number;
   uploadedBy: mongoose.Types.ObjectId;
   scope: GrammarDocumentScope;
+  chunks: IDocumentChunk[];
+  auditLogs: IDocumentAuditLog[];
   createdAt: Date;
   updatedAt: Date;
 }
+
+const documentChunkSchema = new Schema<IDocumentChunk>(
+  {
+    pageNumber: { type: Number, required: true },
+    text: { type: String, required: true },
+    embedding: {
+      type: [Number],
+      required: true,
+      validate: {
+        validator: (arr: number[]) => arr.length > 0,
+        message: "Embedding cannot be empty"
+      }
+    },
+    embeddingModel: { type: String, default: "gemini-embedding-001" },
+    embeddingDim: { type: Number, default: 768 }
+  },
+  { _id: false }
+);
+
+const documentAuditLogSchema = new Schema<IDocumentAuditLog>(
+  {
+    action: { type: String, enum: ["upload", "delete", "edit"], required: true },
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    userRole: { type: String, required: true },
+    createdAt: { type: Date, default: Date.now }
+  },
+  { _id: false }
+);
 
 const grammarDocumentSchema = new Schema<IGrammarDocument>(
   {
@@ -44,7 +89,9 @@ const grammarDocumentSchema = new Schema<IGrammarDocument>(
       type: String,
       enum: ["private", "shared"],
       default: "private"
-    }
+    },
+    chunks: { type: [documentChunkSchema], default: [] },
+    auditLogs: { type: [documentAuditLogSchema], default: [] }
   },
   { timestamps: true }
 );
@@ -54,5 +101,8 @@ grammarDocumentSchema.index({ uploadedBy: 1, centerId: 1 });
 grammarDocumentSchema.index({ uploadedBy: 1, createdAt: -1 });
 // Phase 6: query theo createdAt cho date filter
 grammarDocumentSchema.index({ centerId: 1, level: 1, createdAt: -1 });
+
+// Index for text search on chunks
+grammarDocumentSchema.index({ "chunks.text": "text" });
 
 export default mongoose.model<IGrammarDocument>("GrammarDocument", grammarDocumentSchema);

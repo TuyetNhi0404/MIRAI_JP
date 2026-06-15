@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import GrammarDocument, { GrammarDocumentScope } from "../model/grammarDocument.model";
-import GrammarChunk from "../model/grammarChunk.model";
 import GrammarCard from "../model/grammarCard.model";
 import { Course } from "../model/course.model";
 import { Question } from "../model/question.model";
@@ -9,7 +8,6 @@ import { GrammarService } from "../service/grammar.service";
 import mongoose from "mongoose";
 import { saveUploadFile, deleteUploadArtifacts } from "../utils/uploadStorage";
 import { enqueueGrammarPipeline } from "../queue/grammar.queue";
-import GrammarAuditLog from "../model/grammarAuditLog.model";
 
 // ─── Phase 6: date helpers ────────────────────────────────────────────────
 const ALLOWED_SORT_FIELDS = new Set(["createdAt", "title"]);
@@ -103,13 +101,14 @@ class GrammarController {
         }, 0);
       }
 
-      await GrammarAuditLog.create({
-        action: "upload",
-        documentId: document._id,
-        documentTitle: title.trim(),
-        userId: new mongoose.Types.ObjectId(userId),
-        userRole: userRole || "teacher",
-        centerId,
+      await GrammarDocument.findByIdAndUpdate(document._id, {
+        $push: {
+          auditLogs: {
+            action: "upload",
+            userId: new mongoose.Types.ObjectId(userId),
+            userRole: userRole || "teacher"
+          }
+        }
       });
 
       res.status(202).json({
@@ -171,19 +170,12 @@ class GrammarController {
         .populate("uploadedBy", "name email")
         .sort({ [sortSpec.sortBy]: sortSpec.order });
 
-      const docIds = documents.map(d => d._id);
-      const chunkAgg = await GrammarChunk.aggregate([
-        { $match: { documentId: { $in: docIds } } },
-        { $group: { _id: "$documentId", chunkCount: { $sum: 1 } } },
-      ]);
-      const chunkMap = new Map(chunkAgg.map(c => [String(c._id), c.chunkCount]));
-
       res.json({
         success: true,
         count: documents.length,
         documents: documents.map(doc => ({
           ...doc.toObject(),
-          chunkCount: chunkMap.get(String(doc._id)) ?? 0,
+          chunkCount: doc.chunks ? doc.chunks.length : 0,
         })),
       });
     } catch (err) {
@@ -215,7 +207,7 @@ class GrammarController {
         }
       }
 
-      const chunkCount = await GrammarChunk.countDocuments({ documentId: document._id });
+      const chunkCount = document.chunks ? document.chunks.length : 0;
       const stageProgress: Record<string, number> = {
         queued: 5, ocr: 25, embed: 55, extract: 85, done: 100, failed: 0,
       };
@@ -259,18 +251,8 @@ class GrammarController {
         return res.status(403).json({ success: false, message: "Bạn chỉ có thể xóa tài liệu do chính bạn upload." });
       }
 
-      await GrammarChunk.deleteMany({ documentId: document._id });
       await GrammarDocument.findByIdAndDelete(document._id);
       await deleteUploadArtifacts(String(document._id));
-
-      await GrammarAuditLog.create({
-        action: "delete",
-        documentId: document._id,
-        documentTitle: document.title,
-        userId: new mongoose.Types.ObjectId(req.id as string),
-        userRole: req.role || "teacher",
-        centerId: document.centerId,
-      });
 
       res.json({ success: true, message: "Đã xóa tài liệu và tất cả dữ liệu vector tương ứng." });
     } catch {
