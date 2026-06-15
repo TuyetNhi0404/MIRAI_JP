@@ -60,10 +60,25 @@ const KanaDetailPanel: React.FC<KanaDetailPanelProps> = ({ selectedChar, kanaTyp
   const instructions = strokeInstructions[selectedChar.kana] || [];
 
   const playPronunciation = () => {
-    const utterance = new SpeechSynthesisUtterance(selectedChar.kana);
-    utterance.lang = 'ja-JP';
-    utterance.rate = 0.8;
-    window.speechSynthesis.speak(utterance);
+    if ('speechSynthesis' in window) {
+      // Cancel any ongoing speech to prevent the speech queue from getting stuck in Chrome/Edge
+      window.speechSynthesis.cancel();
+      
+      const utterance = new SpeechSynthesisUtterance(selectedChar.kana);
+      utterance.lang = 'ja-JP';
+      utterance.rate = 0.8;
+      
+      // Explicitly find and assign a Japanese voice if available
+      const voices = window.speechSynthesis.getVoices();
+      const jaVoice = voices.find(v => v.lang.toLowerCase() === 'ja-jp' || v.lang.toLowerCase().startsWith('ja-'));
+      if (jaVoice) {
+        utterance.voice = jaVoice;
+      }
+      
+      window.speechSynthesis.speak(utterance);
+    } else {
+      console.warn('Speech synthesis is not supported in this browser.');
+    }
   };
 
   return (

@@ -493,12 +493,12 @@ class GrammarController {
         return res.json({ success: true, levels: [], cards: [] });
       }
 
-      // 2. Suy ra JLPT level từ tên khóa (vd. "Lớp N4 buổi tối")
+      // 2. Suy ra JLPT level từ tên khóa (vd. "Lớp N4 buổi tối", "JAPANESE_N5_00")
       const levelsSet = new Set<string>();
-      const levelPattern = /\bN[1-5]\b/i;
+      const levelPattern = /(?:_|\b)(N[1-5])(?:_|\b)/i;
       enrolledCourses.forEach((course) => {
         const match = course.name?.match(levelPattern);
-        if (match) levelsSet.add(match[0].toUpperCase());
+        if (match) levelsSet.add(match[1].toUpperCase());
       });
       const activeLevels = Array.from(levelsSet);
 
@@ -606,6 +606,33 @@ class GrammarController {
       res.json({ success: true, attempts });
     } catch {
       res.status(500).json({ success: false, message: "Lỗi máy chủ khi lấy lịch sử làm bài học viên." });
+    }
+  }
+
+  // ─── ADMIN: XÓA HÀNG LOẠT THẺ NGỮ PHÁP ──────────────────────────────────────────
+  async deleteGrammarCardsBatch(req: Request, res: Response) {
+    try {
+      const { ids } = req.body;
+      if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ success: false, message: "Danh sách ID không hợp lệ." });
+      }
+
+      // Kiểm tra định dạng ObjectId
+      const invalidIds = ids.filter(id => !isValidObjectId(id));
+      if (invalidIds.length > 0) {
+        return res.status(400).json({ success: false, message: "Có ID thẻ ngữ pháp không hợp lệ." });
+      }
+
+      const result = await GrammarCard.deleteMany({ _id: { $in: ids } });
+
+      res.json({
+        success: true,
+        message: `Đã xóa thành công ${result.deletedCount} thẻ ngữ pháp.`,
+        deletedCount: result.deletedCount
+      });
+    } catch (err: any) {
+      console.error("[GrammarController] deleteGrammarCardsBatch error:", err);
+      res.status(500).json({ success: false, message: "Lỗi máy chủ khi xóa loạt thẻ ngữ pháp." });
     }
   }
 }

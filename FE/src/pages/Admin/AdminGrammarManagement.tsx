@@ -30,6 +30,7 @@ import {
   Card,
   CardContent,
   Grid,
+  Checkbox,
 } from "@mui/material";
 import {
   Plus,
@@ -79,6 +80,47 @@ const AdminGrammarManagement: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [documents, setDocuments] = useState<IGrammarDocument[]>([]);
   const [cards, setCards] = useState<IGrammarCard[]>([]);
+
+  // Batch delete states
+  const [selectedCardIds, setSelectedCardIds] = useState<string[]>([]);
+  const [openDeleteBatchDialog, setOpenDeleteBatchDialog] = useState(false);
+  const [batchDeleting, setBatchDeleting] = useState(false);
+
+  // Reset selection on tab/cards change
+  useEffect(() => {
+    setSelectedCardIds([]);
+  }, [tab, cards]);
+
+  const handleSelectAllClick = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.checked) {
+      const newSelecteds = cards.map((n) => n._id);
+      setSelectedCardIds(newSelecteds);
+    } else {
+      setSelectedCardIds([]);
+    }
+  };
+
+  const handleSelectCard = (id: string) => {
+    setSelectedCardIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleDeleteCardsBatch = async () => {
+    if (selectedCardIds.length === 0) return;
+    setBatchDeleting(true);
+    try {
+      await grammarService.deleteGrammarCardsBatch(selectedCardIds);
+      setSelectedCardIds([]);
+      setOpenDeleteBatchDialog(false);
+      fetchCards();
+    } catch (err) {
+      console.error(err);
+      alert("Lỗi khi xóa hàng loạt thẻ ngữ pháp.");
+    } finally {
+      setBatchDeleting(false);
+    }
+  };
 
   // Filter states
   const [filterLevel, setFilterLevel] = useState<JLPTLevel | "">("");
@@ -417,6 +459,17 @@ const AdminGrammarManagement: React.FC = () => {
         </Box>
 
         <Box sx={{ display: "flex", gap: 1.5 }}>
+          {tab === 0 && selectedCardIds.length > 0 && (
+            <Button
+              variant="outlined"
+              color="error"
+              startIcon={<Trash2 size={16} />}
+              onClick={() => setOpenDeleteBatchDialog(true)}
+              sx={{ borderRadius: "8px", fontWeight: 600 }}
+            >
+              Xóa {selectedCardIds.length} mục đã chọn
+            </Button>
+          )}
           <Tooltip title="Làm mới dữ liệu">
             <IconButton onClick={tab === 0 ? fetchCards : fetchDocuments} sx={{ border: "1px solid #eee" }}>
               <RefreshCw size={18} />
@@ -513,6 +566,18 @@ const AdminGrammarManagement: React.FC = () => {
               <Table size="small">
                 <TableHead>
                   <TableRow sx={{ bgcolor: "#FAFAFA" }}>
+                    <TableCell padding="checkbox">
+                      <Checkbox
+                        indeterminate={selectedCardIds.length > 0 && selectedCardIds.length < cards.length}
+                        checked={cards.length > 0 && selectedCardIds.length === cards.length}
+                        onChange={handleSelectAllClick}
+                        sx={{
+                          color: "#ccc",
+                          "&.Mui-checked": { color: "#B90000" },
+                          "&.MuiCheckbox-indeterminate": { color: "#B90000" },
+                        }}
+                      />
+                    </TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>Mẫu ngữ pháp</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>Cấu trúc</TableCell>
                     <TableCell sx={{ fontWeight: 700 }}>Ý nghĩa tiếng Việt</TableCell>
@@ -522,35 +587,73 @@ const AdminGrammarManagement: React.FC = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {cards.map((card) => (
-                    <TableRow key={card._id} hover>
-                      <TableCell><Typography fontWeight={700}>{card.title}</Typography></TableCell>
-                      <TableCell><Typography variant="body2" sx={{ fontFamily: "monospace" }}>{card.structure}</Typography></TableCell>
-                      <TableCell><Typography fontSize={13}>{card.meaningVi}</Typography></TableCell>
-                      <TableCell>
-                        <Chip
-                          label={card.level}
-                          size="small"
-                          sx={{ bgcolor: LEVEL_COLORS[card.level] + "18", color: LEVEL_COLORS[card.level], fontWeight: 700 }}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        {card.examples && card.examples.length > 0 ? (
-                          <Typography fontSize={12} color="text.secondary" noWrap sx={{ maxWidth: 220 }}>
-                            {card.examples[0].japanese}
-                          </Typography>
-                        ) : (
-                          "—"
-                        )}
-                      </TableCell>
-                      <TableCell align="center">
-                        <Box sx={{ display: "flex", gap: 0.5, justifyContent: "center" }}>
-                          <IconButton size="small" onClick={() => handleOpenEditCard(card)} sx={{ color: "#1565C0" }}><Pencil size={15} /></IconButton>
-                          <IconButton size="small" onClick={() => setDeleteCardTarget(card)} sx={{ color: "#B90000" }}><Trash2 size={15} /></IconButton>
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {cards.map((card) => {
+                    const isItemSelected = selectedCardIds.includes(card._id);
+                    return (
+                      <TableRow
+                        key={card._id}
+                        hover
+                        selected={isItemSelected}
+                        onClick={() => handleSelectCard(card._id)}
+                        sx={{ cursor: "pointer" }}
+                      >
+                        <TableCell padding="checkbox">
+                          <Checkbox
+                            checked={isItemSelected}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={() => handleSelectCard(card._id)}
+                            sx={{
+                              color: "#ccc",
+                              "&.Mui-checked": { color: "#B90000" },
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell><Typography fontWeight={700}>{card.title}</Typography></TableCell>
+                        <TableCell><Typography variant="body2" sx={{ fontFamily: "monospace" }}>{card.structure}</Typography></TableCell>
+                        <TableCell><Typography fontSize={13}>{card.meaningVi}</Typography></TableCell>
+                        <TableCell>
+                          <Chip
+                            label={card.level}
+                            size="small"
+                            sx={{ bgcolor: LEVEL_COLORS[card.level] + "18", color: LEVEL_COLORS[card.level], fontWeight: 700 }}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          {card.examples && card.examples.length > 0 ? (
+                            <Typography fontSize={12} color="text.secondary" noWrap sx={{ maxWidth: 220 }}>
+                              {card.examples[0].japanese}
+                            </Typography>
+                          ) : (
+                            "—"
+                          )}
+                        </TableCell>
+                        <TableCell align="center">
+                          <Box sx={{ display: "flex", gap: 0.5, justifyContent: "center" }}>
+                            <IconButton
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenEditCard(card);
+                              }}
+                              sx={{ color: "#1565C0" }}
+                            >
+                              <Pencil size={15} />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteCardTarget(card);
+                              }}
+                              sx={{ color: "#B90000" }}
+                            >
+                              <Trash2 size={15} />
+                            </IconButton>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </TableContainer>
@@ -961,6 +1064,22 @@ const AdminGrammarManagement: React.FC = () => {
         <DialogActions>
           <Button onClick={() => setDeleteCardTarget(null)} sx={{ color: "#888" }}>Hủy</Button>
           <Button onClick={handleDeleteCard} sx={{ color: "#B90000" }}>Xóa</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* BATCH DELETE CARD CONFIRM DIALOG */}
+      <Dialog open={openDeleteBatchDialog} onClose={() => setOpenDeleteBatchDialog(false)}>
+        <DialogTitle sx={{ fontWeight: 700 }}>Xác nhận xóa loạt thẻ ngữ pháp?</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2">
+            Bạn có chắc chắn muốn xóa <strong>{selectedCardIds.length}</strong> thẻ ngữ pháp đã chọn? Thao tác này sẽ xóa vĩnh viễn các thẻ này và không thể hoàn tác.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDeleteBatchDialog(false)} sx={{ color: "#888" }} disabled={batchDeleting}>Hủy</Button>
+          <Button onClick={handleDeleteCardsBatch} sx={{ color: "#B90000" }} disabled={batchDeleting}>
+            {batchDeleting ? <CircularProgress size={16} color="inherit" /> : "Xóa tất cả đã chọn"}
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

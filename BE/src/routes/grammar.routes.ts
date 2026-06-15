@@ -66,6 +66,11 @@ router.put(
   authorizeRoles("admin", "teacher"),
   GrammarController.updateGrammarCard
 );
+router.post(
+  "/cards/batch-delete",
+  authorizeRoles("admin"),
+  GrammarController.deleteGrammarCardsBatch
+);
 router.delete(
   "/cards/:id",
   authorizeRoles("admin"),
