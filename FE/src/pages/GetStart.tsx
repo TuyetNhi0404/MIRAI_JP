@@ -3,7 +3,23 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import RegisterForm from "../components/enrollment/RegisterForm";
 import { Modal, Box, useMediaQuery, useTheme } from "@mui/material";
 import { getApiBaseUrl } from "../utils/apiBase";
-import { Pin, Facebook, Instagram } from "lucide-react";
+import { Pin, Facebook } from "lucide-react";
+
+const Tiktok = ({ size = 20 }: { size?: number }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
+  </svg>
+);
 
 // Critical above-the-fold components loaded statically for instant paint
 import LandingNavbar from "../components/landing/LandingNavbar";
@@ -122,11 +138,18 @@ const MiraiJpCenter: React.FC = () => {
       {/* Floating social sidebar for Desktop */}
       {!isMobile && (
         <div className="fixed left-0 top-1/2 -translate-y-1/2 bg-white py-5 px-2.5 z-[999] flex flex-col gap-5 shadow-[2px_0_10px_rgba(0,0,0,0.1)]">
-          <a href="#" className="text-[#B90000] hover:scale-110 transition-transform">
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            className="text-[#B90000] hover:scale-110 transition-transform"
+          >
             <Pin size={20} />
           </a>
           <a
-            href="https://www.facebook.com/profile.php?id=61560247499806"
+            href="https://www.facebook.com/profile.php?id=61560247499806&locale=vi_VN"
             target="_blank"
             rel="noreferrer"
             className="text-[#B90000] hover:scale-110 transition-transform"
@@ -134,12 +157,12 @@ const MiraiJpCenter: React.FC = () => {
             <Facebook size={20} />
           </a>
           <a
-            href="https://www.facebook.com/profile.php?id=61560247499806"
+            href="https://www.tiktok.com/@mirai9846"
             target="_blank"
             rel="noreferrer"
             className="text-[#B90000] hover:scale-110 transition-transform"
           >
-            <Instagram size={20} />
+            <Tiktok size={20} />
           </a>
         </div>
       )}

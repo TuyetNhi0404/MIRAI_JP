@@ -1,5 +1,21 @@
 import React from "react";
-import { Facebook, Instagram, Mail, Phone, MapPin, Globe } from "lucide-react";
+import { Facebook, Mail, Phone, MapPin, Globe } from "lucide-react";
+
+const Tiktok = ({ size = 18 }: { size?: number }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
+  </svg>
+);
 
 interface LandingFooterProps {
   isMobile: boolean;
@@ -42,11 +58,11 @@ const LandingFooter: React.FC<LandingFooterProps> = () => {
             Giải pháp số hóa toàn diện quy trình đào tạo, giảng dạy và học tập Tiếng Nhật chuyên nghiệp cho các tổ chức giáo dục.
           </p>
           <div className="flex gap-4">
-            <a href="https://www.facebook.com/profile.php?id=61560247499806" target="_blank" rel="noreferrer" className="text-slate-400 hover:text-[#B90000] transition-colors">
+            <a href="https://www.facebook.com/profile.php?id=61560247499806&locale=vi_VN" target="_blank" rel="noreferrer" className="text-slate-400 hover:text-[#B90000] transition-colors">
               <Facebook size={18} />
             </a>
-            <a href="https://www.facebook.com/profile.php?id=61560247499806" target="_blank" rel="noreferrer" className="text-slate-400 hover:text-[#B90000] transition-colors">
-              <Instagram size={18} />
+            <a href="https://www.tiktok.com/@mirai9846" target="_blank" rel="noreferrer" className="text-slate-400 hover:text-[#B90000] transition-colors">
+              <Tiktok size={18} />
             </a>
             <a href="mailto:support@mirai.edu.vn" className="text-slate-400 hover:text-[#B90000] transition-colors">
               <Mail size={18} />
