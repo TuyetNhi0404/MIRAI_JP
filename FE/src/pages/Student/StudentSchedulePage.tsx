@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import ScheduleGrid from "../../components/scheduleStudent/ScheduleGrid";
 import dayjs from "dayjs";
-import axios, { AxiosError } from "axios";
+import axiosInstance from "../../api/axiosInstance";
+import { AxiosError } from "axios";
 import type { SessionItem, AttendanceStatus } from "../../types/schedule.types";
 import { ChevronLeft, ChevronRight, Calendar, Info, LogIn } from "lucide-react";
 import { PageLayout } from "../../components/ui/PageLayout";
@@ -114,9 +115,6 @@ const normalizeDateYMD = (anyDate: unknown): string => {
   return toYMD(d);
 };
 
-const rawBase = import.meta.env.VITE_API_BASE_URL || "";
-const BASE = rawBase ? rawBase.replace(/\/$/, "") : "http://localhost:5000/api";
-
 const courseCache = new Map<string, string>();
 
 const fetchCourseName = async (courseId: string): Promise<string> => {
@@ -124,9 +122,7 @@ const fetchCourseName = async (courseId: string): Promise<string> => {
     return courseCache.get(courseId)!;
   }
   try {
-    const res = await axios.get(`${BASE}/courses/${courseId}`, {
-      withCredentials: true,
-    });
+    const res = await axiosInstance.get(`/courses/${courseId}`);
     const name = res.data?.courseName || res.data?.name || res.data?.data?.courseName || "Unknown";
     courseCache.set(courseId, name);
     return name;
@@ -137,9 +133,7 @@ const fetchCourseName = async (courseId: string): Promise<string> => {
 
 const fetchAllCourses = async (): Promise<Map<string, string>> => {
   try {
-    const res = await axios.get(`${BASE}/courses`, {
-      withCredentials: true,
-    });
+    const res = await axiosInstance.get(`/courses`);
     const courses = Array.isArray(res.data?.data)
       ? res.data.data
       : Array.isArray(res.data)
@@ -182,18 +176,14 @@ const extractTeacherName = (teacherData: unknown): string => {
 
 const fetchMyAttendance = async (): Promise<Map<string, AttendanceStatus>> => {
   try {
-    const profileRes = await axios.get<ProfileResponse>(`${BASE}/profile`, {
-      withCredentials: true,
-    });
+    const profileRes = await axiosInstance.get<ProfileResponse>(`/profile`);
     const data = profileRes.data?.data || profileRes.data;
     const userId = data?._id || data?.id || data?.userId || data?.user?._id;
     if (!userId) {
       return new Map();
     }
 
-    const attendanceRes = await axios.get(`${BASE}/attendances/student/${userId}`, {
-      withCredentials: true,
-    });
+    const attendanceRes = await axiosInstance.get(`/attendances/student/${userId}`);
     const attendanceData = attendanceRes.data?.data || attendanceRes.data || [];
     const attendanceMap = new Map<string, AttendanceStatus>();
 
@@ -238,9 +228,7 @@ const StudentSchedulePage: React.FC = () => {
     setAuthRequired(false);
     try {
       const attendanceMap = await fetchMyAttendance();
-      const res = await axios.get(`${BASE}/calendars`, {
-        withCredentials: true,
-      });
+      const res = await axiosInstance.get(`/calendars`);
       const raw: CalendarRawItem[] = Array.isArray(res?.data?.data) ? res.data.data : [];
 
       const courseIds = [
@@ -382,27 +370,29 @@ const StudentSchedulePage: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={goPrevWeek}
-            className="p-2 border border-border-color rounded-xl bg-surface-base hover:bg-bg-base transition active:scale-95 shrink-0"
+            className="p-2 border border-border-color rounded-xl bg-surface-base hover:bg-accent-color hover:border-primary-color text-text-main hover:text-primary-color transition active:scale-95 shrink-0"
           >
             <ChevronLeft size={18} />
           </button>
 
-          <label className="flex items-center gap-2 border border-border-color rounded-xl px-4 py-1.5 bg-surface-base cursor-pointer hover:border-border-color/80 transition relative shrink-0">
-            <Calendar size={16} className="text-text-secondary" />
-            <span className="text-sm font-bold text-text-main select-none">
-              {weekStartString} – {weekEndString}
-            </span>
+          <div className="relative shrink-0">
+            <div className="!flex !flex-row !flex-nowrap !items-center gap-2 border border-transparent rounded-xl px-4 py-1.5 bg-primary-color hover:bg-primary-color-hover text-white cursor-pointer transition whitespace-nowrap shadow-sm">
+              <Calendar size={16} className="text-white/90 shrink-0" />
+              <span className="text-sm font-bold text-white select-none">
+                {weekStartString} – {weekEndString}
+              </span>
+            </div>
             <input
               type="date"
               value={dayjs(weekStart).format("YYYY-MM-DD")}
               onChange={(e) => handleDatePick(e.target.value)}
-              className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+              className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
             />
-          </label>
+          </div>
 
           <button
             onClick={goNextWeek}
-            className="p-2 border border-border-color rounded-xl bg-surface-base hover:bg-bg-base transition active:scale-95 shrink-0"
+            className="p-2 border border-border-color rounded-xl bg-surface-base hover:bg-accent-color hover:border-primary-color text-text-main hover:text-primary-color transition active:scale-95 shrink-0"
           >
             <ChevronRight size={18} />
           </button>
