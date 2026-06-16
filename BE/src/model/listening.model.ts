@@ -10,7 +10,6 @@ export interface IListeningContent extends Document {
   transcript?: string;
   duration?: number;
   thumbnailUrl?: string;
-  exercises: mongoose.Types.ObjectId[];
   createdBy: mongoose.Types.ObjectId;
   isPublished: boolean;
   playCount: number;
@@ -32,7 +31,6 @@ const listeningContentSchema: Schema = new Schema(
     transcript: { type: String },
     duration: { type: Number },
     thumbnailUrl: { type: String },
-    exercises: [{ type: Schema.Types.ObjectId, ref: 'ListeningExercise' }],
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     isPublished: { type: Boolean, default: true },
     playCount: { type: Number, default: 0 },
