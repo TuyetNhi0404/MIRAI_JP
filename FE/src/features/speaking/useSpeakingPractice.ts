@@ -42,6 +42,7 @@ export function useSpeakingPractice() {
   const [recordDisabled, setRecordDisabled] = useState(false);
   const [serviceUnavailable, setServiceUnavailable] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
+  const [audioLevel, setAudioLevel] = useState(0);
 
   const modeRef = useRef<InteractionMode>("request");
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -144,6 +145,7 @@ export function useSpeakingPractice() {
     isAwaitingAiRef.current = false;
     setLoading(false);
     setTypingVisible(false);
+    setAudioLevel(0);
     micRestartPendingRef.current = true;
 
     if (isPlayingRef.current || audioQueueRef.current.length > 0) {
@@ -310,13 +312,26 @@ export function useSpeakingPractice() {
     ctx.createMediaStreamSource(stream).connect(analyser);
     analyser.fftSize = 512;
     const data = new Float32Array(analyser.frequencyBinCount);
+    const freqData = new Uint8Array(analyser.frequencyBinCount);
+    let smoothedLevel = 0;
 
     const check = () => {
-      if (!isSessionActiveRef.current) return;
+      if (!isSessionActiveRef.current) {
+        setAudioLevel(0);
+        return;
+      }
       analyser.getFloatTimeDomainData(data);
+      analyser.getByteFrequencyData(freqData);
       let sum = 0;
       for (let i = 0; i < data.length; i++) sum += data[i] * data[i];
       const rms = Math.sqrt(sum / data.length);
+      let freqSum = 0;
+      const lowerHalf = Math.floor(freqData.length * 0.5);
+      for (let i = 0; i < lowerHalf; i++) freqSum += freqData[i];
+      const freqAvg = freqSum / lowerHalf / 255;
+      const target = Math.min(1, Math.max(rms * 6, freqAvg));
+      smoothedLevel += (target - smoothedLevel) * 0.18;
+      setAudioLevel(smoothedLevel);
       const mr = mediaRecorderRef.current;
 
       if (rms > SILENCE_THRESHOLD) {
@@ -353,6 +368,7 @@ export function useSpeakingPractice() {
     setIsRecording(false);
     setIsUserSpeaking(false);
     setTypingVisible(false);
+    setAudioLevel(0);
     if (mediaRecorderRef.current?.state === "recording") {
       mediaRecorderRef.current.stop();
     }
@@ -517,6 +533,7 @@ export function useSpeakingPractice() {
       setModeState(next);
       setIsRecording(false);
       setIsUserSpeaking(false);
+      setAudioLevel(0);
       setRecordLabel(next === "request" ? "Nhấn giữ để nói" : "Bắt đầu phiên");
     },
     [stopStreamingSession],
@@ -592,6 +609,7 @@ export function useSpeakingPractice() {
     recordDisabled,
     serviceUnavailable,
     lastError,
+    audioLevel,
     onLevelChange,
     onRecordPointerDown,
     onRecordPointerUp,

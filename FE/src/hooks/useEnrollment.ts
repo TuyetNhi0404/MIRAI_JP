@@ -1,4 +1,3 @@
-// src/hooks/useEnrollment.ts
 import { useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "./hooks";
 import {
@@ -16,7 +15,6 @@ export const useEnrollment = () => {
     (state) => state.enrollment
   );
 
-  // Đăng ký khóa học
   const handleEnrollCourse = useCallback(
     async (data: EnrollmentRequest) => {
       try {
@@ -30,7 +28,6 @@ export const useEnrollment = () => {
     [dispatch]
   );
 
-  // Fetch enrollments
   const handleFetchEnrollments = useCallback(
     async (status: string = "") => {
       try {
@@ -44,7 +41,6 @@ export const useEnrollment = () => {
     [dispatch]
   );
 
-  // Duyệt đơn đăng ký
   const handleApproveEnrollment = useCallback(
     async (enrollmentId: string) => {
       try {
@@ -58,7 +54,6 @@ export const useEnrollment = () => {
     [dispatch]
   );
 
-  // Từ chối đơn đăng ký
   const handleRejectEnrollment = useCallback(
     async (enrollmentId: string) => {
       try {
@@ -72,18 +67,14 @@ export const useEnrollment = () => {
     [dispatch]
   );
 
-  // Clear error message
   const handleClearError = useCallback(() => {
     dispatch(clearError());
   }, [dispatch]);
 
   return {
-    // State
     enrollments,
     loading,
     error,
-
-    // Actions
     enrollCourse: handleEnrollCourse,
     fetchEnrollments: handleFetchEnrollments,
     approveEnrollment: handleApproveEnrollment,

@@ -1,27 +1,18 @@
-// src/pages/Student/ViewResultPage.tsx
 import React, { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  Box,
-  Typography,
-  Paper,
-  Button,
-  CircularProgress,
-  Alert,
-  Chip,
-  Divider,
-  Grid,
-} from "@mui/material";
-import {
-  CheckCircle as CorrectIcon,
-  Cancel as WrongIcon,
-  ArrowBack as BackIcon,
-  Timer as TimerIcon,
-  Score as ScoreIcon,
-} from "@mui/icons-material";
+  CheckCircle,
+  XCircle,
+  ArrowLeft,
+  Timer,
+  Award,
+  BookOpen,
+} from "lucide-react";
 import { useQuiz } from "../../hooks/useQuiz";
 import { useAppSelector } from "../../hooks/hooks";
 import type { UserWithId } from "../../types/quiz.types";
+import { PageLayout } from "../../components/ui/PageLayout";
+import { BaseCard } from "../../components/ui/BaseCard";
 
 const ViewResultPage: React.FC = () => {
   const { attemptId } = useParams<{ attemptId: string }>();
@@ -32,285 +23,234 @@ const ViewResultPage: React.FC = () => {
   useEffect(() => {
     if (attemptId) {
       const userId = user?._id || (user as UserWithId)?.id;
-      loadAttemptResult(attemptId, userId);
+      void loadAttemptResult(attemptId, userId);
     }
   }, [attemptId, loadAttemptResult, user]);
 
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
-        <CircularProgress sx={{ color: "#B90000" }} />
-      </Box>
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
+        <div className="w-10 h-10 border-4 border-primary-color border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-sm text-text-secondary font-medium">Đang tải kết quả bài làm...</p>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Box>
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-        <Button
-          startIcon={<BackIcon />}
-          onClick={() => navigate("/dashboard/student/quizzes")}
-          sx={{ color: "#B90000" }}
-        >
-          Quay lại danh sách bài kiểm tra
-        </Button>
-      </Box>
+      <PageLayout title="Kết quả bài kiểm tra" subtitle="Xem phản hồi và đáp án chi tiết">
+        <BaseCard className="bg-red-50 border border-red-150 p-6 space-y-4">
+          <div className="flex items-center gap-2.5 text-red-800 font-bold text-sm">
+            <XCircle size={20} />
+            <span>{error}</span>
+          </div>
+          <button
+            onClick={() => navigate("/dashboard/student/quizzes")}
+            className="flex items-center gap-2 text-text-secondary hover:text-primary-color text-xs font-bold transition"
+          >
+            <ArrowLeft size={16} />
+            Quay lại danh sách bài kiểm tra
+          </button>
+        </BaseCard>
+      </PageLayout>
     );
   }
 
   if (!attemptDetail) {
     return (
-      <Box sx={{ textAlign: "center", py: 8 }}>
-        <Typography variant="h6" color="textSecondary">
-          Không tìm thấy kết quả
-        </Typography>
-      </Box>
+      <PageLayout title="Kết quả bài kiểm tra" subtitle="Xem phản hồi và đáp án chi tiết">
+        <BaseCard>
+          <div className="text-center py-12 text-text-secondary/80 text-sm font-semibold">
+            Không tìm thấy thông tin lượt làm bài.
+          </div>
+        </BaseCard>
+      </PageLayout>
     );
   }
 
   return (
-    <Box>
-      {/* Header with Back Button */}
-      <Button
-        startIcon={<BackIcon />}
-        onClick={() => navigate("/dashboard/student/quizzes")}
-        sx={{ mb: 3, color: "#B90000" }}
-      >
-        Quay lại danh sách bài kiểm tra
-      </Button>
+    <PageLayout
+      title="Kết quả bài làm"
+      subtitle="Xem lại chi tiết điểm số, thời gian và lời giải chi tiết cho từng câu hỏi"
+      icon={Award}
+    >
+      {/* Back button row */}
+      <div>
+        <button
+          onClick={() => navigate("/dashboard/student/quizzes")}
+          className="flex items-center gap-2 text-xs font-extrabold text-primary-color hover:text-primary-color-hover transition active:scale-95 bg-surface-base border border-border-color shadow-sm rounded-xl px-4 py-2.5"
+        >
+          <ArrowLeft size={14} />
+          Quay lại danh sách bài kiểm tra
+        </button>
+      </div>
 
-      {/* Result Summary */}
-      <Paper elevation={3} sx={{ p: 4, mb: 4, backgroundColor: "#FFF5E6" }}>
-        <Typography variant="h4" sx={{ color: "#B90000", fontWeight: 700, mb: 2 }}>
-          {attemptDetail.quizTitle}
-        </Typography>
+      {/* Result Summary Banner Card */}
+      <BaseCard className="bg-gradient-to-r from-accent-color/30 via-surface-base to-accent-color/10 border-l-4 border-primary-color">
+        <div className="space-y-6">
+          <h2 className="text-lg font-black text-text-main m-0">{attemptDetail.quizTitle}</h2>
 
-        <Grid container spacing={3} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Paper elevation={2} sx={{ p: 2, textAlign: "center", backgroundColor: "white" }}>
-              <ScoreIcon sx={{ fontSize: 40, color: "#B90000", mb: 1 }} />
-              <Typography variant="h4" sx={{ fontWeight: 700, color: "#B90000" }}>
-                {attemptDetail.score}/{attemptDetail.totalQuestions}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                Điểm số
-              </Typography>
-            </Paper>
-          </Grid>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Score box */}
+            <div className="bg-surface-base border border-border-color p-4 rounded-2xl text-center shadow-sm flex flex-col items-center justify-center">
+              <Award className="text-primary-color mb-1" size={24} />
+              <span className="text-2xl font-black text-primary-color">
+                {attemptDetail.score} <span className="text-xs text-slate-450 font-bold">/ {attemptDetail.totalQuestions}</span>
+              </span>
+              <span className="text-[10px] text-text-secondary font-extrabold uppercase mt-1">Điểm số</span>
+            </div>
 
-          <Grid item xs={12} sm={6} md={3}>
-            <Paper elevation={2} sx={{ p: 2, textAlign: "center", backgroundColor: "white" }}>
-              <Typography
-                variant="h4"
-                sx={{
-                  fontWeight: 700,
-                  color: attemptDetail.passed ? "#4CAF50" : "#f44336",
-                  mb: 1,
-                }}
-              >
+            {/* Percentage box */}
+            <div className="bg-surface-base border border-border-color p-4 rounded-2xl text-center shadow-sm flex flex-col items-center justify-center">
+              <span className={`text-2xl font-black ${attemptDetail.passed ? "text-emerald-600" : "text-red-500"}`}>
                 {attemptDetail.percentage}%
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                Tỷ lệ đúng
-              </Typography>
-            </Paper>
-          </Grid>
+              </span>
+              <span className="text-[10px] text-text-secondary font-extrabold uppercase mt-3">Tỷ lệ chính xác</span>
+            </div>
 
-          <Grid item xs={12} sm={6} md={3}>
-            <Paper elevation={2} sx={{ p: 2, textAlign: "center", backgroundColor: "white" }}>
-              <TimerIcon sx={{ fontSize: 40, color: "#2196F3", mb: 1 }} />
-              <Typography variant="h4" sx={{ fontWeight: 700, color: "#2196F3" }}>
-                {attemptDetail.timeSpent}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                Phút
-              </Typography>
-            </Paper>
-          </Grid>
+            {/* Time spent box */}
+            <div className="bg-surface-base border border-border-color p-4 rounded-2xl text-center shadow-sm flex flex-col items-center justify-center">
+              <Timer className="text-amber-500 mb-1" size={24} />
+              <span className="text-2xl font-black text-text-secondary">{attemptDetail.timeSpent}</span>
+              <span className="text-[10px] text-text-secondary font-extrabold uppercase mt-1">Phút làm bài</span>
+            </div>
 
-          <Grid item xs={12} sm={6} md={3}>
-            <Paper elevation={2} sx={{ p: 2, textAlign: "center", backgroundColor: "white" }}>
-              <Chip
-                icon={attemptDetail.passed ? <CorrectIcon /> : <WrongIcon />}
-                label={attemptDetail.passed ? "ĐẠT" : "KHÔNG ĐẠT"}
-                color={attemptDetail.passed ? "success" : "error"}
-                sx={{ fontSize: "16px", fontWeight: 700, px: 2, py: 3 }}
-              />
-            </Paper>
-          </Grid>
-        </Grid>
+            {/* Status box */}
+            <div className="bg-surface-base border border-border-color p-4 rounded-2xl text-center shadow-sm flex items-center justify-center">
+              <span
+                className={`text-xs font-black px-4 py-1.5 rounded-full flex items-center gap-1.5 ${
+                  attemptDetail.passed ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"
+                }`}
+              >
+                {attemptDetail.passed ? <CheckCircle size={14} /> : <XCircle size={14} />}
+                {attemptDetail.passed ? "ĐẠT" : "KHÔNG ĐẠT"}
+              </span>
+            </div>
+          </div>
 
-        <Typography variant="body2" color="textSecondary">
-          Hoàn thành: {new Date(attemptDetail.completedAt).toLocaleString()}
-        </Typography>
-      </Paper>
+          <div className="flex justify-between items-center text-[10px] text-text-secondary/80 font-semibold border-t border-border-color pt-4 mt-2">
+            <span>Hoàn thành lúc: {new Date(attemptDetail.completedAt).toLocaleString("vi-VN")}</span>
+          </div>
+        </div>
+      </BaseCard>
 
-      {/* Detailed Results */}
-      <Typography variant="h5" sx={{ mb: 3, fontWeight: 600, color: "#333" }}>
-        Xem lại câu hỏi
-      </Typography>
+      {/* Detailed review header */}
+      <div className="flex items-center gap-2 border-b border-border-color pb-2">
+        <BookOpen className="text-text-secondary" size={18} />
+        <h3 className="text-sm font-extrabold text-text-main m-0">Xem lại câu hỏi</h3>
+      </div>
 
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      {/* Questions list review */}
+      <div className="space-y-6">
         {attemptDetail.results.map((result, index) => {
           const isCorrect = result.isCorrect;
 
           return (
-            <Paper
+            <BaseCard
               key={index}
-              elevation={2}
-              sx={{
-                p: 3,
-                borderLeft: `4px solid ${isCorrect ? "#4CAF50" : "#f44336"}`,
-              }}
+              className={`border-l-4 ${isCorrect ? "border-l-emerald-500" : "border-l-red-500"} space-y-4`}
             >
-              {/* Question Header */}
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
-                <Chip
-                  label={`Q${result.questionIndex + 1}`}
-                  sx={{
-                    backgroundColor: isCorrect ? "#4CAF50" : "#f44336",
-                    color: "white",
-                    fontWeight: 600,
-                  }}
-                />
-                {isCorrect ? (
-                  <Chip
-                    icon={<CorrectIcon />}
-                    label="Đúng"
-                    color="success"
-                    size="small"
-                  />
-                ) : (
-                  <Chip
-                    icon={<WrongIcon />}
-                    label="Sai"
-                    color="error"
-                    size="small"
-                  />
-                )}
-              </Box>
+              {/* Question header badges */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span
+                  className={`text-[9px] font-black px-2 py-0.5 rounded text-white ${
+                    isCorrect ? "bg-emerald-500" : "bg-red-500"
+                  }`}
+                >
+                  Q{result.questionIndex + 1}
+                </span>
 
-              {/* Question Text */}
-              <Typography variant="h6" sx={{ mb: 2, fontSize: "16px", fontWeight: 500 }}>
-                {result.question}
-              </Typography>
+                <span
+                  className={`text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                    isCorrect ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"
+                  }`}
+                >
+                  {isCorrect ? <CheckCircle size={10} /> : <XCircle size={10} />}
+                  {isCorrect ? "Đúng" : "Sai"}
+                </span>
+              </div>
 
-              <Divider sx={{ mb: 2 }} />
+              {/* Question content */}
+              <h4 className="text-xs font-extrabold text-text-main m-0 leading-relaxed">{result.question}</h4>
 
-              {/* Options */}
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              <hr className="border-border-color" />
+
+              {/* Options list */}
+              <div className="grid grid-cols-1 gap-2.5">
                 {result.options.map((option, optIndex) => {
                   const optionNumber = optIndex + 1;
                   const isStudentAnswer = result.studentAnswer === optionNumber;
                   const isCorrectAnswer = result.correctAnswer === optionNumber;
 
-                  let backgroundColor = "white";
-                  let borderColor = "#E0E0E0";
-                  let textColor = "#333";
+                  let optionStyle = "border-border-color/85 text-text-secondary hover:bg-bg-base/50";
+                  let leftIcon = null;
 
                   if (isCorrectAnswer) {
-                    backgroundColor = "#E8F5E9";
-                    borderColor = "#4CAF50";
-                    textColor = "#2E7D32";
+                    optionStyle = "bg-emerald-50/35 border-emerald-500 text-emerald-800 font-bold";
+                    leftIcon = <CheckCircle size={14} className="text-emerald-600 shrink-0" />;
                   } else if (isStudentAnswer && !isCorrect) {
-                    backgroundColor = "#FFEBEE";
-                    borderColor = "#f44336";
-                    textColor = "#c62828";
+                    optionStyle = "bg-red-50/35 border-red-500 text-red-800 font-bold";
+                    leftIcon = <XCircle size={14} className="text-red-600 shrink-0" />;
                   }
 
                   return (
-                    <Box
+                    <div
                       key={optIndex}
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1.5,
-                        p: 1.5,
-                        borderRadius: 1,
-                        backgroundColor,
-                        border: `2px solid ${borderColor}`,
-                      }}
+                      className={`flex items-center justify-between border px-4 py-3 rounded-2xl transition select-none ${optionStyle}`}
                     >
-                      {isCorrectAnswer ? (
-                        <CorrectIcon sx={{ color: "#4CAF50", fontSize: 20 }} />
-                      ) : isStudentAnswer ? (
-                        <WrongIcon sx={{ color: "#f44336", fontSize: 20 }} />
-                      ) : (
-                        <Box sx={{ width: 20 }} />
-                      )}
+                      <div className="flex items-center gap-3">
+                        {leftIcon || <div className="w-3.5 h-3.5 shrink-0" />}
 
-                      <Chip
-                        label={String.fromCharCode(65 + optIndex)}
-                        size="small"
-                        sx={{
-                          backgroundColor: isCorrectAnswer ? "#4CAF50" : "#E0E0E0",
-                          color: isCorrectAnswer ? "white" : "#666",
-                          fontWeight: 600,
-                          minWidth: 32,
-                        }}
-                      />
+                        <span
+                          className={`text-[9px] font-black px-2 py-0.5 rounded text-center shrink-0 ${
+                            isCorrectAnswer
+                              ? "bg-emerald-500 text-white"
+                              : "bg-bg-base border border-border-color text-text-secondary"
+                          }`}
+                        >
+                          {String.fromCharCode(65 + optIndex)}
+                        </span>
 
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          flex: 1,
-                          color: textColor,
-                          fontWeight: isCorrectAnswer || isStudentAnswer ? 500 : 400,
-                        }}
-                      >
-                        {option}
-                      </Typography>
+                        <span className="text-xs">{option}</span>
+                      </div>
 
-                      {isStudentAnswer && (
-                        <Chip
-                          label="Đáp án của bạn"
-                          size="small"
-                          sx={{
-                            backgroundColor: isCorrect ? "#4CAF50" : "#f44336",
-                            color: "white",
-                            fontWeight: 600,
-                          }}
-                        />
-                      )}
-                      {isCorrectAnswer && !isStudentAnswer && (
-                        <Chip
-                          label="Đáp án đúng"
-                          size="small"
-                          sx={{
-                            backgroundColor: "#4CAF50",
-                            color: "white",
-                            fontWeight: 600,
-                          }}
-                        />
-                      )}
-                    </Box>
+                      {/* Right feedback badge */}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {isStudentAnswer && (
+                          <span
+                            className={`text-[9px] font-black px-2.5 py-0.5 rounded-full text-white ${
+                              isCorrect ? "bg-emerald-500" : "bg-red-500"
+                            }`}
+                          >
+                            Lựa chọn của bạn
+                          </span>
+                        )}
+                        {isCorrectAnswer && !isStudentAnswer && (
+                          <span className="text-[9px] font-black px-2.5 py-0.5 rounded-full bg-emerald-500 text-white">
+                            Đáp án đúng
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   );
                 })}
-              </Box>
-            </Paper>
+              </div>
+            </BaseCard>
           );
         })}
-      </Box>
+      </div>
 
-      {/* Bottom Navigation */}
-      <Box sx={{ mt: 4, display: "flex", justifyContent: "center" }}>
-        <Button
-          variant="contained"
-          startIcon={<BackIcon />}
+      {/* Bottom return button */}
+      <div className="flex justify-center pt-6">
+        <button
           onClick={() => navigate("/dashboard/student/quizzes")}
-          sx={{
-            backgroundColor: "#B90000",
-            "&:hover": { backgroundColor: "#d66a0e" },
-            px: 4,
-          }}
+          className="flex items-center gap-2 text-xs font-black text-white bg-primary-color hover:bg-primary-color-hover transition active:scale-95 shadow-sm rounded-xl px-6 py-3"
         >
+          <ArrowLeft size={14} />
           Quay lại danh sách bài kiểm tra
-        </Button>
-      </Box>
-    </Box>
+        </button>
+      </div>
+    </PageLayout>
   );
 };
 

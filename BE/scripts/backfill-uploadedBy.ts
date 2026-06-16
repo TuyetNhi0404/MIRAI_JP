@@ -1,7 +1,4 @@
-/**
- * Backfill uploadedBy for legacy GrammarDocument records (Phase 5 migration).
- * Run: npx ts-node scripts/backfill-uploadedBy.ts
- */
+
 import dotenv from "dotenv";
 dotenv.config();
 

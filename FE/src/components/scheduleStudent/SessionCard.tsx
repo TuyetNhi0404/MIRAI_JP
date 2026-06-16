@@ -1,13 +1,4 @@
 import React from "react";
-import {
-  Card,
-  CardContent,
-  Typography,
-  Chip,
-  Box,
-  useTheme,
-  useMediaQuery,
-} from "@mui/material";
 import { UserRound, Clock, Calendar } from "lucide-react";
 import type { SessionItem, AttendanceStatus } from "../../types/schedule.types";
 
@@ -61,7 +52,6 @@ interface AttendanceObject {
   isPresent?: boolean;
 }
 
-// ============= CONSTANTS =============
 const INVALID_NAMES = new Set([
   "",
   "-",
@@ -73,19 +63,13 @@ const INVALID_NAMES = new Set([
 
 const safeNameFromUserObj = (u: unknown): string | null => {
   if (!u || typeof u !== "object") return null;
-
   const userObj = u as UserObject;
-
   const candidates = [
     userObj.fullName,
     userObj.name,
     userObj.displayName,
-    userObj.firstName && userObj.lastName
-      ? `${userObj.firstName} ${userObj.lastName}`
-      : undefined,
-    userObj.lastName && userObj.firstName
-      ? `${userObj.lastName} ${userObj.firstName}`
-      : undefined,
+    userObj.firstName && userObj.lastName ? `${userObj.firstName} ${userObj.lastName}` : undefined,
+    userObj.lastName && userObj.firstName ? `${userObj.lastName} ${userObj.firstName}` : undefined,
     userObj.username,
     userObj.profile?.name,
     userObj.user?.name,
@@ -103,7 +87,6 @@ const safeNameFromUserObj = (u: unknown): string | null => {
       }
     }
   }
-
   return null;
 };
 
@@ -119,111 +102,41 @@ const formatDateDisplay = (dateStr: string): string => {
   }
 };
 
-const getAttendanceStatusFromObj = (
-  attendanceObj: unknown
-): AttendanceStatus => {
-  if (!attendanceObj && attendanceObj !== false) {
-    return "not_yet";
-  }
-
+const getAttendanceStatusFromObj = (attendanceObj: unknown): AttendanceStatus => {
+  if (!attendanceObj && attendanceObj !== false) return "not_yet";
   let raw: unknown = null;
-
-  if (
-    attendanceObj &&
-    typeof attendanceObj === "object" &&
-    !Array.isArray(attendanceObj)
-  ) {
+  if (attendanceObj && typeof attendanceObj === "object" && !Array.isArray(attendanceObj)) {
     const obj = attendanceObj as AttendanceObject;
-    raw =
-      obj.status ??
-      obj.state ??
-      obj.s ??
-      obj.attended ??
-      obj.isPresent ??
-      null;
+    raw = obj.status ?? obj.state ?? obj.s ?? obj.attended ?? obj.isPresent ?? null;
   }
-
-  if (raw === null || raw === undefined) {
-    raw = attendanceObj;
-  }
-
-  if (raw === null || raw === undefined) {
-    return "not_yet";
-  }
+  if (raw === null || raw === undefined) raw = attendanceObj;
+  if (raw === null || raw === undefined) return "not_yet";
 
   const normalized = String(raw).toLowerCase().trim();
+  const presentTerms = new Set(["present", "attended", "presented", "yes", "true", "1", "có mặt", "cómặt", "co mat", "đã điểm danh", "attend"]);
+  const absentTerms = new Set(["absent", "missing", "missed", "no", "false", "0", "vắng", "vắng mặt", "vang", "abs", "cancelled"]);
 
-  const presentTerms = new Set([
-    "present",
-    "attended",
-    "presented",
-    "yes",
-    "true",
-    "1",
-    "có mặt",
-    "cómặt",
-    "co mat",
-    "đã điểm danh",
-    "attend",
-  ]);
-
-  const absentTerms = new Set([
-    "absent",
-    "missing",
-    "missed",
-    "no",
-    "false",
-    "0",
-    "vắng",
-    "vắng mặt",
-    "vang",
-    "abs",
-    "cancelled",
-  ]);
-
-  if (presentTerms.has(normalized)) {
-    return "present";
-  }
-
-  if (absentTerms.has(normalized)) {
-    return "absent";
-  }
-
-  if (typeof attendanceObj === "boolean") {
-    return attendanceObj ? "present" : "absent";
-  }
+  if (presentTerms.has(normalized)) return "present";
+  if (absentTerms.has(normalized)) return "absent";
+  if (typeof attendanceObj === "boolean") return attendanceObj ? "present" : "absent";
 
   if (!Number.isNaN(Number(normalized))) {
     const n = Number(normalized);
     if (n === 1) return "present";
     if (n === 0) return "absent";
   }
-
   return "not_yet";
 };
 
-const SessionCard: React.FC<Props> = ({
-  session,
-  compact = false,
-  style,
-  onClick,
-}) => {
-  const theme = useTheme();
-  const isXs = useMediaQuery(theme.breakpoints.down("sm"));
-
+const SessionCard: React.FC<Props> = ({ session, compact = false, style, onClick }) => {
   const getTeacherName = (): string => {
     try {
       if (session.teacher && typeof session.teacher === "string") {
         const trimmed = session.teacher.trim();
-        if (
-          trimmed &&
-          !looksLikeEmail(trimmed) &&
-          !INVALID_NAMES.has(trimmed)
-        ) {
+        if (trimmed && !looksLikeEmail(trimmed) && !INVALID_NAMES.has(trimmed)) {
           return trimmed;
         }
       }
-
       if (session.teacher && typeof session.teacher === "object") {
         const fromObj = safeNameFromUserObj(session.teacher);
         if (fromObj) return fromObj;
@@ -255,9 +168,7 @@ const SessionCard: React.FC<Props> = ({
 
       const otherCandidates = [
         extSession.teacherName,
-        typeof extSession.instructor === "object"
-          ? (extSession.instructor as UserObject).name
-          : undefined,
+        typeof extSession.instructor === "object" ? (extSession.instructor as UserObject).name : undefined,
         extSession.teacher_fullname,
         extSession.tutorName,
       ];
@@ -273,21 +184,13 @@ const SessionCard: React.FC<Props> = ({
     } catch (e) {
       console.warn("getTeacherName error:", e);
     }
-    return "Chưa có thông tin giáo viên";
+    return "Giáo viên chưa xác định";
   };
 
   const teacherName = getTeacherName();
-
   const extSession = session as ExtendedSessionItem;
   let attendanceObj: unknown = null;
-
-  const candidates: unknown[] = [
-    session.attendance,
-    extSession.status,
-    extSession.s,
-    extSession.isPresent,
-    extSession.attended,
-  ];
+  const candidates = [session.attendance, extSession.status, extSession.s, extSession.isPresent, extSession.attended];
 
   for (const c of candidates) {
     if (c !== undefined && c !== null) {
@@ -301,283 +204,66 @@ const SessionCard: React.FC<Props> = ({
   const getChipConfig = () => {
     switch (status) {
       case "present":
-        return { label: "CÓ MẶT", bg: "#4caf50", text: "#ffffff" };
+        return { label: "CÓ MẶT", bg: "bg-emerald-500 text-white" };
       case "absent":
-        return { label: "VẮNG MẶT", bg: "#f44336", text: "#ffffff" };
+        return { label: "VẮNG MẶT", bg: "bg-red-500 text-white" };
       case "not_yet":
       default:
-        return { label: "CHƯA HỌC", bg: "#757575", text: "#ffffff" };
+        return { label: "CHƯA HỌC", bg: "bg-slate-400 text-white" };
     }
   };
   const chipConfig = getChipConfig();
 
-  const safeTrim = (v: unknown): string =>
-    typeof v === "string" ? v.trim() : "";
-  const startTimeCandidate = safeTrim(session.startTime) || "";
-  const endTimeCandidate = safeTrim(session.endTime) || "";
-  const defaultStart =
-    session.slotNumber && session.slotNumber <= 2 ? "09:00" : "13:00";
-  const defaultEnd =
-    session.slotNumber && session.slotNumber <= 2 ? "11:30" : "16:30";
-  const startTime = startTimeCandidate || defaultStart;
-  const endTime = endTimeCandidate || defaultEnd;
+  const safeTrim = (v: unknown): string => (typeof v === "string" ? v.trim() : "");
+  const startTime = safeTrim(session.startTime) || (session.slotNumber && session.slotNumber <= 2 ? "09:00" : "13:00");
+  const endTime = safeTrim(session.endTime) || (session.slotNumber && session.slotNumber <= 2 ? "11:30" : "16:30");
   const timeLabel = `${startTime} - ${endTime}`;
-
   const dateDisplay = session.date ? formatDateDisplay(session.date) : "";
-
-  const statusLabel = chipConfig.label;
   const isEmpty = !session.courseName || session.courseName === "-";
 
+  if (isEmpty) {
+    return (
+      <div className="w-full h-full min-h-[60px] sm:min-h-[140px] flex items-center justify-center bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
+        <span className="text-xl font-light text-slate-300">-</span>
+      </div>
+    );
+  }
+
   return (
-    <Card
-      variant="outlined"
+    <div
       onClick={onClick}
-      sx={{
-        borderRadius: 0,
-        boxShadow: "none",
-        border: "none",
-        height: isEmpty ? { xs: "60px", sm: "100%" } : "100%",
-        minHeight: isEmpty ? { xs: "60px", sm: "auto" } : "auto",
-        display: "flex",
-        flexDirection: "column",
-        transition: "border-color 0.2s ease",
-        "&:hover": {
-          borderColor: "#B90000",
-          cursor: onClick ? "pointer" : "default",
-        },
-        ...style,
-      }}
+      style={style}
+      className={`w-full bg-white border border-slate-100 rounded-2xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:border-blue-500 hover:shadow-md transition-all duration-300 flex flex-col gap-2.5 ${
+        onClick ? "cursor-pointer" : ""
+      }`}
     >
-      <CardContent
-        sx={{
-          p: { xs: 0.5, sm: 0.5 },
-          flexGrow: 1,
-          display: "flex",
-          flexDirection: "column",
-          "&:last-child": { pb: { xs: 0.5, sm: 0.5 } },
-        }}
-      >
-        {isEmpty ? (
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              width: "100%",
-              height: "100%",
-              minHeight: { xs: "40px", sm: "auto" },
-            }}
-          >
-            <Typography
-              variant="h4"
-              sx={{
-                color: "#E0E0E0",
-                fontWeight: 300,
-                fontSize: { xs: "1.5rem", sm: "2.5rem" },
-              }}
-            >
-              -
-            </Typography>
-          </Box>
-        ) : isXs || compact ? (
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 0.8,
-              width: "100%",
-            }}
-          >
-            <Typography
-              variant="subtitle2"
-              sx={{
-                fontWeight: 700,
-                fontSize: { xs: "0.75rem", sm: "0.8rem" },
-                color: "#1A1A1A",
-                lineHeight: 1.3,
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-              }}
-            >
-              {session.courseName ?? "Chưa xác định khóa học"}
-            </Typography>
+      <div className="space-y-1">
+        <h4 className="text-sm font-extrabold text-[#1F2238] leading-snug line-clamp-2">
+          {session.courseName ?? "Chưa xác định khóa học"}
+        </h4>
+        <div className="flex items-center gap-1.5 text-xs text-slate-500">
+          <UserRound size={13} className="shrink-0" />
+          <span className="truncate">{teacherName}</span>
+        </div>
+      </div>
 
-            <Typography
-              variant="caption"
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 0.5,
-                color: "#666",
-                fontSize: { xs: "0.7rem", sm: "0.75rem" },
-              }}
-            >
-              <UserRound size={13} />
-              {teacherName}
-            </Typography>
-
-            {dateDisplay && (
-              <Typography
-                variant="caption"
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 0.5,
-                  color: "#0277bd",
-                  fontWeight: 700,
-                  fontSize: { xs: "0.75rem", sm: "0.8rem" },
-                }}
-              >
-                <Calendar size={14} />
-                {dateDisplay}
-              </Typography>
-            )}
-
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: 1,
-              }}
-            >
-              <Typography
-                variant="caption"
-                sx={{
-                  color: "#4caf50",
-                  fontWeight: 700,
-                  fontSize: { xs: "0.75rem", sm: "0.8rem" },
-                  whiteSpace: "nowrap",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 0.3,
-                }}
-              >
-                <Clock size={14} />
-                {timeLabel}
-              </Typography>
-
-              <Chip
-                label={statusLabel}
-                size="small"
-                sx={{
-                  fontWeight: 700,
-                  fontSize: { xs: "0.6rem", sm: "0.65rem" },
-                  height: { xs: 22, sm: 24 },
-                  backgroundColor: chipConfig.bg,
-                  color: chipConfig.text,
-                  "& .MuiChip-label": {
-                    px: { xs: 0.8, sm: 1 },
-                    py: 0,
-                    lineHeight: 1,
-                    display: "flex",
-                    alignItems: "center",
-                  },
-                }}
-              />
-            </Box>
-          </Box>
-        ) : (
-          <Box
-            sx={{ display: "flex", flexDirection: "column", height: "100%", gap: 0.4 }}
-          >
-            <Typography
-              variant="subtitle1"
-              sx={{
-                fontWeight: 700,
-                fontSize: { xs: "0.9rem", sm: "1rem", md: "1.05rem" },
-                color: "#1A1A1A",
-                lineHeight: 1.2,
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
-            >
-              {session.courseName ?? "Chưa xác định khóa học"}
-            </Typography>
-
-            <Typography
-              variant="body2"
-              sx={{
-                color: "#666",
-                fontSize: { xs: "0.8rem", sm: "0.85rem" },
-                display: "flex",
-                alignItems: "center",
-                gap: 0.5,
-                overflow: "hidden",
-              }}
-            >
-              <UserRound size={15} style={{ flexShrink: 0 }} />
-              <span
-                style={{
-                  overflow: "hidden",
-                  whiteSpace: "nowrap",
-                  textOverflow: "ellipsis",
-                }}
-              >
-                {teacherName}
-              </span>
-            </Typography>
-
-            {dateDisplay && (
-              <Typography
-                variant="body2"
-                sx={{
-                  color: "#0277bd",
-                  fontWeight: 700,
-                  fontSize: { xs: "0.85rem", sm: "0.95rem" },
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 0.4,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                <Calendar size={16} style={{ flexShrink: 0 }} />
-                {dateDisplay}
-              </Typography>
-            )}
-
-            <Typography
-              variant="body2"
-              sx={{
-                color: "#4caf50",
-                fontWeight: 700,
-                fontSize: { xs: "0.85rem", sm: "0.95rem" },
-                display: "flex",
-                alignItems: "center",
-                gap: 0.4,
-                whiteSpace: "nowrap",
-              }}
-            >
-              <Clock size={16} style={{ flexShrink: 0 }} />
-              {timeLabel}
-            </Typography>
-
-            <Chip
-              label={statusLabel}
-              size="small"
-              sx={{
-                fontWeight: 700,
-                fontSize: { xs: "0.65rem", sm: "0.7rem" },
-                height: { xs: 24, sm: 26 },
-                width: "fit-content",
-                backgroundColor: chipConfig.bg,
-                color: chipConfig.text,
-                "& .MuiChip-label": {
-                  px: { xs: 1, sm: 1.2 },
-                  py: 0,
-                  lineHeight: 1,
-                  display: "flex",
-                  alignItems: "center",
-                },
-              }}
-            />
-          </Box>
+      <div className="mt-auto space-y-1.5 border-t border-slate-50 pt-2.5">
+        {dateDisplay && (
+          <div className="flex items-center gap-1.5 text-xs font-bold text-blue-600">
+            <Calendar size={13} className="shrink-0" />
+            <span>{dateDisplay}</span>
+          </div>
         )}
-      </CardContent>
-    </Card>
+        <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600">
+          <Clock size={13} className="shrink-0" />
+          <span>{timeLabel}</span>
+        </div>
+
+        <div className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full inline-block ${chipConfig.bg}`}>
+          {chipConfig.label}
+        </div>
+      </div>
+    </div>
   );
 };
 

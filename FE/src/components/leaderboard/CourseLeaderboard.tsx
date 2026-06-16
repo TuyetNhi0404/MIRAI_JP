@@ -1,32 +1,5 @@
-// components/CourseLeaderboard.tsx
-import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Avatar,
-  Chip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  CircularProgress,
-  Alert,
-  Select,
-  MenuItem,
-  FormControl,
-  Grid,
-  Container,
-  Paper,
-  useTheme,
-  useMediaQuery,
-  Stack,
-  Divider,
-} from '@mui/material';
-import { Trophy, Award, TrendingUp, Users, Target, Crown, Star } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Trophy, Award, TrendingUp, Users, Target, Crown, Star } from "lucide-react";
 import {
   getCourseLeaderboard,
   getStudentRank,
@@ -36,14 +9,13 @@ import {
   formatScore,
   getGradeColor,
   getRankIcon,
-} from '../../services/leaderboard.service';
-import type { CourseLeaderboardData, StudentRankData, CurrentUser } from '../../types/leaderboard.types';
+} from "../../services/leaderboard.service";
+import type { CourseLeaderboardData, StudentRankData, CurrentUser } from "../../types/leaderboard.types";
+import { PageLayout } from "../ui/PageLayout";
+import { BaseCard } from "../ui/BaseCard";
+import { EmptyState } from "../ui/EmptyState";
 
 const CourseLeaderboard: React.FC = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const isTablet = useMediaQuery(theme.breakpoints.down('lg'));
-
   const [leaderboardData, setLeaderboardData] = useState<CourseLeaderboardData | null>(null);
   const [studentRankData, setStudentRankData] = useState<StudentRankData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -59,16 +31,14 @@ const CourseLeaderboard: React.FC = () => {
     if (currentUser) {
       fetchLeaderboard();
     }
-
   }, [limit, currentUser]);
 
   const fetchCurrentUser = async () => {
     try {
       const user = await getCurrentUser();
       setCurrentUser(user);
-      console.log('✅ Current user:', user);
     } catch (err) {
-      console.error('❌ Error fetching current user:', err);
+      console.error("❌ Error fetching current user:", err);
     }
   };
 
@@ -79,28 +49,18 @@ const CourseLeaderboard: React.FC = () => {
       const response = await getCourseLeaderboard(limit);
       setLeaderboardData(response.data.data);
 
-      console.log('📊 Leaderboard data:', response.data.data);
-
-      if (currentUser && currentUser.role === 'student') {
+      if (currentUser && currentUser.role === "student") {
         try {
           const courseId = await getStudentCourse();
-          console.log('📚 Course ID:', courseId);
-          
           if (courseId) {
-            const studentId: string | undefined = currentUser._id || currentUser.id;
-            if (!studentId) {
-              console.error('❌ No student ID found');
-              return;
+            const studentId = currentUser._id || currentUser.id;
+            if (studentId) {
+              const rankResponse = await getStudentRank(studentId, courseId);
+              setStudentRankData(rankResponse.data.data);
             }
-            
-            console.log('👤 Student ID:', studentId);
-            
-            const rankResponse = await getStudentRank(studentId, courseId);
-            console.log('🎯 Rank data:', rankResponse.data.data);
-            setStudentRankData(rankResponse.data.data);
           }
         } catch (err) {
-          console.error('Could not fetch student rank:', err);
+          console.error("Could not fetch student rank:", err);
         }
       }
     } catch (err) {
@@ -111,648 +71,299 @@ const CourseLeaderboard: React.FC = () => {
   };
 
   const isCurrentUser = (studentId: string): boolean => {
-    if (!currentUser || currentUser.role !== 'student') return false;
-    const currentUserId: string | undefined = currentUser._id || currentUser.id;
-    if (!currentUserId) return false;
+    if (!currentUser || currentUser.role !== "student") return false;
+    const currentUserId = currentUser._id || currentUser.id;
     return studentId === currentUserId;
   };
 
   if (loading) {
     return (
-      <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" minHeight="400px" gap={2}>
-        <CircularProgress sx={{ color: '#ff6b35' }} size={45} />
-        <Typography variant="body1" color="text.secondary">
-          Loading leaderboard...
-        </Typography>
-      </Box>
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
+        <div className="w-10 h-10 border-4 border-[var(--color-primary-color)] border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-sm text-[var(--color-text-secondary)] font-medium">Đang tải bảng xếp hạng...</p>
+      </div>
     );
   }
 
-  if (error) {
+  if (error || !leaderboardData) {
     return (
-      <Container maxWidth="lg" sx={{ mt: 4, px: isMobile ? 2 : 3 }}>
-        <Alert
-          severity="error"
-          sx={{
-            borderRadius: 2,
-            boxShadow: '0 2px 8px rgba(255,107,53,0.1)',
-          }}
-        >
-          {error}
-        </Alert>
-      </Container>
+      <PageLayout title="Bảng xếp hạng" subtitle="Xem xếp hạng học tập của lớp học">
+        <BaseCard>
+          <EmptyState
+            title="Chưa có dữ liệu xếp hạng"
+            description={error || "Hãy tham gia khóa học học tập để xem bảng xếp hạng lớp học."}
+            icon={Trophy}
+          />
+        </BaseCard>
+      </PageLayout>
     );
   }
-
-  if (!leaderboardData) return null;
-
-
-  const renderMobileLeaderboard = () => (
-    <Box>
-      {leaderboardData.topStudents.map((student) => (
-        <Card
-          key={student.student.id}
-          sx={{
-            mb: 2,
-            borderRadius: 3,
-            border: isCurrentUser(student.student.id) ? '2px solid #ff6b35' : '1px solid',
-            borderColor: isCurrentUser(student.student.id) ? '#ff6b35' : 'divider',
-            background: isCurrentUser(student.student.id)
-              ? 'linear-gradient(135deg, rgba(255,107,53,0.08), rgba(255,140,66,0.05))'
-              : 'white',
-            boxShadow: isCurrentUser(student.student.id) 
-              ? '0 4px 20px rgba(255,107,53,0.15)'
-              : '0 2px 8px rgba(0,0,0,0.05)',
-          }}
-        >
-          <CardContent sx={{ p: 2 }}>
-            <Stack spacing={2}>
-              {/* Rank and Name */}
-              <Box display="flex" alignItems="center" justifyContent="space-between">
-                <Box display="flex" alignItems="center" gap={1.5}>
-                  <Typography variant="h5" fontWeight="bold" color="#ff6b35">
-                    {getRankIcon(student.rank)}
-                  </Typography>
-                  
-                  <Avatar
-                    src={student.student.avatar || undefined}
-                    sx={{
-                      width: 48,
-                      height: 48,
-                      background: isCurrentUser(student.student.id)
-                        ? 'linear-gradient(135deg, #ff6b35, #ff8c42)'
-                        : 'linear-gradient(135deg, #2196f3, #1976d2)',
-                    }}
-                  >
-                    {student.student.name.charAt(0)}
-                  </Avatar>
-
-                  <Box>
-                    <Typography fontWeight={700} fontSize="1rem">
-                      {student.student.name}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {student.student.email}
-                    </Typography>
-                  </Box>
-                </Box>
-
-                {isCurrentUser(student.student.id) && (
-                  <Chip
-                    label="YOU"
-                    size="small"
-                    sx={{
-                      bgcolor: '#ff6b35',
-                      color: '#fff',
-                      fontWeight: 700,
-                      fontSize: '0.7rem',
-                      height: 22,
-                    }}
-                  />
-                )}
-              </Box>
-
-              <Divider />
-
-          
-              <Box display="flex" justifyContent="space-around" alignItems="center">
-                <Box textAlign="center">
-                  <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                    Final Score
-                  </Typography>
-                  <Typography variant="h5" fontWeight="bold" color="#ff6b35" mt={0.5}>
-                    {formatScore(student.finalScore)}
-                  </Typography>
-                </Box>
-
-                <Divider orientation="vertical" flexItem />
-
-                <Box textAlign="center">
-                  <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                    Grade
-                  </Typography>
-                  <Box mt={0.5}>
-                    <Chip
-                      label={student.grade}
-                      sx={{
-                        bgcolor: getGradeColor(student.grade),
-                        color: '#fff',
-                        fontWeight: 700,
-                        fontSize: '0.9rem',
-                        height: 32,
-                        px: 1,
-                      }}
-                    />
-                  </Box>
-                </Box>
-              </Box>
-            </Stack>
-          </CardContent>
-        </Card>
-      ))}
-    </Box>
-  );
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #fff5f0 0%, #ffffff 50%, #fff8f3 100%)',
-        py: isMobile ? 2 : 3,
-        px: isMobile ? 2 : 0,
-      }}
+    <PageLayout
+      title="Bảng xếp hạng"
+      subtitle={leaderboardData.courseName}
+      extra={
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase">Hiển thị:</span>
+          <select
+            value={limit}
+            onChange={(e) => setLimit(Number(e.target.value))}
+            className="text-sm font-semibold text-[var(--color-text-main)] bg-[var(--color-surface-base)] border border-[var(--color-border-color)] rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-color)]/20"
+          >
+            <option value={5}>Top 5</option>
+            <option value={10}>Top 10</option>
+            <option value={20}>Top 20</option>
+            <option value={50}>Top 50</option>
+          </select>
+        </div>
+      }
     >
-      <Container maxWidth="lg">
+      {/* 1. Performance Card */}
+      {studentRankData && (
+        <BaseCard className="border-2 border-[var(--color-primary-color)] bg-gradient-to-r from-[var(--color-surface-base)] to-[var(--color-accent-color)]/20">
+          <div className="flex items-center gap-2 mb-4 border-b border-[var(--color-primary-color)]/20 pb-3">
+            <Star className="text-[var(--color-primary-color)] fill-[var(--color-primary-color)]" size={18} />
+            <h2 className="text-base font-bold text-[var(--color-text-main)] m-0">Thành tích của bạn</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="text-center p-4 bg-[var(--color-accent-color)]/50 rounded-xl border border-[var(--color-primary-color)]/15">
+              <span className="text-xs font-bold text-[var(--color-text-secondary)] block mb-1">Xếp hạng</span>
+              <span className="text-3xl font-black text-[var(--color-primary-color)]">{getRankIcon(studentRankData.rank)}</span>
+              <span className="text-[10px] text-[var(--color-text-secondary)]/70 block mt-1">trên tổng số {studentRankData.totalStudents} học viên</span>
+            </div>
 
-        <Box
-          sx={{
-            background: 'linear-gradient(135deg, #ff6b35 50%, #ff8c42 50%)',
-            borderRadius: isMobile ? 2 : 3,
-            p: isMobile ? 2 : 2.5,
-            mb: 3,
-            boxShadow: '0 6px 24px rgba(255,107,53,0.18)',
-            position: 'relative',
-            overflow: 'hidden',
-            minHeight: isMobile ? 100 : 120,
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: -30,
-              right: -30,
-              width: 140,
-              height: 140,
-              background: 'rgba(255,255,255,0.12)',
-              borderRadius: '50%',
-            },
-            '&::after': {
-              content: '""',
-              position: 'absolute',
-              bottom: -20,
-              left: -20,
-              width: 100,
-              height: 100,
-              background: 'rgba(255,255,255,0.08)',
-              borderRadius: '50%',
-            },
-          }}
-        >
-          <Stack 
-            direction={isMobile ? 'column' : 'row'} 
-            spacing={2} 
-            alignItems={isMobile ? 'flex-start' : 'center'} 
-            justifyContent="space-between"
-          >
-            <Box display="flex" alignItems="center" gap={isMobile ? 1.5 : 2} sx={{ position: 'relative', zIndex: 1 }}>
-              <Box
-                sx={{
-                  background: 'rgba(255,255,255,0.25)',
-                  borderRadius: '50%',
-                  p: isMobile ? 1 : 1.2,
-                  display: 'flex',
-                }}
-              >
-                <Trophy size={isMobile ? 24 : 32} color="#ffffff" />
-              </Box>
+            <div className="text-center p-4 bg-emerald-50/30 rounded-xl border border-emerald-100">
+              <span className="text-xs font-bold text-[var(--color-text-secondary)] block mb-1">Điểm trung bình</span>
+              <span className="text-3xl font-black text-emerald-600">{formatScore(studentRankData.finalScore)}</span>
+              <div className="mt-1">
+                <span
+                  className="text-xs font-bold px-2.5 py-0.5 rounded-full text-white inline-block"
+                  style={{ backgroundColor: getGradeColor(studentRankData.grade) }}
+                >
+                  Học lực: {studentRankData.grade}
+                </span>
+              </div>
+            </div>
 
-              <Box>
-                <Typography variant={isMobile ? 'h5' : 'h4'} fontWeight="bold" color="white" sx={{ mb: 0.3 }}>
-                  Course Leaderboard
-                </Typography>
-                <Typography variant={isMobile ? 'body2' : 'body1'} sx={{ color: 'rgba(255,255,255,0.95)' }}>
-                  {leaderboardData.courseName}
-                </Typography>
-              </Box>
-            </Box>
+            <div className="text-center p-4 bg-indigo-50/30 rounded-xl border border-indigo-100">
+              <span className="text-xs font-bold text-[var(--color-text-secondary)] block mb-1">Tỷ lệ vượt trội</span>
+              <span className="text-3xl font-black text-indigo-600">{formatScore(studentRankData.percentile)}%</span>
+              <span className="text-[10px] text-[var(--color-text-secondary)]/70 block mt-1">Cao hơn {(100 - studentRankData.percentile).toFixed(1)}% học viên khác</span>
+            </div>
+          </div>
 
-            <FormControl
-              size="small"
-              fullWidth={isMobile}
-              sx={{
-                minWidth: isMobile ? '100%' : 140,
-                maxWidth: isMobile ? '100%' : 200,
-                zIndex: 1,
-                '& .MuiOutlinedInput-root': {
-                  background: 'rgba(255,255,255,0.98)',
-                  borderRadius: 2,
-                  fontWeight: 600,
-                  fontSize: '0.95rem',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                  '& fieldset': { borderColor: 'rgba(255,255,255,0.5)', borderWidth: 2 },
-                  '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.8)' },
-                  '&.Mui-focused fieldset': { borderColor: '#ffffff', borderWidth: 2 },
-                },
-              }}
-            >
-              <Select
-                value={limit}
-                onChange={(e) => setLimit(Number(e.target.value))}
-                sx={{ p: 1 }}
-              >
-                <MenuItem value={5}>Top 5</MenuItem>
-                <MenuItem value={10}>Top 10</MenuItem>
-                <MenuItem value={20}>Top 20</MenuItem>
-                <MenuItem value={50}>Top 50</MenuItem>
-              </Select>
-            </FormControl>
-          </Stack>
-        </Box>
+          <div className="mt-4 p-4 bg-[var(--color-bg-base)] rounded-xl border border-[var(--color-border-color)]">
+            <h4 className="text-xs font-bold text-[var(--color-text-secondary)] mb-2">Chi tiết các đầu điểm đóng góp</h4>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div>
+                <span className="text-[10px] font-semibold text-[var(--color-text-secondary)]/70 block">Chuyên cần</span>
+                <span className="text-sm font-bold text-[var(--color-primary-color)]">{formatScore(studentRankData.attendanceScore)}</span>
+              </div>
+              <div>
+                <span className="text-[10px] font-semibold text-[var(--color-text-secondary)]/70 block">Bài tập về nhà</span>
+                <span className="text-sm font-bold text-emerald-600">{formatScore(studentRankData.assignmentScore)}</span>
+              </div>
+              <div>
+                <span className="text-[10px] font-semibold text-[var(--color-text-secondary)]/70 block">Bài kiểm tra</span>
+                <span className="text-sm font-bold text-orange-600">{formatScore(studentRankData.quizScore)}</span>
+              </div>
+            </div>
+          </div>
+        </BaseCard>
+      )}
 
-        {studentRankData && (
-          <Card
-            sx={{
-              borderRadius: isMobile ? 2 : 3,
-              mb: 3,
-              background: 'linear-gradient(135deg, #fff 0%, #fff8f3 100%)',
-              border: '2px solid #ff6b35',
-              boxShadow: '0 8px 28px rgba(255,107,53,0.15)',
-            }}
-          >
-            <Box
-              sx={{
-                background: 'linear-gradient(90deg, #ff6b35, #ff8c42)',
-                p: isMobile ? 1.5 : 2,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1.2,
-              }}
-            >
-              <Star size={isMobile ? 18 : 22} color="#fff" fill="#fff" />
-              <Typography variant={isMobile ? 'subtitle1' : 'h6'} fontWeight="bold" color="#fff">
-                Your Performance
-              </Typography>
-            </Box>
+      {/* 2. Overview Stats */}
+      {leaderboardData.statistics && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <BaseCard className="flex items-center gap-3.5 !p-4">
+            <div className="w-10 h-10 rounded-xl bg-[var(--color-accent-color)] flex items-center justify-center text-[var(--color-primary-color)] shrink-0">
+              <Users size={20} />
+            </div>
+            <div>
+              <span className="text-[10px] font-bold text-[var(--color-text-secondary)]/70 block uppercase">Sĩ số</span>
+              <span className="text-lg font-extrabold text-[var(--color-text-main)]">{leaderboardData.statistics.totalStudents} học viên</span>
+            </div>
+          </BaseCard>
 
-            <CardContent sx={{ p: isMobile ? 2 : 3 }}>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6} md={4}>
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      textAlign: 'center',
-                      p: 2,
-                      background: 'rgba(255,107,53,0.05)',
-                      borderRadius: 2,
-                    }}
-                  >
-                    <Typography variant="caption" color="text.secondary" fontWeight={600} mb={1}>
-                      Your Rank
-                    </Typography>
-                    <Typography variant={isMobile ? 'h4' : 'h3'} fontWeight="bold" color="#ff6b35">
-                      {getRankIcon(studentRankData.rank)}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" mt={1}>
-                      out of {studentRankData.totalStudents} students
-                    </Typography>
-                  </Paper>
-                </Grid>
+          <BaseCard className="flex items-center gap-3.5 !p-4">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
+              <TrendingUp size={20} />
+            </div>
+            <div>
+              <span className="text-[10px] font-bold text-[var(--color-text-secondary)]/70 block uppercase">Trung bình lớp</span>
+              <span className="text-lg font-extrabold text-[var(--color-text-main)]">{formatScore(leaderboardData.statistics.averageScore)}</span>
+            </div>
+          </BaseCard>
 
-                <Grid item xs={12} sm={6} md={4}>
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      textAlign: 'center',
-                      p: 2,
-                      background: 'rgba(76,175,80,0.05)',
-                      borderRadius: 2,
-                    }}
-                  >
-                    <Typography variant="caption" color="text.secondary" fontWeight={600} mb={1}>
-                      Final Score
-                    </Typography>
-                    <Typography variant={isMobile ? 'h4' : 'h3'} fontWeight="bold" color="#4caf50">
-                      {formatScore(studentRankData.finalScore)}
-                    </Typography>
-                    <Chip
-                      label={studentRankData.grade}
-                      sx={{
-                        mt: 1,
-                        bgcolor: getGradeColor(studentRankData.grade),
-                        color: '#fff',
-                        fontWeight: 700,
-                      }}
-                    />
-                  </Paper>
-                </Grid>
+          <BaseCard className="flex items-center gap-3.5 !p-4">
+            <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600 shrink-0">
+              <Award size={20} />
+            </div>
+            <div>
+              <span className="text-[10px] font-bold text-[var(--color-text-secondary)]/70 block uppercase">Cao nhất</span>
+              <span className="text-lg font-extrabold text-[var(--color-text-main)]">{formatScore(leaderboardData.statistics.highestScore)}</span>
+            </div>
+          </BaseCard>
 
-                <Grid item xs={12} sm={12} md={4}>
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      textAlign: 'center',
-                      p: 2,
-                      background: 'rgba(33,150,243,0.05)',
-                      borderRadius: 2,
-                    }}
-                  >
-                    <Typography variant="caption" color="text.secondary" fontWeight={600} mb={1}>
-                      Percentile
-                    </Typography>
-                    <Typography variant={isMobile ? 'h4' : 'h3'} fontWeight="bold" color="#2196f3">
-                      {formatScore(studentRankData.percentile)}%
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" mt={1}>
-                      Top {(100 - studentRankData.percentile).toFixed(1)}%
-                    </Typography>
-                  </Paper>
-                </Grid>
+          <BaseCard className="flex items-center gap-3.5 !p-4">
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
+              <Target size={20} />
+            </div>
+            <div>
+              <span className="text-[10px] font-bold text-[var(--color-text-secondary)]/70 block uppercase">Đạt chuẩn</span>
+              <span className="text-lg font-extrabold text-[var(--color-text-main)]">{leaderboardData.statistics.passRate.toFixed(1)}%</span>
+            </div>
+          </BaseCard>
+        </div>
+      )}
 
-                <Grid item xs={12}>
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      mt: isMobile ? 1 : 2,
-                      p: 2,
-                      background: 'rgba(255,107,53,0.03)',
-                      borderRadius: 2,
-                    }}
-                  >
-                    <Typography variant="body2" fontWeight={600} mb={2} color="text.secondary">
-                      Score Breakdown
-                    </Typography>
-                    <Grid container spacing={2}>
-                      <Grid item xs={4}>
-                        <Typography variant="caption" color="text.secondary">
-                          Attendance
-                        </Typography>
-                        <Typography variant={isMobile ? 'h6' : 'h5'} fontWeight="bold" color="#2196f3">
-                          {formatScore(studentRankData.attendanceScore)}
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={4}>
-                        <Typography variant="caption" color="text.secondary">
-                          Assignment
-                        </Typography>
-                        <Typography variant={isMobile ? 'h6' : 'h5'} fontWeight="bold" color="#4caf50">
-                          {formatScore(studentRankData.assignmentScore)}
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={4}>
-                        <Typography variant="caption" color="text.secondary">
-                          Quiz
-                        </Typography>
-                        <Typography variant={isMobile ? 'h6' : 'h5'} fontWeight="bold" color="#ff6b35">
-                          {formatScore(studentRankData.quizScore)}
-                        </Typography>
-                      </Grid>
-                    </Grid>
-                  </Paper>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
-        )}
+      {/* 3. Leaderboard Grid */}
+      <BaseCard className="!p-0 overflow-hidden">
+        <div className="bg-gradient-to-r from-[var(--color-primary-color)] to-[var(--color-primary-color-hover)] px-6 py-4 flex items-center gap-2.5">
+          <Crown className="text-white" size={20} />
+          <h2 className="text-base font-bold text-white m-0">Danh sách xếp hạng lớp</h2>
+        </div>
 
-        {leaderboardData.statistics && (
-          <Grid container spacing={isMobile ? 2 : 3} mb={3}>
-            <Grid item xs={6} sm={6} md={3}>
-              <Card sx={{ borderRadius: isMobile ? 2 : 3, boxShadow: '0 4px 20px rgba(255,107,53,0.08)' }}>
-                <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
-                  <Box display="flex" alignItems="center" gap={1} mb={1}>
-                    <Box
-                      sx={{
-                        background: 'linear-gradient(135deg, #2196f3, #1976d2)',
-                        borderRadius: isMobile ? 1 : 2,
-                        p: isMobile ? 0.7 : 1,
-                        display: 'flex',
-                      }}
-                    >
-                      <Users size={isMobile ? 16 : 18} color="#fff" />
-                    </Box>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600} fontSize={isMobile ? '0.65rem' : '0.75rem'}>
-                      Total
-                    </Typography>
-                  </Box>
-                  <Typography variant={isMobile ? 'h6' : 'h5'} fontWeight="bold" color="#2196f3">
-                    {leaderboardData.statistics.totalStudents}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={6} sm={6} md={3}>
-              <Card sx={{ borderRadius: isMobile ? 2 : 3, boxShadow: '0 4px 20px rgba(255,107,53,0.08)' }}>
-                <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
-                  <Box display="flex" alignItems="center" gap={1} mb={1}>
-                    <Box
-                      sx={{
-                        background: 'linear-gradient(135deg, #4caf50, #388e3c)',
-                        borderRadius: isMobile ? 1 : 2,
-                        p: isMobile ? 0.7 : 1,
-                        display: 'flex',
-                      }}
-                    >
-                      <TrendingUp size={isMobile ? 16 : 18} color="#fff" />
-                    </Box>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600} fontSize={isMobile ? '0.65rem' : '0.75rem'}>
-                      Average
-                    </Typography>
-                  </Box>
-                  <Typography variant={isMobile ? 'h6' : 'h5'} fontWeight="bold" color="#4caf50">
-                    {formatScore(leaderboardData.statistics.averageScore)}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={6} sm={6} md={3}>
-              <Card sx={{ borderRadius: isMobile ? 2 : 3, boxShadow: '0 4px 20px rgba(255,107,53,0.08)' }}>
-                <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
-                  <Box display="flex" alignItems="center" gap={1} mb={1}>
-                    <Box
-                      sx={{
-                        background: 'linear-gradient(135deg, #ff6b35, #ff8c42)',
-                        borderRadius: isMobile ? 1 : 2,
-                        p: isMobile ? 0.7 : 1,
-                        display: 'flex',
-                      }}
-                    >
-                      <Award size={isMobile ? 16 : 18} color="#fff" />
-                    </Box>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600} fontSize={isMobile ? '0.65rem' : '0.75rem'}>
-                      Highest
-                    </Typography>
-                  </Box>
-                  <Typography variant={isMobile ? 'h6' : 'h5'} fontWeight="bold" color="#ff6b35">
-                    {formatScore(leaderboardData.statistics.highestScore)}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={6} sm={6} md={3}>
-              <Card sx={{ borderRadius: isMobile ? 2 : 3, boxShadow: '0 4px 20px rgba(255,107,53,0.08)' }}>
-                <CardContent sx={{ p: isMobile ? 1.5 : 2.5 }}>
-                  <Box display="flex" alignItems="center" gap={1} mb={1}>
-                    <Box
-                      sx={{
-                        background: 'linear-gradient(135deg, #9c27b0, #7b1fa2)',
-                        borderRadius: isMobile ? 1 : 2,
-                        p: isMobile ? 0.7 : 1,
-                        display: 'flex',
-                      }}
-                    >
-                      <Target size={isMobile ? 16 : 18} color="#fff" />
-                    </Box>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600} fontSize={isMobile ? '0.65rem' : '0.75rem'}>
-                      Pass Rate
-                    </Typography>
-                  </Box>
-                  <Typography variant={isMobile ? 'h6' : 'h5'} fontWeight="bold" color="#9c27b0">
-                    {leaderboardData.statistics.passRate.toFixed(1)}%
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-        )}
-
-        <Card
-          sx={{
-            borderRadius: isMobile ? 2 : 3,
-            boxShadow: '0 8px 28px rgba(255,107,53,0.1)',
-            overflow: 'hidden',
-          }}
-        >
-          <Box
-            sx={{
-              background: 'linear-gradient(90deg, #ff6b35, #ff8c42)',
-              p: isMobile ? 1.5 : 2,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1.2,
-            }}
-          >
-            <Crown size={isMobile ? 18 : 22} color="#fff" />
-            <Typography variant={isMobile ? 'subtitle1' : 'h6'} fontWeight="bold" color="#fff">
-              Top Performers
-            </Typography>
-          </Box>
-
-          {isMobile ? (
-            <Box sx={{ p: 2 }}>
-              {renderMobileLeaderboard()}
-            </Box>
-          ) : (
-            <TableContainer>
-              <Table size={isTablet ? 'small' : 'medium'}>
-                <TableHead>
-                  <TableRow sx={{ background: 'rgba(255,107,53,0.04)' }}>
-                    <TableCell sx={{ fontWeight: 700, color: '#ff6b35' }}>Rank</TableCell>
-                    <TableCell sx={{ fontWeight: 700, color: '#ff6b35' }}>Student</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 700, color: '#ff6b35' }}>
-                      Final Score
-                    </TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 700, color: '#ff6b35' }}>
-                      Grade
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-
-                <TableBody>
-                  {leaderboardData.topStudents.map((student) => (
-                    <TableRow
+        {/* Responsive Layout */}
+        <div className="p-6">
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b border-[var(--color-border-color)] text-left bg-[var(--color-bg-base)]/50">
+                  <th className="py-3 px-4 text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider">Hạng</th>
+                  <th className="py-3 px-4 text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider">Học viên</th>
+                  <th className="py-3 px-4 text-center text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider">Điểm tổng kết</th>
+                  <th className="py-3 px-4 text-center text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider">Học lực</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--color-border-color)]">
+                {leaderboardData.topStudents.map((student) => {
+                  const current = isCurrentUser(student.student.id);
+                  return (
+                    <tr
                       key={student.student.id}
-                      sx={{
-                        background: isCurrentUser(student.student.id)
-                          ? 'linear-gradient(90deg, rgba(255,107,53,0.08), rgba(255,140,66,0.08))'
-                          : 'transparent',
-                        borderLeft: isCurrentUser(student.student.id) ? '4px solid #ff6b35' : 'none',
-                        '&:hover': {
-                          background: 'rgba(255,140,66,0.04)',
-                        },
-                      }}
+                      className={`transition-colors duration-150 hover:bg-[var(--color-bg-base)]/30 ${
+                        current ? "bg-[var(--color-accent-color)]/30 border-l-4 border-[var(--color-primary-color)]" : ""
+                      }`}
                     >
-                      <TableCell>
-                        <Box display="flex" alignItems="center" gap={1}>
-                          <Typography variant="h6" fontWeight="bold">
-                            {getRankIcon(student.rank)}
-                          </Typography>
-                          {isCurrentUser(student.student.id) && (
-                            <Chip
-                              label="YOU"
-                              size="small"
-                              sx={{
-                                bgcolor: '#ff6b35',
-                                color: '#fff',
-                                fontWeight: 700,
-                                fontSize: '0.7rem',
-                                height: 20,
-                              }}
-                            />
+                      <td className="py-4 px-4 font-bold text-[var(--color-text-main)]">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">{getRankIcon(student.rank)}</span>
+                          {current && (
+                            <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-[var(--color-primary-color)] text-white uppercase tracking-wider">
+                              Bạn
+                            </span>
                           )}
-                        </Box>
-                      </TableCell>
-
-                      <TableCell>
-                        <Box display="flex" alignItems="center" gap={1.5}>
-                          <Avatar
-                            src={student.student.avatar || undefined}
-                            sx={{
-                              width: isTablet ? 36 : 42,
-                              height: isTablet ? 36 : 42,
-                              background: isCurrentUser(student.student.id)
-                                ? 'linear-gradient(135deg, #ff6b35, #ff8c42)'
-                                : 'linear-gradient(135deg, #2196f3, #1976d2)',
-                            }}
-                          >
-                            {student.student.name.charAt(0)}
-                          </Avatar>
-
-                          <Box>
-                            <Typography
-                              fontWeight={isCurrentUser(student.student.id) ? 700 : 600}
-                              fontSize={isTablet ? '0.875rem' : '1rem'}
-                            >
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-[var(--color-bg-base)] overflow-hidden flex items-center justify-center text-[var(--color-text-secondary)] font-bold border border-[var(--color-border-color)]">
+                            {student.student.avatar ? (
+                              <img src={student.student.avatar} alt={student.student.name} className="w-full h-full object-cover" />
+                            ) : (
+                              student.student.name.charAt(0)
+                            )}
+                          </div>
+                          <div>
+                            <span className="text-sm font-bold text-[var(--color-text-main)] block">
                               {student.student.name}
-                              {isCurrentUser(student.student.id) && ' (You)'}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {student.student.email}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      </TableCell>
+                              {current && <span className="text-xs text-[var(--color-primary-color)] font-medium ml-1">(Bạn)</span>}
+                            </span>
+                            <span className="text-xs text-[var(--color-text-secondary)]/70 block">{student.student.email}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4 text-center">
+                        <span className="text-sm font-extrabold text-[var(--color-primary-color)]">{formatScore(student.finalScore)}</span>
+                      </td>
+                      <td className="py-4 px-4 text-center">
+                        <span
+                          className="text-xs font-bold px-2.5 py-1 rounded-full text-white"
+                          style={{ backgroundColor: getGradeColor(student.grade) }}
+                        >
+                          {student.grade}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
 
-                      <TableCell align="center">
-                        <Typography variant={isTablet ? 'body1' : 'h6'} fontWeight="bold" sx={{ color: '#ff6b35' }}>
-                          {formatScore(student.finalScore)}
-                        </Typography>
-                      </TableCell>
+          {/* Mobile Card-Based List View */}
+          <div className="block md:hidden space-y-4">
+            {leaderboardData.topStudents.map((student) => {
+              const current = isCurrentUser(student.student.id);
+              return (
+                <div
+                  key={student.student.id}
+                  className={`p-4 rounded-xl border transition-all duration-200 ${
+                    current
+                      ? "border-[var(--color-primary-color)] bg-gradient-to-br from-[var(--color-surface-base)] to-[var(--color-accent-color)]/20 shadow-sm"
+                      : "border-[var(--color-border-color)] bg-[var(--color-surface-base)]"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl font-black text-[var(--color-primary-color)]">{getRankIcon(student.rank)}</span>
+                      <div className="w-9 h-9 rounded-full bg-[var(--color-bg-base)] overflow-hidden flex items-center justify-center text-[var(--color-text-secondary)] font-bold border border-[var(--color-border-color)]">
+                        {student.student.avatar ? (
+                          <img src={student.student.avatar} alt={student.student.name} className="w-full h-full object-cover" />
+                        ) : (
+                          student.student.name.charAt(0)
+                        )}
+                      </div>
+                      <div>
+                        <span className="text-sm font-bold text-[var(--color-text-main)] block">
+                          {student.student.name}
+                        </span>
+                        <span className="text-[10px] text-[var(--color-text-secondary)]/70 block">{student.student.email}</span>
+                      </div>
+                    </div>
 
-                      <TableCell align="center">
-                        <Chip
-                          label={student.grade}
-                          sx={{
-                            bgcolor: getGradeColor(student.grade),
-                            color: '#fff',
-                            fontWeight: 700,
-                          }}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </Card>
+                    {current && (
+                      <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-[var(--color-primary-color)] text-white uppercase tracking-wider shrink-0">
+                        Bạn
+                      </span>
+                    )}
+                  </div>
 
-        <Box
-          mt={3}
-          p={isMobile ? 1.5 : 2}
-          textAlign="center"
-          sx={{
-            background: 'rgba(255,107,53,0.05)',
-            borderRadius: 2,
-            border: '1px solid rgba(255,107,53,0.1)',
-          }}
-        >
-          <Typography variant={isMobile ? 'caption' : 'body2'} color="text.secondary" fontWeight={500}>
-            Cập nhật lần cuối: {new Date(leaderboardData.lastUpdated).toLocaleString('vi-VN')}
-          </Typography>
-        </Box>
-      </Container>
-    </Box>
+                  <hr className="border-[var(--color-border-color)] my-2.5" />
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] font-semibold text-[var(--color-text-secondary)]/70 block">Điểm tổng kết</span>
+                      <span className="text-base font-extrabold text-[var(--color-primary-color)]">{formatScore(student.finalScore)}</span>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] font-semibold text-[var(--color-text-secondary)]/70 block text-right">Học lực</span>
+                      <span
+                        className="text-xs font-bold px-2.5 py-0.5 rounded-full text-white inline-block mt-0.5"
+                        style={{ backgroundColor: getGradeColor(student.grade) }}
+                      >
+                        {student.grade}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </BaseCard>
+
+      {/* 4. Last Updated Timestamp */}
+      <div className="text-center p-3 bg-[var(--color-bg-base)]/50 rounded-xl border border-[var(--color-border-color)]">
+        <span className="text-xs text-[var(--color-text-secondary)] font-medium">
+          Cập nhật lần cuối: {new Date(leaderboardData.lastUpdated).toLocaleString("vi-VN")}
+        </span>
+      </div>
+    </PageLayout>
   );
 };
 

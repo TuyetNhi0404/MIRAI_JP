@@ -1,5 +1,6 @@
 import { Box, Tooltip, type SxProps, type Theme } from "@mui/material";
 import { useMessageTranslation } from "./useMessageTranslation";
+import { sp } from "./speakingPracticeTheme";
 
 type TranslatableMessageBubbleProps = {
   text: string;
@@ -14,15 +15,15 @@ const tooltipSlotProps = {
       fontSize: "0.85rem",
       lineHeight: 1.55,
       fontFamily: '"Inter", sans-serif',
-      bgcolor: "#FFFFFF",
-      color: "#0F172A",
-      border: "1px solid rgba(15, 23, 42, 0.1)",
+      bgcolor: sp.surface,
+      color: sp.text,
+      border: `1px solid ${sp.hairline}`,
       boxShadow: "0 8px 24px rgba(15, 23, 42, 0.12)",
       px: 1.5,
       py: 1,
     },
   },
-  arrow: { sx: { color: "#FFFFFF", "&::before": { border: "1px solid rgba(15, 23, 42, 0.1)" } } },
+  arrow: { sx: { color: sp.surface, "&::before": { border: `1px solid ${sp.hairline}` } } },
 };
 
 const hoverableSx: SxProps<Theme> = {
@@ -36,10 +37,10 @@ function variantSx(
 ): SxProps<Theme> {
   if (variant === "system") {
     return {
-      bgcolor: "#FFFFFF",
-      color: "#0F172A",
+      bgcolor: sp.surface,
+      color: sp.text,
       borderBottomLeftRadius: 4,
-      border: "1px solid rgba(15, 23, 42, 0.08)",
+      border: `1px solid ${sp.hairline}`,
       boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)",
       "&:hover": {
         borderColor: "rgba(185, 0, 0, 0.18)",
@@ -48,8 +49,8 @@ function variantSx(
     };
   }
   return {
-    bgcolor: partial ? "rgba(185, 0, 0, 0.04)" : "#B90000",
-    color: partial ? "#94A3B8" : "#FFFFFF",
+    bgcolor: partial ? "rgba(185, 0, 0, 0.04)" : sp.brand,
+    color: partial ? sp.textFaint : sp.surface,
     borderBottomRightRadius: 4,
     border: partial
       ? "1.5px dashed rgba(185, 0, 0, 0.35)"

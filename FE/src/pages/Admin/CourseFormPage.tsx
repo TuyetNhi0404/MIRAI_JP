@@ -77,10 +77,10 @@ const CourseFormPage: React.FC = () => {
               endDate: mappedEnd
             }));
           } else {
-            setError('Course not found');
+            setError('Không tìm thấy khóa học');
           }
         } catch (error: any) {
-          setError(error.message || 'Failed to load course');
+          setError(error.message || 'Tải thông tin khóa học thất bại');
         } finally {
           setLoading(false);
         }
@@ -142,19 +142,19 @@ const CourseFormPage: React.FC = () => {
 
   const validateForm = (): boolean => {
     if (!formData.name.trim()) {
-      setError('Course name is required');
+      setError('Tên khóa học không được để trống');
       return false;
     }
     if (!formData.homeroomTeacherId.trim()) {
-      setError('Homeroom Teacher is required');
+      setError('Vui lòng chọn Giáo viên chủ nhiệm');
       return false;
     }
     if (formData.session < 0) {
-      setError('Session must be 0 or greater');
+      setError('Số ca học phải lớn hơn hoặc bằng 0');
       return false;
     }
     if (formData.capacity < 1) {
-      setError('Capacity must be at least 1');
+      setError('Sức chứa phải tối thiểu là 1');
       return false;
     }
     // Validate start date is not in the past
@@ -163,7 +163,7 @@ const CourseFormPage: React.FC = () => {
       today.setHours(0, 0, 0, 0);
       const start = new Date(formData.startDate);
       if (start < today) {
-        setError('Start date cannot be in the past');
+        setError('Ngày bắt đầu không được ở trong quá khứ');
         return false;
       }
     }
@@ -174,7 +174,7 @@ const CourseFormPage: React.FC = () => {
       const end = new Date(formData.endDate);
       end.setHours(0, 0, 0, 0);
       if (end < start) {
-        setError('End date cannot be before start date');
+        setError('Ngày kết thúc không được trước ngày bắt đầu');
         return false;
       }
     }
@@ -210,9 +210,9 @@ const CourseFormPage: React.FC = () => {
           courseData.homeroomTeacher = selectedTeacher.name;
         }
         await courseService.update(id, courseData);
-        navigate('/admin/courses', { 
+        navigate('/dashboard/admin/courses', { 
           state: { 
-            message: `Course "${formData.name}" updated successfully`,
+            message: `Cập nhật khóa học "${formData.name}" thành công`,
             type: 'update'
           } 
         });
@@ -220,22 +220,22 @@ const CourseFormPage: React.FC = () => {
         // Backend createCourse expects homeroomTeacherId
         courseData.homeroomTeacherId = formData.homeroomTeacherId;
         await courseService.create(courseData);
-        navigate('/admin/courses', { 
+        navigate('/dashboard/admin/courses', { 
           state: { 
-            message: `Course "${formData.name}" created successfully`,
+            message: `Tạo khóa học "${formData.name}" thành công`,
             type: 'create'
           } 
         });
       }
     } catch (err: any) {
       console.error('Error details:', err);
-      setError(err.message || 'An error occurred while saving the course');
+      setError(err.message || 'Có lỗi xảy ra khi lưu khóa học');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCancel = () => navigate('/admin/courses');
+  const handleCancel = () => navigate('/dashboard/admin/courses');
 
   return (
     <div style={{ padding: '20px', maxWidth: '900px', margin: '0 auto' }}>
@@ -256,7 +256,7 @@ const CourseFormPage: React.FC = () => {
             fontSize: '14px'
           }}
         >
-          <ArrowLeft size={16} /> Back
+          <ArrowLeft size={16} /> Quay lại
         </button>
         <Typography
           variant="h4"
@@ -267,7 +267,7 @@ const CourseFormPage: React.FC = () => {
             margin: 0,
           }}
         >
-          {isEdit ? 'Edit Course' : 'Create New Course'}
+          {isEdit ? 'Chỉnh sửa khóa học' : 'Tạo khóa học mới'}
         </Typography>
       </div>
 
@@ -283,7 +283,7 @@ const CourseFormPage: React.FC = () => {
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             {/* Course Name */}
             <TextField
-              label="Course Name"
+              label="Tên khóa học"
               name="name"
               value={formData.name}
               onChange={handleInputChange}
@@ -294,10 +294,10 @@ const CourseFormPage: React.FC = () => {
 
             {/* Homeroom Teacher */}
             <FormControl fullWidth>
-              <InputLabel>Homeroom Teacher</InputLabel>
+              <InputLabel>Giáo viên chủ nhiệm</InputLabel>
               <Select
                 name="homeroomTeacherId"
-                label="Homeroom Teacher"
+                label="Giáo viên chủ nhiệm"
                 value={formData.homeroomTeacherId}
                 onChange={(e) => { setFormData(prev => ({ ...prev, homeroomTeacherId: String(e.target.value) })); }}
                 disabled={loadingManagers}
@@ -322,7 +322,7 @@ const CourseFormPage: React.FC = () => {
 
             {/* Capacity */}
             <TextField
-              label="Capacity"
+              label="Sức chứa"
               name="capacity"
               type="number"
               value={formData.capacity}
@@ -334,7 +334,7 @@ const CourseFormPage: React.FC = () => {
 
             {/* Session */}
             <TextField
-              label="Session (number of classes)"
+              label="Số ca học (số buổi học)"
               name="session"
               type="number"
               value={formData.session}
@@ -346,7 +346,7 @@ const CourseFormPage: React.FC = () => {
 
             {/* Start Date */}
             <TextField
-              label="Start Date"
+              label="Ngày bắt đầu"
               name="startDate"
               type="date"
               value={formData.startDate}
@@ -359,7 +359,7 @@ const CourseFormPage: React.FC = () => {
 
             {/* End Date */}
             <TextField
-              label="End Date"
+              label="Ngày kết thúc"
               name="endDate"
               type="date"
               value={formData.endDate}
@@ -372,7 +372,7 @@ const CourseFormPage: React.FC = () => {
 
             {/* Description */}
             <TextField
-              label="Description"
+              label="Mô tả"
               name="description"
               value={formData.description}
               onChange={handleInputChange}
@@ -391,7 +391,7 @@ const CourseFormPage: React.FC = () => {
               startIcon={<X size={18} />}
               sx={{ px: 3 }}
             >
-              Cancel
+              Hủy
             </Button>
             <Button
               type="submit"
@@ -404,7 +404,7 @@ const CourseFormPage: React.FC = () => {
                 '&:hover': { backgroundColor: '#d6690d' }
               }}
             >
-              {loading ? 'Saving...' : (isEdit ? 'Update Course' : 'Create Course')}
+              {loading ? 'Đang lưu...' : (isEdit ? 'Cập nhật khóa học' : 'Tạo khóa học')}
             </Button>
           </Box>
         </form>

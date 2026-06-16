@@ -1,34 +1,9 @@
-// src/components/quiz/QuizHistory.tsx
 import React from "react";
-import {
-  Box,
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Chip,
-  Button,
-  Card,
-  CardContent,
-  Stack,
-  useMediaQuery,
-  useTheme,
-} from "@mui/material";
-import {
-  CheckCircle as PassIcon,
-  Cancel as FailIcon,
-  Visibility as ViewIcon,
-  Quiz as QuizIcon,
-  Timer as TimerIcon,
-  Score as ScoreIcon,
-  CalendarToday as CalendarIcon,
-} from "@mui/icons-material";
+import { CheckCircle, AlertTriangle, Eye, Calendar, Award, Timer, HelpCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { QuizAttempt } from "../../types/quiz.types";
+import { BaseCard } from "../../components/ui/BaseCard";
+import { EmptyState } from "../../components/ui/EmptyState";
 
 interface QuizHistoryProps {
   attempts: QuizAttempt[];
@@ -36,9 +11,6 @@ interface QuizHistoryProps {
 
 const QuizHistory: React.FC<QuizHistoryProps> = ({ attempts }) => {
   const navigate = useNavigate();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
 
   const handleViewResult = (attemptId: string) => {
     navigate(`/dashboard/student/quiz/result/${attemptId}`);
@@ -46,316 +18,163 @@ const QuizHistory: React.FC<QuizHistoryProps> = ({ attempts }) => {
 
   if (attempts.length === 0) {
     return (
-      <Box sx={{ textAlign: "center", py: { xs: 4, sm: 8 }, color: "#666" }}>
-        <Typography variant={isMobile ? "body1" : "h6"}>
-          Chưa có lượt làm bài nào
-        </Typography>
-        <Typography variant="body2" sx={{ mt: 1, fontSize: { xs: '0.875rem', sm: '1rem' } }}>
-          Hãy bắt đầu làm bài kiểm tra để xem kết quả tại đây
-        </Typography>
-      </Box>
+      <BaseCard>
+        <EmptyState
+          title="Chưa có lượt làm bài nào"
+          description="Hãy bắt đầu làm bài kiểm tra để xem kết quả chi tiết tại đây."
+          icon={Award}
+        />
+      </BaseCard>
     );
   }
 
-  // Mobile & Tablet View - Cards
-  if (isMobile || isTablet) {
-    return (
-      <Stack spacing={{ xs: 2, sm: 2.5 }}>
-        {attempts.map((attempt) => {
-          const quizTitle = typeof attempt.quizId === 'string'
-            ? "Bài kiểm tra không xác định"
-            : attempt.quizId.title || "Bài kiểm tra không xác định";
-
-          return (
-            <Card
-              key={attempt._id}
-              elevation={2}
-              sx={{
-                border: attempt.passed ? '2px solid #4CAF50' : '2px solid #f44336',
-                '&:hover': {
-                  boxShadow: 4,
-                }
-              }}
-            >
-              <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
-                {/* Header */}
-                <Box sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'flex-start',
-                  mb: 2,
-                  gap: 1
-                }}>
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography
-                      variant={isMobile ? "body1" : "h6"}
-                      sx={{
-                        fontWeight: 600,
-                        color: "#B90000",
-                        fontSize: { xs: '1rem', sm: '1.125rem' },
-                        mb: 0.5,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {quizTitle}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      color="textSecondary"
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 0.5,
-                        fontSize: { xs: '0.7rem', sm: '0.75rem' }
-                      }}
-                    >
-                      <CalendarIcon sx={{ fontSize: '0.875rem' }} />
-                      {new Date(attempt.completedAt).toLocaleString('vi-VN', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </Typography>
-                  </Box>
-
-                  <Chip
-                    icon={attempt.passed ? <PassIcon /> : <FailIcon />}
-                    label={attempt.passed ? "Đạt" : "Không đạt"}
-                    color={attempt.passed ? "success" : "error"}
-                    size="small"
-                    sx={{
-                      fontSize: { xs: '0.7rem', sm: '0.8125rem' },
-                      height: { xs: 24, sm: 28 },
-                      fontWeight: 600
-                    }}
-                  />
-                </Box>
-
-                {/* Stats Grid */}
-                <Box sx={{
-                  display: 'grid',
-                  gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)' },
-                  gap: { xs: 1.5, sm: 2 },
-                  mb: 2,
-                  p: { xs: 1.5, sm: 2 },
-                  bgcolor: '#f5f5f5',
-                  borderRadius: 2,
-                }}>
-                  <Box>
-                    <Typography
-                      variant="caption"
-                      color="textSecondary"
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 0.5,
-                        mb: 0.5,
-                        fontSize: { xs: '0.7rem', sm: '0.75rem' }
-                      }}
-                    >
-                      <ScoreIcon sx={{ fontSize: '0.875rem' }} />
-                      Điểm số
-                    </Typography>
-                    <Typography
-                      variant="h6"
-                      sx={{
-                        fontWeight: 700,
-                        fontSize: { xs: '1.125rem', sm: '1.25rem' }
-                      }}
-                    >
-                      {attempt.score}
-                    </Typography>
-                  </Box>
-
-                  <Box>
-                    <Typography
-                      variant="caption"
-                      color="textSecondary"
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 0.5,
-                        mb: 0.5,
-                        fontSize: { xs: '0.7rem', sm: '0.75rem' }
-                      }}
-                    >
-                      <QuizIcon sx={{ fontSize: '0.875rem' }} />
-                      Tỷ lệ chính xác
-                    </Typography>
-                    <Typography
-                      variant="h6"
-                      sx={{
-                        fontWeight: 700,
-                        color: attempt.passed ? "#4CAF50" : "#f44336",
-                        fontSize: { xs: '1.125rem', sm: '1.25rem' }
-                      }}
-                    >
-                      {attempt.percentage}%
-                    </Typography>
-                  </Box>
-
-                  <Box sx={{ gridColumn: { xs: 'span 2', sm: 'span 1' } }}>
-                    <Typography
-                      variant="caption"
-                      color="textSecondary"
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 0.5,
-                        mb: 0.5,
-                        fontSize: { xs: '0.7rem', sm: '0.75rem' }
-                      }}
-                    >
-                      <TimerIcon sx={{ fontSize: '0.875rem' }} />
-                      Thời gian làm bài
-                    </Typography>
-                    <Typography
-                      variant="h6"
-                      sx={{
-                        fontWeight: 700,
-                        fontSize: { xs: '1.125rem', sm: '1.25rem' }
-                      }}
-                    >
-                      {attempt.timeSpent} phút
-                    </Typography>
-                  </Box>
-                </Box>
-
-                {/* Action Button */}
-                <Button
-                  fullWidth
-                  variant="contained"
-                  startIcon={<ViewIcon />}
-                  onClick={() => handleViewResult(attempt._id)}
-                  sx={{
-                    backgroundColor: "#B90000",
-                    "&:hover": { backgroundColor: "#d66a0e" },
-                    fontSize: { xs: '0.875rem', sm: '0.9375rem' },
-                    py: { xs: 0.75, sm: 1 }
-                  }}
-                >
-                  Xem chi tiết
-                </Button>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </Stack>
-    );
-  }
-
-  // Desktop View - Table
   return (
-    <TableContainer
-      component={Paper}
-      elevation={2}
-      sx={{
-        '& .MuiTable-root': {
-          minWidth: 800
-        }
-      }}
-    >
-      <Table>
-        <TableHead sx={{ backgroundColor: "#FFF5E6" }}>
-          <TableRow>
-            <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
-              Tên bài kiểm tra
-            </TableCell>
-            <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem' }} align="center">
-              Điểm
-            </TableCell>
-            <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem' }} align="center">
-              Tỷ lệ
-            </TableCell>
-            <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem' }} align="center">
-              Trạng thái
-            </TableCell>
-            <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem' }} align="center">
-              Thời gian làm
-            </TableCell>
-            <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
-              Nộp lúc
-            </TableCell>
-            <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem' }} align="center">
-              Thao tác
-            </TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {attempts.map((attempt) => {
-            const quizTitle = typeof attempt.quizId === 'string'
+    <div className="space-y-6">
+      {/* Mobile Card-based List (shown on small screens) */}
+      <div className="block md:hidden space-y-4">
+        {attempts.map((attempt) => {
+          const quizTitle =
+            typeof attempt.quizId === "string"
               ? "Bài kiểm tra không xác định"
               : attempt.quizId.title || "Bài kiểm tra không xác định";
 
-            return (
-              <TableRow
-                key={attempt._id}
-                sx={{
-                  "&:hover": { backgroundColor: "#FAFAFA" },
-                }}
-              >
-                <TableCell>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    {quizTitle}
-                  </Typography>
-                </TableCell>
-                <TableCell align="center">
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    {attempt.score}
-                  </Typography>
-                </TableCell>
-                <TableCell align="center">
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      fontWeight: 600,
-                      color: attempt.passed ? "#4CAF50" : "#f44336",
-                    }}
+          return (
+            <BaseCard
+              key={attempt._id}
+              className={`border-2 ${attempt.passed ? "border-emerald-250" : "border-red-200"}`}
+            >
+              <div className="space-y-4">
+                <div className="flex justify-between items-start gap-2">
+                  <div>
+                    <h4 className="text-sm font-extrabold text-[var(--color-text-main)] line-clamp-1">{quizTitle}</h4>
+                    <span className="flex items-center gap-1 text-[10px] text-[var(--color-text-secondary)] mt-1 font-semibold">
+                      <Calendar size={12} />
+                      {new Date(attempt.completedAt).toLocaleString("vi-VN")}
+                    </span>
+                  </div>
+
+                  <span
+                    className={`text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                      attempt.passed ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"
+                    }`}
                   >
-                    {attempt.percentage}%
-                  </Typography>
-                </TableCell>
-                <TableCell align="center">
-                  <Chip
-                    icon={attempt.passed ? <PassIcon /> : <FailIcon />}
-                    label={attempt.passed ? "Đạt" : "Không đạt"}
-                    color={attempt.passed ? "success" : "error"}
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell align="center">
-                  <Typography variant="body2">
-                    {attempt.timeSpent} phút
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" sx={{ fontSize: "13px" }}>
-                    {new Date(attempt.completedAt).toLocaleString()}
-                  </Typography>
-                </TableCell>
-                <TableCell align="center">
-                  <Button
-                    size="small"
-                    startIcon={<ViewIcon />}
-                    onClick={() => handleViewResult(attempt._id)}
-                    sx={{
-                      color: "#B90000",
-                      "&:hover": { backgroundColor: "#FFF5E6" },
-                    }}
-                  >
-                    Xem chi tiết
-                  </Button>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </TableContainer>
+                    {attempt.passed ? <CheckCircle size={10} /> : <AlertTriangle size={10} />}
+                    {attempt.passed ? "Đạt" : "Không đạt"}
+                  </span>
+                </div>
+
+                {/* Stats block */}
+                <div className="grid grid-cols-3 gap-2 bg-[var(--color-bg-base)] border border-[var(--color-border-color)] rounded-xl p-3 text-center">
+                  <div>
+                    <span className="flex items-center justify-center gap-1 text-[9px] font-extrabold text-[var(--color-text-secondary)]/50 uppercase">
+                      <Award size={10} />
+                      Điểm
+                    </span>
+                    <span className="text-sm font-black text-[var(--color-text-main)] mt-0.5 block">{attempt.score}</span>
+                  </div>
+                  <div>
+                    <span className="flex items-center justify-center gap-1 text-[9px] font-extrabold text-[var(--color-text-secondary)]/50 uppercase">
+                      <HelpCircle size={10} />
+                      Tỷ lệ
+                    </span>
+                    <span
+                      className={`text-sm font-black mt-0.5 block ${
+                        attempt.passed ? "text-emerald-600" : "text-red-500"
+                      }`}
+                    >
+                      {attempt.percentage}%
+                    </span>
+                  </div>
+                  <div>
+                    <span className="flex items-center justify-center gap-1 text-[9px] font-extrabold text-[var(--color-text-secondary)]/50 uppercase">
+                      <Timer size={10} />
+                      Thời gian
+                    </span>
+                    <span className="text-sm font-black text-[var(--color-text-main)] mt-0.5 block">{attempt.timeSpent}p</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => handleViewResult(attempt._id)}
+                  className="w-full py-2 bg-[var(--color-primary-color)] hover:bg-[var(--color-primary-color-hover)] active:scale-95 transition text-white text-xs font-extrabold rounded-xl flex items-center justify-center gap-1"
+                >
+                  <Eye size={12} />
+                  Xem chi tiết
+                </button>
+              </div>
+            </BaseCard>
+          );
+        })}
+      </div>
+
+      {/* Desktop Table-based List (shown on md and larger screens) */}
+      <div className="hidden md:block bg-[var(--color-surface-base)] border border-[var(--color-border-color)] rounded-2xl shadow-sm overflow-hidden">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-[var(--color-bg-base)] border-b border-[var(--color-border-color)]">
+              <th className="px-5 py-4 text-xs font-black text-[var(--color-text-main)] uppercase tracking-wide">Tên bài kiểm tra</th>
+              <th className="px-5 py-4 text-xs font-black text-[var(--color-text-main)] uppercase tracking-wide text-center">Điểm số</th>
+              <th className="px-5 py-4 text-xs font-black text-[var(--color-text-main)] uppercase tracking-wide text-center">Tỷ lệ chính xác</th>
+              <th className="px-5 py-4 text-xs font-black text-[var(--color-text-main)] uppercase tracking-wide text-center">Trạng thái</th>
+              <th className="px-5 py-4 text-xs font-black text-[var(--color-text-main)] uppercase tracking-wide text-center">Thời gian</th>
+              <th className="px-5 py-4 text-xs font-black text-[var(--color-text-main)] uppercase tracking-wide">Nộp lúc</th>
+              <th className="px-5 py-4 text-xs font-black text-[var(--color-text-main)] uppercase tracking-wide text-center">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[var(--color-border-color)]">
+            {attempts.map((attempt) => {
+              const quizTitle =
+                typeof attempt.quizId === "string"
+                  ? "Bài kiểm tra không xác định"
+                  : attempt.quizId.title || "Bài kiểm tra không xác định";
+
+              return (
+                <tr key={attempt._id} className="hover:bg-[var(--color-bg-base)]/50 transition">
+                  <td className="px-5 py-4">
+                    <span className="text-xs font-extrabold text-[var(--color-text-main)] line-clamp-1">{quizTitle}</span>
+                  </td>
+                  <td className="px-5 py-4 text-center">
+                    <span className="text-xs font-extrabold text-[var(--color-text-main)]">{attempt.score}</span>
+                  </td>
+                  <td className="px-5 py-4 text-center">
+                    <span className={`text-xs font-black ${attempt.passed ? "text-emerald-600" : "text-red-500"}`}>
+                      {attempt.percentage}%
+                    </span>
+                  </td>
+                  <td className="px-5 py-4 text-center">
+                    <span
+                      className={`inline-flex items-center gap-1 text-[10px] font-black px-2.5 py-0.5 rounded-full ${
+                        attempt.passed ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"
+                      }`}
+                    >
+                      {attempt.passed ? <CheckCircle size={10} /> : <AlertTriangle size={10} />}
+                      {attempt.passed ? "Đạt" : "Không đạt"}
+                    </span>
+                  </td>
+                  <td className="px-5 py-4 text-center">
+                    <span className="text-xs font-semibold text-[var(--color-text-secondary)]">{attempt.timeSpent} phút</span>
+                  </td>
+                  <td className="px-5 py-4">
+                    <span className="text-xs font-semibold text-[var(--color-text-secondary)]/70">
+                      {new Date(attempt.completedAt).toLocaleString("vi-VN")}
+                    </span>
+                  </td>
+                  <td className="px-5 py-4 text-center">
+                    <button
+                      onClick={() => handleViewResult(attempt._id)}
+                      className="text-xs font-black text-[var(--color-primary-color)] hover:text-[var(--color-primary-color-hover)] hover:underline flex items-center justify-center gap-1 mx-auto"
+                    >
+                      <Eye size={12} />
+                      Chi tiết
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 };
 

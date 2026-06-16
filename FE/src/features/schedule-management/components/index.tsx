@@ -2,36 +2,25 @@
 
 import React, { useState } from 'react';
 import {
-  Box,
+  Modal,
   Button,
   Typography,
-  Paper,
   Card,
-  CardContent,
-  Chip,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  CircularProgress,
-  Alert,
   Avatar,
-  FormControl,
-  InputLabel,
+  Form,
   Select,
-  MenuItem,
-  TextField,
-  useTheme,
-  useMediaQuery,
+  Input,
+  DatePicker,
+  Space,
+  Divider,
+  Alert,
+  Grid,
+  Segmented,
+  Tooltip,
   Drawer,
   List,
-  ListItemButton,
-  ListItemText,
-  Divider,
-  Stack
-} from '@mui/material';
-import type { SelectChangeEvent } from '@mui/material';
+  Spin,
+} from 'antd';
 import {
   ChevronLeft,
   ChevronRight,
@@ -43,18 +32,19 @@ import {
   Edit,
   Trash2,
   Menu as MenuIcon,
-  BookOpen,
-  Users,
   Settings,
-  GraduationCap,
+  X,
 } from 'lucide-react';
 import { useScheduleData } from '../../../hooks/useScheduleData';
 import { calendarAPI } from '../../../services/scheduleManagementAPI';
+import { brandColors } from '../../../theme/theme';
+import dayjs from 'dayjs';
 
-// Type definitions
+const { Text, Title } = Typography;
+const { useBreakpoint } = Grid;
+
 type ViewMode = 'day' | 'week' | 'month';
 type StatusType = 'in_progress' | 'not_yet' | 'completed' | 'cancelled';
-type ChipColor = 'success' | 'warning' | 'info' | 'error' | 'default';
 
 interface Course {
   _id: string;
@@ -88,74 +78,77 @@ interface CalendarItem {
   note?: string;
 }
 
-interface EditFormData {
-  courseId: string;
-  sessionId: string;
-  teacherId: string;
-  date: string;
-  note: string;
-}
 
-// ConfirmDialog Component
+
 interface ConfirmDialogProps {
   open: boolean;
   title?: string;
-  message: string;
+  message: React.ReactNode;
   onConfirm: () => void;
   onCancel: () => void;
 }
 
 const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   open,
-  title = "Xác nhận",
+  title = 'Xác nhận',
   message,
   onConfirm,
-  onCancel
-}) => {
-  return (
-    <Dialog open={open} onClose={onCancel} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ fontWeight: "bold" }}>{title}</DialogTitle>
-      <DialogContent>
-        <Typography sx={{ whiteSpace: 'pre-wrap' }}>{message}</Typography>
-      </DialogContent>
-      <DialogActions>
-        <Button variant="outlined" onClick={onCancel}>
-          Hủy
-        </Button>
-        <Button variant="contained" color="error" onClick={onConfirm}>
-          Xóa
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
+  onCancel,
+}) => (
+  <Modal
+    title={title}
+    open={open}
+    onOk={onConfirm}
+    onCancel={onCancel}
+    okText="Xác nhận"
+    cancelText="Hủy"
+    width={400}
+    centered
+    okButtonProps={{ danger: true, style: { borderRadius: 8 } }}
+    cancelButtonProps={{ style: { borderRadius: 8 } }}
+  >
+    {typeof message === 'string' ? (
+      <Text>
+        {message.split('\n').map((line, i) => (
+          <React.Fragment key={i}>
+            {line}
+            <br />
+          </React.Fragment>
+        ))}
+      </Text>
+    ) : (
+      message
+    )}
+  </Modal>
+);
+
+const STATUS_CONFIG: Record<StatusType, { label: string; color: string; bg: string }> = {
+  in_progress: { label: 'Đang học',      color: '#185FA5', bg: '#E6F1FB' },
+  not_yet:     { label: 'Chưa bắt đầu', color: '#5F5E5A', bg: '#F1EFE8' },
+  completed:   { label: 'Hoàn thành',   color: '#3B6D11', bg: '#EAF3DE' },
+  cancelled:   { label: 'Đã hủy',       color: '#A32D2D', bg: '#FCEBEB' },
 };
 
 export default function ManageScheduleCalendar() {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const isTablet = useMediaQuery(theme.breakpoints.down('lg'));
-  
-  const { calendars, courses, sessions, users, loading, error: fetchError, refetch } = useScheduleData();
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
+  const isTablet = !screens.lg;
+
+  const { calendars, courses, sessions, users, loading, error: fetchError, refetch } =
+    useScheduleData();
 
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<ViewMode>(isMobile ? 'day' : 'week');
+  const [viewMode, setViewMode]       = useState<ViewMode>(isMobile ? 'day' : 'week');
   const [selectedSchedule, setSelectedSchedule] = useState<CalendarItem | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [updating, setUpdating] = useState(false);
+  const [isEditing, setIsEditing]     = useState(false);
+  const [editForm]                    = Form.useForm();
+  const [deleting, setDeleting]       = useState(false);
+  const [updating, setUpdating]       = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const [updateError, setUpdateError] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const [editFormData, setEditFormData] = useState<EditFormData>({
-    courseId: '',
-    sessionId: '',
-    teacherId: '',
-    date: '',
-    note: '',
-  });
 
   const formatDate = (date: Date | string): string => {
     const d = typeof date === 'string' ? new Date(date) : date;
@@ -164,10 +157,7 @@ export default function ManageScheduleCalendar() {
 
   const formatDateDisplay = (date: Date | string): string => {
     const d = typeof date === 'string' ? new Date(date) : date;
-    const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const year = d.getFullYear();
-    return `${day}/${month}/${year}`;
+    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
   };
 
   const extractId = (value: string | { _id: string } | null | undefined): string => {
@@ -177,21 +167,17 @@ export default function ManageScheduleCalendar() {
   };
 
   const getWeekDates = (): Date[] => {
-    const week: Date[] = [];
     const start = new Date(currentDate);
     const day = start.getDay();
-    const diff = start.getDate() - day + (day === 0 ? -6 : 1);
-    start.setDate(diff);
-
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(start);
-      date.setDate(start.getDate() + i);
-      week.push(date);
-    }
-    return week;
+    start.setDate(start.getDate() - day + (day === 0 ? -6 : 1));
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      return d;
+    });
   };
 
-  const getDayDate = (): Date[] => [new Date(currentDate)];
+  const getDayDate  = (): Date[] => [new Date(currentDate)];
 
   const getMonthDates = (): Date[] => {
     const year = currentDate.getFullYear();
@@ -200,73 +186,49 @@ export default function ManageScheduleCalendar() {
     const startDay = firstDay.getDay();
     const startDate = new Date(firstDay);
     startDate.setDate(startDate.getDate() - (startDay === 0 ? 6 : startDay - 1));
-    
-    const dates: Date[] = [];
-    for (let i = 0; i < 35; i++) {
-      const date = new Date(startDate);
-      date.setDate(startDate.getDate() + i);
-      dates.push(date);
-    }
-    return dates;
+    return Array.from({ length: 35 }, (_, i) => {
+      const d = new Date(startDate);
+      d.setDate(startDate.getDate() + i);
+      return d;
+    });
   };
 
   const getCurrentDates = (): Date[] => {
-    if (viewMode === 'day') return getDayDate();
-    if (viewMode === 'week') return getWeekDates();
+    if (viewMode === 'day')   return getDayDate();
+    if (viewMode === 'week')  return getWeekDates();
     return getMonthDates();
   };
 
   const handlePrev = (): void => {
-    const newDate = new Date(currentDate);
-    if (viewMode === 'week') newDate.setDate(newDate.getDate() - 7);
-    else if (viewMode === 'month') newDate.setMonth(newDate.getMonth() - 1);
-    else newDate.setDate(newDate.getDate() - 1);
-    setCurrentDate(newDate);
+    const d = new Date(currentDate);
+    if (viewMode === 'week')  d.setDate(d.getDate() - 7);
+    else if (viewMode === 'month') d.setMonth(d.getMonth() - 1);
+    else d.setDate(d.getDate() - 1);
+    setCurrentDate(d);
   };
 
   const handleNext = (): void => {
-    const newDate = new Date(currentDate);
-    if (viewMode === 'week') newDate.setDate(newDate.getDate() + 7);
-    else if (viewMode === 'month') newDate.setMonth(newDate.getMonth() + 1);
-    else newDate.setDate(newDate.getDate() + 1);
-    setCurrentDate(newDate);
+    const d = new Date(currentDate);
+    if (viewMode === 'week')  d.setDate(d.getDate() + 7);
+    else if (viewMode === 'month') d.setMonth(d.getMonth() + 1);
+    else d.setDate(d.getDate() + 1);
+    setCurrentDate(d);
   };
 
   const getScheduleColor = (courseId: string): string => {
-    const colors = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ec4899', '#06b6d4'];
-    const uniqueCourses = [...new Set((calendars as CalendarItem[]).map((c) => extractId(c.courseId)))];
-    const index = uniqueCourses.indexOf(courseId);
-    return colors[index % colors.length];
-  };
-
-  const formatStatus = (status: string): string => {
-    const statusMap: Record<string, string> = {
-      'in_progress': 'Đang học',
-      'not_yet': 'Chưa bắt đầu',
-      'completed': 'Hoàn thành',
-      'cancelled': 'Đã hủy',
-    };
-    return statusMap[status] || status;
-  };
-
-  const getStatusColor = (status: string): ChipColor => {
-    const colorMap: Record<string, ChipColor> = {
-      'completed': 'success',
-      'in_progress': 'info',
-      'not_yet': 'warning',
-      'cancelled': 'error',
-    };
-    return colorMap[status] || 'default';
+    const palette = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ec4899', '#06b6d4'];
+    const unique = [...new Set((calendars as CalendarItem[]).map((c) => extractId(c.courseId)))];
+    return palette[unique.indexOf(courseId) % palette.length];
   };
 
   const getViewTitle = (): string => {
     if (viewMode === 'week') {
-      const weekDates = getWeekDates();
-      const format: 'short' | 'long' = isMobile ? 'short' : 'long';
-      return `${weekDates[0].getDate()} - ${weekDates[6].getDate()} ${weekDates[0].toLocaleDateString('vi-VN', { month: format, year: 'numeric' })}`;
-    } else if (viewMode === 'month') {
-      return currentDate.toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' });
+      const w = getWeekDates();
+      const fmt: 'short' | 'long' = isMobile ? 'short' : 'long';
+      return `${w[0].getDate()} – ${w[6].getDate()} ${w[0].toLocaleDateString('vi-VN', { month: fmt, year: 'numeric' })}`;
     }
+    if (viewMode === 'month')
+      return currentDate.toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' });
     return formatDateDisplay(currentDate);
   };
 
@@ -279,13 +241,17 @@ export default function ManageScheduleCalendar() {
 
   const handleEdit = (): void => {
     if (!selectedSchedule) return;
-    
-    setEditFormData({
-      courseId: extractId(selectedSchedule.courseId),
+    const formData = {
+      courseId:  extractId(selectedSchedule.courseId),
       sessionId: extractId(selectedSchedule.sessionId),
       teacherId: extractId(selectedSchedule.teacherId),
-      date: formatDate(selectedSchedule.date),
-      note: selectedSchedule.note || '',
+      date:      formatDate(selectedSchedule.date),
+      note:      selectedSchedule.note || '',
+    };
+    editForm.resetFields();
+    editForm.setFieldsValue({
+      ...formData,
+      date: dayjs(formData.date)
     });
     setIsEditing(true);
   };
@@ -294,15 +260,23 @@ export default function ManageScheduleCalendar() {
     if (!selectedSchedule) return;
 
     try {
+      const values = await editForm.validateFields();
       setUpdating(true);
       setUpdateError('');
 
-      await calendarAPI.update(selectedSchedule._id, editFormData);
+      await calendarAPI.update(selectedSchedule._id, {
+        ...values,
+        date: values.date.format('YYYY-MM-DD')
+      });
 
       setSelectedSchedule(null);
       setIsEditing(false);
       refetch();
     } catch (err: unknown) {
+      if ((err as any).errorFields) {
+        // Form validation error - Ant Design handles UI
+        return;
+      }
       console.error('Error updating schedule:', err);
       const error = err as { response?: { data?: { message?: string } } };
       setUpdateError(error.response?.data?.message || 'Không thể cập nhật lịch học');
@@ -311,1089 +285,841 @@ export default function ManageScheduleCalendar() {
     }
   };
 
-  const handleDeleteClick = (): void => {
-    setConfirmOpen(true);
-  };
+  const handleDeleteClick    = () => setConfirmOpen(true);
+  const handleCancelDelete   = () => setConfirmOpen(false);
 
   const handleConfirmDelete = async (): Promise<void> => {
     if (!selectedSchedule) return;
-
     try {
       setDeleting(true);
       setDeleteError('');
       setConfirmOpen(false);
-      
       await calendarAPI.delete(selectedSchedule._id);
-      
       setSelectedSchedule(null);
       setIsEditing(false);
       refetch();
     } catch (err: unknown) {
-      console.error('Error deleting schedule:', err);
-      const error = err as { response?: { data?: { message?: string } } };
-      setDeleteError(error.response?.data?.message || 'Không thể xóa lịch học');
+      const e = err as { response?: { data?: { message?: string } } };
+      setDeleteError(e.response?.data?.message || 'Không thể xóa lịch học');
     } finally {
       setDeleting(false);
     }
   };
 
-  const handleCancelDelete = (): void => {
-    setConfirmOpen(false);
-  };
-
-  const getCourseFromSchedule = (schedule: CalendarItem): Course | null => {
-    return typeof schedule.courseId === 'object' ? schedule.courseId : null;
-  };
-
-  const getTeacherFromSchedule = (schedule: CalendarItem): Teacher | null => {
-    return typeof schedule.teacherId === 'object' ? schedule.teacherId : null;
+  const getCourseFromSchedule  = (s: CalendarItem): Course | null =>
+    typeof s.courseId  === 'object' ? s.courseId  : null;
+  const getTeacherFromSchedule = (s: CalendarItem): Teacher | null =>
+    typeof s.teacherId === 'object' ? s.teacherId : null;
+  const getSelectedCourse  = () => selectedSchedule ? getCourseFromSchedule(selectedSchedule)  : null;
+  const getSelectedTeacher = () => selectedSchedule ? getTeacherFromSchedule(selectedSchedule) : null;
+  const getSelectedSession = (): Session | null => {
+    if (!selectedSchedule) return null;
+    return typeof selectedSchedule.sessionId === 'object' ? selectedSchedule.sessionId : null;
   };
 
   const renderScheduleCard = (schedule: CalendarItem, onClick: () => void): React.ReactNode => {
-    const course = getCourseFromSchedule(schedule);
-    const teacher = getTeacherFromSchedule(schedule);
-    const courseId = extractId(schedule.courseId);
-    const color = getScheduleColor(courseId);
-    const studentCount = course?.enrolledCount ?? 0;
-    const capacity = course?.capacity;
+    const course   = getCourseFromSchedule(schedule);
+    const teacher  = getTeacherFromSchedule(schedule);
+    const color    = getScheduleColor(extractId(schedule.courseId));
+    const statusCfg = STATUS_CONFIG[schedule.status] ?? STATUS_CONFIG.not_yet;
 
     return (
-      <Card
+      <div
         key={schedule._id}
-        sx={{
-          bgcolor: color,
-          color: 'white',
-          cursor: 'pointer',
-          position: 'relative',
-          '&:hover': {
-            opacity: 0.96,
-            transform: 'translateY(-2px)',
-            boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
-            '& .mira-slot-settings': { opacity: 1, transform: 'translateX(0)' },
-          },
-          transition: 'all 0.2s ease',
-          mb: 1,
-          borderRadius: 2,
-        }}
         onClick={onClick}
+        style={{
+          marginBottom: 0,
+          flex: 1,
+          height: "100%",
+          backgroundColor: color,
+          borderRadius: 8,
+          padding: '8px 10px',
+          cursor: 'pointer',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          transition: 'transform 0.15s, opacity 0.15s',
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.88'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.opacity = '1';    e.currentTarget.style.transform = 'translateY(0)'; }}
       >
-        <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1, mb: 0.5 }}>
-            <Typography variant="body2" fontWeight={700} sx={{ fontSize: '0.875rem', lineHeight: 1.3, flex: 1 }}>
-              {course?.name || course?.courseName || 'Khóa học chưa xác định'}
-            </Typography>
-            <Box
-              className="mira-slot-settings"
-              sx={{
-                opacity: 0,
-                transform: 'translateX(4px)',
-                transition: 'all 0.2s ease',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 0.25,
-                bgcolor: 'rgba(255,255,255,0.22)',
-                borderRadius: 1,
-                px: 0.6,
-                py: 0.25,
-                flexShrink: 0,
-              }}
-            >
-              <Settings size={10} />
-              <Typography variant="caption" sx={{ fontSize: '0.6rem', fontWeight: 700, lineHeight: 1 }}>
-                Cài đặt
-              </Typography>
-            </Box>
-          </Box>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+          <Text strong style={{ color: 'white', fontSize: '0.7rem', lineHeight: 1.3, flex: 1 }}>
+            {course?.name || course?.courseName || 'Khóa học chưa xác định'}
+          </Text>
+          <Tooltip title="Cài đặt">
+            <Settings size={11} style={{ opacity: 0.75, flexShrink: 0 }} color="white" />
+          </Tooltip>
+        </div>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
-            <User size={11} />
-            <Typography variant="caption" sx={{ fontSize: '0.72rem', fontWeight: 500, lineHeight: 1.3 }}>
-              {teacher?.name || 'Chưa xác định'}
-            </Typography>
-          </Box>
+        <Space size={4} style={{ display: 'flex', marginBottom: 4 }}>
+          <User size={10} color="white" />
+          <Text style={{ color: 'white', fontSize: '0.7rem' }}>
+            {teacher?.name || 'Chưa xác định'}
+          </Text>
+        </Space>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.35 }}>
-            <Users size={11} />
-            <Typography variant="caption" sx={{ fontSize: '0.72rem', fontWeight: 600, lineHeight: 1.3 }}>
-              {studentCount} học viên
-              {capacity ? <Box component="span" sx={{ opacity: 0.85, fontWeight: 500 }}>{` / ${capacity}`}</Box> : null}
-            </Typography>
-          </Box>
-
-          <Chip
-            label={formatStatus(schedule.status)}
-            size="small"
-            sx={{
-              mt: 0.75,
-              height: 18,
-              fontSize: '0.65rem',
-              fontWeight: 600,
-              bgcolor: 'rgba(255,255,255,0.28)',
-              color: 'white',
-              backdropFilter: 'blur(4px)',
-            }}
-          />
-        </CardContent>
-      </Card>
+        <span style={{
+          fontSize: '0.63rem',
+          backgroundColor: statusCfg.bg,
+          color: statusCfg.color,
+          padding: '1px 7px',
+          borderRadius: 4,
+          fontWeight: 600,
+        }}>
+          {statusCfg.label}
+        </span>
+      </div>
     );
   };
 
-  // Mobile Week View - theo layout mẫu
   const renderMobileWeekView = (): React.ReactNode => {
-    const weekDates = getWeekDates();
+    const weekDates     = getWeekDates();
     const calendarItems = calendars as CalendarItem[];
-    
-    // Group sessions by time period
-    const morningSessions = sessions.filter((s: Session) => {
-      const startHour = parseInt(s.startTime?.split(':')[0] || '0');
-      return startHour < 12;
-    });
-    
-    const afternoonSessions = sessions.filter((s: Session) => {
-      const startHour = parseInt(s.startTime?.split(':')[0] || '0');
-      return startHour >= 12;
-    });
+    const morningSessions    = sessions.filter((s: Session) => parseInt(s.startTime?.split(':')[0] || '0') < 12);
+    const afternoonSessions  = sessions.filter((s: Session) => parseInt(s.startTime?.split(':')[0] || '0') >= 12);
 
     return (
-      <Box>
-        {weekDates.map((date, dateIdx) => {
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: 16 }}>
+        {weekDates.map((date, idx) => {
           const dateStr = formatDate(date);
-          const isToday = formatDate(date) === formatDate(new Date());
-          
+          const isToday = dateStr === formatDate(new Date());
           return (
-            <Paper 
-              key={dateIdx} 
-              sx={{ 
-                mb: 2,
-                overflow: 'hidden',
-                border: isToday ? 2 : 1,
-                borderColor: isToday ? 'primary.main' : 'divider',
-              }}
+            <Card
+              key={idx}
+              styles={{ body: { padding: 0 } }}
+              style={{ overflow: 'hidden', borderRadius: 12, border: isToday ? `1px solid ${brandColors.red}` : undefined }}
             >
-              {/* Date Header */}
-              <Box 
-                sx={{ 
-                  p: 2, 
-                  bgcolor: isToday ? 'primary.main' : 'grey.100',
-                  color: isToday ? 'white' : 'text.primary',
-                  borderBottom: 1,
-                  borderColor: 'divider'
-                }}
-              >
-                <Typography variant="h6" fontWeight={700}>
-                  {date.toLocaleDateString('vi-VN', { weekday: 'short' })}
-                </Typography>
-                <Typography variant="body2">
-                  {formatDateDisplay(date)}
-                </Typography>
-              </Box>
+              <div style={{ padding: '12px 16px', backgroundColor: isToday ? brandColors.red : '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text strong style={{ color: isToday ? 'white' : 'inherit', fontSize: 15 }}>
+                    {date.toLocaleDateString('vi-VN', { weekday: 'long' })}
+                  </Text>
+                  <Text style={{ color: isToday ? 'rgba(255,255,255,0.8)' : '#64748B', fontSize: 12 }}>
+                    {formatDateDisplay(date)}
+                  </Text>
+                </div>
+              </div>
 
-              {/* Morning Section */}
-              <Box sx={{ p: 2 }}>
-                <Typography 
-                  variant="subtitle2" 
-                  fontWeight={600} 
-                  sx={{ 
-                    mb: 1.5,
-                    color: '#d97706',
-                    fontSize: '0.875rem'
-                  }}
-                >
-                  Buổi sáng
-                </Typography>
-                
-                {morningSessions.map((session: Session) => {
-                  const schedules = calendarItems.filter((cal) => {
-                    const calDate = formatDate(cal.date);
-                    const calSessionId = extractId(cal.sessionId);
-                    return calDate === dateStr && calSessionId === session._id;
-                  });
-
-                  return schedules.length > 0 ? (
-                    <Box key={session._id}>
-                      {schedules.map((schedule) => 
-                        renderScheduleCard(schedule, () => handleOpenSchedule(schedule))
-                      )}
-                    </Box>
-                  ) : null;
-                })}
-                
-                {morningSessions.every((session: Session) => {
-                  const schedules = calendarItems.filter((cal) => {
-                    const calDate = formatDate(cal.date);
-                    const calSessionId = extractId(cal.sessionId);
-                    return calDate === dateStr && calSessionId === session._id;
-                  });
-                  return schedules.length === 0;
-                }) && (
-                  <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ py: 2 }}>
-                    -
-                  </Typography>
-                )}
-              </Box>
-
-              <Divider />
-
-              {/* Afternoon Section */}
-              <Box sx={{ p: 2 }}>
-                <Typography 
-                  variant="subtitle2" 
-                  fontWeight={600} 
-                  sx={{ 
-                    mb: 1.5,
-                    color: '#d97706',
-                    fontSize: '0.875rem'
-                  }}
-                >
-                  Buổi chiều
-                </Typography>
-                
-                {afternoonSessions.map((session: Session) => {
-                  const schedules = calendarItems.filter((cal) => {
-                    const calDate = formatDate(cal.date);
-                    const calSessionId = extractId(cal.sessionId);
-                    return calDate === dateStr && calSessionId === session._id;
-                  });
-
-                  return schedules.length > 0 ? (
-                    <Box key={session._id}>
-                      {schedules.map((schedule) => 
-                        renderScheduleCard(schedule, () => handleOpenSchedule(schedule))
-                      )}
-                    </Box>
-                  ) : null;
-                })}
-                
-                {afternoonSessions.every((session: Session) => {
-                  const schedules = calendarItems.filter((cal) => {
-                    const calDate = formatDate(cal.date);
-                    const calSessionId = extractId(cal.sessionId);
-                    return calDate === dateStr && calSessionId === session._id;
-                  });
-                  return schedules.length === 0;
-                }) && (
-                  <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ py: 2 }}>
-                    -
-                  </Typography>
-                )}
-              </Box>
-            </Paper>
+              <div style={{ padding: 16 }}>
+                {[{ label: 'Buổi sáng', list: morningSessions }, { label: 'Buổi chiều', list: afternoonSessions }].map(({ label, list }, i) => (
+                  <React.Fragment key={i}>
+                    {i === 1 && <Divider style={{ margin: '12px 0' }} />}
+                    <Text strong style={{ color: '#d97706', fontSize: 11, display: 'block', marginBottom: 10, textTransform: 'uppercase' }}>
+                      {label}
+                    </Text>
+                    {list.map((session: Session) => {
+                      const schedules = calendarItems.filter((cal) => formatDate(cal.date) === dateStr && extractId(cal.sessionId) === session._id);
+                      return schedules.length > 0
+                        ? schedules.map((sch) => renderScheduleCard(sch, () => handleOpenSchedule(sch)))
+                        : null;
+                    })}
+                    {list.every((s: Session) => !calendarItems.some((cal) => formatDate(cal.date) === dateStr && extractId(cal.sessionId) === s._id)) && (
+                      <Text type="secondary" style={{ display: 'block', textAlign: 'center', padding: '8px 0' }}>–</Text>
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+            </Card>
           );
         })}
-      </Box>
+      </div>
     );
   };
 
   const renderWeekView = (): React.ReactNode => {
     if (isMobile) return renderMobileWeekView();
 
-    const weekDates = getWeekDates();
+    const weekDates     = getWeekDates();
     const calendarItems = calendars as CalendarItem[];
-    const allSessions = [...new Set(calendarItems.map((c) => extractId(c.sessionId)))];
-    const sessionMap = new Map<string, Session>();
-    
+    const sessionMap    = new Map<string, Session>();
+
     calendarItems.forEach((cal) => {
-      const sessionId = extractId(cal.sessionId);
-      if (!sessionMap.has(sessionId) && typeof cal.sessionId === 'object') {
-        sessionMap.set(sessionId, cal.sessionId);
-      }
+      const id = extractId(cal.sessionId);
+      if (!sessionMap.has(id) && typeof cal.sessionId === 'object') sessionMap.set(id, cal.sessionId);
+    });
+
+    const sortedSessionIds = [...new Set(calendarItems.map((c) => extractId(c.sessionId)))].sort((a, b) => {
+      const na = sessionMap.get(a)?.sessionName || '';
+      const nb = sessionMap.get(b)?.sessionName || '';
+      return na.localeCompare(nb, undefined, { numeric: true, sensitivity: 'base' });
     });
 
     return (
-      <Box sx={{ overflowX: 'auto' }}>
-        <Box sx={{ display: 'grid', gridTemplateColumns: `${isTablet ? '100px' : '120px'} repeat(7, 1fr)`, minWidth: 'fit-content', width: '100%' }}>
-          <Box sx={{ p: 2, borderBottom: 1, borderRight: 1, borderColor: 'divider', bgcolor: 'grey.50', fontWeight: 600 }}>
+      <div style={{ overflowX: 'auto', border: '1px solid #E2E8F0', borderRadius: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: `${isTablet ? '80px' : '100px'} repeat(7, minmax(130px, 1fr))`, width: '100%' }}>
+          <div style={{ padding: 12, borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', backgroundColor: '#F8FAFC', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>
             Thời gian
-          </Box>
+          </div>
           {weekDates.map((date, idx) => {
             const isToday = formatDate(date) === formatDate(new Date());
             return (
-              <Box key={idx} sx={{ p: isTablet ? 1.5 : 2, borderBottom: 1, borderRight: 1, borderColor: 'divider', bgcolor: isToday ? 'primary.50' : 'grey.50', textAlign: 'center', minWidth: 140 }}>
-                <Typography sx={{ fontWeight: 600, color: isToday ? 'primary.main' : 'text.primary', fontSize: isTablet ? '0.875rem' : '1rem' }}>
+              <div key={idx} style={{ padding: isTablet ? 12 : 16, borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', backgroundColor: isToday ? '#FFF1F0' : '#F8FAFC', textAlign: 'center', minWidth: 140 }}>
+                <Text strong style={{ color: isToday ? brandColors.red : 'inherit', fontSize: isTablet ? 13 : 14 }}>
                   {date.toLocaleDateString('vi-VN', { weekday: 'short' })}
-                </Typography>
-                <Typography variant="body2" sx={{ color: isToday ? 'primary.main' : 'text.secondary' }}>
+                </Text>
+                <div style={{ color: isToday ? brandColors.red : '#64748B', fontSize: 12 }}>
                   {formatDateDisplay(date)}
-                </Typography>
-              </Box>
+                </div>
+              </div>
             );
           })}
 
-          {allSessions.map((sessionId) => {
+          {sortedSessionIds.map((sessionId) => {
             const session = sessionMap.get(sessionId);
-            
             return (
               <React.Fragment key={sessionId}>
-                <Box sx={{ p: 2, borderBottom: 1, borderRight: 1, borderColor: 'divider', bgcolor: 'grey.50' }}>
-                  <Typography variant="body2" fontWeight={600}>
-                    {session?.sessionName || 'Ca học'}
-                  </Typography>
+                <div style={{ padding: 12, borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', backgroundColor: '#F8FAFC', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <Text strong style={{ fontSize: 13 }}>{session?.sessionName || 'Ca học'}</Text>
                   {session?.startTime && (
-                    <Typography variant="caption" color="text.secondary">
-                      {session.startTime} - {session.endTime}
-                    </Typography>
+                    <Text type="secondary" style={{ fontSize: 11 }}>{session.startTime} – {session.endTime}</Text>
                   )}
-                </Box>
+                </div>
                 {weekDates.map((date, idx) => {
                   const dateStr = formatDate(date);
-                  
-                  const schedules = calendarItems.filter((cal) => {
-                    const calDate = formatDate(cal.date);
-                    const calSessionId = extractId(cal.sessionId);
-                    return calDate === dateStr && calSessionId === sessionId;
-                  });
-
+                  const schedules = calendarItems.filter((cal) => formatDate(cal.date) === dateStr && extractId(cal.sessionId) === sessionId);
                   return (
-                    <Box key={idx} sx={{ p: 1.5, borderBottom: 1, borderRight: 1, borderColor: 'divider', minHeight: 120, bgcolor: 'background.paper', minWidth: 140 }}>
-                      {schedules.map((schedule) => 
-                        renderScheduleCard(schedule, () => handleOpenSchedule(schedule))
-                      )}
-                    </Box>
+                    <div key={idx} style={{ 
+                      padding: 8, 
+                      borderBottom: '1px solid #E2E8F0', 
+                      borderRight: '1px solid #E2E8F0', 
+                      minHeight: 120, 
+                      backgroundColor: 'white',
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 6,
+                      height: "100%"
+                    }}>
+                      {schedules.map((sch) => renderScheduleCard(sch, () => handleOpenSchedule(sch)))}
+                    </div>
                   );
                 })}
               </React.Fragment>
             );
           })}
-        </Box>
-      </Box>
+        </div>
+      </div>
     );
   };
 
   const renderDayView = (): React.ReactNode => {
-    const date = getCurrentDates()[0];
-    const dateStr = formatDate(date);
-    const isToday = formatDate(date) === formatDate(new Date());
+    const date      = getCurrentDates()[0];
+    const dateStr   = formatDate(date);
+    const isToday   = dateStr === formatDate(new Date());
     const calendarItems = calendars as CalendarItem[];
-    
-    // Group sessions by time period for mobile
-    const morningSessions = sessions.filter((s: Session) => {
-      const startHour = parseInt(s.startTime?.split(':')[0] || '0');
-      return startHour < 12;
-    });
-    
-    const afternoonSessions = sessions.filter((s: Session) => {
-      const startHour = parseInt(s.startTime?.split(':')[0] || '0');
-      return startHour >= 12;
-    });
+    const morningSessions   = sessions.filter((s: Session) => parseInt(s.startTime?.split(':')[0] || '0') < 12);
+    const afternoonSessions = sessions.filter((s: Session) => parseInt(s.startTime?.split(':')[0] || '0') >= 12);
 
     if (isMobile) {
       return (
-        <Paper sx={{ overflow: 'hidden' }}>
-          {/* Date Header */}
-          <Box sx={{ p: 2, bgcolor: isToday ? 'primary.main' : 'grey.100', color: isToday ? 'white' : 'text.primary' }}>
-            <Typography variant="h6" fontWeight={600}>
+        <Card styles={{ body: { padding: 0 } }} style={{ overflow: 'hidden', borderRadius: 12 }}>
+          <div style={{ padding: 16, backgroundColor: isToday ? brandColors.red : '#F8FAFC', color: isToday ? 'white' : 'inherit' }}>
+            <Title level={5} style={{ margin: 0, color: isToday ? 'white' : 'inherit' }}>
               {date.toLocaleDateString('vi-VN', { weekday: 'long' })}
-            </Typography>
-            <Typography variant="body1">
-              {formatDateDisplay(date)}
-            </Typography>
-          </Box>
-
-          {/* Morning Section */}
-          <Box sx={{ p: 2 }}>
-            <Typography 
-              variant="subtitle2" 
-              fontWeight={600} 
-              sx={{ mb: 1.5, color: '#d97706', fontSize: '0.875rem' }}
-            >
-              Buổi sáng
-            </Typography>
-            
-            {morningSessions.map((session: Session) => {
-              const schedules = calendarItems.filter((cal) => {
-                const calDate = formatDate(cal.date);
-                const calSessionId = extractId(cal.sessionId);
-                return calDate === dateStr && calSessionId === session._id;
-              });
-
-              return schedules.length > 0 ? (
-                <Box key={session._id}>
-                  {schedules.map((schedule) => 
-                    renderScheduleCard(schedule, () => handleOpenSchedule(schedule))
-                  )}
-                </Box>
-              ) : null;
-            })}
-            
-            {morningSessions.every((session: Session) => {
-              const schedules = calendarItems.filter((cal) => {
-                const calDate = formatDate(cal.date);
-                const calSessionId = extractId(cal.sessionId);
-                return calDate === dateStr && calSessionId === session._id;
-              });
-              return schedules.length === 0;
-            }) && (
-              <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ py: 2 }}>
-                -
-              </Typography>
-            )}
-          </Box>
-
-          <Divider />
-
-          {/* Afternoon Section */}
-          <Box sx={{ p: 2 }}>
-            <Typography 
-              variant="subtitle2" 
-              fontWeight={600} 
-              sx={{ mb: 1.5, color: '#d97706', fontSize: '0.875rem' }}
-            >
-              Buổi chiều
-            </Typography>
-            
-            {afternoonSessions.map((session: Session) => {
-              const schedules = calendarItems.filter((cal) => {
-                const calDate = formatDate(cal.date);
-                const calSessionId = extractId(cal.sessionId);
-                return calDate === dateStr && calSessionId === session._id;
-              });
-
-              return schedules.length > 0 ? (
-                <Box key={session._id}>
-                  {schedules.map((schedule) => 
-                    renderScheduleCard(schedule, () => handleOpenSchedule(schedule))
-                  )}
-                </Box>
-              ) : null;
-            })}
-            
-            {afternoonSessions.every((session: Session) => {
-              const schedules = calendarItems.filter((cal) => {
-                const calDate = formatDate(cal.date);
-                const calSessionId = extractId(cal.sessionId);
-                return calDate === dateStr && calSessionId === session._id;
-              });
-              return schedules.length === 0;
-            }) && (
-              <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ py: 2 }}>
-                -
-              </Typography>
-            )}
-          </Box>
-        </Paper>
+            </Title>
+            <Text style={{ color: isToday ? 'rgba(255,255,255,0.8)' : '#64748B' }}>{formatDateDisplay(date)}</Text>
+          </div>
+          <div style={{ padding: 16 }}>
+            {[{ label: 'Buổi sáng', list: morningSessions }, { label: 'Buổi chiều', list: afternoonSessions }].map(({ label, list }, i) => (
+              <React.Fragment key={i}>
+                {i === 1 && <Divider style={{ margin: '12px 0' }} />}
+                <Text strong style={{ color: '#d97706', fontSize: 11, display: 'block', marginBottom: 10, textTransform: 'uppercase' }}>{label}</Text>
+                {list.map((session: Session) => {
+                  const schedules = calendarItems.filter((cal) => formatDate(cal.date) === dateStr && extractId(cal.sessionId) === session._id);
+                  return schedules.map((sch) => renderScheduleCard(sch, () => handleOpenSchedule(sch)));
+                })}
+                {list.every((s: Session) => !calendarItems.some((cal) => formatDate(cal.date) === dateStr && extractId(cal.sessionId) === s._id)) && (
+                  <Text type="secondary" style={{ display: 'block', textAlign: 'center', padding: '8px 0' }}>–</Text>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        </Card>
       );
     }
 
-    // Desktop day view
-    const allSessions = [...new Set(calendarItems.map((c) => extractId(c.sessionId)))];
     const sessionMap = new Map<string, Session>();
-    
     calendarItems.forEach((cal) => {
-      const sessionId = extractId(cal.sessionId);
-      if (!sessionMap.has(sessionId) && typeof cal.sessionId === 'object') {
-        sessionMap.set(sessionId, cal.sessionId);
-      }
+      const id = extractId(cal.sessionId);
+      if (!sessionMap.has(id) && typeof cal.sessionId === 'object') sessionMap.set(id, cal.sessionId);
+    });
+    const sortedSessionIds = [...new Set(calendarItems.map((c) => extractId(c.sessionId)))].sort((a, b) => {
+      const na = sessionMap.get(a)?.sessionName || '';
+      const nb = sessionMap.get(b)?.sessionName || '';
+      return na.localeCompare(nb, undefined, { numeric: true, sensitivity: 'base' });
     });
 
     return (
-      <Box sx={{ overflowX: 'auto' }}>
-        <Box sx={{ display: 'grid', gridTemplateColumns: `${isTablet ? '100px' : '120px'} 1fr`, minWidth: 'fit-content', width: '100%' }}>
-          <Box sx={{ p: 2, borderBottom: 1, borderRight: 1, borderColor: 'divider', bgcolor: 'grey.50', fontWeight: 600 }}>
+      <div style={{ overflowX: 'auto', border: '1px solid #E2E8F0', borderRadius: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: `${isTablet ? '80px' : '100px'} 1fr`, width: '100%' }}>
+          <div style={{ padding: 12, borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', backgroundColor: '#F8FAFC', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>
             Thời gian
-          </Box>
-          <Box sx={{ p: 2, borderBottom: 1, borderRight: 1, borderColor: 'divider', bgcolor: isToday ? 'primary.50' : 'grey.50', textAlign: 'center', minWidth: 300 }}>
-            <Typography sx={{ fontWeight: 600, color: isToday ? 'primary.main' : 'text.primary' }}>
+          </div>
+          <div style={{ padding: 16, borderBottom: '1px solid #E2E8F0', backgroundColor: isToday ? '#FFF1F0' : '#F8FAFC', textAlign: 'center' }}>
+            <Text strong style={{ color: isToday ? brandColors.red : 'inherit', display: 'block' }}>
               {date.toLocaleDateString('vi-VN', { weekday: 'long' })}
-            </Typography>
-            <Typography variant="body2" sx={{ color: isToday ? 'primary.main' : 'text.secondary' }}>
-              {formatDateDisplay(date)}
-            </Typography>
-          </Box>
+            </Text>
+            <Text type="secondary" style={{ fontSize: 12 }}>{formatDateDisplay(date)}</Text>
+          </div>
 
-          {allSessions.map((sessionId) => {
+          {sortedSessionIds.map((sessionId) => {
             const session = sessionMap.get(sessionId);
-            
             return (
               <React.Fragment key={sessionId}>
-                <Box sx={{ p: 2, borderBottom: 1, borderRight: 1, borderColor: 'divider', bgcolor: 'grey.50' }}>
-                  <Typography variant="body2" fontWeight={600}>
-                    {session?.sessionName || 'Ca học'}
-                  </Typography>
+                <div style={{ padding: 12, borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', backgroundColor: '#F8FAFC', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <Text strong style={{ fontSize: 13 }}>{session?.sessionName || 'Ca học'}</Text>
                   {session?.startTime && (
-                    <Typography variant="caption" color="text.secondary">
-                      {session.startTime} - {session.endTime}
-                    </Typography>
+                    <Text type="secondary" style={{ fontSize: 11 }}>{session.startTime} – {session.endTime}</Text>
                   )}
-                </Box>
-                <Box sx={{ p: 1.5, borderBottom: 1, borderRight: 1, borderColor: 'divider', minHeight: 120, bgcolor: 'background.paper', minWidth: 300 }}>
+                </div>
+                <div style={{ padding: 12, borderBottom: '1px solid #E2E8F0', minHeight: 100, display: "flex", flexDirection: "column", gap: 6 }}>
                   {calendarItems
-                    .filter((cal) => {
-                      const calDate = formatDate(cal.date);
-                      const calSessionId = extractId(cal.sessionId);
-                      return calDate === dateStr && calSessionId === sessionId;
-                    })
-                    .map((schedule) => 
-                      renderScheduleCard(schedule, () => handleOpenSchedule(schedule))
-                    )}
-                </Box>
+                    .filter((cal) => formatDate(cal.date) === dateStr && extractId(cal.sessionId) === sessionId)
+                    .map((sch) => renderScheduleCard(sch, () => handleOpenSchedule(sch)))}
+                </div>
               </React.Fragment>
             );
           })}
-        </Box>
-      </Box>
+        </div>
+      </div>
     );
   };
 
   const renderMonthView = (): React.ReactNode => {
-    const monthDates = getMonthDates();
+    const monthDates    = getMonthDates();
     const calendarItems = calendars as CalendarItem[];
-    
+
     return (
-      <Box>
-        <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(7, 1fr)`, gap: isMobile ? 0.5 : 1 }}>
+      <div style={{ padding: isMobile ? 8 : 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: isMobile ? 4 : 8 }}>
           {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((day) => (
-            <Box key={day} sx={{ p: isMobile ? 0.5 : 1, textAlign: 'center', fontWeight: 600, bgcolor: 'grey.50', fontSize: isMobile ? '0.7rem' : '0.875rem' }}>
+            <div key={day} style={{ padding: isMobile ? 4 : 8, textAlign: 'center', fontWeight: 600, backgroundColor: '#F8FAFC', fontSize: isMobile ? 11 : 13, borderRadius: 4 }}>
               {isMobile ? day.slice(0, 1) : day}
-            </Box>
+            </div>
           ))}
-          
+
           {monthDates.map((date, idx) => {
-            const dateStr = formatDate(date);
-            const isToday = formatDate(date) === formatDate(new Date());
+            const dateStr        = formatDate(date);
+            const isToday        = dateStr === formatDate(new Date());
             const isCurrentMonth = date.getMonth() === currentDate.getMonth();
-            
-            const daySchedules = calendarItems.filter((cal) => formatDate(cal.date) === dateStr);
+            const daySchedules   = calendarItems.filter((cal) => formatDate(cal.date) === dateStr);
 
             return (
-              <Box 
-                key={idx} 
-                sx={{ 
-                  p: isMobile ? 0.5 : 1, 
-                  minHeight: isMobile ? 60 : 100, 
-                  border: 1, 
-                  borderColor: 'divider',
-                  bgcolor: isToday ? 'primary.50' : isCurrentMonth ? 'background.paper' : 'grey.50',
-                  opacity: isCurrentMonth ? 1 : 0.5
+              <div
+                key={idx}
+                style={{
+                  padding: isMobile ? 4 : 8,
+                  minHeight: isMobile ? 70 : 120,
+                  border: '1px solid #E2E8F0',
+                  borderRadius: 8,
+                  backgroundColor: isToday ? '#FFF1F0' : isCurrentMonth ? 'white' : '#F8FAFC',
+                  opacity: isCurrentMonth ? 1 : 0.55,
                 }}
               >
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
-                    fontWeight: isToday ? 700 : 400,
-                    color: isToday ? 'primary.main' : 'text.primary',
-                    mb: 0.5,
-                    fontSize: isMobile ? '0.7rem' : '0.875rem'
-                  }}
-                >
+                <Text style={{ fontWeight: isToday ? 700 : 400, color: isToday ? brandColors.red : 'inherit', display: 'block', marginBottom: 4, fontSize: isMobile ? 11 : 13 }}>
                   {date.getDate()}
-                </Typography>
-                {daySchedules.map((schedule) => {
-                  const course = getCourseFromSchedule(schedule);
-                  const courseId = extractId(schedule.courseId);
-                  const color = getScheduleColor(courseId);
-
-                  return (
-                    <Box
-                      key={schedule._id}
-                      sx={{
-                        p: isMobile ? 0.3 : 0.5,
-                        mb: 0.5,
-                        bgcolor: color,
-                        color: 'white',
-                        borderRadius: 1,
-                        cursor: 'pointer',
-                        fontSize: isMobile ? '0.6rem' : '0.7rem',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        '&:hover': { opacity: 0.9 }
-                      }}
-                      onClick={() => handleOpenSchedule(schedule)}
-                    >
-                      {course?.name || course?.courseName || 'Chưa xác định'}
-                    </Box>
-                  );
-                })}
-              </Box>
+                </Text>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  {daySchedules.map((schedule) => {
+                    const course = getCourseFromSchedule(schedule);
+                    const color  = getScheduleColor(extractId(schedule.courseId));
+                    return (
+                      <div
+                        key={schedule._id}
+                        onClick={() => handleOpenSchedule(schedule)}
+                        style={{ padding: '2px 6px', backgroundColor: color, color: 'white', borderRadius: 4, cursor: 'pointer', fontSize: isMobile ? 9 : 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                      >
+                        {course?.name || course?.courseName || 'Chưa xác định'}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
-        </Box>
-      </Box>
+        </div>
+      </div>
     );
   };
 
-  const activeCourses = (courses as Course[]).filter((c) => c.status === 'active' || c.status === 'not_yet');
-  const teachers = users as Teacher[];
-  const sessionList = sessions as Session[];
-
-  const getSelectedCourse = (): Course | null => {
-    if (!selectedSchedule) return null;
-    return typeof selectedSchedule.courseId === 'object' ? selectedSchedule.courseId : null;
-  };
-
-  const getSelectedTeacher = (): Teacher | null => {
-    if (!selectedSchedule) return null;
-    return typeof selectedSchedule.teacherId === 'object' ? selectedSchedule.teacherId : null;
-  };
-
-  const getSelectedSession = (): Session | null => {
-    if (!selectedSchedule) return null;
-    return typeof selectedSchedule.sessionId === 'object' ? selectedSchedule.sessionId : null;
-  };
+  // For edit: show ALL courses so the current schedule's course always appears in the list
+  const allCourses      = courses as Course[];
+  // For the course select: include all non-cancelled courses (and also use all in edit)
+  const editableCourses = allCourses; // all courses visible when editing
+  const teachers      = users as Teacher[];
+  const sessionList   = sessions as Session[];
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-        <CircularProgress />
-      </Box>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '100px 0' }}>
+        <Spin size="large" />
+      </div>
     );
   }
 
+  const selectedStatusCfg = selectedSchedule
+    ? STATUS_CONFIG[selectedSchedule.status] ?? STATUS_CONFIG.not_yet
+    : null;
+
   return (
-    <Box>
+    <div style={{ maxWidth: 1400, margin: '0 auto', padding: isMobile ? 12 : 24 }}>
       {fetchError && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {fetchError}
-        </Alert>
+        <Alert message="Lỗi tải dữ liệu" description={fetchError} type="error" showIcon style={{ marginBottom: 20 }} />
       )}
 
-      {/* Header Controls */}
-      <Paper sx={{ p: isMobile ? 1.5 : 2, mb: 2 }}>
-        <Stack direction={isMobile ? 'column' : 'row'} spacing={2} justifyContent="space-between" alignItems="center">
-          <Button 
-            variant="outlined" 
-            onClick={() => setCurrentDate(new Date())}
-            size={isMobile ? 'small' : 'medium'}
-            startIcon={<RotateCcw size={16} />}
-            fullWidth={isMobile}
-          >
-            {isMobile ? 'Hôm nay' : 'Quay lại hôm nay'}
-          </Button>
+<Card
+  styles={{ body: { padding: isMobile ? 16 : 20 } }}
+  style={{ marginBottom: 24, borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
+>
+  <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'stretch' : 'center', gap: 16 }}>
+    <Button icon={<RotateCcw size={16} />} onClick={() => setCurrentDate(new Date())} size={isMobile ? 'middle' : 'large'} style={{ borderRadius: 8 }}>
+      {isMobile ? 'Hôm nay' : 'Quay lại hôm nay'}
+    </Button>
 
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ width: isMobile ? '100%' : 'auto' }}>
-            <IconButton onClick={handlePrev} size="small">
-              <ChevronLeft />
-            </IconButton>
-            <Typography sx={{ flex: 1, textAlign: 'center', fontWeight: 600, fontSize: isMobile ? '0.875rem' : '1rem' }}>
-              {getViewTitle()}
-            </Typography>
-            <IconButton onClick={handleNext} size="small">
-              <ChevronRight />
-            </IconButton>
-          </Stack>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flex: isMobile ? 'none' : 1 }}>
+      <Button type="text" shape="circle" icon={<ChevronLeft size={20} />} onClick={handlePrev} />
+      <Title level={4} style={{ margin: 0, minWidth: isMobile ? 140 : 200, textAlign: 'center', fontSize: isMobile ? 16 : 18 }}>
+        {getViewTitle()}
+      </Title>
+      <Button type="text" shape="circle" icon={<ChevronRight size={20} />} onClick={handleNext} />
+    </div>
 
-          {isMobile ? (
-            <IconButton onClick={() => setMobileMenuOpen(true)}>
-              <MenuIcon />
-            </IconButton>
-          ) : (
-            <Stack direction="row" spacing={1}>
-              <Button variant={viewMode === 'day' ? 'contained' : 'outlined'} onClick={() => setViewMode('day')} size="small" startIcon={<Clock size={16} />}>
-                Ngày
-              </Button>
-              <Button variant={viewMode === 'week' ? 'contained' : 'outlined'} onClick={() => setViewMode('week')} size="small" startIcon={<CalendarDays size={16} />}>
-                Tuần
-              </Button>
-              <Button variant={viewMode === 'month' ? 'contained' : 'outlined'} onClick={() => setViewMode('month')} size="small" startIcon={<Grid3x3 size={16} />}>
-                Tháng
-              </Button>
-            </Stack>
+    <div style={{ display: 'flex', gap: 8, justifyContent: 'center', alignItems: 'center' }}>
+      {!isMobile ? (
+        <Segmented
+          options={[
+            { 
+              value: 'day',  
+              label: (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 4px' }}>
+                  <Clock size={16} />
+                  <span>Ngày</span>
+                </div>
+              ) 
+            },
+            { 
+              value: 'week', 
+              label: (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 4px' }}>
+                  <CalendarDays size={16} />
+                  <span>Tuần</span>
+                </div>
+              ) 
+            },
+            { 
+              value: 'month', 
+              label: (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 4px' }}>
+                  <Grid3x3 size={16} />
+                  <span>Tháng</span>
+                </div>
+              ) 
+            },
+          ]}
+          value={viewMode}
+          onChange={(v) => setViewMode(v as ViewMode)}
+          size="large"
+          style={{ borderRadius: 8 }}
+        />
+      ) : (
+        <Button icon={<MenuIcon size={18} />} onClick={() => setMobileMenuOpen(true)} size="large" style={{ borderRadius: 8 }}>
+          Chế độ xem
+        </Button>
+      )}
+    </div>
+  </div>
+</Card>
+
+      <Drawer
+        title="Chọn chế độ xem"
+        placement="bottom"
+        onClose={() => setMobileMenuOpen(false)}
+        open={mobileMenuOpen}
+        styles={{ body: { padding: 0 } }}
+        height="auto"
+      >
+        <List
+          dataSource={[
+            { label: 'Xem theo ngày',  value: 'day',   icon: <Clock size={20} /> },
+            { label: 'Xem theo tuần',  value: 'week',  icon: <CalendarDays size={20} /> },
+            { label: 'Xem theo tháng', value: 'month', icon: <Grid3x3 size={20} /> },
+          ]}
+          renderItem={(item) => (
+            <List.Item onClick={() => { setViewMode(item.value as ViewMode); setMobileMenuOpen(false); }} style={{ padding: '16px 24px', cursor: 'pointer' }}>
+              <Space size={16}>{item.icon}<Text strong>{item.label}</Text></Space>
+            </List.Item>
           )}
-        </Stack>
-      </Paper>
-
-      {/* Mobile View Selector Drawer */}
-      <Drawer anchor="bottom" open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)}>
-        <Box sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>Chọn chế độ xem</Typography>
-          <List>
-            <ListItemButton onClick={() => { setViewMode('day'); setMobileMenuOpen(false); }}>
-              <Clock size={20} style={{ marginRight: 12 }} />
-              <ListItemText primary="Xem theo ngày" />
-            </ListItemButton>
-            <Divider />
-            <ListItemButton onClick={() => { setViewMode('week'); setMobileMenuOpen(false); }}>
-              <CalendarDays size={20} style={{ marginRight: 12 }} />
-              <ListItemText primary="Xem theo tuần" />
-            </ListItemButton>
-            <Divider />
-            <ListItemButton onClick={() => { setViewMode('month'); setMobileMenuOpen(false); }}>
-              <Grid3x3 size={20} style={{ marginRight: 12 }} />
-              <ListItemText primary="Xem theo tháng" />
-            </ListItemButton>
-          </List>
-        </Box>
+        />
       </Drawer>
 
-      {/* Calendar View */}
-      <Paper sx={{ overflow: 'hidden', p: isMobile ? 2 : 0 }}>
-        {viewMode === 'day' && renderDayView()}
-        {viewMode === 'week' && renderWeekView()}
+      <div style={{ backgroundColor: 'white', borderRadius: 16, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', border: '1px solid #E2E8F0' }}>
+        {viewMode === 'day'   && renderDayView()}
+        {viewMode === 'week'  && renderWeekView()}
         {viewMode === 'month' && renderMonthView()}
-      </Paper>
+      </div>
 
-      {/* Schedule Detail/Edit Dialog */}
-      <Dialog
+      <Modal
         open={!!selectedSchedule}
-        onClose={() => { setSelectedSchedule(null); setIsEditing(false); }}
-        maxWidth="sm"
-        fullWidth
-        fullScreen={isMobile}
-        PaperProps={{ sx: { borderRadius: isMobile ? 0 : 3 } }}
+        onCancel={() => { setSelectedSchedule(null); setIsEditing(false); }}
+        footer={null}
+        width={460}
+        centered
+        closable={false}
+        styles={{ body: { padding: 0 } }}
+        style={{ borderRadius: 16, overflow: 'hidden' }}
       >
         {selectedSchedule && (
           <>
-            <DialogTitle sx={{ pb: 1.5 }}>
-              <Stack direction="row" spacing={1.5} alignItems="center" justifyContent="space-between">
-                <Stack direction="row" spacing={1.5} alignItems="center">
-                  <Box
-                    sx={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 2,
-                      bgcolor: isEditing ? 'warning.50' : 'primary.50',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    {isEditing ? <Edit size={20} color={theme.palette.warning.main} /> : <CalendarDays size={20} color={theme.palette.primary.main} />}
-                  </Box>
-                  <Box>
-                    <Typography variant="h6" fontWeight={700} sx={{ lineHeight: 1.2 }}>
-                      {isEditing ? 'Sửa lịch học' : 'Chi tiết lịch học'}
-                    </Typography>
-                    {!isEditing && (
-                      <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.3 }}>
-                        Nhấn Cài đặt để cập nhật thông tin
-                      </Typography>
-                    )}
-                  </Box>
-                </Stack>
-                {!isEditing && (
-                  <Button
-                    variant="contained"
-                    size="small"
-                    onClick={handleEdit}
-                    startIcon={<Settings size={16} />}
-                    sx={{
-                      borderRadius: 2,
-                      textTransform: 'none',
-                      fontWeight: 600,
-                      px: 1.5,
-                      boxShadow: '0 2px 8px rgba(185, 0, 0, 0.18)',
-                    }}
-                  >
-                    Cài đặt
-                  </Button>
-                )}
-              </Stack>
-            </DialogTitle>
-            <DialogContent>
-              {(deleteError || updateError) && (
-                <Alert severity="error" sx={{ mb: 2 }} onClose={() => { setDeleteError(''); setUpdateError(''); }}>
-                  {deleteError || updateError}
-                </Alert>
-              )}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #F1F5F9' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: '#FFF1F0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {isEditing
+                    ? <Edit size={16} color={brandColors.red} />
+                    : <CalendarDays size={16} color={brandColors.red} />}
+                </div>
+                <Text strong style={{ fontSize: 15 }}>
+                  {isEditing ? 'Cập nhật lịch học' : 'Chi tiết buổi học'}
+                </Text>
+              </div>
+              <button
+                onClick={() => { setSelectedSchedule(null); setIsEditing(false); }}
+                style={{ width: 28, height: 28, border: 'none', background: '#F1F5F9', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748B' }}
+              >
+                <X size={14} />
+              </button>
+            </div>
+            {(deleteError || updateError) && (
+              <div style={{ padding: '0 20px', paddingTop: 16 }}>
+                <Alert
+                  message={deleteError || updateError}
+                  type="error"
+                  showIcon
+                  closable
+                  onClose={() => { setDeleteError(''); setUpdateError(''); }}
+                />
+              </div>
+            )}
+            {!isEditing && (
+              <>
+                <div style={{ padding: '20px 20px 4px' }}>
+                  <div style={{ marginBottom: 16 }}>
+                    <Text style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94A3B8', display: 'block', marginBottom: 4 }}>
+                      Khóa học
+                    </Text>
+                    <Text strong style={{ fontSize: 16 }}>
+                      {getSelectedCourse()?.name || getSelectedCourse()?.courseName || 'Chưa xác định'}
+                    </Text>
+                  </div>
 
-              {!isEditing ? (
-                <Stack spacing={2.25} sx={{ pt: 1 }}>
-                  <Box>
-                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
-                      <BookOpen size={15} color={theme.palette.text.secondary} />
-                      <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                        Khóa học
-                      </Typography>
-                    </Stack>
-                    <Typography variant="body1" fontWeight={600}>
-                      {getSelectedCourse()?.name || getSelectedCourse()?.courseName || 'Khóa học chưa xác định'}
-                    </Typography>
-                  </Box>
+                  <div style={{ height: 1, background: '#F1F5F9', marginBottom: 16 }} />
 
-                  <Divider />
-
-                  <Box>
-                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
-                      <GraduationCap size={15} color={theme.palette.text.secondary} />
-                      <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                        Giáo viên phụ trách
-                      </Typography>
-                    </Stack>
-                    <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: 0.75 }}>
+                  <div style={{ marginBottom: 16 }}>
+                    <Text style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94A3B8', display: 'block', marginBottom: 10 }}>
+                      Giáo viên phụ trách
+                    </Text>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                       <Avatar
-                        sx={{
-                          width: 38,
-                          height: 38,
-                          bgcolor: 'primary.main',
-                          fontSize: '0.95rem',
-                          fontWeight: 700,
-                        }}
+                        size={40}
+                        style={{ backgroundColor: brandColors.red, fontWeight: 600, flexShrink: 0 }}
                       >
                         {getSelectedTeacher()?.name?.charAt(0).toUpperCase() || '?'}
                       </Avatar>
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography variant="body1" fontWeight={600} noWrap>
+                      <div>
+                        <Text strong style={{ fontSize: 14, display: 'block' }}>
                           {getSelectedTeacher()?.name || 'Chưa xác định'}
-                        </Typography>
+                        </Text>
                         {getSelectedTeacher()?.email && (
-                          <Typography variant="caption" color="text.secondary" noWrap>
+                          <Text type="secondary" style={{ fontSize: 12 }}>
                             {getSelectedTeacher()?.email}
-                          </Typography>
+                          </Text>
                         )}
-                      </Box>
-                    </Stack>
-                  </Box>
+                      </div>
+                    </div>
+                  </div>
 
-                  <Divider />
+                  <div style={{ height: 1, background: '#F1F5F9', marginBottom: 16 }} />
 
-                  <Box>
-                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
-                      <Users size={15} color={theme.palette.text.secondary} />
-                      <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                        Sĩ số học viên
-                      </Typography>
-                    </Stack>
-                    <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: 0.75 }}>
-                      <Box
-                        sx={{
-                          width: 38,
-                          height: 38,
-                          borderRadius: 2,
-                          bgcolor: 'rgba(185, 0, 0, 0.08)',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <Users size={18} color={theme.palette.primary.main} />
-                      </Box>
-                      <Box>
-                        <Typography variant="body1" fontWeight={700}>
-                          {getSelectedCourse()?.enrolledCount ?? 0}
-                          {getSelectedCourse()?.capacity ? (
-                            <Box component="span" sx={{ color: 'text.secondary', fontWeight: 500 }}>
-                              {` / ${getSelectedCourse()?.capacity}`}
-                            </Box>
-                          ) : null}
-                          <Box component="span" sx={{ ml: 0.75, fontSize: '0.78rem', color: 'text.secondary', fontWeight: 500 }}>
-                            học viên
-                          </Box>
-                        </Typography>
-                        {getSelectedCourse()?.capacity && (
-                          <Typography variant="caption" color="text.secondary">
-                            Còn {(getSelectedCourse()?.capacity ?? 0) - (getSelectedCourse()?.enrolledCount ?? 0)} chỗ trống
-                          </Typography>
-                        )}
-                      </Box>
-                    </Stack>
-                  </Box>
-
-                  <Divider />
-
-                  <Box>
-                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
-                      <Clock size={15} color={theme.palette.text.secondary} />
-                      <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                    <div>
+                      <Text style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94A3B8', display: 'block', marginBottom: 4 }}>
                         Ca học
-                      </Typography>
-                    </Stack>
-                    <Typography variant="body1" fontWeight={500}>
-                      {getSelectedSession()?.sessionName || 'Chưa xác định'}
-                    </Typography>
-                    {getSelectedSession()?.startTime && (
-                      <Typography variant="caption" color="text.secondary">
-                        {getSelectedSession()?.startTime} - {getSelectedSession()?.endTime}
-                      </Typography>
-                    )}
-                  </Box>
+                      </Text>
+                      <Text strong style={{ fontSize: 14, display: 'block' }}>
+                        {getSelectedSession()?.sessionName || 'Chưa xác định'}
+                      </Text>
+                      {getSelectedSession()?.startTime && (
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          {getSelectedSession()?.startTime} – {getSelectedSession()?.endTime}
+                        </Text>
+                      )}
+                    </div>
+                    <div>
+                      <Text style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94A3B8', display: 'block', marginBottom: 4 }}>
+                        Ngày học
+                      </Text>
+                      <Text strong style={{ fontSize: 14 }}>
+                        {formatDateDisplay(selectedSchedule.date)}
+                      </Text>
+                    </div>
+                  </div>
 
-                  <Divider />
+                  <div style={{ height: 1, background: '#F1F5F9', marginBottom: 16 }} />
 
-                  <Box>
-                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
-                      <CalendarDays size={15} color={theme.palette.text.secondary} />
-                      <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                        Ngày
-                      </Typography>
-                    </Stack>
-                    <Typography variant="body1">
-                      {formatDateDisplay(selectedSchedule.date)}
-                    </Typography>
-                  </Box>
-
-                  <Divider />
-
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600} gutterBottom>
+                  <div style={{ marginBottom: 20 }}>
+                    <Text style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94A3B8', display: 'block', marginBottom: 8 }}>
                       Trạng thái
-                    </Typography>
-                    <Box sx={{ mt: 0.5 }}>
-                      <Chip
-                        label={formatStatus(selectedSchedule.status)}
-                        size="small"
-                        color={getStatusColor(selectedSchedule.status)}
-                      />
-                    </Box>
-                  </Box>
+                    </Text>
+                    <span style={{
+                      display: 'inline-block',
+                      padding: '3px 10px',
+                      borderRadius: 6,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      backgroundColor: selectedStatusCfg?.bg,
+                      color: selectedStatusCfg?.color,
+                    }}>
+                      {selectedStatusCfg?.label}
+                    </span>
 
-                  {selectedSchedule.note && (
-                    <>
-                      <Divider />
-                      <Box>
-                        <Typography variant="caption" color="text.secondary" fontWeight={600} gutterBottom>
-                          Ghi chú
-                        </Typography>
-                        <Typography variant="body2" sx={{ mt: 0.5, p: 1.5, bgcolor: 'grey.50', borderRadius: 1 }}>
-                          {selectedSchedule.note}
-                        </Typography>
-                      </Box>
-                    </>
-                  )}
-                </Stack>
-              ) : (
-                <Stack spacing={3} sx={{ pt: 1 }}>
-                  <FormControl fullWidth required>
-                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-                      <BookOpen size={18} />
-                      <InputLabel>Khóa học</InputLabel>
-                    </Stack>
-                    <Select
-                      value={editFormData.courseId}
-                      onChange={(e: SelectChangeEvent) => setEditFormData({ ...editFormData, courseId: e.target.value })}
-                      label="Khóa học"
-                      disabled={updating}
-                    >
-                      {activeCourses.map((course) => (
-                        <MenuItem key={course._id} value={course._id}>
-                          {course.courseName || course.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-
-                  <FormControl fullWidth required>
-                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-                      <Clock size={18} />
-                      <InputLabel>Ca học</InputLabel>
-                    </Stack>
-                    <Select
-                      value={editFormData.sessionId}
-                      onChange={(e: SelectChangeEvent) => setEditFormData({ ...editFormData, sessionId: e.target.value })}
-                      label="Ca học"
-                      disabled={updating}
-                    >
-                      {sessionList.map((session) => (
-                        <MenuItem key={session._id} value={session._id}>
-                          {session.sessionName} ({session.startTime} - {session.endTime})
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-
-                  <FormControl fullWidth required>
-                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-                      <User size={18} />
-                      <InputLabel>Giáo viên</InputLabel>
-                    </Stack>
-                    <Select
-                      value={editFormData.teacherId}
-                      onChange={(e: SelectChangeEvent) => setEditFormData({ ...editFormData, teacherId: e.target.value })}
-                      label="Giáo viên"
-                      disabled={updating}
-                    >
-                      {teachers.map((teacher) => (
-                        <MenuItem key={teacher._id} value={teacher._id}>
-                          {teacher.name} - {teacher.email}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-
-                  <FormControl fullWidth required>
-                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-                      <CalendarDays size={18} />
-                      <Typography variant="body2" fontWeight={600}>Ngày</Typography>
-                    </Stack>
-                    <TextField
-                      fullWidth
-                      type="date"
-                      value={editFormData.date}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditFormData({ ...editFormData, date: e.target.value })}
-                      InputLabelProps={{ shrink: true }}
-                      disabled={updating}
-                      required
-                    />
-                    {editFormData.date && (
-                      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
-                        Hiển thị: {formatDateDisplay(editFormData.date)}
-                      </Typography>
+                    {selectedSchedule.note && (
+                      <div style={{ marginTop: 10, padding: '10px 14px', backgroundColor: '#F8FAFC', borderRadius: 8, border: '1px solid #E2E8F0' }}>
+                        <Text style={{ fontSize: 13, color: '#64748B', fontStyle: 'italic' }}>
+                          "{selectedSchedule.note}"
+                        </Text>
+                      </div>
                     )}
-                  </FormControl>
+                  </div>
+                </div>
 
-                  <TextField
-                    fullWidth
-                    label="Ghi chú (Tùy chọn)"
-                    multiline
-                    rows={3}
-                    value={editFormData.note}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditFormData({ ...editFormData, note: e.target.value })}
-                    disabled={updating}
-                  />
-                </Stack>
-              )}
-            </DialogContent>
-            <DialogActions sx={{ flexDirection: isMobile ? 'column' : 'row', gap: 1, p: 2, borderTop: 1, borderColor: 'divider' }}>
-              {!isEditing ? (
-                <>
+                <div style={{ display: 'flex', gap: 8, padding: '12px 20px', borderTop: '1px solid #F1F5F9' }}>
                   <Button
-                    onClick={() => { setSelectedSchedule(null); setIsEditing(false); }}
-                    disabled={deleting}
-                    fullWidth={isMobile}
-                    variant="outlined"
-                    sx={{ textTransform: 'none', fontWeight: 600 }}
-                  >
-                    Đóng
-                  </Button>
-                  <Box sx={{ flex: 1 }} />
-                  <Button
-                    variant="outlined"
-                    color="error"
+                    danger
+                    icon={<Trash2 size={14} />}
+                    loading={deleting}
                     onClick={handleDeleteClick}
-                    disabled={deleting}
-                    startIcon={deleting ? <CircularProgress size={20} /> : <Trash2 size={18} />}
-                    fullWidth={isMobile}
-                    sx={{ textTransform: 'none', fontWeight: 600 }}
+                    style={{ borderRadius: 8, height: 36, fontSize: 13 }}
                   >
-                    {deleting ? 'Đang xóa...' : 'Xóa lịch học'}
+                    Xóa
                   </Button>
-                </>
-              ) : (
-                <>
+                  <Button
+                    icon={<Settings size={14} />}
+                    onClick={handleEdit}
+                    style={{ flex: 1, borderRadius: 8, height: 36, fontSize: 13, backgroundColor: '#F1F5F9', border: 'none', fontWeight: 500 }}
+                  >
+                    Chỉnh sửa thông tin
+                  </Button>
+                </div>
+              </>
+            )}
+
+            {isEditing && (
+              <>
+                <div style={{ padding: '16px 20px 0' }}>
+                  {/* Summary card */}
+                  <div style={{ backgroundColor: '#F8FAFC', borderRadius: 10, padding: '12px 16px', marginBottom: 16, border: '1px solid #E2E8F0' }}>
+                    <div style={{ display: 'flex', gap: 32 }}>
+                      <div>
+                        <Text type="secondary" style={{ fontSize: '0.75rem', display: 'block', marginBottom: 2 }}>Ngày hiện tại</Text>
+                        <Text strong style={{ fontSize: '0.9rem' }}>{selectedSchedule ? formatDateDisplay(selectedSchedule.date) : ''}</Text>
+                      </div>
+                      <div>
+                        <Text type="secondary" style={{ fontSize: '0.75rem', display: 'block', marginBottom: 2 }}>Ca học hiện tại</Text>
+                        <Space size={4}>
+                          <Clock size={14} color={brandColors.red} />
+                          <Text strong style={{ fontSize: '0.9rem' }}>{getSelectedSession()?.sessionName || '—'}</Text>
+                        </Space>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Divider style={{ margin: '0 0 16px' }} />
+
+                  <Form
+                    form={editForm}
+                    layout="vertical"
+                    requiredMark="optional"
+                  >
+                    <Form.Item
+                      name="courseId"
+                      label={<Text strong style={{ fontSize: '0.85rem' }}>Khóa học</Text>}
+                      rules={[
+                        { required: true, message: 'Vui lòng chọn khóa học' },
+                        {
+                          validator: (_, value) => {
+                            const course = allCourses.find(c => c._id === value);
+                            if (course && (course.status === 'cancelled' || course.status === 'not_yet')) {
+                              return Promise.reject(
+                                course.status === 'cancelled'
+                                  ? 'Khóa học đã bị hủy, không thể lên lịch'
+                                  : 'Khóa học chưa bắt đầu, không thể chỉnh sửa lịch'
+                              );
+                            }
+                            return Promise.resolve();
+                          }
+                        }
+                      ]}
+                    >
+                      <Select
+                        placeholder="Chọn khóa học..."
+                        disabled={updating}
+                        style={{ height: 42 }}
+                        optionLabelProp="label"
+                        showSearch
+                        optionFilterProp="label"
+                        suffixIcon={<CalendarDays size={16} />}
+                      >
+                        {editableCourses.map((course) => (
+                          <Select.Option
+                            key={course._id}
+                            value={course._id}
+                            label={course.name || course.courseName}
+                            disabled={course.status === 'cancelled' || course.status === 'not_yet'}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span>{course.name || course.courseName}</span>
+                              {course.status === 'cancelled' && <span style={{ fontSize: 11, color: '#ef4444' }}>Đã hủy</span>}
+                              {course.status === 'not_yet'   && <span style={{ fontSize: 11, color: '#f59e0b' }}>Chưa bắt đầu</span>}
+                              {course.status === 'completed' && <span style={{ fontSize: 11, color: '#94A3B8' }}>Hoàn thành</span>}
+                            </div>
+                          </Select.Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                      <Form.Item
+                        name="sessionId"
+                        label={<Text strong style={{ fontSize: '0.85rem' }}>Ca học</Text>}
+                        rules={[{ required: true, message: 'Vui lòng chọn ca học' }]}
+                      >
+                        <Select
+                          placeholder="Chọn ca học..."
+                          disabled={updating}
+                          style={{ height: 42 }}
+                          suffixIcon={<Clock size={16} />}
+                        >
+                          {sessionList.map((session) => (
+                            <Select.Option key={session._id} value={session._id}>
+                              <div>
+                                <div style={{ fontWeight: 500 }}>{session.sessionName}</div>
+                                {session.startTime && (
+                                  <div style={{ fontSize: 11, color: '#94A3B8' }}>{session.startTime} – {session.endTime}</div>
+                                )}
+                              </div>
+                            </Select.Option>
+                          ))}
+                        </Select>
+                      </Form.Item>
+
+                      <Form.Item
+                        name="date"
+                        label={<Text strong style={{ fontSize: '0.85rem' }}>Ngày học</Text>}
+                        rules={[
+                          { required: true, message: 'Vui lòng chọn ngày học' },
+                          {
+                            validator: (_, value) => {
+                              if (!value) return Promise.resolve();
+                              if (dayjs(value).isBefore(dayjs().startOf('day'))) {
+                                return Promise.reject('Không thể chọn ngày đã qua');
+                              }
+                              return Promise.resolve();
+                            }
+                          }
+                        ]}
+                      >
+                        <DatePicker
+                          format="DD/MM/YYYY"
+                          style={{ width: '100%', height: 42 }}
+                          disabled={updating}
+                          placeholder="Chọn ngày..."
+                          disabledDate={(current) => current && current < dayjs().startOf('day')}
+                        />
+                      </Form.Item>
+                    </div>
+
+                    <Form.Item
+                      name="teacherId"
+                      label={<Text strong style={{ fontSize: '0.85rem' }}>Giáo viên phụ trách</Text>}
+                      rules={[{ required: true, message: 'Vui lòng chọn giáo viên' }]}
+                    >
+                      <Select
+                        placeholder="Chọn giáo viên..."
+                        disabled={updating}
+                        style={{ height: 42 }}
+                        optionLabelProp="label"
+                        suffixIcon={<User size={16} />}
+                      >
+                        {teachers.map((teacher) => (
+                          <Select.Option key={teacher._id} value={teacher._id} label={teacher.name}>
+                            <Space size={8}>
+                              <div style={{ width: 24, height: 24, borderRadius: '50%', backgroundColor: brandColors.red, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: 'white', flexShrink: 0 }}>
+                                {teacher.name?.charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <div style={{ fontWeight: 500, lineHeight: 1.2 }}>{teacher.name}</div>
+                                <div style={{ fontSize: 11, color: '#94A3B8' }}>{teacher.email}</div>
+                              </div>
+                            </Space>
+                          </Select.Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+
+                    <Form.Item
+                      name="note"
+                      label={<Text strong style={{ fontSize: '0.85rem' }}>Ghi chú (Tùy chọn)</Text>}
+                    >
+                      <Input.TextArea
+                        rows={3}
+                        disabled={updating}
+                        placeholder="Nhập ghi chú hoặc nội dung buổi học..."
+                        style={{ borderRadius: 8, resize: 'none' }}
+                      />
+                    </Form.Item>
+                  </Form>
+                </div>
+
+                <div style={{ display: 'flex', gap: 8, padding: '12px 20px', borderTop: '1px solid #F1F5F9' }}>
                   <Button
                     onClick={() => setIsEditing(false)}
                     disabled={updating}
-                    fullWidth={isMobile}
-                    variant="outlined"
-                    sx={{ textTransform: 'none', fontWeight: 600 }}
+                    style={{ borderRadius: 8, height: 40 }}
                   >
-                    Hủy
+                    HỦY
                   </Button>
                   <Button
-                    variant="contained"
-                    color="primary"
+                    type="primary"
                     onClick={handleUpdate}
-                    disabled={updating}
-                    startIcon={updating ? <CircularProgress size={20} /> : null}
-                    fullWidth={isMobile}
-                    sx={{ textTransform: 'none', fontWeight: 600 }}
+                    loading={updating}
+                    icon={<Edit size={15} />}
+                    style={{ flex: 1, borderRadius: 8, height: 40, backgroundColor: brandColors.red, borderColor: brandColors.red, fontWeight: 600 }}
                   >
-                    {updating ? 'Đang lưu...' : 'Lưu thay đổi'}
+                    LƯU THAY ĐỔI
                   </Button>
-                </>
-              )}
-            </DialogActions>
+                </div>
+              </>
+            )}
           </>
         )}
-      </Dialog>
+      </Modal>
 
-      {/* Confirm Delete Dialog */}
       <ConfirmDialog
         open={confirmOpen}
-        title="Xóa lịch học"
-        message={`Bạn có chắc chắn muốn xóa lịch học này không?\n\nKhóa học: ${getSelectedCourse()?.name || getSelectedCourse()?.courseName || 'Chưa xác định'}\nNgày: ${selectedSchedule ? formatDateDisplay(selectedSchedule.date) : ''}\n\nHành động này không thể hoàn tác.`}
+        title="Xác nhận xóa lịch học"
+        message={
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <Text>Bạn có chắc chắn muốn xóa lịch học này không? Hành động này không thể hoàn tác.</Text>
+            <div style={{ padding: '10px 14px', backgroundColor: '#FFF1F0', borderRadius: 8, border: '1px solid #FCA5A5' }}>
+              <Text strong style={{ display: 'block', fontSize: 13 }}>
+                {getSelectedCourse()?.name || getSelectedCourse()?.courseName}
+              </Text>
+              <Text style={{ fontSize: 12, color: '#64748B' }}>
+                {selectedSchedule ? formatDateDisplay(selectedSchedule.date) : ''}
+              </Text>
+            </div>
+          </div>
+        }
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
       />
-    </Box>
+    </div>
   );
 }

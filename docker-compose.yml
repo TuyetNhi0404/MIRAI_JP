@@ -72,7 +72,7 @@ services:
       REDIS_URL: redis://redis:6379
       ENABLE_GRAMMAR_QUEUE: "true"
       SPEAKING_SERVICE_URL: http://ocr:8000
-      ENABLE_SPEAKING_PRACTICE: ${ENABLE_SPEAKING_PRACTICE:-false}
+      ENABLE_SPEAKING_PRACTICE: ${ENABLE_SPEAKING_PRACTICE:-true}
       SPEAKING_INTERNAL_KEY: ${SPEAKING_INTERNAL_KEY:-mirai-speaking-dev-key}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost}

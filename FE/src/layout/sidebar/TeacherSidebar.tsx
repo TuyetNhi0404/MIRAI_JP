@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, School, CalendarClock, CircleHelp, NotebookText, FileQuestion, Headphones, BookOpen } from "lucide-react";
+import { Home, School, CalendarClock, CircleHelp, NotebookText, FileQuestion, Headphones, BookOpen, ClipboardCheck } from "lucide-react";
 import { Menu, Typography } from "antd";
 import { brandColors } from "../../theme/theme";
 
@@ -22,6 +22,7 @@ const TeacherSidebar: React.FC<SidebarProps> = ({ isOpen }) => {
   const menuItems: MenuItem[] = [
     { id: "dashboard", label: "Tổng quan", icon: Home, path: "/dashboard/teacher" },
     { id: "schedule", label: "Lịch dạy", icon: CalendarClock, path: "/dashboard/teacher/schedule" },
+    { id: "attendance", label: "Điểm danh", icon: ClipboardCheck, path: "/dashboard/teacher/attendance" },
     { id: "my-classes", label: "Lớp học của tôi", icon: School, path: "/dashboard/teacher/courses" },
     { id: "assignments", label: "Bài tập", icon: NotebookText, path: "/dashboard/teacher/assignments" },
     { id: "questions", label: "Ngân hàng câu hỏi", icon: FileQuestion, path: "/dashboard/teacher/questions" },

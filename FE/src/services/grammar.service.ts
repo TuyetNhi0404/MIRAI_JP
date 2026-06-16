@@ -195,6 +195,11 @@ export const grammarService = {
     await axiosInstance.delete(`${BASE}/cards/${id}`);
   },
 
+  deleteGrammarCardsBatch: async (ids: string[]): Promise<{ success: boolean; message: string; deletedCount: number }> => {
+    const res = await axiosInstance.post(`${BASE}/cards/batch-delete`, { ids });
+    return res.data;
+  },
+
   // ─── STUDENT: GET PRACTICE CARDS ──────────────────────────────────────────
   getStudentPracticeCards: async (): Promise<{ success: boolean; levels: string[]; cards: IGrammarCard[] }> => {
     const res = await axiosInstance.get(`${BASE}/student/practice`);

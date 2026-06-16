@@ -1,7 +1,6 @@
 import axios from "axios";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import GrammarDocument from "../model/grammarDocument.model";
-import GrammarChunk from "../model/grammarChunk.model";
 import GrammarCard from "../model/grammarCard.model";
 import mongoose from "mongoose";
 import { writeOcrResult, readOcrResult } from "../utils/uploadStorage";
@@ -302,7 +301,7 @@ export class GrammarService {
     metrics.totalChunks = chunksToProcess.length;
 
     const embedStart = Date.now();
-    const chunkDocs: Record<string, unknown>[] = [];
+    const chunkDocs: any[] = [];
     for (let i = 0; i < chunksToProcess.length; i += EMBED_BATCH_SIZE) {
       const slice = chunksToProcess.slice(i, i + EMBED_BATCH_SIZE);
       metrics.embedApiCalls++;
@@ -311,9 +310,6 @@ export class GrammarService {
         const v = vectors[j];
         if (!v) { metrics.chunksFailed++; continue; }
         chunkDocs.push({
-          documentId,
-          centerId,
-          level,
           pageNumber: slice[j].pageNum,
           text: slice[j].text,
           embedding: v,
@@ -325,16 +321,14 @@ export class GrammarService {
     metrics.embedDurationMs = Date.now() - embedStart;
 
     const insertStart = Date.now();
-    for (let i = 0; i < chunkDocs.length; i += EMBED_INSERT_BATCH) {
-      const slice = chunkDocs.slice(i, i + EMBED_INSERT_BATCH);
-      try {
-        const inserted = await GrammarChunk.insertMany(slice, { ordered: false });
-        metrics.chunksCreated += inserted.length;
-      } catch (insertErr: any) {
-        const inserted = Array.isArray(insertErr?.insertedDocs) ? insertErr.insertedDocs.length : 0;
-        metrics.chunksCreated += inserted;
-        metrics.chunksFailed += slice.length - inserted;
-      }
+    try {
+      await GrammarDocument.findByIdAndUpdate(documentId, {
+        $set: { chunks: chunkDocs }
+      });
+      metrics.chunksCreated = chunkDocs.length;
+    } catch (insertErr: any) {
+      console.error("[GrammarService] Lỗi khi lưu chunks nhúng vào document:", insertErr);
+      metrics.chunksFailed = chunkDocs.length;
     }
     metrics.insertDurationMs = Date.now() - insertStart;
     await GrammarDocument.findByIdAndUpdate(documentId, { processingStage: "extract" });
@@ -373,6 +367,9 @@ NHIỆM VỤ: Trích xuất TẤT CẢ các mẫu ngữ pháp tiếng Nhật tro
 - Nếu có N mẫu ngữ pháp được đánh số, hãy trả về đúng N đối tượng.
 - Nếu không tìm thấy mẫu ngữ pháp nào, trả về mảng rỗng: []
 
+CHÚ Ý QUAN TRỌNG:
+1. Cấu trúc ("structure") và Giải thích ("explanation") là các trường BẮT BUỘC. Nếu tài liệu thiếu hoặc không hiển thị rõ cấu trúc/giải thích của mẫu ngữ pháp, bạn BẮT BUỘC phải tự điền cấu trúc ngữ pháp chuẩn xác (ví dụ: "V-て + いる") và giải thích ý nghĩa/cách dùng ngắn gọn bằng tiếng Việt dựa trên kiến thức chuyên môn về tiếng Nhật của mình. KHÔNG được để trống hoặc trả về chuỗi rỗng cho hai trường này.
+
 Định dạng đầu ra bắt buộc là một mảng JSON (KHÔNG có markdown, KHÔNG có text nào ngoài mảng JSON):
 [
   {
@@ -399,10 +396,15 @@ NHIỆM VỤ: Trích xuất TẤT CẢ các mẫu ngữ pháp tiếng Nhật tro
           const batchCards = JSON.parse(responseText.substring(jsonStart, jsonEnd + 1));
           if (Array.isArray(batchCards)) {
             for (const card of batchCards) {
-              if (!card.title || !card.structure || !card.meaningVi) continue;
+              if (!card.title || !card.meaningVi) continue;
               const normalizedTitle = card.title.trim().toLowerCase();
               if (!seenTitles.has(normalizedTitle)) {
                 seenTitles.add(normalizedTitle);
+                
+                // Fallback for missing/empty fields
+                card.structure = (card.structure || "").trim() || `Cấu trúc của ${card.title.trim()}`;
+                card.explanation = (card.explanation || "").trim() || `Giải thích cách dùng ${card.title.trim()}`;
+                
                 allExtractedCards.push(card);
               }
             }

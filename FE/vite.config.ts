@@ -11,6 +11,16 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  optimizeDeps: {
+    include: [
+      '@mui/material',
+      '@mui/icons-material',
+      'lucide-react',
+      'antd',
+      '@ant-design/icons',
+      'recharts'
+    ]
+  },
   build: {
     rollupOptions: {
       output: {

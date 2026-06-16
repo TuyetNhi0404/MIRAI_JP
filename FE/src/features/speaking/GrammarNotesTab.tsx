@@ -9,8 +9,9 @@ import {
 import { Trash2 } from "lucide-react";
 import type { GrammarNote } from "./types";
 import { STATUS_LABEL } from "./speakingUtils";
+import { sp } from "./speakingPracticeTheme";
 
-const BRAND = "#c83c3c";
+const BRAND = sp.brand;
 
 type GrammarNotesTabProps = {
   notes: GrammarNote[];
@@ -57,8 +58,8 @@ export function GrammarNotesTab({
           sx={{
             p: 1.5,
             borderRadius: 2,
-            border: "1px solid rgba(185,0,0,0.1)",
-            bgcolor: "#FFFBFB",
+            border: `1px solid ${sp.hairline}`,
+            bgcolor: sp.surfaceSunken,
           }}
         >
           <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 1 }}>
@@ -77,7 +78,7 @@ export function GrammarNotesTab({
           </Typography>
           <Typography
             variant="body2"
-            sx={{ fontFamily: '"Noto Sans JP", sans-serif', color: "#4A1515", lineHeight: 1.5 }}
+            sx={{ fontFamily: '"Noto Sans JP", sans-serif', color: sp.text, lineHeight: 1.5 }}
           >
             {note.original}
           </Typography>
@@ -149,13 +150,13 @@ export function GrammarNotesTab({
 }
 
 const actionBtnSx = {
-  border: "1px solid rgba(185,0,0,0.2)",
+  border: `1px solid ${sp.hairlineStrong}`,
   borderRadius: 1,
   px: 1,
   py: 0.4,
   fontSize: "0.72rem",
   fontWeight: 600,
   cursor: "pointer",
-  bgcolor: "#fff",
-  color: BRAND,
+  bgcolor: sp.surface,
+  color: sp.text,
 };

@@ -1,4 +1,3 @@
-// src/hooks/useAntiCheat.ts - FIXED VERSION
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { AntiCheatLog } from '../types/quiz.types';
 
@@ -52,7 +51,6 @@ interface ViolationSummary {
 export const useAntiCheat = (config: Partial<AntiCheatConfig> = {}) => {
   const finalConfig = { ...DEFAULT_CONFIG, ...config };
 
-  // State Management
   const [logs, setLogs] = useState<AntiCheatLog[]>([]);
   const [violationCount, setViolationCount] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -60,19 +58,12 @@ export const useAntiCheat = (config: Partial<AntiCheatConfig> = {}) => {
   const [showWarning, setShowWarning] = useState(false);
   const [currentWarningType, setCurrentWarningType] = useState<string>('');
 
-  // Refs
   const logsRef = useRef<AntiCheatLog[]>([]);
   const violationCountRef = useRef(0);
   const devToolsCheckIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const isMonitoringActiveRef = useRef(false); // ✅ FIX: Renamed to avoid confusion
+  const isMonitoringActiveRef = useRef(false);
 
-  /**
-   * ============================================
-   * LOGGING SYSTEM
-   * ============================================
-   */
   const addLog = useCallback((type: AntiCheatLog['type'], details?: string) => {
-    // ✅ FIX: Only log if monitoring is active
     if (!isMonitoringActiveRef.current) {
       console.log('⏸️ Anti-cheat monitoring not active, ignoring violation:', type);
       return;
@@ -112,11 +103,6 @@ export const useAntiCheat = (config: Partial<AntiCheatConfig> = {}) => {
     console.warn(`🚨 Anti-Cheat Violation: ${type}`, details);
   }, [finalConfig.warningDuration]);
 
-  /**
-   * ============================================
-   * TAB SWITCH & WINDOW BLUR DETECTION
-   * ============================================
-   */
   useEffect(() => {
     if (!finalConfig.enableTabSwitchDetection) return;
 
@@ -149,18 +135,12 @@ export const useAntiCheat = (config: Partial<AntiCheatConfig> = {}) => {
     };
   }, [finalConfig.enableTabSwitchDetection, addLog]);
 
-  /**
-   * ============================================
-   * FULLSCREEN DETECTION - FIXED
-   * ============================================
-   */
   const requestFullscreen = useCallback(async () => {
     if (!finalConfig.enableFullscreen) return;
 
     try {
       const elem = document.documentElement as HTMLElementWithFullscreen;
-      
-      // ✅ FIX: Try multiple fullscreen APIs
+
       if (elem.requestFullscreen) {
         await elem.requestFullscreen();
       } else if (elem.webkitRequestFullscreen) {
@@ -173,7 +153,7 @@ export const useAntiCheat = (config: Partial<AntiCheatConfig> = {}) => {
         console.warn('⚠️ Fullscreen API not supported by this browser');
         return;
       }
-      
+
       setIsFullscreen(true);
       console.log('🖥️ Fullscreen mode activated');
     } catch (error) {
@@ -189,7 +169,7 @@ export const useAntiCheat = (config: Partial<AntiCheatConfig> = {}) => {
   const exitFullscreen = useCallback(async () => {
     try {
       const doc = document as DocumentWithFullscreen;
-      
+
       if (document.exitFullscreen) {
         await document.exitFullscreen();
       } else if (doc.webkitExitFullscreen) {
@@ -199,7 +179,7 @@ export const useAntiCheat = (config: Partial<AntiCheatConfig> = {}) => {
       } else if (doc.msExitFullscreen) {
         await doc.msExitFullscreen();
       }
-      
+
       setIsFullscreen(false);
       console.log('🖥️ Exited fullscreen mode');
     } catch (error) {
@@ -221,7 +201,6 @@ export const useAntiCheat = (config: Partial<AntiCheatConfig> = {}) => {
 
       setIsFullscreen(isCurrentlyFullscreen);
 
-      // ✅ FIX: Only log violation if monitoring is active AND user exited fullscreen
       if (!isCurrentlyFullscreen && isMonitoringActiveRef.current) {
         addLog('fullscreen_exit', 'User exited fullscreen mode');
       }
@@ -240,11 +219,6 @@ export const useAntiCheat = (config: Partial<AntiCheatConfig> = {}) => {
     };
   }, [finalConfig.enableFullscreen, addLog]);
 
-  /**
-   * ============================================
-   * DEVTOOLS DETECTION
-   * ============================================
-   */
   useEffect(() => {
     if (!finalConfig.enableDevToolsDetection) return;
 
@@ -287,11 +261,7 @@ export const useAntiCheat = (config: Partial<AntiCheatConfig> = {}) => {
     };
   }, [finalConfig.enableDevToolsDetection, addLog]);
 
-  /**
-   * ============================================
-   * COPY/PASTE/CUT BLOCKING
-   * ============================================
-   */
+
   useEffect(() => {
     if (!finalConfig.enableCopyPasteBlock) return;
 
@@ -324,11 +294,6 @@ export const useAntiCheat = (config: Partial<AntiCheatConfig> = {}) => {
     };
   }, [finalConfig.enableCopyPasteBlock, addLog]);
 
-  /**
-   * ============================================
-   * CONTEXT MENU (RIGHT CLICK) BLOCKING
-   * ============================================
-   */
   useEffect(() => {
     if (!finalConfig.enableContextMenuBlock) return;
 
@@ -345,11 +310,6 @@ export const useAntiCheat = (config: Partial<AntiCheatConfig> = {}) => {
     };
   }, [finalConfig.enableContextMenuBlock, addLog]);
 
-  /**
-   * ============================================
-   * TEXT SELECTION BLOCKING
-   * ============================================
-   */
   useEffect(() => {
     const handleSelectStart = (e: Event) => {
       if (!isMonitoringActiveRef.current) return;
@@ -389,22 +349,12 @@ export const useAntiCheat = (config: Partial<AntiCheatConfig> = {}) => {
     };
   }, []);
 
-  /**
-   * ============================================
-   * AUTO-LOCK INPUT SYSTEM
-   * ============================================
-   */
   useEffect(() => {
     if (violationCount >= finalConfig.maxViolations) {
       setIsLocked(true);
     }
   }, [violationCount, finalConfig.maxViolations]);
 
-  /**
-   * ============================================
-   * LOAD SAVED STATE FROM SESSIONSTORAGE
-   * ============================================
-   */
   useEffect(() => {
     try {
       const savedLogs = sessionStorage.getItem('quiz_anti_cheat_logs');
@@ -426,11 +376,6 @@ export const useAntiCheat = (config: Partial<AntiCheatConfig> = {}) => {
     }
   }, []);
 
-  /**
-   * ============================================
-   * HELPER FUNCTIONS
-   * ============================================
-   */
   const getSummary = useCallback((): ViolationSummary => {
     const currentLogs = logsRef.current;
     return {
@@ -458,9 +403,8 @@ export const useAntiCheat = (config: Partial<AntiCheatConfig> = {}) => {
   const startMonitoring = useCallback(() => {
     isMonitoringActiveRef.current = true;
     console.log('🔒 Anti-Cheat System: Monitoring started');
-    
+
     if (finalConfig.enableFullscreen) {
-      // ✅ FIX: Request fullscreen with a small delay to ensure user interaction
       setTimeout(() => {
         requestFullscreen();
       }, 100);
@@ -470,7 +414,7 @@ export const useAntiCheat = (config: Partial<AntiCheatConfig> = {}) => {
   const stopMonitoring = useCallback(() => {
     isMonitoringActiveRef.current = false;
     console.log('🔓 Anti-Cheat System: Monitoring stopped');
-    
+
     if (isFullscreen) {
       exitFullscreen();
     }
@@ -480,20 +424,13 @@ export const useAntiCheat = (config: Partial<AntiCheatConfig> = {}) => {
     return violationCountRef.current >= finalConfig.maxViolations;
   }, [finalConfig.maxViolations]);
 
-  /**
-   * ============================================
-   * RETURN API
-   * ============================================
-   */
   return {
-    // State
     logs,
     violationCount,
     isFullscreen,
     isLocked,
     showWarning,
     currentWarningType,
-    // Actions
     startMonitoring,
     stopMonitoring,
     requestFullscreen,
@@ -501,7 +438,6 @@ export const useAntiCheat = (config: Partial<AntiCheatConfig> = {}) => {
     clearLogs,
     getSummary,
     shouldAutoSubmit,
-    // Config
     maxViolations: finalConfig.maxViolations,
   };
 };

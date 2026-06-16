@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #FAFAFA;
+  --color-background: #FFFDF9; /* Japanese Washi off-white */
   --color-foreground: #1F2238;
 
   --color-card: #FFFFFF;
@@ -10,13 +10,13 @@
   --color-popover: #FFFFFF;
   --color-popover-foreground: #1F2238;
 
-  --color-primary: #B90000;
+  --color-primary: #B90000; /* Hinomaru Red */
   --color-primary-foreground: #FFFFFF;
 
-  --color-secondary: #F5F5F5;
+  --color-secondary: #FFFDF9;
   --color-secondary-foreground: #1F2238;
 
-  --color-muted: #F5F5F5;
+  --color-muted: #FAF6F0;
   --color-muted-foreground: #595959;
 
   --color-accent: #FFF1F0;
@@ -25,27 +25,44 @@
   --color-destructive: #FF4D4F;
   --color-destructive-foreground: #FFFFFF;
 
-  --color-border: #E8E8E8;
-  --color-input: #E8E8E8;
+  --color-border: #F0E8DD;
+  --color-input: #F0E8DD;
   --color-ring: #B90000;
 
   --color-success: #52C41A;
   --color-warning: #FAAD14;
   --color-info: #1677FF;
 
-  --radius: 0.625rem;
-  --radius-sm: 0.5rem;
-  --radius-md: 0.625rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
+  /* Generic Theme Colors */
+  --color-primary-color: #B90000;
+  --color-primary-color-hover: #990000;
+  --color-secondary-color: #FAF6F0;
+  --color-bg-base: #FFFDF9;
+  --color-surface-base: #FFFFFF;
+  --color-text-main: #1F2238;
+  --color-text-secondary: #595959;
+  --color-border-color: #F0E8DD;
+  --color-accent-color: #FFF1F0;
+  --color-accent-color-hover: #FFE8E6;
 
-  --font-sans: "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont, "Roboto", "Helvetica Neue", sans-serif;
+  --radius: 0.75rem; /* Smoother, more rounded defaults */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+
+  --font-sans: "Plus Jakarta Sans", "Outfit", "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont, "Roboto", sans-serif;
+  --font-serif: "Playfair Display", "Noto Serif JP", "Georgia", serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 @layer base {
   * {
     border-color: var(--color-border);
+  }
+
+  html {
+    scroll-behavior: smooth;
   }
 
   html,
@@ -55,6 +72,22 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Custom soft scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #FFFDF9;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(185, 0, 0, 0.15);
+    border-radius: 99px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(185, 0, 0, 0.35);
   }
 }
 
@@ -173,3 +206,134 @@
   animation: petalDrift ease-in-out infinite alternate;
   will-change: transform;
 }
+
+/* 🌸 Japanese Design Utilities */
+
+.japan-title {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.japan-card {
+  background-color: #FFFFFF;
+  border: 1px solid #F0E8DD;
+  border-radius: 1.5rem; /* 24px - softer and rounder */
+  box-shadow: 0 10px 40px rgba(31, 34, 56, 0.015), 0 2px 4px rgba(31, 34, 56, 0.005);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.japan-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px rgba(185, 0, 0, 0.05);
+  border-color: rgba(185, 0, 0, 0.25);
+}
+
+.japan-btn-primary {
+  background-color: #B90000;
+  color: #FFFFFF;
+  border: none;
+  font-weight: 700;
+  font-size: 0.875rem;
+  padding: 0.875rem 1.75rem;
+  border-radius: 0.75rem; /* 12px */
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(185, 0, 0, 0.2);
+  transition: all 0.2s ease-in-out;
+}
+
+.japan-btn-primary:hover {
+  background-color: #900000;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(185, 0, 0, 0.3);
+}
+
+.japan-btn-primary:active {
+  transform: translateY(0);
+}
+
+.japan-btn-secondary {
+  background-color: #FFFDF9;
+  color: #1F2238;
+  border: 1px solid #F0E8DD;
+  font-weight: 700;
+  font-size: 0.875rem;
+  padding: 0.875rem 1.75rem;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.japan-btn-secondary:hover {
+  background-color: #FFF1F0;
+  border-color: rgba(185, 0, 0, 0.3);
+  color: #B90000;
+}
+
+/* Hanko (Traditional Japanese stamp badge) */
+.japan-hanko {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #B90000;
+  border-radius: 50%;
+  color: #B90000;
+  font-family: var(--font-serif);
+  font-weight: 900;
+  text-transform: uppercase;
+  user-select: none;
+  transform: rotate(-8deg);
+  box-shadow: inset 0 0 4px rgba(185, 0, 0, 0.1);
+}
+
+/* Seigaiha Traditional Wave Background */
+.seigaiha-pattern {
+  background-color: #FFFDF9;
+  background-image: radial-gradient(circle at 100% 150%, rgba(185, 0, 0, 0.02) 24%, transparent 25%),
+                    radial-gradient(circle at 0% 150%, rgba(185, 0, 0, 0.02) 24%, transparent 25%),
+                    radial-gradient(circle at 50% 100%, rgba(185, 0, 0, 0.025) 24%, transparent 25%),
+                    radial-gradient(circle at 100% 50%, rgba(185, 0, 0, 0.02) 24%, transparent 25%),
+                    radial-gradient(circle at 0% 50%, rgba(185, 0, 0, 0.02) 24%, transparent 25%),
+                    radial-gradient(circle at 50% 0%, rgba(185, 0, 0, 0.025) 24%, transparent 25%);
+  background-size: 80px 40px;
+}
+
+/* Glassmorphism Navbar */
+.japan-glass-nav {
+  background-color: rgba(255, 253, 249, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(240, 232, 221, 0.6);
+}
+
+/* Sakura Falling Animation */
+.sakura-petal {
+  position: absolute;
+  background-color: #FFB7C5;
+  border-radius: 150% 0 150% 150%;
+  opacity: 0.85;
+  pointer-events: none;
+  z-index: 1;
+  animation: sakuraFall linear infinite;
+  transform-origin: left top;
+}
+
+@keyframes sakuraFall {
+  0% {
+    top: -5%;
+    transform: translateX(0) rotate(0deg) scale(1);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  90% {
+    opacity: 0.8;
+  }
+  100% {
+    top: 105%;
+    transform: translateX(200px) rotate(360deg) scale(0.6);
+    opacity: 0;
+  }
+}
+

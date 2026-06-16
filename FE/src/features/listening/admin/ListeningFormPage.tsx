@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, TextField, Button, Paper, Grid, MenuItem, Select, FormControl, InputLabel, CircularProgress, Skeleton, Alert, Snackbar, Switch, FormControlLabel } from '@mui/material';
-import { ArrowBack, Save } from '@mui/icons-material';
+import { ArrowLeft, Save, X } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import listeningService from '../../../services/listeningService';
 
@@ -152,19 +152,39 @@ const ListeningFormPage = () => {
   }
 
   return (
-    <Box sx={{ p: 4, maxWidth: 900, mx: 'auto' }}>
-      <Button
-        startIcon={<ArrowBack />}
-        onClick={() => navigate('/dashboard/admin/listening')}
-        sx={{ mb: 3, color: 'text.secondary', fontWeight: 'bold' }}
-        disabled={saving || uploading}
-      >
-        Quay lại danh sách
-      </Button>
-
-      <Typography variant="h4" fontWeight="bold" sx={{ color: '#B90000', mb: 4 }}>
-        {isEditMode ? 'Chỉnh sửa nội dung luyện nghe' : 'Tạo mới nội dung luyện nghe'}
-      </Typography>
+    <div style={{ padding: '20px', maxWidth: '900px', margin: '0 auto' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+        <button
+          onClick={() => navigate('/dashboard/admin/listening')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '8px 12px',
+            backgroundColor: '#6c757d',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '14px'
+          }}
+          disabled={saving || uploading}
+        >
+          <ArrowLeft size={16} /> Quay lại
+        </button>
+        <Typography
+          variant="h4"
+          sx={{
+            color: '#B90000',
+            fontWeight: 'bold',
+            fontSize: { xs: '1.5rem', sm: '2rem' },
+            margin: 0,
+          }}
+        >
+          {isEditMode ? 'Chỉnh sửa nội dung luyện nghe' : 'Tạo mới nội dung luyện nghe'}
+        </Typography>
+      </div>
 
       {error && (
         <Alert severity="error" sx={{ mb: 3, borderRadius: '12px' }} onClose={() => setError(null)}>
@@ -296,10 +316,25 @@ const ListeningFormPage = () => {
             />
           </Grid>
 
-          <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+          <Grid item xs={12} sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', mt: 2 }}>
+            <Button
+              variant="outlined"
+              onClick={() => navigate('/dashboard/admin/listening')}
+              startIcon={<X size={18} />}
+              disabled={saving || uploading}
+              sx={{
+                px: 4,
+                py: 1.5,
+                borderRadius: '12px',
+                fontWeight: 'bold',
+                textTransform: 'none',
+              }}
+            >
+              Hủy
+            </Button>
             <Button
               variant="contained"
-              startIcon={(saving || uploading) ? <CircularProgress size={18} color="inherit" /> : <Save />}
+              startIcon={(saving || uploading) ? <CircularProgress size={18} color="inherit" /> : <Save size={18} />}
               onClick={handleSave}
               disabled={saving || uploading || !formData.title.trim()}
               sx={{
@@ -325,7 +360,7 @@ const ListeningFormPage = () => {
         onClose={() => setSnackbarMessage(null)}
         message={snackbarMessage || ''}
       />
-    </Box>
+    </div>
   );
 };
 

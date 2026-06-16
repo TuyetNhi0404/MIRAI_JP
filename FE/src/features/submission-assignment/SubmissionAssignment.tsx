@@ -1,24 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
-import {
-  Box,
-  Typography,
-  TextField,
-  InputAdornment,
-  CircularProgress,
-  Alert,
-  Paper,
-  Chip,
-  IconButton,
-  Grid,
-  Menu,
-  MenuItem,
-  ListItemText,
-} from "@mui/material";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, BookOpen } from "lucide-react";
 import SubmissionUploadModal from "./SubmissionUploadModal";
 import { submissionService } from "../../services/submissionService";
 import type { EnrolledCourse, AssignmentWithSubmission } from "../../types/submission.types";
 import { format } from "date-fns";
+import { PageLayout } from "../../components/ui/PageLayout";
+import { BaseCard } from "../../components/ui/BaseCard";
 
 interface AssignmentCardProps {
   assignment: AssignmentWithSubmission;
@@ -34,8 +21,7 @@ const SubmissionAssignment: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "closed">("all");
-  const [showFilterMenu, setShowFilterMenu] = useState(false);
-  const [filterAnchorEl, setFilterAnchorEl] = useState<null | HTMLElement>(null);
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState<AssignmentWithSubmission | null>(null);
   const [openUpload, setOpenUpload] = useState(false);
 
@@ -43,7 +29,6 @@ const SubmissionAssignment: React.FC = () => {
     const fetchEnrolledCourses = async () => {
       try {
         const response = await submissionService.getMyEnrolledCourses();
-        
         if (response.courses.length === 0) {
           setError("Bạn chưa đăng ký tham gia khóa học nào. Vui lòng đăng ký khóa học trước.");
           setInitialLoading(false);
@@ -51,7 +36,6 @@ const SubmissionAssignment: React.FC = () => {
         }
 
         setEnrolledCourses(response.courses);
-        
         const savedCourseId = localStorage.getItem("selectedCourseId");
         const courseToSelect =
           savedCourseId && response.courses.find((c) => c._id === savedCourseId)
@@ -59,8 +43,8 @@ const SubmissionAssignment: React.FC = () => {
             : response.courses[0]._id;
         setSelectedCourseId(courseToSelect);
       } catch (err) {
-        const error = err as { response?: { status?: number } };
-        if (error.response?.status === 404) {
+        const errorRes = err as { response?: { status?: number } };
+        if (errorRes.response?.status === 404) {
           setError("Bạn chưa đăng ký tham gia khóa học nào. Vui lòng đăng ký khóa học trước.");
         } else {
           setError("Không thể tải danh sách khóa học. Vui lòng thử lại.");
@@ -70,10 +54,8 @@ const SubmissionAssignment: React.FC = () => {
       }
     };
 
-    fetchEnrolledCourses();
+    void fetchEnrolledCourses();
   }, []);
-
-
 
   const fetchAssignments = useCallback(async () => {
     if (!selectedCourseId) return;
@@ -82,14 +64,11 @@ const SubmissionAssignment: React.FC = () => {
     setError(null);
 
     try {
-      const response = await submissionService.getAllAssignments(
-        selectedCourseId,
-        {
-          search: searchQuery || undefined,
-          limit: 100,
-          page: 1,
-        }
-      );
+      const response = await submissionService.getAllAssignments(selectedCourseId, {
+        search: searchQuery || undefined,
+        limit: 100,
+        page: 1,
+      });
 
       const assignmentsWithStatus = await Promise.all(
         (response.assignments || []).map(async (assignment) => {
@@ -99,7 +78,7 @@ const SubmissionAssignment: React.FC = () => {
               ...assignment,
               submission: submissionResponse.submission,
             } as AssignmentWithSubmission;
-          } catch  {
+          } catch {
             return {
               ...assignment,
               submission: null,
@@ -110,12 +89,12 @@ const SubmissionAssignment: React.FC = () => {
 
       setAssignments(assignmentsWithStatus);
     } catch (err) {
-      const error = err as { response?: { status?: number; data?: { message?: string } } };
-      const errorMsg = error.response?.data?.message || "Không thể tải danh sách bài tập";
-      if (error.response?.status === 404) {
+      const errorRes = err as { response?: { status?: number; data?: { message?: string } } };
+      const errorMsg = errorRes.response?.data?.message || "Không thể tải danh sách bài tập";
+      if (errorRes.response?.status === 404) {
         setError(null);
         setAssignments([]);
-      } else if (error.response?.status === 401 || error.response?.status === 403) {
+      } else if (errorRes.response?.status === 401 || errorRes.response?.status === 403) {
         setError("Bạn không có quyền truy cập. Vui lòng đăng nhập lại.");
       } else {
         setError(errorMsg);
@@ -146,229 +125,180 @@ const SubmissionAssignment: React.FC = () => {
 
   useEffect(() => {
     if (selectedCourseId) {
-      fetchAssignments();
+      void fetchAssignments();
     }
   }, [selectedCourseId, fetchAssignments]);
 
   if (initialLoading) {
     return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "400px",
-        }}
-      >
-        <CircularProgress sx={{ color: "#B90000" }} />
-        <Typography sx={{ ml: 2 }}>Đang tải danh sách khóa học...</Typography>
-      </Box>
+      <div className="flex flex-col justify-center items-center min-h-[300px] gap-3">
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-sm text-slate-500 font-medium">Đang tải danh sách khóa học...</p>
+      </div>
     );
   }
 
   if (enrolledCourses.length === 0) {
     return (
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: "400px",
-          p: 3,
-        }}
-      >
-        <Typography variant="h6" gutterBottom>
-          Bạn chưa đăng ký khóa học nào
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Vui lòng đăng ký khóa học để xem và nộp bài tập
-        </Typography>
-      </Box>
+      <PageLayout title="Bài tập về nhà" subtitle="Quản lý và nộp bài tập" icon={BookOpen}>
+        <BaseCard className="text-center py-12">
+          <h4 className="text-sm font-extrabold text-slate-800 m-0 mb-1">Bạn chưa đăng ký khóa học nào</h4>
+          <p className="text-xs text-slate-400 m-0">Vui lòng đăng ký khóa học để xem và nộp bài tập</p>
+        </BaseCard>
+      </PageLayout>
     );
   }
 
   return (
-    <Box sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
-      <Typography
-        variant="h4"
-        sx={{
-          mb: 2.5,
-          fontWeight: 600,
-          fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' }
-        }}
-      >
-        Bài tập
-      </Typography>
+    <PageLayout
+      title="Bài tập về nhà"
+      subtitle="Xem danh sách bài tập được giao, kiểm tra hạn nộp và gửi bài nộp trực tuyến"
+      icon={BookOpen}
+    >
+      {/* Filters & Control bar */}
+      <BaseCard className="!p-4 bg-slate-50/50 border-slate-150/70">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-3 flex-1">
+            {/* Course Selector Dropdown (Adds a premium global layout UX) */}
+            <div className="flex flex-col gap-1 w-full sm:w-60">
+              <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Khóa học</span>
+              <select
+                value={selectedCourseId}
+                onChange={(e) => {
+                  setSelectedCourseId(e.target.value);
+                  localStorage.setItem("selectedCourseId", e.target.value);
+                }}
+                className="w-full border border-slate-200 rounded-xl px-3 py-2 bg-white text-xs font-bold text-slate-700 focus:outline-none focus:border-blue-500"
+              >
+                {enrolledCourses.map((course) => (
+                  <option key={course._id} value={course._id}>
+                    {course.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-      <Box
-        sx={{
-          display: "flex",
-          gap: 2,
-          mb: 2.5,
-          flexDirection: { xs: 'column', sm: 'row' },
-          alignItems: { xs: 'stretch', sm: 'center' }
-        }}
-      >
-        <TextField
-          placeholder="Tìm kiếm bài tập..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          disabled={!selectedCourseId || loading}
-          size="small"
-          sx={{
-            width: { xs: '100%', sm: '400px' },
-            backgroundColor: "white",
-            "& .MuiOutlinedInput-root": {
-              "& fieldset": {
-                borderColor: "#ddd",
-              },
-            },
-          }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search size={20} />
-              </InputAdornment>
-            ),
-          }}
-        />
+            {/* Search filter input */}
+            <div className="flex flex-col gap-1 w-full sm:flex-1">
+              <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Tìm kiếm</span>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm bài tập..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  disabled={!selectedCourseId || loading}
+                  className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-500"
+                />
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              </div>
+            </div>
+          </div>
 
-        <IconButton
-          onClick={(e) => {
-            setFilterAnchorEl(e.currentTarget);
-            setShowFilterMenu(!showFilterMenu);
-          }}
-          sx={{
-            border: "1px solid #ddd",
-            borderRadius: 1,
-            backgroundColor: statusFilter !== "all" ? "#FFF5E6" : "white",
-            "&:hover": {
-              backgroundColor: statusFilter !== "all" ? "#FFE8CC" : "#f5f5f5",
-            },
-            width: { xs: '100%', sm: 'auto' },
-            justifyContent: { xs: 'flex-start', sm: 'center' },
-            px: { xs: 2, sm: 1 }
-          }}
-        >
-          <Filter size={20} />
-          {statusFilter !== "all" && (
-            <Chip
-              label={statusFilter.toUpperCase()}
-              size="small"
-              sx={{
-                ml: 1,
-                height: 20,
-                backgroundColor: "#B90000",
-                color: "white",
-                fontSize: "0.7rem",
-              }}
-            />
-          )}
-        </IconButton>
+          {/* Filter drop-down action button */}
+          <div className="flex items-end gap-2 shrink-0 self-end md:self-auto relative">
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Lọc trạng thái</span>
+              <button
+                onClick={() => setShowFilterDropdown((prev) => !prev)}
+                className={`flex items-center gap-2 px-4 py-2 border rounded-xl text-xs font-bold transition active:scale-95 bg-white ${
+                  statusFilter !== "all" ? "border-blue-300 text-blue-650 bg-blue-50/10" : "border-slate-200 text-slate-650"
+                }`}
+              >
+                <Filter size={14} />
+                <span>
+                  {statusFilter === "all" ? "Tất cả" : statusFilter === "active" ? "Đang mở" : "Đã đóng"}
+                </span>
+              </button>
+            </div>
 
-        <Menu
-          open={showFilterMenu}
-          onClose={() => {
-            setShowFilterMenu(false);
-            setFilterAnchorEl(null);
-          }}
-          anchorEl={filterAnchorEl}
-          anchorOrigin={{
-            vertical: 'bottom',
-            horizontal: 'left',
-          }}
-          transformOrigin={{
-            vertical: 'top',
-            horizontal: 'left',
-          }}
-        >
-          <MenuItem
-            onClick={() => {
-              setStatusFilter("all");
-              setShowFilterMenu(false);
-              setFilterAnchorEl(null);
-            }}
-            selected={statusFilter === "all"}
-          >
-            <ListItemText>Tất cả</ListItemText>
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              setStatusFilter("active");
-              setShowFilterMenu(false);
-              setFilterAnchorEl(null);
-            }}
-            selected={statusFilter === "active"}
-          >
-            <ListItemText>Đang mở</ListItemText>
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              setStatusFilter("closed");
-              setShowFilterMenu(false);
-              setFilterAnchorEl(null);
-            }}
-            selected={statusFilter === "closed"}
-          >
-            <ListItemText>Đã đóng</ListItemText>
-          </MenuItem>
-        </Menu>
-      </Box>
+            {showFilterDropdown && (
+              <div className="absolute right-0 top-full mt-2 w-40 bg-white border border-slate-150 rounded-2xl shadow-xl py-1.5 z-10 animate-fadeIn">
+                <button
+                  onClick={() => {
+                    setStatusFilter("all");
+                    setShowFilterDropdown(false);
+                  }}
+                  className={`w-full px-4 py-2 text-left text-xs font-bold transition hover:bg-slate-50 ${
+                    statusFilter === "all" ? "text-blue-600 bg-blue-50/10" : "text-slate-600"
+                  }`}
+                >
+                  Tất cả
+                </button>
+                <button
+                  onClick={() => {
+                    setStatusFilter("active");
+                    setShowFilterDropdown(false);
+                  }}
+                  className={`w-full px-4 py-2 text-left text-xs font-bold transition hover:bg-slate-50 ${
+                    statusFilter === "active" ? "text-blue-600 bg-blue-50/10" : "text-slate-600"
+                  }`}
+                >
+                  Đang mở
+                </button>
+                <button
+                  onClick={() => {
+                    setStatusFilter("closed");
+                    setShowFilterDropdown(false);
+                  }}
+                  className={`w-full px-4 py-2 text-left text-xs font-bold transition hover:bg-slate-50 ${
+                    statusFilter === "closed" ? "text-blue-600 bg-blue-50/10" : "text-slate-600"
+                  }`}
+                >
+                  Đã đóng
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </BaseCard>
 
+      {/* Error display */}
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
-          {error}
-        </Alert>
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-xs font-semibold text-red-800 flex justify-between items-center">
+          <span>{error}</span>
+          <button onClick={() => setError(null)} className="text-red-550 hover:text-red-750 font-black">
+            ✕
+          </button>
+        </div>
       )}
 
+      {/* Loading indicator */}
       {loading && (
-        <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-          <CircularProgress sx={{ color: "#B90000" }} />
-        </Box>
+        <div className="flex flex-col items-center justify-center py-12 gap-3">
+          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-xs text-slate-500 font-medium">Đang tải danh sách bài tập...</p>
+        </div>
       )}
 
+      {/* Assignments grid content */}
       {!loading && selectedCourseId && (
         <>
           {filteredAssignments.length === 0 ? (
-            <Box
-              sx={{
-                textAlign: 'center',
-                py: { xs: 6, sm: 8, md: 10 },
-              }}
-            >
-              <Typography 
-                variant="h6" 
-                color="text.secondary"
-                sx={{ fontSize: { xs: '1rem', sm: '1.15rem', md: '1.25rem' } }}
-              >
-                {searchQuery
-                  ? "Không tìm thấy bài tập nào khớp với tìm kiếm"
-                  : statusFilter === "closed"
-                  ? "Bạn không có bài tập nào đã đóng"
-                  : statusFilter === "active"
-                  ? "Bạn không có bài tập nào đang mở"
-                  : "Chưa có bài tập nào"}
-              </Typography>
-            </Box>
+            <BaseCard className="text-center py-16">
+              <div className="max-w-md mx-auto space-y-2">
+                <p className="text-sm font-extrabold text-slate-700 m-0">Không tìm thấy bài tập nào</p>
+                <p className="text-xs text-slate-400 m-0 leading-relaxed">
+                  {searchQuery
+                    ? "Không tìm thấy kết quả phù hợp với tìm kiếm của bạn."
+                    : statusFilter === "closed"
+                      ? "Chưa có bài tập nào đã đóng trong khóa học này."
+                      : statusFilter === "active"
+                        ? "Tất cả bài tập đã đóng hoặc chưa được giao."
+                        : "Chưa có bài tập nào được giao trong khóa học này."}
+                </p>
+              </div>
+            </BaseCard>
           ) : (
-            <Grid container spacing={{ xs: 1.5, sm: 2, md: 2 }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredAssignments.map((assignment) => (
-                <Grid 
-                  item 
-                  xs={12}  
-                  sm={6}   
-                  md={4}   
-                  lg={3}   
+                <AssignmentCard
                   key={assignment._id}
-                >
-                  <AssignmentCard
-                    assignment={assignment}
-                    onClick={() => handleViewDetail(assignment)}
-                  />
-                </Grid>
+                  assignment={assignment}
+                  onClick={() => handleViewDetail(assignment)}
+                />
               ))}
-            </Grid>
+            </div>
           )}
         </>
       )}
@@ -379,285 +309,122 @@ const SubmissionAssignment: React.FC = () => {
         assignment={selectedAssignment}
         onSuccess={handleUploadSuccess}
       />
-    </Box>
+    </PageLayout>
   );
 };
 
 const AssignmentCard: React.FC<AssignmentCardProps> = ({ assignment, onClick }) => {
   const formatDate = (dateString: string) => {
     try {
-      return format(new Date(dateString), "dd/MM/yyyy, h:mm a");
+      return format(new Date(dateString), "dd/MM/yyyy, hh:mm a");
     } catch {
       return dateString;
     }
   };
 
-  const getStatusColor = (status: string) => {
-    return status === 'closed' ? '#d32f2f' : '#2e7d32';
-  };
-
-  const getSubmissionColor = (status?: string) => {
-    switch (status) {
-      case "submitted":
-        return "#2e7d32";
-      case "late":
-        return "#ed6c02";
-      case "graded":
-        return "#1976d2";
-      default:
-        return "#ed6c02";
-    }
-  };
-
-  const getSubmissionLabel = (status?: string) => {
-    switch (status) {
-      case "submitted":
-        return "ĐÃ NỘP";
-      case "late":
-        return "NỘP TRỄ";
-      case "graded":
-        return "ĐÃ CHẤM ĐIỂM";
-      default:
-        return "CHƯA NỘP";
-    }
-  };
-
   const submissionStatus = assignment.submission?.status || "not_submitted";
 
+  const getSubmissionBadgeStyles = (status: string) => {
+    switch (status) {
+      case "graded":
+        return "bg-blue-50 text-blue-700 border-blue-100";
+      case "submitted":
+        return "bg-emerald-50 text-emerald-700 border-emerald-100";
+      case "late":
+        return "bg-amber-50 text-amber-700 border-amber-100";
+      default:
+        return "bg-slate-100 text-slate-500 border-slate-200";
+    }
+  };
+
+  const getSubmissionLabel = (status: string) => {
+    switch (status) {
+      case "graded":
+        return "Đã chấm điểm";
+      case "submitted":
+        return "Đã nộp";
+      case "late":
+        return "Nộp trễ";
+      default:
+        return "Chưa nộp";
+    }
+  };
+
   return (
-    <Paper
-      elevation={0}
+    <BaseCard
       onClick={onClick}
-      sx={{
-        p: { xs: 1.5, sm: 1.8, md: 2 },
-        cursor: 'pointer',
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        borderRadius: 2,
-        border: '1px solid',
-        borderColor: '#e0e0e0',
-        backgroundColor: '#fff',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-        '&:hover': {
-          transform: 'translateY(-4px)',
-          boxShadow: '0 8px 16px rgba(0,0,0,0.12)',
-          borderColor: '#B90000',
-        },
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
+      className="flex flex-col justify-between hover:-translate-y-1 hover:shadow-lg hover:border-blue-400 active:scale-[0.99] transition-all cursor-pointer h-full"
     >
-      <Box sx={{ mb: 0.8 }}>
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={{ 
-            display: 'block',
-            mb: 0.2,
-            fontSize: '0.6rem'
-          }}
-        >
-          Tiêu đề
-        </Typography>
-        <Typography
-          variant="h6"
-          sx={{
-            fontWeight: 600,
-            color: '#333',
-            fontSize: { xs: '0.8rem', sm: '0.85rem', md: '0.88rem' },
-            lineHeight: 1.2,
-            wordBreak: 'break-word',
-          }}
-        >
-          {assignment.title}
-        </Typography>
-      </Box>
+      <div className="space-y-4">
+        {/* Title & Type header */}
+        <div className="space-y-1">
+          <div className="flex justify-between items-start gap-2">
+            <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
+              BÀI TẬP VỀ NHÀ
+            </span>
+            <span
+              className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${
+                assignment.status === "closed"
+                  ? "bg-red-50 text-red-700 border-red-100"
+                  : "bg-emerald-50 text-emerald-700 border-emerald-100"
+              }`}
+            >
+              {assignment.status === "closed" ? "Đã đóng" : "Đang mở"}
+            </span>
+          </div>
+          <h3 className="text-sm font-extrabold text-slate-800 leading-tight m-0 select-all hover:text-blue-650 transition">
+            {assignment.title}
+          </h3>
+        </div>
 
-      <Grid container spacing={{ xs: 0.6, sm: 0.8 }}>
-        <Grid item xs={6} sm={6}>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ 
-              display: 'block',
-              mb: 0.2,
-              fontSize: '0.6rem'
-            }}
-          >
-            Loại
-          </Typography>
-          <Typography 
-            variant="body2" 
-            sx={{ 
-              fontWeight: 500,
-              fontSize: { xs: '0.68rem', sm: '0.7rem' }
-            }}
-          >
-            Bài tập
-          </Typography>
-        </Grid>
+        {/* Course Name & Creator Info */}
+        <div className="grid grid-cols-2 gap-3 text-xs border-t border-slate-100 pt-3">
+          <div>
+            <span className="text-[10px] text-slate-400 font-bold block mb-0.5">Khóa học</span>
+            <span className="font-extrabold text-slate-700">{assignment.courseName}</span>
+          </div>
+          <div>
+            <span className="text-[10px] text-slate-400 font-bold block mb-0.5">Người giao</span>
+            <span className="font-extrabold text-slate-700">{assignment.teacherName}</span>
+          </div>
+        </div>
 
-        <Grid item xs={6} sm={6}>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ 
-              display: 'block',
-              mb: 0.2,
-              fontSize: '0.6rem'
-            }}
-          >
-            Trạng thái
-          </Typography>
-          <Chip
-            label={assignment.status === 'closed' ? 'ĐÃ ĐÓNG' : 'ĐANG MỞ'}
-            size="small"
-            sx={{
-              backgroundColor: getStatusColor(assignment.status),
-              color: 'white',
-              fontWeight: 600,
-              fontSize: '0.55rem',
-              height: 16,
-            }}
-          />
-        </Grid>
+        {/* Date / Due Date */}
+        <div className="grid grid-cols-2 gap-3 text-xs">
+          <div>
+            <span className="text-[10px] text-slate-400 font-bold block mb-0.5">Thời gian bắt đầu</span>
+            <span className="font-semibold text-slate-500">{formatDate(assignment.createdAt)}</span>
+          </div>
+          <div>
+            <span className="text-[10px] text-slate-400 font-bold block mb-0.5">Hạn nộp</span>
+            <span className="font-extrabold text-red-600">{formatDate(assignment.dueDate)}</span>
+          </div>
+        </div>
+      </div>
 
-        <Grid item xs={12} sm={6}>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ 
-              display: 'block',
-              mb: 0.2,
-              fontSize: '0.6rem'
-            }}
+      {/* Submission status & Score block */}
+      <div className="border-t border-slate-100 pt-3 mt-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-slate-400 font-bold block">Bài nộp:</span>
+          <span
+            className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${getSubmissionBadgeStyles(
+              submissionStatus
+            )}`}
           >
-            Thời gian bắt đầu
-          </Typography>
-          <Typography 
-            variant="body2"
-            sx={{ fontSize: { xs: '0.63rem', sm: '0.65rem' } }}
-          >
-            {formatDate(assignment.createdAt)}
-          </Typography>
-        </Grid>
-
-        <Grid item xs={12} sm={6}>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ 
-              display: 'block',
-              mb: 0.2,
-              fontSize: '0.6rem'
-            }}
-          >
-            Hạn nộp
-          </Typography>
-          <Typography 
-            variant="body2" 
-            color="error"
-            sx={{ 
-              fontWeight: 500,
-              fontSize: { xs: '0.63rem', sm: '0.65rem' }
-            }}
-          >
-            {formatDate(assignment.dueDate)}
-          </Typography>
-        </Grid>
-
-        <Grid item xs={12} sm={6}>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ 
-              display: 'block',
-              mb: 0.2,
-              fontSize: '0.6rem'
-            }}
-          >
-            Tên lớp
-          </Typography>
-          <Typography 
-            variant="body2"
-            sx={{ fontSize: { xs: '0.63rem', sm: '0.65rem' } }}
-          >
-            {assignment.courseName}
-          </Typography>
-        </Grid>
-
-        <Grid item xs={12} sm={6}>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ 
-              display: 'block',
-              mb: 0.2,
-              fontSize: '0.6rem'
-            }}
-          >
-            Trạng thái nộp
-          </Typography>
-          <Chip
-            label={getSubmissionLabel(submissionStatus)}
-            size="small"
-            sx={{
-              backgroundColor: getSubmissionColor(submissionStatus),
-              color: 'white',
-              fontWeight: 600,
-              fontSize: '0.55rem',
-              height: 16,
-            }}
-          />
-        </Grid>
+            {getSubmissionLabel(submissionStatus)}
+          </span>
+        </div>
 
         {assignment.submission?.status === "graded" && (
-          <Grid item xs={12}>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ 
-                display: 'block',
-                mb: 0.2,
-                fontSize: '0.6rem'
-              }}
-            >
-              Điểm
-            </Typography>
-            <Typography 
-              variant="body2"
-              sx={{ 
-                fontSize: { xs: '0.68rem', sm: '0.7rem' },
-                fontWeight: 600,
-                color: '#1976d2'
-              }}
-            >
+          <div className="text-right">
+            <span className="text-[9px] text-slate-400 font-bold block">ĐIỂM SỐ</span>
+            <span className="text-sm font-black text-blue-650">
               {assignment.submission.score} / {assignment.maxScore}
-            </Typography>
-          </Grid>
+            </span>
+          </div>
         )}
-
-        <Grid item xs={12}>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ 
-              display: 'block',
-              mb: 0.2,
-              fontSize: '0.6rem'
-            }}
-          >
-            Người tạo
-          </Typography>
-          <Typography 
-            variant="body2"
-            sx={{ fontSize: { xs: '0.63rem', sm: '0.65rem' } }}
-          >
-            {assignment.teacherName}
-          </Typography>
-        </Grid>
-      </Grid>
-    </Paper>
+      </div>
+    </BaseCard>
   );
 };
 

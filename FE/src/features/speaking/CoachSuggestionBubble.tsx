@@ -2,8 +2,9 @@ import { Box, Chip, CircularProgress, Typography } from "@mui/material";
 import { Sparkles } from "lucide-react";
 import type { CoachReview } from "./types";
 import { SEVERITY_LABEL } from "./speakingUtils";
+import { sp } from "./speakingPracticeTheme";
 
-const BRAND = "#B90000";
+const BRAND = sp.brand;
 
 type CoachSuggestionBubbleProps = {
   loading?: boolean;
@@ -33,14 +34,14 @@ export function CoachSuggestionBubble({
           py: 0.85,
           borderRadius: 1.5,
           bgcolor: "rgba(15, 23, 42, 0.04)",
-          border: "1px solid rgba(15, 23, 42, 0.08)",
+          border: `1px solid ${sp.hairline}`,
           display: "flex",
           alignItems: "center",
           gap: 0.75,
         }}
       >
         <CircularProgress size={12} sx={{ color: BRAND }} thickness={5} />
-        <Typography variant="caption" sx={{ color: "#64748B", fontSize: "0.75rem" }}>
+        <Typography variant="caption" sx={{ color: sp.textSoft, fontSize: "0.75rem" }}>
           Mirai đang kiểm tra...
         </Typography>
       </Box>
@@ -66,8 +67,8 @@ export function CoachSuggestionBubble({
         px: 1.25,
         py: 1.1,
         borderRadius: 1.75,
-        bgcolor: "#FAFAFA",
-        border: "1px solid rgba(15, 23, 42, 0.08)",
+        bgcolor: sp.surfaceSunken,
+        border: `1px solid ${sp.hairline}`,
         maxWidth: "100%",
       }}
     >
@@ -96,7 +97,7 @@ export function CoachSuggestionBubble({
         sx={{
           fontFamily: '"Noto Sans JP", sans-serif',
           fontWeight: 600,
-          color: "#0F172A",
+          color: sp.text,
           lineHeight: 1.5,
           fontSize: "0.85rem",
         }}
@@ -108,7 +109,7 @@ export function CoachSuggestionBubble({
         <Typography
           variant="caption"
           display="block"
-          sx={{ mt: 0.5, lineHeight: 1.5, color: "#64748B", fontSize: "0.72rem" }}
+          sx={{ mt: 0.5, lineHeight: 1.5, color: sp.textSoft, fontSize: "0.72rem" }}
         >
           {review.explanation_vi}
         </Typography>
