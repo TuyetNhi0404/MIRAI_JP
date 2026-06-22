@@ -1,0 +1,676 @@
+@startuml MIRAI_Database_Design
+
+' =============================================
+' MIRAI Japanese Learning Platform
+' Database Design - Entity Relationship Diagram
+' =============================================
+
+!define TABLE(name,desc) class name as "desc" << (T,#FFAAAA) >>
+!define PK(x) <b><color:#b8860b>x</color></b>
+!define FK(x) <color:#0066cc>x</color>
+!define ENUM(x) <color:#808080><i>x</i></color>
+
+' ==================== STYLING ====================
+skinparam {
+  BackgroundColor #F8F9FA
+  ClassBackgroundColor #FFFFFF
+  ClassBorderColor #CCCCCC
+  ClassHeaderBackgroundColor #4A90D9
+  ClassFontColor #FFFFFF
+  ArrowColor #555555
+  ArrowThickness 1.5
+  ClassBorderThickness 1.5
+  Shadowing false
+  ClassFontSize 11
+  AttributeFontSize 10
+  RoundCorner 8
+}
+
+skinparam class {
+  HeaderBackgroundColor<<AUTH>> #2C3E50
+  HeaderBackgroundColor<<COURSE>> #1ABC9C
+  HeaderBackgroundColor<<QUIZ>> #E74C3C
+  HeaderBackgroundColor<<ASSIGNMENT>> #E67E22
+  HeaderBackgroundColor<<GRAMMAR>> #9B59B6
+  HeaderBackgroundColor<<LISTENING>> #3498DB
+  HeaderBackgroundColor<<SCORE>> #27AE60
+  HeaderBackgroundColor<<SYSTEM>> #95A5A6
+}
+
+' =========================================================
+' GROUP 1: AUTHENTICATION & USER
+' =========================================================
+
+package "👤 Authentication & User" #EAF4FD {
+
+  class User <<AUTH>> {
+    PK(  _id         : ObjectId)
+    --
+    ENUM(  role      : "admin"|"teacher"|"student")
+    ENUM(  status    : "active"|"locked")
+    ==
+        name       : String {required}
+        email      : String {unique, required}
+        password   : String
+        avatar     : String
+        description: String
+        lastLogin  : Date
+        createdAt  : Date
+        updatedAt  : Date
+  }
+
+}
+
+' =========================================================
+' GROUP 2: COURSE MANAGEMENT
+' =========================================================
+
+package "📚 Course Management" #E9FBF0 {
+
+  class Course <<COURSE>> {
+    PK(  _id              : ObjectId)
+    FK(  homeroomTeacherId: ObjectId → User)
+    --
+    ENUM(  status         : "not_yet"|"in_progress"|"complete")
+    ==
+        name           : String {required}
+        description    : String
+        startDate      : Date   {required}
+        endDate        : Date   {required}
+        createdBy      : String {required}
+        homeroomTeacher: String {required}
+        session        : Number {min:0}
+        capacity       : Number {min:0}
+        enrolledCount  : Number {min:0}
+        createdAt      : Date
+        updatedAt      : Date
+    -- Embedded Array --
+        members[]      : {
+          FK(userId    : ObjectId → User)
+          ENUM(role    : "student"|"teacher")
+          enrolledAt   : Date
+          deletedAt    : Date?
+          deletedBy    : String?
+        }
+  }
+
+  class Enrollment <<COURSE>> {
+    PK(  _id          : ObjectId)
+    FK(  courseId     : ObjectId → Course)
+    --
+    ENUM(  status     : "pending"|"approved"|"rejected")
+    ==
+        studentName   : String {required}
+        studentEmail  : String {required, unique+courseId}
+        createdAt     : Date
+        updatedAt     : Date
+  }
+
+  class Lesson <<COURSE>> {
+    PK(  _id               : ObjectId)
+    FK(  courseId          : ObjectId → Course)
+    --
+    ENUM(  status          : "not_started"|"in_progress"|"completed")
+    ==
+        title            : String {required}
+        description      : String
+        orderIndex       : Number
+        estimatedDuration: Number
+        createdAt        : Date
+        updatedAt        : Date
+  }
+
+  class Chapter <<COURSE>> {
+    PK(  _id        : ObjectId)
+    --
+        name        : String {unique, required}
+        description : String
+        createdAt   : Date
+        updatedAt   : Date
+  }
+
+  class Session <<COURSE>> {
+    PK(  _id        : ObjectId)
+    --
+        sessionName : String {required}
+        startTime   : String {required}
+        endTime     : String {required}
+        createdAt   : Date
+        updatedAt   : Date
+  }
+
+  class CourseCalendar <<COURSE>> {
+    PK(  _id       : ObjectId)
+    FK(  courseId  : ObjectId → Course)
+    FK(  sessionId : ObjectId → Session)
+    FK(  teacherId : ObjectId → User)
+    --
+    ENUM(  status  : "not_yet"|"in_progress"|"completed")
+    ==
+        date       : Date {required}
+        note       : String
+        createdAt  : Date
+        updatedAt  : Date
+    -- Embedded Array --
+        attendances[]: {
+          FK(userId : ObjectId → User)
+          ENUM(status: "not_yet"|"absent"|"present")
+        }
+  }
+
+  class RequestSchedule <<COURSE>> {
+    PK(  _id        : ObjectId)
+    FK(  calendarId : ObjectId → CourseCalendar)
+    FK(  createdBy  : ObjectId → User)
+    --
+    ENUM(  status   : "pending"|"accepted"|"rejected")
+    ==
+        reason      : String {required}
+        createdAt   : Date
+        updatedAt   : Date
+  }
+
+}
+
+' =========================================================
+' GROUP 3: ASSIGNMENT & SUBMISSION
+' =========================================================
+
+package "📝 Assignment & Submission" #FFF4E6 {
+
+  class Assignment <<ASSIGNMENT>> {
+    PK(  _id                    : ObjectId)
+    FK(  courseId               : ObjectId → Course)
+    FK(  teacherId              : ObjectId → User)
+    FK(  createdBy              : ObjectId → User)
+    --
+    ENUM(  status               : "draft"|"active"|"closed")
+    ==
+        title                 : String {required}
+        description           : String
+        dueDate               : Date   {required}
+        maxScore              : Number {required}
+        fileUrls              : String[]
+        hasSentDeadlineReminder: Boolean
+        createdAt             : Date
+        updatedAt             : Date
+  }
+
+  class Submission <<ASSIGNMENT>> {
+    PK(  _id          : ObjectId)
+    FK(  assignmentId : ObjectId → Assignment)
+    FK(  studentId    : ObjectId → User)
+    FK(  gradedBy     : ObjectId → User)
+    --
+    ENUM(  status     : "submitted"|"late"|"not_submitted"|"graded")
+    ==
+        files[]     : String[] {required}
+        note        : String
+        submittedAt : Date
+        score       : Number?
+        gradedAt    : Date?
+        createdAt   : Date
+        updatedAt   : Date
+    -- Embedded Array --
+        feedbacks[]: {
+          FK(studentId : ObjectId → User)
+          FK(teacherId : ObjectId → User)
+          message     : String
+          reply       : String?
+          createdAt   : Date
+          updatedAt   : Date
+        }
+  }
+
+}
+
+' =========================================================
+' GROUP 4: QUIZ & QUESTIONS
+' =========================================================
+
+package "🎯 Quiz & Questions" #FFEDED {
+
+  class Question <<QUIZ>> {
+    PK(  _id          : ObjectId)
+    FK(  chapterId    : ObjectId → Chapter)
+    FK(  grammarCardId: ObjectId → GrammarCard)
+    --
+        questionText  : String {required}
+        correctAnswer : Number {1..4, required}
+        answer1       : String {required}
+        answer2       : String {required}
+        answer3       : String {required}
+        answer4       : String {required}
+        createdAt     : Date
+        updatedAt     : Date
+  }
+
+  class Quiz <<QUIZ>> {
+    PK(  _id             : ObjectId)
+    FK(  courseId        : ObjectId → Course)
+    FK(  lessonId        : ObjectId → Lesson)
+    FK(  chapterId       : ObjectId → Chapter)
+    FK(  createdBy       : ObjectId → User)
+    FK(  chapterIds[]    : ObjectId[] → Chapter)
+    --
+        title            : String  {required}
+        description      : String
+        coversAllChapters: Boolean
+        totalQuestions   : Number  {min:1, required}
+        durationMinutes  : Number
+        dueDate          : Date
+        isActive         : Boolean
+        createdAt        : Date
+        updatedAt        : Date
+    -- Embedded Array --
+        questions[]: {
+          FK(questionId  : ObjectId → Question)
+          questionOrder  : Number
+        }
+  }
+
+  class QuizAttempt <<QUIZ>> {
+    PK(  _id        : ObjectId)
+    FK(  quizId     : ObjectId → Quiz)
+    FK(  studentId  : ObjectId → User)
+    --
+        answers[]   : Number[]
+        score       : Number {required}
+        percentage  : Number {required}
+        passed      : Boolean
+        timeSpent   : Number
+        completedAt : Date
+        createdAt   : Date
+        updatedAt   : Date
+  }
+
+  class UserAnswer <<QUIZ>> {
+    PK(  _id            : ObjectId)
+    FK(  attemptId      : ObjectId → QuizAttempt)
+    FK(  questionId     : ObjectId → Question)
+    --
+        selectedAnswer  : Number {1..4, required}
+        isCorrect       : Boolean {required}
+        createdAt       : Date
+        updatedAt       : Date
+  }
+
+}
+
+' =========================================================
+' GROUP 5: VOCABULARY
+' =========================================================
+
+package "📖 Vocabulary" #F0E6FF {
+
+  class Vocabulary <<GRAMMAR>> {
+    PK(  _id           : ObjectId)
+    --
+    ENUM(  level       : "N1"|"N2"|"N3"|"N4"|"N5")
+    ==
+        word           : String {required}
+        reading        : String {required}
+        meaning        : String {required}
+        topic          : String {required}
+        example        : String
+        exampleMeaning : String
+        tags           : String[]
+        createdAt      : Date
+        updatedAt      : Date
+  }
+
+}
+
+' =========================================================
+' GROUP 6: GRAMMAR AI SYSTEM
+' =========================================================
+
+package "🤖 Grammar AI System" #F5E6FF {
+
+  class GrammarDocument <<GRAMMAR>> {
+    PK(  _id             : ObjectId)
+    FK(  uploadedBy      : ObjectId → User)
+    --
+    ENUM(  level         : "N1"|"N2"|"N3"|"N4"|"N5")
+    ENUM(  status        : "processing"|"completed"|"failed")
+    ENUM(  processingStage: "queued"|"ocr"|"embed"|"extract"|"done"|"failed")
+    ENUM(  scope         : "private"|"shared")
+    ==
+        title            : String {required}
+        filePath         : String {required}
+        centerId         : String {required}
+        totalPages       : Number
+        createdAt        : Date
+        updatedAt        : Date
+  }
+
+  class GrammarChunk <<GRAMMAR>> {
+    PK(  _id           : ObjectId)
+    FK(  documentId    : ObjectId → GrammarDocument)
+    --
+    ENUM(  level       : "N1"|"N2"|"N3"|"N4"|"N5")
+    ==
+        centerId       : String  {required}
+        pageNumber     : Number  {required}
+        text           : String  {required}
+        embedding      : Number[] {vector}
+        embeddingModel : String
+        embeddingDim   : Number
+        createdAt      : Date
+        updatedAt      : Date
+  }
+
+  class GrammarCard <<GRAMMAR>> {
+    PK(  _id        : ObjectId)
+    FK(  createdBy  : ObjectId → User)
+    --
+    ENUM(  level    : "N1"|"N2"|"N3"|"N4"|"N5")
+    ==
+        centerId    : String {required}
+        title       : String {required}
+        structure   : String {required}
+        meaningVi   : String {required}
+        explanation : String {required}
+        createdAt   : Date
+        updatedAt   : Date
+    -- Embedded Array --
+        examples[]: {
+          japanese  : String
+          furigana  : String
+          vietnamese: String
+        }
+  }
+
+  class GrammarNote <<GRAMMAR>> {
+    PK(  _id           : ObjectId)
+    FK(  userId        : ObjectId → User)
+    --
+    ENUM(  severity    : "minor"|"should_fix"|"important")
+    ENUM(  status      : "new"|"reviewing"|"mastered")
+    ==
+        turnId         : String
+        sessionId      : String
+        original       : String {required}
+        corrected      : String
+        explanationVi  : String
+        tags           : String[]
+        level          : String
+        aiReplyContext : String
+        createdAt      : Date
+        updatedAt      : Date
+  }
+
+  class GrammarAuditLog <<GRAMMAR>> {
+    PK(  _id           : ObjectId)
+    FK(  documentId    : ObjectId → GrammarDocument)
+    FK(  userId        : ObjectId → User)
+    --
+    ENUM(  action      : "upload"|"delete")
+    ==
+        documentTitle  : String
+        userRole       : String {required}
+        centerId       : String
+        createdAt      : Date
+  }
+
+}
+
+' =========================================================
+' GROUP 7: LISTENING
+' =========================================================
+
+package "🎧 Listening" #E6F4FF {
+
+  class ListeningContent <<LISTENING>> {
+    PK(  _id          : ObjectId)
+    FK(  createdBy    : ObjectId → User)
+    FK(  exercises[]  : ObjectId[] → ListeningExercise)
+    --
+    ENUM(  topic      : "daily_life"|"travel"|"business"|...)
+    ENUM(  level      : "N1"|"N2"|"N3"|"N4"|"N5")
+    ENUM(  audioSource: "upload"|"tts")
+    ==
+        title         : String {required}
+        description   : String
+        audioUrl      : String
+        transcript    : String
+        duration      : Number
+        thumbnailUrl  : String
+        isPublished   : Boolean
+        playCount     : Number
+        createdAt     : Date
+        updatedAt     : Date
+  }
+
+  class ListeningExercise <<LISTENING>> {
+    PK(  _id               : ObjectId)
+    FK(  contentId         : ObjectId → ListeningContent)
+    --
+    ENUM(  type            : "quiz"|"fill_blank"|"dictation")
+    ==
+        orderIndex         : Number {required}
+        question           : String {required}
+        options            : String[] {quiz}
+        correctAnswer      : String  {quiz}
+        textWithBlanks     : String  {fill_blank}
+        answers            : String[] {fill_blank}
+        targetText         : String  {dictation}
+        audioSegmentStart  : Number  {dictation}
+        audioSegmentEnd    : Number  {dictation}
+        createdAt          : Date
+        updatedAt          : Date
+  }
+
+  class ListeningResult <<LISTENING>> {
+    PK(  _id         : ObjectId)
+    FK(  studentId   : ObjectId → User)
+    FK(  contentId   : ObjectId → ListeningContent)
+    --
+        totalScore   : Number {required}
+        maxScore     : Number {required}
+        timeSpent    : Number {required}
+        completedAt  : Date
+        createdAt    : Date
+        updatedAt    : Date
+    -- Embedded Array --
+        answers[]: {
+          FK(exerciseId   : ObjectId → ListeningExercise)
+          studentAnswer   : String
+          isCorrect       : Boolean
+          score           : Number
+        }
+  }
+
+}
+
+' =========================================================
+' GROUP 8: SCORE & RANKING
+' =========================================================
+
+package "🏆 Score & Ranking" #E6FFF0 {
+
+  class ScoreComponent <<SCORE>> {
+    PK(  _id              : ObjectId)
+    FK(  courseId         : ObjectId → Course)
+    FK(  studentId        : ObjectId → User)
+    -- UNIQUE(courseId, studentId) --
+        attendanceScore   : Number  {0..100}
+        assignmentScore   : Number  {0..100}
+        quizScore         : Number  {0..100}
+        finalScore        : Number
+        isPass            : Boolean
+        lastCalculated    : Date
+        createdAt         : Date
+        updatedAt         : Date
+    -- Embedded Details --
+        attendanceDetails : {
+          totalSessions   : Number
+          presentCount    : Number
+          absentCount     : Number
+          percentage      : Number
+        }
+        assignmentDetails : {
+          totalAssignments: Number
+          gradedAssignments: Number
+          averageScore    : Number
+        }
+        quizDetails       : {
+          totalQuizzes    : Number
+          completedQuizzes: Number
+          averageScore    : Number
+          bestScore       : Number
+        }
+  }
+
+  class FinalScore <<SCORE>> {
+    PK(  _id             : ObjectId)
+    FK(  courseId        : ObjectId → Course)
+    FK(  studentId       : ObjectId → User)
+    -- UNIQUE(courseId, studentId) --
+    ENUM(  grade         : "A+"|"A"|"B+"|"B"|"C+"|"C"|"D"|"F")
+    ==
+        attendanceScore  : Number {0..10}
+        assignmentScore  : Number {0..10}
+        quizScore        : Number {0..10}
+        finalScore       : Number {0..10, required}
+        passed           : Boolean
+        rank             : Number
+        totalStudents    : Number
+        calculatedAt     : Date
+        createdAt        : Date
+        updatedAt        : Date
+    -- Embedded --
+        weights: {
+          attendance     : Number {default:20}
+          assignment     : Number {default:40}
+          quiz           : Number {default:40}
+        }
+  }
+
+  class CourseRanking <<SCORE>> {
+    PK(  _id         : ObjectId)
+    FK(  courseId    : ObjectId → Course {unique})
+    --
+        lastUpdated  : Date
+        createdAt    : Date
+        updatedAt    : Date
+    -- Embedded Array --
+        rankings[]: {
+          rank        : Number
+          FK(studentId: ObjectId → User)
+          studentName : String
+          studentEmail: String
+          finalScore  : Number
+          grade       : String
+        }
+    -- Embedded Statistics --
+        statistics: {
+          totalStudents   : Number
+          averageScore    : Number
+          highestScore    : Number
+          lowestScore     : Number
+          passRate        : Number
+          gradeDistribution: {...}
+        }
+    -- Embedded TopStudent --
+        topStudent: {
+          FK(studentId  : ObjectId → User)
+          studentName   : String?
+          finalScore    : Number?
+          grade         : String?
+        }
+  }
+
+}
+
+' =========================================================
+' GROUP 9: NOTIFICATION (SYSTEM)
+' =========================================================
+
+package "🔔 System" #F5F5F5 {
+
+  class Notification <<SYSTEM>> {
+    PK(  _id              : ObjectId)
+    FK(  recipientId      : ObjectId → User)
+    FK(  recipientIds[]   : ObjectId[] → User)
+    FK(  relatedEntityId  : ObjectId)
+    FK(  courseId         : ObjectId → Course)
+    FK(  createdBy        : ObjectId → User)
+    FK(  readBy[]         : ObjectId[] → User)
+    --
+    ENUM(  recipientRole  : "student"|"teacher"|"admin"|"all")
+    ENUM(  type           : "assignment_created"|"assignment_deadline"|"assignment_graded"|"quiz_created"|"enrollment_request"|"enrollment_response"|"schedule_request"|"schedule_response"|"global_announcement")
+    ENUM(  relatedEntityType: "assignment"|"course"|"global")
+    ==
+        title             : String {required}
+        message           : String {required}
+        isRead            : Boolean
+        metadata          : Mixed
+        createdAt         : Date
+        updatedAt         : Date
+  }
+
+}
+
+' =====================================================
+' RELATIONSHIPS
+' =====================================================
+
+' === USER ===
+User "1" --o{ Course          : "homeroomTeacherId"
+User "1" --o{ Course          : "members.userId"
+User "1" --o{ CourseCalendar  : "teacherId"
+User "1" --o{ CourseCalendar  : "attendances.userId"
+User "1" --o{ RequestSchedule : "createdBy"
+User "1" --o{ Assignment      : "teacherId / createdBy"
+User "1" --o{ Submission      : "studentId / gradedBy"
+User "1" --o{ QuizAttempt     : "studentId"
+User "1" --o{ Quiz            : "createdBy"
+User "1" --o{ GrammarDocument : "uploadedBy"
+User "1" --o{ GrammarCard     : "createdBy"
+User "1" --o{ GrammarNote     : "userId"
+User "1" --o{ GrammarAuditLog : "userId"
+User "1" --o{ ListeningContent: "createdBy"
+User "1" --o{ ListeningResult : "studentId"
+User "1" --o{ ScoreComponent  : "studentId"
+User "1" --o{ FinalScore      : "studentId"
+User "1" --o{ Notification    : "recipientId / createdBy"
+
+' === COURSE ===
+Course "1" --o{ Enrollment     : "courseId"
+Course "1" --o{ Lesson         : "courseId"
+Course "1" --o{ CourseCalendar : "courseId"
+Course "1" --o{ Assignment     : "courseId"
+Course "1" --o{ Quiz           : "courseId"
+Course "1" --o{ ScoreComponent : "courseId"
+Course "1" --o{ FinalScore     : "courseId"
+Course "1" --|| CourseRanking  : "courseId"
+Course "1" --o{ Notification   : "courseId"
+
+' === SCHEDULE ===
+Session "1" --o{ CourseCalendar  : "sessionId"
+CourseCalendar "1" --o{ RequestSchedule : "calendarId"
+
+' === QUIZ ===
+Chapter "1" --o{ Question     : "chapterId"
+Chapter "1" --o{ Quiz         : "chapterId / chapterIds[]"
+Lesson  "1" --o{ Quiz         : "lessonId"
+Quiz    "1" --o{ QuizAttempt  : "quizId"
+Quiz    "1" --o{ Question     : "questions[].questionId"
+QuizAttempt "1" --o{ UserAnswer : "attemptId"
+Question    "1" --o{ UserAnswer : "questionId"
+
+' === ASSIGNMENT ===
+Assignment "1" --o{ Submission : "assignmentId"
+
+' === GRAMMAR AI ===
+GrammarDocument "1" --o{ GrammarChunk   : "documentId"
+GrammarDocument "1" --o{ GrammarAuditLog: "documentId"
+GrammarCard     "1" --o{ Question       : "grammarCardId"
+
+' === LISTENING ===
+ListeningContent  "1" --o{ ListeningExercise : "contentId"
+ListeningContent  "1" --o{ ListeningResult   : "contentId"
+ListeningExercise "1" --o{ ListeningResult   : "answers[].exerciseId"
+
+@enduml

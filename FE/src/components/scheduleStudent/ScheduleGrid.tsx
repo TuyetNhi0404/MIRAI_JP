@@ -28,8 +28,8 @@ const formatDayShort = (d: Date) =>
 type SessionType = "morning" | "afternoon";
 
 const EmptySlot: React.FC = () => (
-  <div className="w-full h-full min-h-[60px] sm:min-h-[140px] flex items-center justify-center bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
-    <span className="text-xl font-light text-slate-300">-</span>
+  <div className="w-full h-[220px] flex flex-col items-center justify-center bg-white/40 backdrop-blur-[2px] rounded-2xl border border-dashed border-slate-200/60 transition-all duration-300 hover:bg-white/60 hover:border-slate-300/80 select-none">
+    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Trống</span>
   </div>
 );
 
@@ -147,32 +147,46 @@ const ScheduleGrid: React.FC<Props> = ({ items, weekStart }) => {
       </div>
 
       {/* Desktop view - Beautiful grid schedule */}
-      <div className="hidden lg:block overflow-x-auto border border-slate-200 rounded-2xl bg-white shadow-sm">
-        <table className="w-full border-collapse">
+      <div className="hidden lg:block overflow-x-auto border border-slate-150 rounded-2xl seigaiha-pattern shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
+        <table className="w-full border-collapse table-fixed min-w-[1380px]">
+          <colgroup>
+            <col style={{ width: "120px" }} />
+            <col style={{ width: "180px" }} />
+            <col style={{ width: "180px" }} />
+            <col style={{ width: "180px" }} />
+            <col style={{ width: "180px" }} />
+            <col style={{ width: "180px" }} />
+            <col style={{ width: "180px" }} />
+            <col style={{ width: "180px" }} />
+          </colgroup>
           <thead>
-            <tr className="bg-slate-50 border-b border-slate-200">
-              <th className="py-4 px-4 text-xs font-bold text-slate-400 uppercase text-center w-28 border-r border-slate-100">
+            <tr className="bg-primary-color text-white border-b border-primary-color-hover">
+              <th className="py-4 px-4 text-[11px] font-extrabold text-white/80 uppercase text-center border-r border-white/10">
                 Ca học
               </th>
               {days.map((d) => (
-                <th key={d.toISOString()} className="py-4 px-4 text-xs font-bold text-slate-700 uppercase text-center border-r border-slate-100 last:border-r-0">
-                  <span className="block font-black">{formatDayShort(d)}</span>
-                  <span className="text-[10px] text-slate-400 block mt-0.5 font-medium">{ymd(d).split("-").reverse().slice(0, 2).join("/")}</span>
+                <th key={d.toISOString()} className="py-4 px-4 text-xs font-bold text-white uppercase text-center border-r border-white/10 last:border-r-0">
+                  <span className="block font-black text-white tracking-wide">{formatDayShort(d)}</span>
+                  <span className="text-[10px] text-white font-extrabold bg-white/15 px-2.5 py-0.5 rounded-full w-max mx-auto mt-1 block">
+                    {ymd(d).split("-").reverse().slice(0, 2).join("/")}
+                  </span>
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
             {sessions.map((session, sIdx) => (
-              <tr key={session.type} className={sIdx < sessions.length - 1 ? "border-b border-slate-100" : ""}>
-                <td className="py-6 px-4 bg-slate-50/50 text-center font-bold text-slate-500 text-xs uppercase border-r border-slate-100 align-middle">
-                  {session.label}
+              <tr key={session.type} className={sIdx < sessions.length - 1 ? "border-b border-slate-150" : ""}>
+                <td className="py-8 px-4 bg-accent-color/30 text-center font-extrabold text-primary-color text-xs uppercase border-r border-slate-100/60 align-middle">
+                  <div className="text-primary-color font-black tracking-wider">
+                    {session.label}
+                  </div>
                 </td>
                 {days.map((d) => {
                   const iso = ymd(d);
                   const item = findSession(iso, session.type);
                   return (
-                    <td key={`${iso}-${session.type}`} className="p-3 border-r border-slate-100 last:border-r-0 w-40 align-top">
+                    <td key={`${iso}-${session.type}`} className="p-3.5 border-r border-slate-100/60 last:border-r-0 h-full">
                       {item ? <SessionCard session={item} /> : <EmptySlot />}
                     </td>
                   );

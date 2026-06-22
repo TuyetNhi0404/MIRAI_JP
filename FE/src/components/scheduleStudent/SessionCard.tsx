@@ -204,15 +204,29 @@ const SessionCard: React.FC<Props> = ({ session, compact = false, style, onClick
   const getChipConfig = () => {
     switch (status) {
       case "present":
-        return { label: "CÓ MẶT", bg: "bg-emerald-500 text-white" };
+        return { label: "CÓ MẶT", bg: "bg-emerald-50 text-emerald-700 border border-emerald-200" };
       case "absent":
-        return { label: "VẮNG MẶT", bg: "bg-red-500 text-white" };
+        return { label: "VẮNG MẶT", bg: "bg-rose-50 text-rose-700 border border-rose-200" };
       case "not_yet":
       default:
-        return { label: "CHƯA HỌC", bg: "bg-slate-400 text-white" };
+        return { label: "CHƯA HỌC", bg: "bg-blue-50 text-blue-700 border border-blue-200" };
     }
   };
+
+  const getBorderColor = () => {
+    switch (status) {
+      case "present":
+        return "border-l-emerald-500";
+      case "absent":
+        return "border-l-rose-500";
+      case "not_yet":
+      default:
+        return "border-l-blue-500";
+    }
+  };
+
   const chipConfig = getChipConfig();
+  const borderColor = getBorderColor();
 
   const safeTrim = (v: unknown): string => (typeof v === "string" ? v.trim() : "");
   const startTime = safeTrim(session.startTime) || (session.slotNumber && session.slotNumber <= 2 ? "09:00" : "13:00");
@@ -223,8 +237,8 @@ const SessionCard: React.FC<Props> = ({ session, compact = false, style, onClick
 
   if (isEmpty) {
     return (
-      <div className="w-full h-full min-h-[60px] sm:min-h-[140px] flex items-center justify-center bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
-        <span className="text-xl font-light text-slate-300">-</span>
+      <div className="w-full h-[220px] flex flex-col items-center justify-center bg-slate-50/10 rounded-2xl border border-dashed border-slate-200/60 transition-all duration-300 hover:bg-slate-50/30 hover:border-slate-300/80 select-none">
+        <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Trống</span>
       </div>
     );
   }
@@ -233,34 +247,36 @@ const SessionCard: React.FC<Props> = ({ session, compact = false, style, onClick
     <div
       onClick={onClick}
       style={style}
-      className={`w-full bg-white border border-slate-100 rounded-2xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:border-blue-500 hover:shadow-md transition-all duration-300 flex flex-col gap-2.5 ${
+      className={`w-full h-[220px] bg-white border border-slate-100 border-l-4 ${borderColor} rounded-r-2xl rounded-l-md p-4 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-300 flex flex-col gap-3 ${
         onClick ? "cursor-pointer" : ""
       }`}
     >
-      <div className="space-y-1">
-        <h4 className="text-sm font-extrabold text-[#1F2238] leading-snug line-clamp-2">
+      <div className="space-y-1.5">
+        <h4 className="text-xs font-black uppercase tracking-wider text-[#1F2238] leading-snug line-clamp-2 hover:text-blue-600 transition-colors break-words">
           {session.courseName ?? "Chưa xác định khóa học"}
         </h4>
-        <div className="flex items-center gap-1.5 text-xs text-slate-500">
-          <UserRound size={13} className="shrink-0" />
+        <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+          <UserRound size={13} className="text-slate-400 shrink-0" />
           <span className="truncate">{teacherName}</span>
         </div>
       </div>
 
-      <div className="mt-auto space-y-1.5 border-t border-slate-50 pt-2.5">
+      <div className="mt-auto space-y-2 border-t border-slate-50 pt-2.5">
         {dateDisplay && (
-          <div className="flex items-center gap-1.5 text-xs font-bold text-blue-600">
-            <Calendar size={13} className="shrink-0" />
+          <div className="flex items-center gap-1.5 text-xs text-slate-600 font-bold">
+            <Calendar size={13} className="text-blue-500 shrink-0" />
             <span>{dateDisplay}</span>
           </div>
         )}
-        <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600">
-          <Clock size={13} className="shrink-0" />
+        <div className="flex items-center gap-1.5 text-xs text-slate-600 font-bold">
+          <Clock size={13} className="text-emerald-500 shrink-0" />
           <span>{timeLabel}</span>
         </div>
 
-        <div className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full inline-block ${chipConfig.bg}`}>
-          {chipConfig.label}
+        <div className="pt-0.5">
+          <div className={`text-[9px] font-black tracking-wider px-2.5 py-0.5 rounded-full inline-block ${chipConfig.bg}`}>
+            {chipConfig.label}
+          </div>
         </div>
       </div>
     </div>

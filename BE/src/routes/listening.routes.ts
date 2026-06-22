@@ -40,10 +40,4 @@ router.post(
   listeningController.uploadAudio
 );
 
-// Exercise Management
-router.post('/contents/:id/exercises', verifyToken, authorizeRoles('admin'), listeningController.addExercise);
-
-// Student Submit
-router.post('/contents/:id/submit', verifyToken, authorizeRoles('student'), listeningController.submitAnswers);
-
 export default router;
