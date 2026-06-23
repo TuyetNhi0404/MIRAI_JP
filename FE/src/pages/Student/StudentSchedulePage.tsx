@@ -220,6 +220,7 @@ const fetchMyAttendance = async (): Promise<Map<string, AttendanceStatus>> => {
 const StudentSchedulePage: React.FC = () => {
   const [weekStart, setWeekStart] = useState<Date>(() => getMonday());
   const [items, setItems] = useState<SessionItem[]>([]);
+  const [sessionsList, setSessionsList] = useState<{ _id: string; sessionName: string; startTime: string; endTime: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [authRequired, setAuthRequired] = useState(false);
 
@@ -227,6 +228,14 @@ const StudentSchedulePage: React.FC = () => {
     setLoading(true);
     setAuthRequired(false);
     try {
+      try {
+        const sessionsRes = await axiosInstance.get(`/sessions`);
+        const sessionsData = Array.isArray(sessionsRes.data?.data) ? sessionsRes.data.data : [];
+        setSessionsList(sessionsData);
+      } catch (sessErr) {
+        console.error("Failed to load sessions:", sessErr);
+      }
+
       const attendanceMap = await fetchMyAttendance();
       const res = await axiosInstance.get(`/calendars`);
       const raw: CalendarRawItem[] = Array.isArray(res?.data?.data) ? res.data.data : [];
@@ -303,6 +312,8 @@ const StudentSchedulePage: React.FC = () => {
             }
           }
 
+          const sessionName = (sessionObj as any)?.sessionName ?? `Slot ${slotNumber}`;
+
           return {
             calendarId,
             courseId,
@@ -313,6 +324,7 @@ const StudentSchedulePage: React.FC = () => {
             endTime: String(endTime).trim(),
             teacher,
             attendance,
+            sessionName,
           };
         })
       );
@@ -427,7 +439,7 @@ const StudentSchedulePage: React.FC = () => {
       ) : (
         <div className="space-y-6">
           <BaseCard className="!p-4 relative">
-            <ScheduleGrid items={items} weekStart={toYMD(weekStart)} />
+            <ScheduleGrid items={items} weekStart={toYMD(weekStart)} sessionsList={sessionsList} />
             {items.length === 0 && (
               <div className="absolute inset-0 bg-surface-base/95 flex items-center justify-center rounded-2xl z-10 p-6">
                 <EmptyState title="Không có lịch học" description="Bạn không có bất kỳ ca học nào được xếp lịch trong tuần này." icon={Calendar} />

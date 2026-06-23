@@ -183,13 +183,26 @@ const ScheduleTeacher = () => {
     return dates;
   }, [currentWeekStart]);
 
-  const periods = useMemo(
-    () => [
-      { name: 'Morning', displayTime: '08:00 - 12:00', label: 'Buổi sáng' },
-      { name: 'Afternoon', displayTime: '13:00 - 17:00', label: 'Buổi chiều' },
-    ],
-    []
-  );
+  const periods = useMemo(() => {
+    if (sessions.length > 0) {
+      return sessions.map(s => {
+        const label = s.sessionName.replace(/Slot\s*/i, "Ca ");
+        return {
+          id: s._id,
+          name: s.sessionName,
+          displayTime: `${s.startTime} - ${s.endTime}`,
+          label: label,
+          startTime: s.startTime,
+        };
+      });
+    }
+    return [
+      { id: '1', name: 'Slot 1', displayTime: '07:30 - 09:30', label: 'Ca 1', startTime: '07:30' },
+      { id: '2', name: 'Slot 2', displayTime: '09:45 - 11:45', label: 'Ca 2', startTime: '09:45' },
+      { id: '3', name: 'Slot 3', displayTime: '12:30 - 14:30', label: 'Ca 3', startTime: '12:30' },
+      { id: '4', name: 'Slot 4', displayTime: '14:45 - 16:45', label: 'Ca 4', startTime: '14:45' },
+    ];
+  }, [sessions]);
 
   const scheduleGrid = useMemo(() => {
     const grid: ScheduleGrid = {};
@@ -198,17 +211,14 @@ const ScheduleTeacher = () => {
       weekDates.forEach(date => {
         const dateStr = toLocalDateString(date);
         const schedulesForDate = schedule.filter(s => s.date === dateStr);
-        const daySchedules = schedulesForDate.filter(s => {
-          if (!s.startTime) return false;
-          const hour = parseInt(s.startTime.split(':')[0]);
-          const timeInMinutes = hour * 60;
-          const belongsToPeriod =
-            period.name === 'Morning'
-              ? timeInMinutes >= 6 * 60 && timeInMinutes < 13 * 60
-              : timeInMinutes >= 13 * 60 && timeInMinutes < 19 * 60;
-          return belongsToPeriod;
+        const daySchedule = schedulesForDate.find(s => {
+          return (
+            s.sessionId === period.id ||
+            s.sessionName === period.name ||
+            (s.startTime && s.startTime.trim() === period.startTime.trim())
+          );
         });
-        grid[period.name][dateStr] = daySchedules[0] || null;
+        grid[period.name][dateStr] = daySchedule || null;
       });
     });
     return grid;
@@ -547,43 +557,31 @@ const ScheduleTeacher = () => {
                   </Typography>
                 </Box>
 
-                <Box sx={{ borderBottom: '1px solid #e0e0e0' }}>
+                {periods.map((period, pIdx) => (
                   <Box
+                    key={period.name}
                     sx={{
-                      bgcolor: '#f5f5f5',
-                      px: 1.5,
-                      py: 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
+                      borderBottom: pIdx < periods.length - 1 ? '1px solid #e0e0e0' : 'none',
                     }}
                   >
-                    <Clock size={14} color="#666" />
-                    <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: '#666' }}>
-                      Buổi sáng (08:00 - 12:00)
-                    </Typography>
+                    <Box
+                      sx={{
+                        bgcolor: '#f5f5f5',
+                        px: 1.5,
+                        py: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                      }}
+                    >
+                      <Clock size={14} color="#666" />
+                      <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: '#666' }}>
+                        {period.label} ({period.displayTime})
+                      </Typography>
+                    </Box>
+                    {renderScheduleItemMobile(scheduleGrid[period.name]?.[dateStr], date)}
                   </Box>
-                  {renderScheduleItemMobile(scheduleGrid['Morning']?.[dateStr], date)}
-                </Box>
-
-                <Box>
-                  <Box
-                    sx={{
-                      bgcolor: '#f5f5f5',
-                      px: 1.5,
-                      py: 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
-                    }}
-                  >
-                    <Clock size={14} color="#666" />
-                    <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: '#666' }}>
-                      Buổi chiều (13:00 - 17:00)
-                    </Typography>
-                  </Box>
-                  {renderScheduleItemMobile(scheduleGrid['Afternoon']?.[dateStr], date)}
-                </Box>
+                ))}
               </Card>
             </Grid>
           );
@@ -606,23 +604,32 @@ const ScheduleTeacher = () => {
         >
           <TableHead>
             <TableRow sx={{ bgcolor: '#f5f5f5' }}>
-              <TableCell sx={{ fontWeight: 600, width: 100 }}>Buổi</TableCell>
-              {['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'].map((day, idx) => (
-                <TableCell key={idx} align="center" sx={{ minWidth: 120 }}>
-                  <Typography sx={{ fontSize: 13, fontWeight: 600 }}>
-                    {day}
-                  </Typography>
-                </TableCell>
-              ))}
+              <TableCell sx={{ fontWeight: 600, width: 120 }}>Ca học</TableCell>
+              {['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'].map((day, idx) => {
+                const date = weekDates[idx];
+                const dateStr = date ? ` (${date.getDate()}/${date.getMonth() + 1})` : '';
+                return (
+                  <TableCell key={idx} align="center" sx={{ minWidth: 120 }}>
+                    <Typography sx={{ fontSize: 13, fontWeight: 600 }}>
+                      {day}{dateStr}
+                    </Typography>
+                  </TableCell>
+                );
+              })}
             </TableRow>
           </TableHead>
           <TableBody>
-            {['Morning', 'Afternoon'].map(period => (
-              <TableRow key={period}>
-                <TableCell sx={{ fontWeight: 600, bgcolor: '#fafafa' }}>{period === 'Morning' ? 'Sáng' : 'Chiều'}</TableCell>
+            {periods.map(period => (
+              <TableRow key={period.name}>
+                <TableCell sx={{ fontWeight: 600, bgcolor: '#fafafa', p: 1.5, verticalAlign: 'middle' }}>
+                  <Box>
+                    <Typography sx={{ fontWeight: 700, fontSize: 13 }}>{period.label}</Typography>
+                    <Typography sx={{ fontSize: 10, color: '#666' }}>{period.displayTime}</Typography>
+                  </Box>
+                </TableCell>
                 {weekDates.map((date, idx) => {
                   const dateStr = toLocalDateString(date);
-                  const item = scheduleGrid[period]?.[dateStr];
+                  const item = scheduleGrid[period.name]?.[dateStr];
                   return (
                     <TableCell key={idx} sx={{ p: 0, verticalAlign: 'top' }}>
                       {renderScheduleItemDesktop(item, date)}
