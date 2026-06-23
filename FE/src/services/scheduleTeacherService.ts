@@ -1,4 +1,5 @@
 import axios, { AxiosError } from "axios";
+import axiosInstance from "../api/axiosInstance";
 import type { 
   ApiResponse, 
   TeacherScheduleView, 
@@ -8,15 +9,7 @@ import type {
   RequestSchedule
 } from "../types/scheduleTeacher.types";
 
-const API_BASE_URL = "http://localhost:5000/api";
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  withCredentials: true,
-  headers: { 
-    "Content-Type": "application/json"
-  },
-});
+const api = axiosInstance;
 
 interface PopulatedCourse {
   _id: string;
@@ -73,36 +66,7 @@ interface RequestApiResponse {
   message?: string;
 }
 
-api.interceptors.request.use(
-  (config) => {
-    console.log('Request:', config.method?.toUpperCase(), config.url);
-    return config;
-  },
-  (error: AxiosError) => Promise.reject(error)
-);
-
-api.interceptors.response.use(
-  (response) => response,
-  async (error: AxiosError) => {
-    const originalRequest = error.config;
-
-    if (error.response?.status === 401 && originalRequest && !('_retry' in originalRequest)) {
-      (originalRequest as typeof originalRequest & { _retry: boolean })._retry = true;
-      try {
-        console.log('Token expired, trying to refresh...');
-        await axios.post(`${API_BASE_URL}/auth/refresh-token`, {}, { withCredentials: true });
-        console.log('Token refreshed, retrying original request');
-        return api(originalRequest);
-      } catch (refreshError) {
-        console.error('Refresh token failed, redirecting to login');
-        window.location.href = '/login';
-        return Promise.reject(refreshError);
-      }
-    }
-
-    return Promise.reject(error);
-  }
-);
+// Interceptors handled globally by axiosInstance
 
 export const teacherScheduleService = {
   getScheduleByWeek: async (startDate: string): Promise<ApiResponse<TeacherScheduleView[]>> => {

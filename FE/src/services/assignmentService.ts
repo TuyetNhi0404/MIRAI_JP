@@ -1,5 +1,6 @@
 // src/services/assignmentService.ts - FIXED VERSION
-import axios, { AxiosError } from 'axios';
+import axiosInstance from '../api/axiosInstance';
+import { AxiosError } from 'axios';
 import { toast } from 'react-toastify';
 import type { Assignment, Course, AssignmentQueryParams, AssignmentListResponse } from '../types/assignment.types';
 
@@ -72,24 +73,7 @@ interface UpdateAssignmentResponse {
   data: RawAssignment;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL}/api`
-  : 'http://localhost:5000/api';
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  withCredentials: true,
-});
-
-api.interceptors.response.use(
-  (res) => res,
-  (err: AxiosError<ErrorResponse>) => {
-    const msg = err.response?.data?.message || 'Server connection error';
-    if (err.response?.status === 401) toast.error('Session expired, please log in again');
-    else toast.error(msg);
-    return Promise.reject(err);
-  }
-);
+const api = axiosInstance;
 
 const normalizeFileUrls = (fileUrls: string | string[] | null | undefined): string[] => {
   if (!fileUrls) return [];

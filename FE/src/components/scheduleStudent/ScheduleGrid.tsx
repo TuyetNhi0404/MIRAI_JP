@@ -6,7 +6,15 @@ interface Props {
   items: SessionItem[];
   weekStart: string; // YYYY-MM-DD (Monday)
   slotColor?: string;
+  sessionsList?: { _id: string; sessionName: string; startTime: string; endTime: string }[];
 }
+
+const DEFAULT_SESSIONS = [
+  { _id: "1", sessionName: "Slot 1", startTime: "07:30", endTime: "09:30" },
+  { _id: "2", sessionName: "Slot 2", startTime: "09:45", endTime: "11:45" },
+  { _id: "3", sessionName: "Slot 3", startTime: "12:30", endTime: "14:30" },
+  { _id: "4", sessionName: "Slot 4", startTime: "14:45", endTime: "16:45" },
+];
 
 const parseYMD = (ymdStr: string): Date => {
   const [y, m, d] = ymdStr.split("-").map(Number);
@@ -25,10 +33,8 @@ const formatDayShort = (d: Date) =>
     weekday: "long",
   });
 
-type SessionType = "morning" | "afternoon";
-
 const EmptySlot: React.FC = () => (
-  <div className="w-full h-[220px] flex flex-col items-center justify-center bg-white/40 backdrop-blur-[2px] rounded-2xl border border-dashed border-slate-200/60 transition-all duration-300 hover:bg-white/60 hover:border-slate-300/80 select-none">
+  <div className="w-full h-[140px] flex flex-col items-center justify-center bg-white/40 backdrop-blur-[2px] rounded-2xl border border-dashed border-slate-200/60 transition-all duration-300 hover:bg-white/60 hover:border-slate-300/80 select-none">
     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Trống</span>
   </div>
 );
@@ -54,7 +60,7 @@ const clampSlot = (slot: number) => {
   return slot;
 };
 
-const ScheduleGrid: React.FC<Props> = ({ items, weekStart }) => {
+const ScheduleGrid: React.FC<Props> = ({ items, weekStart, sessionsList }) => {
   const days = useMemo(() => {
     const monday = parseYMD(weekStart);
     return Array.from({ length: 7 }).map((_, i) => {
@@ -64,10 +70,20 @@ const ScheduleGrid: React.FC<Props> = ({ items, weekStart }) => {
     });
   }, [weekStart]);
 
-  const sessions: { type: SessionType; label: string }[] = [
-    { type: "morning", label: "Buổi sáng" },
-    { type: "afternoon", label: "Buổi chiều" },
-  ];
+  const activeSessions = useMemo(() => {
+    const list = sessionsList && sessionsList.length > 0 ? sessionsList : DEFAULT_SESSIONS;
+    return list.map((s, index) => {
+      const label = s.sessionName.replace(/Slot\s*/i, "Ca ");
+      return {
+        id: s._id,
+        sessionName: s.sessionName,
+        label: `${label}`,
+        time: `${s.startTime} - ${s.endTime}`,
+        startTime: s.startTime,
+        slotNumber: index + 1,
+      };
+    });
+  }, [sessionsList]);
 
   const weekStartYMD = weekStart;
   const sunday = new Date(parseYMD(weekStart));
@@ -107,14 +123,15 @@ const ScheduleGrid: React.FC<Props> = ({ items, weekStart }) => {
     return out;
   }, [items, weekStartYMD, weekEndYMD]);
 
-  const findSession = (dateIso: string, sessionType: SessionType): SessionItem | null => {
+  const findSession = (dateIso: string, sessionName: string, startTime: string): SessionItem | null => {
     const matched = validItems.filter((it) => it.date === dateIso);
     if (!matched.length) return null;
-    if (sessionType === "morning") {
-      return matched.find((it) => it.slotNumber === 1 || it.slotNumber === 2) ?? null;
-    } else {
-      return matched.find((it) => it.slotNumber >= 3 && it.slotNumber <= 5) ?? null;
-    }
+    return matched.find((it) => {
+      const itName = it.sessionName || "";
+      const isNameMatch = itName.trim().toLowerCase() === sessionName.trim().toLowerCase();
+      const isTimeMatch = it.startTime && startTime && it.startTime.trim() === startTime.trim();
+      return isNameMatch || isTimeMatch;
+    }) ?? null;
   };
 
   return (
@@ -129,12 +146,12 @@ const ScheduleGrid: React.FC<Props> = ({ items, weekStart }) => {
                 {formatDayShort(d)} ({iso.split("-").reverse().join("/")})
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {sessions.map((session) => {
-                  const item = findSession(iso, session.type);
+                {activeSessions.map((session) => {
+                  const item = findSession(iso, session.sessionName, session.startTime);
                   return (
-                    <div key={`${iso}-${session.type}`} className="space-y-1.5">
+                    <div key={`${iso}-${session.id}`} className="space-y-1.5">
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                        {session.label}
+                        {session.label} ({session.time})
                       </span>
                       {item ? <SessionCard session={item} compact /> : <EmptySlot />}
                     </div>
@@ -150,7 +167,7 @@ const ScheduleGrid: React.FC<Props> = ({ items, weekStart }) => {
       <div className="hidden lg:block overflow-x-auto border border-slate-150 rounded-2xl seigaiha-pattern shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
         <table className="w-full border-collapse table-fixed min-w-[1380px]">
           <colgroup>
-            <col style={{ width: "120px" }} />
+            <col style={{ width: "150px" }} />
             <col style={{ width: "180px" }} />
             <col style={{ width: "180px" }} />
             <col style={{ width: "180px" }} />
@@ -175,18 +192,21 @@ const ScheduleGrid: React.FC<Props> = ({ items, weekStart }) => {
             </tr>
           </thead>
           <tbody>
-            {sessions.map((session, sIdx) => (
-              <tr key={session.type} className={sIdx < sessions.length - 1 ? "border-b border-slate-150" : ""}>
+            {activeSessions.map((session, sIdx) => (
+              <tr key={session.id} className={sIdx < activeSessions.length - 1 ? "border-b border-slate-150" : ""}>
                 <td className="py-8 px-4 bg-accent-color/30 text-center font-extrabold text-primary-color text-xs uppercase border-r border-slate-100/60 align-middle">
                   <div className="text-primary-color font-black tracking-wider">
                     {session.label}
                   </div>
+                  <div className="text-[10px] text-slate-500 font-medium mt-1">
+                    {session.time}
+                  </div>
                 </td>
                 {days.map((d) => {
                   const iso = ymd(d);
-                  const item = findSession(iso, session.type);
+                  const item = findSession(iso, session.sessionName, session.startTime);
                   return (
-                    <td key={`${iso}-${session.type}`} className="p-3.5 border-r border-slate-100/60 last:border-r-0 h-full">
+                    <td key={`${iso}-${session.id}`} className="p-3.5 border-r border-slate-100/60 last:border-r-0 h-full">
                       {item ? <SessionCard session={item} /> : <EmptySlot />}
                     </td>
                   );

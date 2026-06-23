@@ -1,17 +1,10 @@
 import axios from 'axios';
+import axiosInstance from '../api/axiosInstance';
 import { toast } from 'react-toastify';
 import type Submission from '../types/Grade';
 import type { GradeSubmissionData } from '../types/Grade';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL}/api`
-  : 'http://localhost:5000/api';
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  withCredentials: true,
-  headers: { 'Content-Type': 'application/json' },
-});
+const api = axiosInstance;
 
 interface ApiError {
   response?: {
@@ -83,18 +76,7 @@ interface AssignmentDetailsResponse {
   assignment?: unknown;
 }
 
-api.interceptors.response.use(
-  (res) => res,
-  (err: ApiError) => {
-    const msg = err.response?.data?.message || 'Server connection error';
-    if (err.response?.status === 401) {
-      toast.error('Session expired, please log in again');
-    } else {
-      toast.error(msg);
-    }
-    return Promise.reject(err);
-  }
-);
+// Response interceptors handled globally by axiosInstance
 
 const normalizeSubmission = (s: RawSubmission): Submission => {
   let studentName = 'Unknown Student';

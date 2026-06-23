@@ -1,5 +1,6 @@
 import axios, { AxiosError } from 'axios';
 import type { AxiosResponse } from 'axios';
+import axiosInstance from '../api/axiosInstance';
 
 import type {
   User,
@@ -20,40 +21,7 @@ import type {
   PaginationParams,
   ApiResponse,
 } from '../types/schedule.types';
-const API_BASE_URL = import.meta.env.VITE_API_URL 
-  ? `${import.meta.env.VITE_API_URL}/api`
-  : 'http://localhost:5000/api';
-
-const scheduleManagementAPI = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  withCredentials: true,
-});
-scheduleManagementAPI.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-scheduleManagementAPI.interceptors.response.use(
-  (response) => response,
-  (error: AxiosError) => {
-    if (error.response?.status === 401) {
-      console.error('⚠️ Unauthorized - Token invalid or expired');
-    }
-    if (error.response?.status === 403) {
-      console.error('🚫 Forbidden - Insufficient permissions');
-    }
-    if (error.response?.status === 500) {
-      console.error('❌ Server Error:', error.response?.data);
-    }
-    return Promise.reject(error);
-  }
-);
+const scheduleManagementAPI = axiosInstance;
 
 export const courseAPI = {
   getAll: (): Promise<AxiosResponse<ApiResponse<Course[]>>> => 

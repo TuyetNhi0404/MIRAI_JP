@@ -1,9 +1,9 @@
 // axiosInstance.ts
 import axios from "axios";
+import type { AxiosError, InternalAxiosRequestConfig } from "axios";
 import { getStore } from "../redux/storeRef";
 import { forceLogout } from "../redux/slices/authSlice";
-
-import { getApiBaseUrl } from "../utils/apiBase";
+import { getApiBaseUrl, getApiOrigin } from "../utils/apiBase";
 
 const axiosInstance = axios.create({
   baseURL: getApiBaseUrl(),
@@ -11,7 +11,7 @@ const axiosInstance = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true, // ✅ BẮT BUỘC để gửi cookies 
+  withCredentials: true,
 });
 
 // ✅ Biến để tránh gọi refresh token nhiều lần cùng lúc
@@ -32,22 +32,19 @@ const processQueue = (error: any = null) => {
   failedQueue = [];
 };
 
-// Request interceptor 
+// Request interceptor - Đọc token từ Redux Store hoặc localStorage
 axiosInstance.interceptors.request.use(
-  (config) => {
-    // Lấy token từ Redux (để support hot-reload) hoặc localStorage
-    let token = null;
+  (config: InternalAxiosRequestConfig) => {
+    let token: string | null = null;
     try {
       token = getStore().getState().auth.accessToken;
     } catch (e) {
-      // Bỏ qua nếu store chưa khởi tạo
+      // Store chưa khởi tạo
     }
-    
     if (!token) {
       token = localStorage.getItem("accessToken");
     }
-
-    if (token) {
+    if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
 
@@ -62,99 +59,103 @@ axiosInstance.interceptors.request.use(
 
     return config;
   },
-  (error) => {
+  (error: AxiosError) => {
     return Promise.reject(error);
   }
 );
 
-// Response interceptor 
+// Response interceptor - Xử lý 401 bằng refresh token thay vì force logout
 axiosInstance.interceptors.response.use(
   (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
+  async (error: AxiosError) => {
+    const originalRequest = error.config as any;
 
-    // ✅ Xử lý 401 - Token hết hạn
     if (error.response?.status === 401 && !originalRequest._retry) {
-      // ✅ Bỏ qua refresh token nếu đang ở trang public hoặc đang gọi refresh-token
-      if (originalRequest.url?.includes("/auth/refresh-token")) {
-        return handleLogout();
+      // Bỏ qua nếu đang gọi refresh-token hoặc login/register
+      if (
+        originalRequest.url?.includes("/auth/refresh-token") ||
+        originalRequest.url?.includes("/auth/login") ||
+        originalRequest.url?.includes("/auth/register") ||
+        originalRequest.url?.includes("/auth/google")
+      ) {
+        return Promise.reject(error);
       }
 
       const currentPath = window.location.pathname;
-      const isProtectedRoute = 
-        currentPath.startsWith("/dashboard") || 
+      const isProtectedRoute =
+        currentPath.startsWith("/dashboard") ||
         currentPath.startsWith("/admin");
 
       if (!isProtectedRoute) {
         return Promise.reject(error);
       }
 
-      // ✅ Đánh dấu request này đã retry
       originalRequest._retry = true;
 
       if (isRefreshing) {
-        // ✅ Nếu đang refresh, đợi trong queue
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
-          .then(() => {
-            return axiosInstance(originalRequest);
-          })
-          .catch((err) => {
-            return Promise.reject(err);
-          });
+          .then(() => axiosInstance(originalRequest))
+          .catch((err) => Promise.reject(err));
       }
 
       isRefreshing = true;
 
       try {
-        // ✅ Gọi API refresh token
         const apiUrl = getApiOrigin();
-        let refreshTokenVal = null;
+        let refreshTokenVal: string | null = null;
         try {
           refreshTokenVal = getStore().getState().auth.refreshToken;
-        } catch(e) {}
+        } catch (e) {}
         if (!refreshTokenVal) {
           refreshTokenVal = localStorage.getItem("refreshToken");
         }
-        
+
         const response = await axios.post(
           `${apiUrl}/api/auth/refresh-token`,
           { refreshToken: refreshTokenVal },
-          {
-            withCredentials: true, // Gửi refreshToken cookie
-          }
+          { withCredentials: true }
         );
 
         if (response.data?.accessToken) {
           const newToken = response.data.accessToken;
-          // ✅ Lưu token mới vào localStorage và Redux
           localStorage.setItem("accessToken", newToken);
           try {
-            getStore().dispatch({ type: 'auth/refreshAccessToken/fulfilled', payload: { accessToken: newToken } });
+            getStore().dispatch({
+              type: "auth/refreshAccessToken/fulfilled",
+              payload: { accessToken: newToken },
+            });
           } catch (e) {}
 
           processQueue(null);
           isRefreshing = false;
 
-          // ✅ Gắn token mới vào request bị lỗi
           originalRequest.headers.Authorization = `Bearer ${newToken}`;
-
-          // ✅ Retry request ban đầu
           return axiosInstance(originalRequest);
         }
       } catch (refreshError) {
-        // ✅ Refresh token thất bại -> Logout
         processQueue(refreshError);
         isRefreshing = false;
-        return handleLogout();
+
+        // Refresh thất bại → force logout
+        console.error("❌ Session expired - Logging out");
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("user");
+        try {
+          getStore().dispatch(forceLogout());
+        } catch (e) {
+          console.error("Redux dispatch error:", e);
+        }
+        window.location.href = "/";
+        return Promise.reject(new Error("Session expired"));
       }
     }
 
-    // ✅ Xử lý 403 - Không có quyền
     if (error.response?.status === 403) {
       console.error("❌ 403 Forbidden");
-      const url = error.config?.url || "";
+      const url = (error.config as any)?.url || "";
       if (!url.includes("/forum")) {
         alert("Bạn không có quyền truy cập");
       }
@@ -163,26 +164,5 @@ axiosInstance.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-// ✅ Hàm xử lý logout
-function handleLogout() {
-  console.error("❌ Session expired - Logging out");
-  
-  // Clear localStorage
-  localStorage.removeItem("accessToken");
-  localStorage.removeItem("refreshToken");
-  localStorage.removeItem("user");
-  
-  try {
-    const store = getStore();
-    store.dispatch(forceLogout());
-  } catch (e) {
-    console.error("Redux dispatch error:", e);
-  }
-  
-  window.location.href = "/";
-  
-  return Promise.reject(new Error("Session expired"));
-}
 
 export default axiosInstance;
