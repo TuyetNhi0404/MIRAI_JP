@@ -34,7 +34,7 @@ const formatDayShort = (d: Date) =>
   });
 
 const EmptySlot: React.FC = () => (
-  <div className="w-full h-[140px] flex flex-col items-center justify-center bg-white/40 backdrop-blur-[2px] rounded-2xl border border-dashed border-slate-200/60 transition-all duration-300 hover:bg-white/60 hover:border-slate-300/80 select-none">
+  <div className="w-full h-[120px] flex flex-col items-center justify-center bg-white/40 backdrop-blur-[2px] rounded-2xl border border-dashed border-slate-200/60 transition-all duration-300 hover:bg-white/60 hover:border-slate-300/80 select-none">
     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Trống</span>
   </div>
 );
@@ -153,7 +153,7 @@ const ScheduleGrid: React.FC<Props> = ({ items, weekStart, sessionsList }) => {
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                         {session.label} ({session.time})
                       </span>
-                      {item ? <SessionCard session={item} compact /> : <EmptySlot />}
+                      {item ? <SessionCard session={item} /> : <EmptySlot />}
                     </div>
                   );
                 })}
@@ -165,26 +165,26 @@ const ScheduleGrid: React.FC<Props> = ({ items, weekStart, sessionsList }) => {
 
       {/* Desktop view - Beautiful grid schedule */}
       <div className="hidden lg:block overflow-x-auto border border-slate-150 rounded-2xl seigaiha-pattern shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
-        <table className="w-full border-collapse table-fixed min-w-[1380px]">
+        <table className="w-full border-collapse table-fixed min-w-[885px]">
           <colgroup>
-            <col style={{ width: "150px" }} />
-            <col style={{ width: "180px" }} />
-            <col style={{ width: "180px" }} />
-            <col style={{ width: "180px" }} />
-            <col style={{ width: "180px" }} />
-            <col style={{ width: "180px" }} />
-            <col style={{ width: "180px" }} />
-            <col style={{ width: "180px" }} />
+            <col style={{ width: "80px" }} />
+            <col style={{ width: "115px" }} />
+            <col style={{ width: "115px" }} />
+            <col style={{ width: "115px" }} />
+            <col style={{ width: "115px" }} />
+            <col style={{ width: "115px" }} />
+            <col style={{ width: "115px" }} />
+            <col style={{ width: "115px" }} />
           </colgroup>
           <thead>
             <tr className="bg-primary-color text-white border-b border-primary-color-hover">
-              <th className="py-4 px-4 text-[11px] font-extrabold text-white/80 uppercase text-center border-r border-white/10">
+              <th className="py-4 px-2 text-[10px] font-extrabold text-white/80 uppercase text-center border-r border-white/10">
                 Ca học
               </th>
               {days.map((d) => (
-                <th key={d.toISOString()} className="py-4 px-4 text-xs font-bold text-white uppercase text-center border-r border-white/10 last:border-r-0">
+                <th key={d.toISOString()} className="py-4 px-2 text-xs font-bold text-white uppercase text-center border-r border-white/10 last:border-r-0">
                   <span className="block font-black text-white tracking-wide">{formatDayShort(d)}</span>
-                  <span className="text-[10px] text-white font-extrabold bg-white/15 px-2.5 py-0.5 rounded-full w-max mx-auto mt-1 block">
+                  <span className="text-[9px] text-white font-extrabold bg-white/15 px-2 py-0.5 rounded-full w-max mx-auto mt-1 block">
                     {ymd(d).split("-").reverse().slice(0, 2).join("/")}
                   </span>
                 </th>
@@ -194,11 +194,11 @@ const ScheduleGrid: React.FC<Props> = ({ items, weekStart, sessionsList }) => {
           <tbody>
             {activeSessions.map((session, sIdx) => (
               <tr key={session.id} className={sIdx < activeSessions.length - 1 ? "border-b border-slate-150" : ""}>
-                <td className="py-8 px-4 bg-accent-color/30 text-center font-extrabold text-primary-color text-xs uppercase border-r border-slate-100/60 align-middle">
-                  <div className="text-primary-color font-black tracking-wider">
+                <td className="py-6 px-2 bg-accent-color/30 text-center font-extrabold text-primary-color text-[10px] uppercase border-r border-slate-100/60 align-middle">
+                  <div className="text-primary-color font-black tracking-wider line-clamp-1">
                     {session.label}
                   </div>
-                  <div className="text-[10px] text-slate-500 font-medium mt-1">
+                  <div className="text-[9px] text-slate-500 font-medium mt-0.5">
                     {session.time}
                   </div>
                 </td>
@@ -206,13 +206,14 @@ const ScheduleGrid: React.FC<Props> = ({ items, weekStart, sessionsList }) => {
                   const iso = ymd(d);
                   const item = findSession(iso, session.sessionName, session.startTime);
                   return (
-                    <td key={`${iso}-${session.id}`} className="p-3.5 border-r border-slate-100/60 last:border-r-0 h-full">
+                    <td key={`${iso}-${session.id}`} className="p-2 border-r border-slate-100/60 last:border-r-0 h-full">
                       {item ? <SessionCard session={item} /> : <EmptySlot />}
                     </td>
                   );
                 })}
               </tr>
             ))}
+
           </tbody>
         </table>
       </div>
