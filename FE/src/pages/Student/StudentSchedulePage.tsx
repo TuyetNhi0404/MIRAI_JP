@@ -364,6 +364,8 @@ const StudentSchedulePage: React.FC = () => {
       return getMonday(prev);
     });
 
+  const goCurrentWeek = () => setWeekStart(getMonday(new Date()));
+
   const goNextWeek = () =>
     setWeekStart((s) => {
       const next = new Date(s);
@@ -380,6 +382,14 @@ const StudentSchedulePage: React.FC = () => {
       subtitle="Xem và theo dõi lịch học, lịch chuyên cần của bạn theo từng tuần"
       extra={
         <div className="flex items-center gap-2">
+          <button
+            onClick={goCurrentWeek}
+            className="flex items-center gap-1.5 px-3 py-2 border border-border-color rounded-xl bg-surface-base hover:bg-accent-color hover:border-primary-color text-text-main hover:text-primary-color transition active:scale-95 shrink-0 text-xs font-bold"
+            title="Quay lại tuần hiện tại"
+          >
+            Hôm nay
+          </button>
+
           <button
             onClick={goPrevWeek}
             className="p-2 border border-border-color rounded-xl bg-surface-base hover:bg-accent-color hover:border-primary-color text-text-main hover:text-primary-color transition active:scale-95 shrink-0"
