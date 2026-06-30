@@ -1,14 +1,32 @@
-# OCR + Speaking FastAPI — target image ~2–3 GB (CPU inference, no local venv in context)
+# OCR + Speaking FastAPI — local AI stack (whisper.cpp + llama.cpp + MeloTTS)
 #
-# Inspect after build:
-#   docker images mirai-ocr --format '{{.Repository}}:{{.Tag}}\t{{.Size}}'
-#   docker history mirai-ocr --human --no-trunc
-#   docker buildx du --verbose   # BuildKit layer sizes
-#   docker run --rm mirai-ocr du -sh /app /usr/local/lib/python3.11/site-packages /app/.cache
+# Build:
+#   docker build -t mirai-ocr ./services/speaking-practice
 #
 # syntax=docker/dockerfile:1
 
 ARG PREBAKE_MODELS=1
+
+# -----------------------------------------------------------------------------
+# Stage 1: Build whisper.cpp from source
+# -----------------------------------------------------------------------------
+FROM python:3.11-slim-bookworm AS whisper-builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git build-essential cmake \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN git clone --depth=1 https://github.com/ggerganov/whisper.cpp /tmp/whisper.cpp \
+    && cd /tmp/whisper.cpp \
+    && cmake -B build -DWHISPER_BUILD_TESTS=OFF -DWHISPER_BUILD_EXAMPLES=ON \
+    && cmake --build build --config Release -j$(nproc) \
+    && cp build/bin/whisper-cli /usr/local/bin/whisper-cli \
+    && rm -rf /tmp/whisper.cpp
+
+# Download whisper model
+RUN mkdir -p /models && \
+    curl -L "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin" \
+    -o /models/ggml-small.bin
 
 # -----------------------------------------------------------------------------
 # Builder: CPU PyTorch first (easyocr otherwise pulls ~2 GB CUDA/nvidia wheels)
@@ -31,7 +49,7 @@ RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements-docker.txt
 
 # -----------------------------------------------------------------------------
-# Runtime: slim base + site-packages + explicit app COPY (no COPY . .)
+# Runtime: slim base + site-packages + explicit app COPY
 # -----------------------------------------------------------------------------
 FROM python:3.11-slim-bookworm AS runtime
 
@@ -46,6 +64,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxext6 \
     libxrender1 \
     libgomp1 \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 ENV PYTHONUNBUFFERED=1 \
@@ -56,16 +75,16 @@ ENV PYTHONUNBUFFERED=1 \
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
+# Copy whisper.cpp binary and model from whisper-builder
+COPY --from=whisper-builder /usr/local/bin/whisper-cli /usr/local/bin/whisper-cli
+COPY --from=whisper-builder /models/ggml-small.bin /models/ggml-small.bin
+
 COPY main.py stt.py llm.py coach.py tts.py sessions.py auth.py ./
 
 RUN mkdir -p uploads /app/.cache/huggingface /app/.cache/easyocr /app/.cache/torch
 
-# Bake Whisper + EasyOCR weights into image (~400–600 MB). Set PREBAKE_MODELS=0 for smaller image + cold start.
+# Bake EasyOCR weights into image (~400-600 MB)
 RUN if [ "$PREBAKE_MODELS" = "1" ]; then \
-      python -c "\
-from faster_whisper import WhisperModel; \
-WhisperModel('base', device='cpu', compute_type='int8'); \
-print('whisper base cached')"; \
       python -c "\
 import easyocr; \
 easyocr.Reader(['ja', 'en'], gpu=False, model_storage_directory='/app/.cache/easyocr'); \
@@ -76,7 +95,7 @@ print('easyocr models cached')"; \
 
 EXPOSE 8000
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')" || exit 1
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--timeout-keep-alive", "600"]

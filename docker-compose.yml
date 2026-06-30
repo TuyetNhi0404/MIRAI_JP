@@ -19,20 +19,54 @@ services:
       timeout: 3s
       retries: 10
 
+  local-llm:
+    image: ghcr.io/ggerganov/llama.cpp:server
+    volumes:
+      - ./models:/models:ro
+    command: >
+      -m /models/qwen3-1.7b-q4_k_m.gguf
+      --host 0.0.0.0
+      --port 11434
+      -c 2048
+      -n 256
+      --threads 4
+      -ngl 0
+    ports:
+      - "11434:11434"
+    restart: unless-stopped
+    mem_limit: 1.5g
+
+  melo-tts:
+    build:
+      context: ./services/melo-tts
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    restart: unless-stopped
+    mem_limit: 512m
+
   ocr:
     build:
       context: ./services/speaking-practice
       args:
         PREBAKE_MODELS: ${OCR_PREBAKE_MODELS:-1}
     restart: unless-stopped
+    depends_on:
+      - local-llm
+      - melo-tts
     environment:
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:8080}
+      LOCAL_LLM_URL: ${LOCAL_LLM_URL:-http://local-llm:11434}
+      LOCAL_LLM_MODEL: ${LOCAL_LLM_MODEL:-qwen3-1.7b}
+      MELO_TTS_URL: ${MELO_TTS_URL:-http://melo-tts:8001}
+      WHISPER_BIN: ${WHISPER_BIN:-/usr/local/bin/whisper-cli}
+      WHISPER_MODEL: ${WHISPER_MODEL:-/models/ggml-small.bin}
+      # Fallback APIs
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       OPENROUTER_MODEL: ${OPENROUTER_MODEL:-openai/gpt-4o-mini}
       LLM_MODEL: ${LLM_MODEL:-gemini-2.5-flash}
-      LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-100}
-      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
+      LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-256}
       SPEAKING_INTERNAL_KEY: ${SPEAKING_INTERNAL_KEY:-mirai-speaking-dev-key}
       SKIP_SPEAKING_AUTH: ${SKIP_SPEAKING_AUTH:-true}
     volumes:
@@ -41,7 +75,7 @@ services:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
       interval: 30s
       timeout: 10s
-      start_period: 180s
+      start_period: 30s
       retries: 5
 
   backend:

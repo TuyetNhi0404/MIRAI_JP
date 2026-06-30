@@ -1,0 +1,9 @@
+venv/
+.venv/
+.hf_cache/
+.cache/
+__pycache__/
+*.pyc
+.env
+uploads/*
+!uploads/.gitkeep

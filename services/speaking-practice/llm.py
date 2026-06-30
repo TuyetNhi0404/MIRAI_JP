@@ -1,21 +1,22 @@
 """
 llm_client.py
 ─────────────────────────────────────────────────────────────────────────────
-LLM provider chain: Gemini (primary) → OpenRouter (fallback)
+LLM provider chain: Local (llama.cpp) → Gemini → OpenRouter (fallback)
 
 Env vars
 ────────
-GEMINI_API_KEY        – Gemini API key  (optional if you only use OpenRouter)
-OPENROUTER_API_KEY    – OpenRouter key  (fallback)
-LLM_MODEL             – primary model   (default: gemini-2.5-flash)
-OPENROUTER_MODEL      – fallback model  (default: openai/gpt-4o-mini)
-LLM_MAX_TOKENS        – max output tokens (default: 100)
-YOUR_SITE_URL         – sent in X-Your-Site header to OpenRouter (optional)
-YOUR_SITE_NAME        – sent in X-Title header to OpenRouter   (optional)
+LOCAL_LLM_URL         – llama.cpp server URL  (default: http://local-llm:11434)
+LOCAL_LLM_MODEL       – local model name      (default: qwen3-1.7b)
+GEMINI_API_KEY        – Gemini API key        (optional fallback)
+OPENROUTER_API_KEY    – OpenRouter key        (final fallback)
+LLM_MODEL             – Gemini model          (default: gemini-2.5-flash)
+OPENROUTER_MODEL      – fallback model        (default: openai/gpt-4o-mini)
+LLM_MAX_TOKENS        – max output tokens     (default: 256)
 """
 
 from __future__ import annotations
 
+import json
 import os
 from typing import Generator
 
@@ -28,12 +29,14 @@ load_dotenv()
 
 # ── Config ──────────────────────────────────────────────────────────────────
 
+LOCAL_LLM_URL: str = os.getenv("LOCAL_LLM_URL", "http://local-llm:11434")
+LOCAL_LLM_MODEL: str = os.getenv("LOCAL_LLM_MODEL", "qwen3-1.7b")
 GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
 OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
 
 LLM_MODEL: str = os.getenv("LLM_MODEL", "gemini-2.5-flash")
 OPENROUTER_MODEL: str = os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
-MAX_TOKENS: int = int(os.getenv("LLM_MAX_TOKENS", "100"))
+MAX_TOKENS: int = int(os.getenv("LLM_MAX_TOKENS", "256"))
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 OPENROUTER_HEADERS = {
@@ -45,12 +48,73 @@ OPENROUTER_HEADERS = {
 
 # ── Sentinel exceptions ──────────────────────────────────────────────────────
 
+class LocalUnavailable(Exception):
+    """Raised when local LLM fails."""
+
+
 class GeminiUnavailable(Exception):
     """Raised when Gemini should not be tried (missing key or rate-limited)."""
 
 
 class AllProvidersExhausted(Exception):
     """Raised when every provider in the chain has failed."""
+
+
+# ── Provider: Local llama.cpp ────────────────────────────────────────────────
+
+def _inject_no_think(messages: list[dict]) -> list[dict]:
+    """Add /no_think prefix to system prompt to disable Qwen3 thinking mode."""
+    msgs = [m.copy() for m in messages]
+    for m in msgs:
+        if m["role"] == "system":
+            m["content"] = "/no_think\n" + m["content"]
+            break
+    return msgs
+
+
+def _local_reply(messages: list[dict]) -> str:
+    payload = {
+        "model": LOCAL_LLM_MODEL,
+        "messages": _inject_no_think(messages),
+        "max_tokens": MAX_TOKENS,
+        "temperature": 0.7,
+        "stream": False,
+    }
+    with httpx.Client(timeout=30.0) as client:
+        resp = client.post(f"{LOCAL_LLM_URL}/v1/chat/completions", json=payload)
+        resp.raise_for_status()
+        data = resp.json()
+        return data["choices"][0]["message"]["content"]
+
+
+def _local_stream(messages: list[dict]) -> Generator[str, None, None]:
+    payload = {
+        "model": LOCAL_LLM_MODEL,
+        "messages": _inject_no_think(messages),
+        "max_tokens": MAX_TOKENS,
+        "temperature": 0.7,
+        "stream": True,
+    }
+    with httpx.Client(timeout=30.0) as http:
+        with http.stream(
+            "POST",
+            f"{LOCAL_LLM_URL}/v1/chat/completions",
+            json=payload,
+        ) as resp:
+            resp.raise_for_status()
+            for line in resp.iter_lines():
+                if not line or not line.startswith("data:"):
+                    continue
+                raw = line[5:].strip()
+                if raw == "[DONE]":
+                    break
+                try:
+                    chunk = json.loads(raw)
+                    delta = chunk["choices"][0]["delta"].get("content", "")
+                    if delta:
+                        yield delta
+                except (json.JSONDecodeError, KeyError):
+                    continue
 
 
 # ── Provider: Gemini ─────────────────────────────────────────────────────────
@@ -67,7 +131,6 @@ def _is_rate_limit(err_msg: str) -> bool:
 def _build_gemini_contents(
     messages: list[dict],
 ) -> tuple[str | None, list[types.Content]]:
-    """Convert OpenAI-style messages → Gemini format."""
     system_parts: list[str] = []
     contents: list[types.Content] = []
 
@@ -204,7 +267,6 @@ def _openrouter_stream(messages: list[dict]) -> Generator[str, None, None]:
                 payload = line[5:].strip()
                 if payload == "[DONE]":
                     break
-                import json
                 try:
                     chunk = json.loads(payload)
                     delta = chunk["choices"][0]["delta"].get("content", "")
@@ -219,16 +281,21 @@ def _openrouter_stream(messages: list[dict]) -> Generator[str, None, None]:
 def get_ai_reply(messages: list[dict]) -> str:
     """
     Non-streaming reply.
-    Falls back to OpenRouter automatically when Gemini is unavailable or
-    rate-limited.
+    Provider chain: Local → Gemini → OpenRouter
     """
-    # 1. Try Gemini
+    # 1. Try Local llama.cpp
+    try:
+        return _local_reply(messages)
+    except Exception as e:
+        print(f"[LLM] Local failed: {e}, fallback Gemini")
+
+    # 2. Try Gemini
     try:
         return _gemini_reply(messages)
     except GeminiUnavailable as e:
         print(f"[FALLBACK TRIGGER] Gemini unavailable: {e}")
 
-    # 2. Try OpenRouter
+    # 3. Try OpenRouter
     try:
         return _openrouter_reply(messages)
     except AllProvidersExhausted:
@@ -260,27 +327,33 @@ def translate_japanese_to_vietnamese(text: str) -> str:
 def get_ai_reply_stream(messages: list[dict]) -> Generator[str, None, None]:
     """
     Streaming reply.
-    Falls back to OpenRouter automatically when Gemini is unavailable or
-    rate-limited.
-
-    NOTE: Because Gemini is tried first and may fail mid-stream before any
-    tokens are emitted, the generator catches GeminiUnavailable before the
-    first yield and redirects cleanly to OpenRouter.
+    Provider chain: Local → Gemini → OpenRouter
     """
-    # 1. Try Gemini
+    # 1. Try Local llama.cpp
     try:
-        gen = _gemini_stream(messages)
-        # Peek at the first value to trigger connection errors early.
+        gen = _local_stream(messages)
         first = next(gen)
         yield first
         yield from gen
         return
     except StopIteration:
-        return  # Empty but valid Gemini response
+        return
+    except Exception as e:
+        print(f"[LLM] Local stream failed: {e}, fallback Gemini")
+
+    # 2. Try Gemini
+    try:
+        gen = _gemini_stream(messages)
+        first = next(gen)
+        yield first
+        yield from gen
+        return
+    except StopIteration:
+        return
     except GeminiUnavailable as e:
         print(f"[FALLBACK TRIGGER] Gemini unavailable: {e}")
 
-    # 2. Try OpenRouter
+    # 3. Try OpenRouter
     try:
         yield from _openrouter_stream(messages)
     except AllProvidersExhausted:

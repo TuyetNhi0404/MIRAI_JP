@@ -5,6 +5,7 @@ import shutil
 import os
 import uuid
 import asyncio
+from pathlib import Path
 from pydantic import BaseModel
 
 from auth import authenticate_websocket, get_current_user_id
@@ -16,15 +17,15 @@ from tts import generate_audio
 
 app = FastAPI(title="MIRAI Speaking Practice")
 
+_app_started = False
 
 @app.on_event("startup")
-async def warmup_whisper():
-    print("[speaking] Warming up Whisper model (first run may take a minute)...")
-    try:
-        from stt import model
-        print(f"[speaking] Whisper ready (model loaded: {model is not None})")
-    except Exception as exc:
-        print(f"[speaking] Whisper warmup failed: {exc}")
+async def warmup():
+    global _app_started
+    if _app_started:
+        return
+    _app_started = True
+    print("[speaking] Service started")
 
 _allowed_origins = os.getenv(
     "ALLOWED_ORIGINS",
@@ -114,18 +115,6 @@ KANJI RULES:
 - ONLY allow: 日、本、人、月、年、食、水、山、川 if you must — always add furigana in parentheses.
 - Example: 日(にち)
  
-WHAT GOOD N5 RESPONSES LOOK LIKE:
-  ✅ "そうですか！わたしも すきです。あなたは？"
-  ✅ "いいですね！どこに いきますか？"
-  ✅ "そうなんですね。なに が すきですか？"
- 
-WHAT YOU MUST NEVER DO AT N5:
-  ❌ Using 〜んですか / 〜でしょうか (too advanced)
-  ❌ Long sentences with multiple clauses
-  ❌ Rare or abstract vocabulary
-  ❌ Kanji without hiragana reading
-  ❌ Responding with more than 2 sentences
- 
 ENGLISH SUPPORT:
 - If the user seems completely lost, you MAY add a short English hint in parentheses.
 - Example: "なに が すきですか？(What do you like?)"
@@ -148,15 +137,7 @@ SENTENCE STRUCTURE RULES:
 - Use: 〜てみる、〜ている、〜たい、〜ましょう、〜ませんか freely
 - Keep each response to 2–3 sentences max.
  
-WHAT GOOD N4 RESPONSES LOOK LIKE:
-  ✅ "へえ、いいですね！どんな 食べ物が すきですか？"
-  ✅ "そうなんですね。週末は どこかに 行きましたか？"
-  ✅ "なるほど！それは たのしそう ですね。"
- 
-WHAT YOU MUST NEVER DO AT N4:
-  ❌ Keigo (formal speech like 〜ていただけますでしょうか)
-  ❌ Newspaper-style or abstract vocabulary
-  ❌ Sentences with 3+ clauses chained together
+
 """,
  
     "N3": """
@@ -265,6 +246,7 @@ def build_messages(session, user_input):
     # 1. system
     mode = session.get("mode", "free_talk")
     system = SYSTEM_PROMPT + "\n" + LEVEL_PROMPT.get(session["level"], "") + "\n" + MODE_PROMPT.get(mode, "")
+    system += "\n\nREMEMBER: You are Mirai (ミライ). Your name is Mirai. When asked your name, say わたしのなまえは ミライ です。"
 
     messages.append({
         "role": "system",
@@ -336,8 +318,8 @@ async def conversation(
     with open(input_audio_path, "wb") as buffer:
         shutil.copyfileobj(audio_file.file, buffer)
         
-    # 2. STT (faster-whisper)
-    transcript, confidence = transcribe_audio(input_audio_path)
+    # 2. STT (whisper.cpp)
+    transcript, confidence = await transcribe_audio(input_audio_path)
     
     if not transcript:
         return {
@@ -434,7 +416,7 @@ async def transcribe(
             shutil.copyfileobj(audio_file.file, buffer)
 
         print(f"[speaking] transcribe user={user_id} file={input_audio_path}")
-        transcript, confidence = transcribe_audio(input_audio_path)
+        transcript, confidence = await transcribe_audio(input_audio_path)
 
         if not transcript:
             return {"transcript": "", "confidence": 0.0}
@@ -502,7 +484,7 @@ async def websocket_stream(websocket: WebSocket):
             with open(temp_prog_path, "wb") as f:
                 f.write(data_to_transcribe)
             # Run STT in executor thread pool
-            transcript, confidence = await asyncio.to_thread(transcribe_audio, temp_prog_path)
+            transcript, confidence = await transcribe_audio(temp_prog_path)
             if transcript.strip():
                 await websocket.send_json({
                     "type": "transcript_partial",
@@ -552,10 +534,10 @@ async def websocket_stream(websocket: WebSocket):
                         with open(temp_audio_path, "wb") as f:
                             f.write(audio_bytes)
                             
-                        # 1. STT (faster-whisper in thread pool)
+                        # 1. STT
                         await websocket.send_json({"type": "status", "message": "Transcribing..."})
                         stt_start = time.time()
-                        transcript, confidence = await asyncio.to_thread(transcribe_audio, temp_audio_path)
+                        transcript, confidence = await transcribe_audio(temp_audio_path)
                         stt_duration = time.time() - stt_start
                         print(f"[PERF] STT took {stt_duration:.2f}s (confidence: {confidence})")
                         
@@ -592,20 +574,19 @@ async def websocket_stream(websocket: WebSocket):
                                 try:
                                     if sentence is None:
                                         break
-                                    # Generate audio in executor thread pool
                                     audio_url = await asyncio.to_thread(generate_audio, sentence)
                                     if audio_url:
-                                        try:
-                                            await websocket.send_json({
-                                                "type": "audio_chunk",
-                                                "url": audio_url
-                                            })
-                                        except Exception as send_err:
-                                            print("TTS worker: websocket closed while sending audio:", send_err)
+                                        filename = audio_url.replace("/audio/", "")
+                                        audio_path = Path("uploads") / filename
+                                        if audio_path.exists():
+                                            audio_bytes = audio_path.read_bytes()
+                                            try:
+                                                await websocket.send_bytes(audio_bytes)
+                                            except Exception as send_err:
+                                                print("TTS worker: websocket closed while sending audio:", send_err)
                                 except Exception as e:
                                     print("TTS worker: error generating audio:", e)
                                 finally:
-                                    # ALWAYS release the queue slot to prevent deadlock
                                     tts_queue.task_done()
                                 
                         worker_task = asyncio.create_task(tts_worker())
@@ -644,7 +625,7 @@ async def websocket_stream(websocket: WebSocket):
                             current_sentence += token
                             
                             try:
-                                await websocket.send_json({"type": "llm_token", "text": token})
+                                await websocket.send_json({"type": "ai_token", "text": token})
                             except Exception:
                                 break
                             

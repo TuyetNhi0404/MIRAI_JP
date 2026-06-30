@@ -1,41 +1,34 @@
 import os
-import requests
-from dotenv import load_dotenv
+import httpx
 import uuid
+from pathlib import Path
 
-load_dotenv()
+MELO_TTS_URL = os.getenv("MELO_TTS_URL", "http://melo-tts:8001")
+UPLOAD_DIR = Path("uploads")
+UPLOAD_DIR.mkdir(exist_ok=True)
 
-ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY", "")
-VOICE_ID = "EXAVITQu4vr4xnSDxMaL" # Bella (Standard pre-made free voice)
 
 def generate_audio(text: str) -> str:
-    if not ELEVENLABS_API_KEY:
-        print("Warning: API Key missing for ElevenLabs.")
+    """Call MeloTTS local, return URL path of saved MP3."""
+    if not text or not text.strip():
         return ""
-        
-    url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
-    headers = {
-        "Accept": "audio/mpeg",
-        "Content-Type": "application/json",
-        "xi-api-key": ELEVENLABS_API_KEY
-    }
-    payload = {
-        "text": text,
-        "model_id": "eleven_flash_v2_5",
-        "voice_settings": {
-            "stability": 0.5,
-            "similarity_boost": 0.5,
-            "speed": 0.8, 
-        }
-    }
-    
-    response = requests.post(url, json=payload, headers=headers)
-    if response.status_code == 200:
-        file_name = f"{uuid.uuid4().hex}.mp3"
-        output_path = os.path.join("uploads", file_name)
-        with open(output_path, "wb") as f:
-            f.write(response.content)
-        return f"/audio/{file_name}"
-    else:
-        print("Error from ElevenLabs:", response.text)
+
+    try:
+        with httpx.Client(timeout=30.0) as client:
+            resp = client.post(
+                f"{MELO_TTS_URL}/tts",
+                json={
+                    "text": text,
+                    "language": "JA",
+                    "speed": 1.0,
+                }
+            )
+            resp.raise_for_status()
+
+        filename = f"{uuid.uuid4().hex}.mp3"
+        output_path = UPLOAD_DIR / filename
+        output_path.write_bytes(resp.content)
+        return f"/audio/{filename}"
+    except Exception as e:
+        print(f"[TTS] MeloTTS error: {e}")
         return ""
