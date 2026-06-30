@@ -93,6 +93,7 @@ export interface SessionItem {
   teacher?: string | PopulatedTeacher;
   attendance?: Attendance | null;
   room?: string;
+  sessionName?: string;
 }
 
 export type CalendarStatus = 'not_yet' | 'in_progress' | 'completed';

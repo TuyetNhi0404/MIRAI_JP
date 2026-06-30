@@ -128,7 +128,7 @@ const getAttendanceStatusFromObj = (attendanceObj: unknown): AttendanceStatus =>
   return "not_yet";
 };
 
-const SessionCard: React.FC<Props> = ({ session, compact = false, style, onClick }) => {
+const SessionCard: React.FC<Props> = ({ session, style, onClick }) => {
   const getTeacherName = (): string => {
     try {
       if (session.teacher && typeof session.teacher === "string") {
@@ -237,7 +237,7 @@ const SessionCard: React.FC<Props> = ({ session, compact = false, style, onClick
 
   if (isEmpty) {
     return (
-      <div className="w-full h-[220px] flex flex-col items-center justify-center bg-slate-50/10 rounded-2xl border border-dashed border-slate-200/60 transition-all duration-300 hover:bg-slate-50/30 hover:border-slate-300/80 select-none">
+      <div className="w-full h-[120px] flex flex-col items-center justify-center bg-slate-50/10 rounded-2xl border border-dashed border-slate-200/60 transition-all duration-300 hover:bg-slate-50/30 hover:border-slate-300/80 select-none">
         <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Trống</span>
       </div>
     );
@@ -247,37 +247,36 @@ const SessionCard: React.FC<Props> = ({ session, compact = false, style, onClick
     <div
       onClick={onClick}
       style={style}
-      className={`w-full h-[220px] bg-white border border-slate-100 border-l-4 ${borderColor} rounded-r-2xl rounded-l-md p-4 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all duration-300 flex flex-col gap-3 ${
+      className={`w-full h-[120px] bg-white border border-slate-100 border-l-4 ${borderColor} rounded-r-2xl rounded-l-md p-2.5 shadow-[0_1px_4px_rgba(0,0,0,0.01)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.04)] hover:-translate-y-0.5 transition-all duration-300 flex flex-col gap-1.5 ${
         onClick ? "cursor-pointer" : ""
       }`}
     >
-      <div className="space-y-1.5">
-        <h4 className="text-xs font-black uppercase tracking-wider text-[#1F2238] leading-snug line-clamp-2 hover:text-blue-600 transition-colors break-words">
-          {session.courseName ?? "Chưa xác định khóa học"}
+      <div className="space-y-0.5">
+        <h4 className="text-[10px] font-bold uppercase tracking-wide text-[#1F2238] leading-tight line-clamp-1 hover:text-blue-600 transition-colors break-words">
+          {session.courseName ?? "Chưa xác định"}
         </h4>
-        <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-          <UserRound size={13} className="text-slate-400 shrink-0" />
+        <div className="flex items-center gap-1 text-[9px] text-slate-500 font-medium">
+          <UserRound size={11} className="text-slate-400 shrink-0" />
           <span className="truncate">{teacherName}</span>
         </div>
       </div>
 
-      <div className="mt-auto space-y-2 border-t border-slate-50 pt-2.5">
-        {dateDisplay && (
-          <div className="flex items-center gap-1.5 text-xs text-slate-600 font-bold">
-            <Calendar size={13} className="text-blue-500 shrink-0" />
-            <span>{dateDisplay}</span>
+      <div className="mt-auto space-y-1 border-t border-slate-50 pt-1.5">
+        <div className="flex items-center justify-between gap-1">
+          <div className="flex items-center gap-1 text-[9px] text-slate-600 font-bold uppercase">
+            <Clock size={11} className="text-emerald-500 shrink-0" />
+            <span>{timeLabel}</span>
           </div>
-        )}
-        <div className="flex items-center gap-1.5 text-xs text-slate-600 font-bold">
-          <Clock size={13} className="text-emerald-500 shrink-0" />
-          <span>{timeLabel}</span>
-        </div>
-
-        <div className="pt-0.5">
-          <div className={`text-[9px] font-black tracking-wider px-2.5 py-0.5 rounded-full inline-block ${chipConfig.bg}`}>
+          <div className={`text-[8px] font-black tracking-wider px-2 py-0.5 rounded-full ${chipConfig.bg}`}>
             {chipConfig.label}
           </div>
         </div>
+        {dateDisplay && (
+          <div className="flex items-center gap-1 text-[9px] text-slate-500 font-medium">
+            <Calendar size={11} className="text-blue-400 shrink-0" />
+            <span>{dateDisplay}</span>
+          </div>
+        )}
       </div>
     </div>
   );
