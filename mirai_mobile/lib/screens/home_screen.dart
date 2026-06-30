@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
+import 'profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -384,6 +385,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: 'Bảng điều khiển',
                     viewId: 'dashboard',
                   ),
+                  _buildProfileDrawerItem(),
                   
                   // Admin options
                   if (role == 'admin') ...[
@@ -485,6 +487,30 @@ class _HomeScreenState extends State<HomeScreen> {
             _currentView = viewId;
           });
           Navigator.of(context).pop(); // Close drawer
+        },
+      ),
+    );
+  }
+
+  Widget _buildProfileDrawerItem() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListTile(
+        leading: const Icon(Icons.person_outline_rounded, color: Colors.white70, size: 22),
+        title: const Text(
+          'Hồ sơ cá nhân',
+          style: TextStyle(color: Colors.white70, fontSize: 14),
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        onTap: () {
+          Navigator.of(context).pop(); // Close drawer
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const ProfileScreen()),
+          );
         },
       ),
     );
