@@ -117,6 +117,23 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  // Update local avatar
+  Future<void> updateUserLocalAvatar(String newAvatarUrl) async {
+    if (_user != null) {
+      _user = UserModel(
+        id: _user!.id,
+        name: _user!.name,
+        email: _user!.email,
+        role: _user!.role,
+        avatar: newAvatarUrl,
+        status: _user!.status,
+      );
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user', jsonEncode(_user!.toJson()));
+      notifyListeners();
+    }
+  }
+
   // Helper to persist credentials
   Future<void> _saveSession(Map<String, dynamic> data) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
