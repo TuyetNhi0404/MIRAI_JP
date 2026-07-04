@@ -3,6 +3,10 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
 import 'profile_screen.dart';
+import 'leaderboard_screen.dart';
+import 'grammar_practice_screen.dart';
+import 'ocr_vocab_screen.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -417,10 +421,70 @@ class _HomeScreenState extends State<HomeScreen> {
                       title: 'Luyện nói (Speaking)',
                       viewId: 'speaking',
                     ),
-                    _buildDrawerItem(
-                      icon: Icons.translate_rounded,
-                      title: 'Học từ vựng (Vocab)',
-                      viewId: 'vocab',
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ListTile(
+                        leading: const Icon(Icons.camera_alt_outlined, color: Colors.white70, size: 22),
+                        title: const Text('Quét ảnh tra từ', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        onTap: () {
+                          Navigator.of(context).pop(); // Close drawer
+                          Navigator.of(context).push(MaterialPageRoute(builder: (_) => const OcrVocabScreen()));
+                        },
+                      ),
+                    ),
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ListTile(
+                        leading: const Icon(Icons.emoji_events_outlined, color: Colors.white70, size: 22),
+                        title: const Text('Bảng xếp hạng', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        onTap: () {
+                          Navigator.of(context).pop(); // Close drawer
+                          if (_studentCourses.isNotEmpty) {
+                            final first = _studentCourses.first;
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => LeaderboardScreen(
+                                  courseId: first['_id']?.toString() ?? '',
+                                  courseName: first['name']?.toString() ?? 'Lớp học',
+                                ),
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Bạn chưa tham gia lớp học nào để xem xếp hạng!'),
+                                backgroundColor: Color(0xFFB90000),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    ),
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ListTile(
+                        leading: const Icon(Icons.menu_book_rounded, color: Colors.white70, size: 22),
+                        title: const Text('Luyện ngữ pháp', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        onTap: () {
+                          Navigator.of(context).pop(); // Close drawer
+                          Navigator.of(context).push(MaterialPageRoute(builder: (_) => const GrammarPracticeScreen()));
+                        },
+                      ),
                     ),
                   ],
                 ],
@@ -831,25 +895,70 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Expanded(
               child: _buildActionGridCard(
-                icon: Icons.record_voice_over_outlined,
-                title: 'Luyện nói',
-                color: Colors.teal,
+                icon: Icons.emoji_events_outlined,
+                title: 'Xếp hạng',
+                color: Colors.amber,
                 onTap: () {
-                  setState(() {
-                    _currentView = 'speaking';
-                  });
+                  if (_studentCourses.isNotEmpty) {
+                    final first = _studentCourses.first;
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => LeaderboardScreen(
+                          courseId: first['_id']?.toString() ?? '',
+                          courseName: first['name']?.toString() ?? 'Lớp học',
+                        ),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Bạn chưa tham gia lớp học nào để xem xếp hạng!'),
+                        backgroundColor: Color(0xFFB90000),
+                      ),
+                    );
+                  }
                 },
               ),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: _buildActionGridCard(
-                icon: Icons.translate_rounded,
-                title: 'Từ vựng',
+                icon: Icons.menu_book_rounded,
+                title: 'Ngữ pháp',
+                color: Colors.blue,
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const GrammarPracticeScreen()),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _buildActionGridCard(
+                icon: Icons.camera_alt_outlined,
+                title: 'Quét tra từ',
                 color: Colors.purple,
                 onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const OcrVocabScreen()),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildActionGridCard(
+                icon: Icons.record_voice_over_outlined,
+                title: 'Luyện nói',
+                color: Colors.teal,
+                onTap: () {
                   setState(() {
-                    _currentView = 'vocab';
+                    _currentView = 'speaking';
                   });
                 },
               ),

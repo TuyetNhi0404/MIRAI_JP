@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import '../config/api_config.dart';
+
 
 class ApiService {
   final http.Client _client = http.Client();
@@ -252,4 +254,141 @@ class ApiService {
       rethrow;
     }
   }
+
+  // ─── LEADERBOARD API ───────────────────────────────────────────────────────
+  
+  // Fetch course leaderboard
+  Future<Map<String, dynamic>> fetchCourseLeaderboard(String token, String courseId, {int limit = 10}) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/leaderboards/course/$courseId?limit=$limit');
+    try {
+      final response = await _client.get(
+        url,
+        headers: _getHeaders(token: token),
+      );
+      return _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Fetch student rank inside a course
+  Future<Map<String, dynamic>> fetchStudentRankInCourse(String token, String studentId, String courseId) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/leaderboards/student/$studentId/course/$courseId');
+    try {
+      final response = await _client.get(
+        url,
+        headers: _getHeaders(token: token),
+      );
+      return _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Fetch leaderboard by component (attendance, assignment, quiz)
+  Future<Map<String, dynamic>> fetchLeaderboardByComponent(String token, String courseId, String component, {int limit = 10}) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/leaderboards/course/$courseId/component/$component?limit=$limit');
+    try {
+      final response = await _client.get(
+        url,
+        headers: _getHeaders(token: token),
+      );
+      return _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // ─── GRAMMAR API ───────────────────────────────────────────────────────────
+  
+  // Fetch grammar cards for student practice
+  Future<Map<String, dynamic>> fetchStudentPracticeCards(String token) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/grammar/student/practice');
+    try {
+      final response = await _client.get(
+        url,
+        headers: _getHeaders(token: token),
+      );
+      return _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // ─── PROFILE API ───────────────────────────────────────────────────────────
+  
+  // Fetch user profile
+  Future<Map<String, dynamic>> fetchProfile(String token) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/profile');
+    try {
+      final response = await _client.get(
+        url,
+        headers: _getHeaders(token: token),
+      );
+      return _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Update profile basic info (Name)
+  Future<Map<String, dynamic>> updateProfile(String token, {required String name}) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/profile');
+    try {
+      final response = await _client.put(
+        url,
+        headers: _getHeaders(token: token),
+        body: jsonEncode({'name': name}),
+      );
+      return _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Upload or update profile Avatar
+  Future<Map<String, dynamic>> updateAvatar(String token, String filePath) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/profile/avatar');
+    try {
+      final request = http.MultipartRequest('PUT', url);
+      request.headers.addAll({
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      });
+      
+      // Add the avatar file
+      request.files.add(await http.MultipartFile.fromPath(
+        'file', 
+        filePath,
+        contentType: MediaType('image', filePath.split('.').last == 'png' ? 'png' : 'jpeg'),
+      ));
+      
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      return _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // ─── VOCABULARY API ────────────────────────────────────────────────────────
+  
+  // Search vocabulary by keyword (text lookup)
+  Future<List<Map<String, dynamic>>> searchVocabulary({String? token, required String keyword}) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/vocabulary?search=$keyword');
+    try {
+      final response = await _client.get(
+        url,
+        headers: _getHeaders(token: token),
+      );
+      final decoded = _processResponse(response);
+      if (decoded != null && decoded['vocabularies'] != null) {
+        return List<Map<String, dynamic>>.from(decoded['vocabularies']);
+      }
+      return [];
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
+
