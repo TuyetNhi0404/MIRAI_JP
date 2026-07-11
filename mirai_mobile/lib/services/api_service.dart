@@ -252,4 +252,266 @@ class ApiService {
       rethrow;
     }
   }
+
+  // ==================== ACCOUNT MANAGEMENT (Admin) ====================
+
+  Future<Map<String, dynamic>> fetchUsers(String token) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/admin/users');
+    try {
+      final response = await _client.get(
+        url,
+        headers: _getHeaders(token: token),
+      );
+      return _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> createUser(String token, Map<String, dynamic> data) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/admin/create-user');
+    try {
+      final response = await _client.post(
+        url,
+        headers: _getHeaders(token: token),
+        body: jsonEncode(data),
+      );
+      return _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> lockUser(String token, String userId) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/admin/lock/$userId');
+    try {
+      final response = await _client.post(
+        url,
+        headers: _getHeaders(token: token),
+      );
+      _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> unlockUser(String token, String userId) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/admin/unlock/$userId');
+    try {
+      final response = await _client.post(
+        url,
+        headers: _getHeaders(token: token),
+      );
+      _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // ==================== SUBMISSION ASSIGNMENT (Student) ====================
+
+  Future<Map<String, dynamic>> fetchStudentCoursesWithData(String token) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/courses/student/courses');
+    try {
+      final response = await _client.get(
+        url,
+        headers: _getHeaders(token: token),
+      );
+      return _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchAssignments(String token, String courseId, {String? search, int? limit, int? page}) async {
+    final params = <String, String>{};
+    if (search != null) params['search'] = search;
+    if (limit != null) params['limit'] = limit.toString();
+    if (page != null) params['page'] = page.toString();
+    final query = params.isNotEmpty ? '?${Uri(queryParameters: params).query}' : '';
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/assignments/get/$courseId$query');
+    try {
+      final response = await _client.get(
+        url,
+        headers: _getHeaders(token: token),
+      );
+      return _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchMySubmission(String token, String assignmentId) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/submissions/$assignmentId/my-submission');
+    try {
+      final response = await _client.get(
+        url,
+        headers: _getHeaders(token: token),
+      );
+      return _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> submitAssignment(
+    String token,
+    String assignmentId,
+    List<int> fileBytes,
+    String fileName,
+  ) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/submissions/$assignmentId/submit');
+    try {
+      final request = http.MultipartRequest('POST', url);
+      request.headers.addAll(_getHeaders(token: token));
+      request.files.add(http.MultipartFile.fromBytes(
+        'files',
+        fileBytes,
+        filename: fileName,
+      ));
+      final streamedResponse = await _client.send(request);
+      final response = await http.Response.fromStream(streamedResponse);
+      return _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // ==================== STUDENT SCHEDULE ====================
+
+  Future<Map<String, dynamic>> fetchProfile(String token) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/profile');
+    try {
+      final response = await _client.get(
+        url,
+        headers: _getHeaders(token: token),
+      );
+      return _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchMyCourseMembers(String token, String userId) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/course-members/my-courses?userId=$userId&role=student');
+    try {
+      final response = await _client.get(
+        url,
+        headers: _getHeaders(token: token),
+      );
+      return _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchCalendars(String token) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/calendars');
+    try {
+      final response = await _client.get(
+        url,
+        headers: _getHeaders(token: token),
+      );
+      return _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchAttendanceByStudent(String token, String studentId) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/attendances/student/$studentId');
+    try {
+      final response = await _client.get(
+        url,
+        headers: _getHeaders(token: token),
+      );
+      return _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchCourseById(String token, String courseId) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/courses/$courseId');
+    try {
+      final response = await _client.get(
+        url,
+        headers: _getHeaders(token: token),
+      );
+      return _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchSessions(String token) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/sessions');
+    try {
+      final response = await _client.get(
+        url,
+        headers: _getHeaders(token: token),
+      );
+      return _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchUserById(String token, String userId) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/users/$userId');
+    try {
+      final response = await _client.get(
+        url,
+        headers: _getHeaders(token: token),
+      );
+      return _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // ==================== SPEAKING PRACTICE ====================
+
+  Future<Map<String, dynamic>> resetSpeakingSession(String token, {String level = 'N5'}) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/speaking/reset');
+    try {
+      final request = http.MultipartRequest('POST', url)
+        ..headers['Authorization'] = 'Bearer $token'
+        ..fields['level'] = level;
+      final streamed = await request.send();
+      final response = await http.Response.fromStream(streamed);
+      return _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> sendSpeakingText(String token, String text) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/speaking/reply');
+    try {
+      final response = await _client.post(
+        url,
+        headers: _getHeaders(token: token),
+        body: jsonEncode({'transcript': text}),
+      );
+      return _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> sendSpeakingAudio(String token, String audioBase64) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/speaking/conversation');
+    try {
+      final bytes = base64Decode(audioBase64);
+      final request = http.MultipartRequest('POST', url)
+        ..headers['Authorization'] = 'Bearer $token'
+        ..files.add(http.MultipartFile.fromBytes('audio_file', bytes, filename: 'audio.webm'));
+      final streamed = await request.send();
+      final response = await http.Response.fromStream(streamed);
+      return _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

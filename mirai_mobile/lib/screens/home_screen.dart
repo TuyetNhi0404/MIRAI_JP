@@ -3,6 +3,10 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
 import 'profile_screen.dart';
+import 'account_management_screen.dart';
+import 'submission_assignment_screen.dart';
+import 'student_schedule_screen.dart';
+import 'speaking_practice_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -394,10 +398,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       title: 'Duyệt đơn đăng ký',
                       viewId: 'enrollments',
                     ),
-                    _buildDrawerItem(
+                    _buildNavigationDrawerItem(
                       icon: Icons.people_outline_rounded,
                       title: 'Quản lý tài khoản',
-                      viewId: 'users',
+                      screen: const AccountManagementScreen(),
                     ),
                   ],
 
@@ -412,10 +416,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   // Student options
                   if (role == 'student' || role == 'user') ...[
-                    _buildDrawerItem(
+                    _buildNavigationDrawerItem(
+                      icon: Icons.assignment_outlined,
+                      title: 'Bài tập về nhà',
+                      screen: const SubmissionAssignmentScreen(),
+                    ),
+                    _buildNavigationDrawerItem(
+                      icon: Icons.calendar_month_outlined,
+                      title: 'Lịch học',
+                      screen: const StudentScheduleScreen(),
+                    ),
+                    _buildNavigationDrawerItem(
                       icon: Icons.record_voice_over_outlined,
-                      title: 'Luyện nói (Speaking)',
-                      viewId: 'speaking',
+                      title: 'Luyện nói',
+                      screen: const SpeakingPracticeScreen(),
                     ),
                     _buildDrawerItem(
                       icon: Icons.translate_rounded,
@@ -487,6 +501,33 @@ class _HomeScreenState extends State<HomeScreen> {
             _currentView = viewId;
           });
           Navigator.of(context).pop(); // Close drawer
+        },
+      ),
+    );
+  }
+
+  Widget _buildNavigationDrawerItem({
+    required IconData icon,
+    required String title,
+    required Widget screen,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: Colors.white70, size: 22),
+        title: Text(
+          title,
+          style: const TextStyle(color: Colors.white70, fontSize: 14),
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        onTap: () {
+          Navigator.of(context).pop(); // Close drawer
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => screen),
+          );
         },
       ),
     );
@@ -787,9 +828,9 @@ class _HomeScreenState extends State<HomeScreen> {
           value: 'Hoạt động',
           color: Colors.blueAccent,
           onTap: () {
-            setState(() {
-              _currentView = 'users';
-            });
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AccountManagementScreen()),
+            );
           },
         ),
       ],
@@ -831,17 +872,47 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Expanded(
               child: _buildActionGridCard(
-                icon: Icons.record_voice_over_outlined,
-                title: 'Luyện nói',
-                color: Colors.teal,
+                icon: Icons.assignment_outlined,
+                title: 'Bài tập',
+                color: const Color(0xFF1890FF),
                 onTap: () {
-                  setState(() {
-                    _currentView = 'speaking';
-                  });
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const SubmissionAssignmentScreen()),
+                  );
                 },
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildActionGridCard(
+                icon: Icons.calendar_month_outlined,
+                title: 'Lịch học',
+                color: const Color(0xFF52C41A),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const StudentScheduleScreen()),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildActionGridCard(
+                icon: Icons.record_voice_over_outlined,
+                title: 'Luyện nói',
+                color: const Color(0xFFB90000),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const SpeakingPracticeScreen()),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
             Expanded(
               child: _buildActionGridCard(
                 icon: Icons.translate_rounded,
