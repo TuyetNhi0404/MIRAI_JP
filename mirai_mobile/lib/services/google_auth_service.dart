@@ -6,7 +6,6 @@ class GoogleAuthService {
     serverClientId: dotenv.env['GOOGLE_CLIENT_ID'],
     scopes: [
       'email',
-      'https://www.googleapis.com/auth/userinfo.profile',
     ],
   );
 
