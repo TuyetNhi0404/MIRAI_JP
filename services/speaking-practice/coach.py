@@ -7,6 +7,7 @@ import re
 from typing import Any
 
 from llm import get_ai_reply
+from sanitizer import sanitize_transcript
 
 COACH_SYSTEM = """You are a Japanese grammar coach helping Vietnamese learners.
 Analyze the user's Japanese sentence from a speaking practice session.
@@ -78,7 +79,7 @@ def review_user_turn(
     level: str = "N5",
     history: list[str] | None = None,
 ) -> dict[str, Any]:
-    cleaned = (transcript or "").strip()
+    cleaned, flagged = sanitize_transcript(transcript)
     if not cleaned:
         return _parse_coach_json("", "")
 
@@ -86,7 +87,11 @@ def review_user_turn(
     if history:
         recent = [h for h in history if h.strip()][-4:]
         if recent:
-            context = "Recent conversation:\n" + "\n".join(f"- {h}" for h in recent) + "\n\n"
+            recent_clean = []
+            for h in recent:
+                hc, _hf = sanitize_transcript(h)
+                recent_clean.append(hc)
+            context = "Recent conversation:\n" + "\n".join(f"- {h}" for h in recent_clean) + "\n\n"
 
     user_content = (
         f"{context}"

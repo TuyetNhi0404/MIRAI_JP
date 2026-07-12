@@ -2,7 +2,6 @@ import asyncio
 import subprocess
 import json
 import os
-import tempfile
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -16,11 +15,15 @@ async def transcribe_audio(audio_path: str) -> tuple[str, float]:
 
 def _convert_to_wav(src: str) -> str:
     dst = src.rsplit(".", 1)[0] + ".wav"
-    subprocess.run(
+    proc = subprocess.run(
         ["ffmpeg", "-y", "-i", src, "-ar", "16000", "-ac", "1", "-sample_fmt", "s16", dst],
         capture_output=True,
         timeout=30,
     )
+    if proc.returncode != 0:
+        raise RuntimeError(f"ffmpeg conversion failed: {proc.stderr.decode().strip()}")
+    if not Path(dst).exists():
+        raise RuntimeError(f"ffmpeg output not created: {dst}")
     return dst
 
 def _run_whisper(audio_path: str) -> tuple[str, float]:

@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import speakingApi, { getSpeakingErrorMessage } from "./speakingApi";
 import { speakingApiPath } from "./config";
 
@@ -15,6 +15,8 @@ export function useMessageTranslation(text: string) {
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const prefetchedRef = useRef(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchTranslation = useCallback(async () => {
     if (!hasJapanese(text)) return;
@@ -41,6 +43,21 @@ export function useMessageTranslation(text: string) {
       setLoading(false);
     }
   }, [text, loading]);
+
+  useEffect(() => {
+    if (prefetchedRef.current) return;
+    if (!hasJapanese(text)) return;
+    if (translationCache.has(text)) return;
+
+    timeoutRef.current = setTimeout(() => {
+      prefetchedRef.current = true;
+      fetchTranslation();
+    }, 300);
+
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, [text, fetchTranslation]);
 
   return { translation, loading, error, fetchTranslation, translatable: hasJapanese(text) };
 }

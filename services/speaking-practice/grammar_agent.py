@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import json
-import os
 import re
 from typing import Any
 
 from llm import _gemini_client, _gemini_reply, get_ai_reply, GeminiUnavailable
+from sanitizer import sanitize_transcript
 
 GRAMMAR_AGENT_SYSTEM = """You are a Japanese grammar coach helping Vietnamese learners.
 Analyze the user's Japanese sentence.
@@ -74,7 +74,7 @@ def analyze_grammar(
     Note: calls get_ai_reply sync internally.
     In async context, run via asyncio.to_thread or loop.run_in_executor.
     """
-    cleaned = (transcript or "").strip()
+    cleaned, flagged = sanitize_transcript(transcript)
     if not cleaned:
         return {
             "severity": "none",
@@ -87,8 +87,12 @@ def analyze_grammar(
     if history:
         recent = [h for h in history if h.strip()][-4:]
         if recent:
+            recent_clean = []
+            for h in recent:
+                hc, _hf = sanitize_transcript(h)
+                recent_clean.append(hc)
             context = "Recent conversation:\n" + "\n".join(
-                f"- {h}" for h in recent
+                f"- {h}" for h in recent_clean
             ) + "\n\n"
 
     user_content = (
@@ -100,10 +104,8 @@ def analyze_grammar(
         {"role": "user", "content": user_content},
     ]
 
-    # Prefer Gemini for grammar analysis when available — more accurate than local 3B
     raw: str | None = None
-    gemini_key = os.getenv("GEMINI_API_KEY", "")
-    if gemini_key and _gemini_client is not None:
+    if _gemini_client is not None:
         try:
             raw = _gemini_reply(messages)
         except (GeminiUnavailable, Exception) as e:

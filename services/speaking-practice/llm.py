@@ -1,14 +1,14 @@
 """
-llm_client.py
+llm.py
 ─────────────────────────────────────────────────────────────────────────────
-LLM provider chain: Local (llama.cpp) → Gemini → OpenRouter (fallback)
+LLM provider chain: Gemini → OpenRouter → Local llama.cpp (final fallback)
 
 Env vars
 ────────
-LOCAL_LLM_URL         – llama.cpp server URL  (default: http://local-llm:11434)
+GEMINI_API_KEY        – Gemini API key        (primary)
+OPENROUTER_API_KEY    – OpenRouter key        (fallback)
+LOCAL_LLM_URL         – llama.cpp server URL  (default: http://local-llm:11434 | final fallback)
 LOCAL_LLM_MODEL       – local model name      (default: qwen3-1.7b)
-GEMINI_API_KEY        – Gemini API key        (optional fallback)
-OPENROUTER_API_KEY    – OpenRouter key        (final fallback)
 LLM_MODEL             – Gemini model          (default: gemini-2.5-flash)
 OPENROUTER_MODEL      – fallback model        (default: openai/gpt-4o-mini)
 LLM_MAX_TOKENS        – max output tokens     (default: 256)
@@ -16,14 +16,25 @@ LLM_MAX_TOKENS        – max output tokens     (default: 256)
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
+import threading
+import time
+from collections import OrderedDict
 from typing import Generator
 
 import httpx
 from dotenv import load_dotenv
-from google import genai
-from google.genai import types
+
+try:
+    from google import genai
+    from google.genai import types
+    _GENAI_AVAILABLE = True
+except ImportError:
+    genai = None  # type: ignore[assignment]
+    types = None  # type: ignore[assignment]
+    _GENAI_AVAILABLE = False
 
 load_dotenv()
 
@@ -120,7 +131,7 @@ def _local_stream(messages: list[dict]) -> Generator[str, None, None]:
 # ── Provider: Gemini ─────────────────────────────────────────────────────────
 
 _gemini_client: genai.Client | None = (
-    genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
+    genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY and _GENAI_AVAILABLE else None
 )
 
 
@@ -281,67 +292,127 @@ def _openrouter_stream(messages: list[dict]) -> Generator[str, None, None]:
 def get_ai_reply(messages: list[dict]) -> str:
     """
     Non-streaming reply.
-    Provider chain: Local → Gemini → OpenRouter
+    Provider chain: Gemini → OpenRouter → Local llama.cpp
     """
-    # 1. Try Local llama.cpp
-    try:
-        return _local_reply(messages)
-    except Exception as e:
-        print(f"[LLM] Local failed: {e}, fallback Gemini")
-
-    # 2. Try Gemini
+    # 1. Try Gemini (primary)
     try:
         return _gemini_reply(messages)
     except GeminiUnavailable as e:
-        print(f"[FALLBACK TRIGGER] Gemini unavailable: {e}")
+        print(f"[LLM] Gemini unavailable: {e}, fallback OpenRouter")
 
-    # 3. Try OpenRouter
+    # 2. Try OpenRouter
     try:
         return _openrouter_reply(messages)
-    except AllProvidersExhausted:
-        return "Tất cả API providers đều không khả dụng. Vui lòng kiểm tra API key."
     except Exception as e:
-        print(f"[OPENROUTER ERROR] {e}")
-        return "Lỗi khi kết nối AI. Vui lòng thử lại sau."
+        print(f"[LLM] OpenRouter failed: {e}, fallback Local")
+
+    # 3. Try Local llama.cpp (final fallback)
+    try:
+        return _local_reply(messages)
+    except Exception as e:
+        print(f"[LLM] Local failed: {e}")
+        return "Tất cả API providers đều không khả dụng. Vui lòng kiểm tra API key."
+
+
+TRANSLATE_CACHE_MAX = 200
+TRANSLATE_CACHE_TTL = 3600
+
+_translate_cache: OrderedDict[str, tuple[str, float]] = OrderedDict()
+_cache_lock = threading.Lock()
+
+
+def _translate_cache_key(text: str) -> str:
+    return hashlib.sha256(text.encode()).hexdigest()[:16]
 
 
 def translate_japanese_to_vietnamese(text: str) -> str:
-    """Dịch câu tiếng Nhật sang tiếng Việt (chỉ dùng cho hover tooltip)."""
+    """Dịch câu tiếng Nhật sang tiếng Việt — LRU cache + thread-safe + TTL."""
     cleaned = (text or "").strip()
     if not cleaned:
         return ""
+
+    cache_key = _translate_cache_key(cleaned)
+
+    with _cache_lock:
+        if cache_key in _translate_cache:
+            value, ts = _translate_cache[cache_key]
+            if time.time() - ts < TRANSLATE_CACHE_TTL:
+                _translate_cache.move_to_end(cache_key)
+                return value
+            del _translate_cache[cache_key]
+
     messages = [
         {
             "role": "system",
             "content": (
-                "You are a Japanese-to-Vietnamese translator. "
-                "Translate the user's Japanese into natural, concise Vietnamese. "
-                "Output ONLY the Vietnamese translation — no quotes, labels, or explanations."
+                "Translate this Japanese to Vietnamese. "
+                "Output ONLY the Vietnamese translation, nothing else."
             ),
         },
         {"role": "user", "content": cleaned},
     ]
-    return get_ai_reply(messages)
+
+    result = _translate_reply(messages)
+
+    if result and not result.startswith("[") and len(result) >= 2:
+        with _cache_lock:
+            if len(_translate_cache) >= TRANSLATE_CACHE_MAX:
+                _translate_cache.popitem(last=False)
+            _translate_cache[cache_key] = (result, time.time())
+    return result
+
+
+def _translate_reply(messages: list[dict]) -> str:
+    """Translate-only chain: Gemini → Local (skip OpenRouter, max 80 tokens)."""
+    try:
+        return _gemini_reply_short(messages)
+    except (GeminiUnavailable, Exception) as e:
+        print(f"[TRANSLATE] Gemini failed: {e}, fallback Local")
+
+    try:
+        return _local_reply_short(messages)
+    except Exception as e:
+        print(f"[TRANSLATE] Local failed: {e}")
+        return "[Dịch vụ tạm thời không khả dụng — thử lại sau]"
+
+
+def _gemini_reply_short(messages: list[dict]) -> str:
+    if not _gemini_client:
+        raise GeminiUnavailable("GEMINI_API_KEY not set.")
+    system_instruction, contents = _build_gemini_contents(messages)
+    response = _gemini_client.models.generate_content(
+        model=LLM_MODEL,
+        contents=contents,
+        config=types.GenerateContentConfig(
+            system_instruction=system_instruction,
+            max_output_tokens=80,
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
+        ),
+    )
+    return (response.text or "").strip()
+
+
+def _local_reply_short(messages: list[dict]) -> str:
+    payload = {
+        "model": LOCAL_LLM_MODEL,
+        "messages": _inject_no_think(messages),
+        "max_tokens": 80,
+        "temperature": 0.3,
+        "stream": False,
+    }
+    with httpx.Client(timeout=10.0) as client:
+        resp = client.post(f"{LOCAL_LLM_URL}/v1/chat/completions", json=payload)
+        resp.raise_for_status()
+        data = resp.json()
+        return (data["choices"][0]["message"]["content"] or "").strip()
 
 
 def get_ai_reply_stream(messages: list[dict]) -> Generator[str, None, None]:
     """
     Streaming reply.
-    Provider chain: Local → Gemini → OpenRouter
+    Provider chain: Gemini → OpenRouter → Local llama.cpp
     """
-    # 1. Try Local llama.cpp
-    try:
-        gen = _local_stream(messages)
-        first = next(gen)
-        yield first
-        yield from gen
-        return
-    except StopIteration:
-        return
-    except Exception as e:
-        print(f"[LLM] Local stream failed: {e}, fallback Gemini")
-
-    # 2. Try Gemini
+    # 1. Try Gemini (primary)
     try:
         gen = _gemini_stream(messages)
         first = next(gen)
@@ -351,13 +422,23 @@ def get_ai_reply_stream(messages: list[dict]) -> Generator[str, None, None]:
     except StopIteration:
         return
     except GeminiUnavailable as e:
-        print(f"[FALLBACK TRIGGER] Gemini unavailable: {e}")
+        print(f"[LLM] Gemini stream unavailable: {e}, fallback OpenRouter")
 
-    # 3. Try OpenRouter
+    # 2. Try OpenRouter
     try:
-        yield from _openrouter_stream(messages)
-    except AllProvidersExhausted:
-        yield "Tất cả API providers đều không khả dụng. Vui lòng kiểm tra API key."
+        gen = _openrouter_stream(messages)
+        first = next(gen)
+        yield first
+        yield from gen
+        return
+    except StopIteration:
+        return
     except Exception as e:
-        print(f"[OPENROUTER ERROR] {e}")
-        yield "Lỗi khi kết nối AI. Vui lòng thử lại sau."
+        print(f"[LLM] OpenRouter stream failed: {e}, fallback Local")
+
+    # 3. Try Local llama.cpp (final fallback)
+    try:
+        yield from _local_stream(messages)
+    except Exception as e:
+        print(f"[LLM] Local stream failed: {e}")
+        yield "Tất cả API providers đều không khả dụng. Vui lòng kiểm tra API key."
