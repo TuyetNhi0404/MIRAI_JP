@@ -21,6 +21,80 @@ from composer import compose_response
 from sanitizer import is_injection
 
 
+_ROMAJI_VOCABULARY = {
+    "ongaku": ("音楽", "おんがく", "âm nhạc"),
+    "ryouri": ("料理", "りょうり", "nấu ăn / ẩm thực"),
+    "ryokou": ("旅行", "りょこう", "du lịch"),
+    "eiga": ("映画", "えいが", "phim ảnh"),
+    "shumi": ("趣味", "しゅみ", "sở thích"),
+}
+
+_JAPANESE_VOCABULARY = {
+    "音楽": "âm nhạc",
+    "おんがく": "âm nhạc",
+    "料理": "nấu ăn / ẩm thực",
+    "りょうり": "nấu ăn / ẩm thực",
+    "旅行": "du lịch",
+    "りょこう": "du lịch",
+    "映画": "phim ảnh",
+    "えいが": "phim ảnh",
+    "趣味": "sở thích",
+    "しゅみ": "sở thích",
+}
+
+_VIETNAMESE_TO_JAPANESE = {
+    "rạp chiếu phim": "映画館（えいがかん）です。",
+    "rap chieu phim": "映画館（えいがかん）です。",
+    "phim ảnh": "映画（えいが）です。",
+    "phim anh": "映画（えいが）です。",
+    "âm nhạc": "音楽（おんがく）です。",
+    "am nhac": "音楽（おんがく）です。",
+    "du lịch": "旅行（りょこう）です。",
+    "du lich": "旅行（りょこう）です。",
+    "sở thích": "趣味（しゅみ）です。",
+    "so thich": "趣味（しゅみ）です。",
+}
+
+
+def _vocabulary_answer(transcript: str) -> str | None:
+    """Answer common Vietnamese/Japanese vocabulary questions without an LLM."""
+    lowered = (transcript or "").lower()
+    asks_japanese_word = any(marker in lowered for marker in (
+        "tiếng nhật", "tieng nhat", "trong tiếng nhật", "trong tieng nhat",
+        "nhật gọi là gì", "nhat goi la gi", "tiếng nhật gọi", "tieng nhat goi",
+    ))
+    if asks_japanese_word:
+        for vietnamese, japanese_answer in _VIETNAMESE_TO_JAPANESE.items():
+            if vietnamese in lowered:
+                return japanese_answer
+
+    asks_vietnamese_meaning = any(marker in lowered for marker in (
+        "nghĩa là gì", "nghia la gi", "có nghĩa gì", "co nghia gi",
+        "dịch là gì", "dich la gi",
+    ))
+    asks_in_japanese = "ベトナム語" in transcript or "越南語" in transcript
+    if not asks_vietnamese_meaning and not asks_in_japanese:
+        return None
+
+    if asks_in_japanese:
+        for japanese, vietnamese in _JAPANESE_VOCABULARY.items():
+            if japanese in transcript:
+                return vietnamese.capitalize() + "."
+
+    for romaji, (kanji, reading, vietnamese) in _ROMAJI_VOCABULARY.items():
+        if romaji in lowered:
+            return f"{romaji}（{kanji}・{reading}）nghĩa là {vietnamese}."
+    return None
+
+
+def _vocabulary_result(transcript: str, answer: str, session):
+    session = add_history(session, transcript, answer)
+    store_session(session.user_id, session)
+    audio_url = generate_audio(answer)
+    print(f"[TURN] vocabulary transcript={transcript[:240]!r} reply={answer[:240]!r} audio={bool(audio_url)}")
+    return compose_response(transcript, answer, audio_url, session)
+
+
 def _derive_text_confidence(grammar_feedback: dict) -> float:
     severity = grammar_feedback.get("severity", "none")
     if severity == "none":
@@ -99,6 +173,10 @@ async def conversation(
 
     session = update_score(session, confidence)
 
+    vocabulary_answer = _vocabulary_answer(transcript)
+    if vocabulary_answer:
+        return _vocabulary_result(transcript, vocabulary_answer, session)
+
     t_eval = time.time()
     grammar_feedback = await asyncio.to_thread(
         analyze_grammar, transcript, level=session.level,
@@ -113,15 +191,17 @@ async def conversation(
 
     t_llm = time.time()
     reply = get_ai_reply(messages)
-    print(f"[ORCH] LLM: {time.time() - t_llm:.2f}s")
+    print(f"[ORCH] LLM: {time.time() - t_llm:.2f}s reply={reply[:240]!r}")
 
     session = add_history(updated, transcript, reply)
     store_session(user_id, session)
 
+    t_tts = time.time()
     audio_url = generate_audio(reply)
+    print(f"[ORCH] TTS: {time.time() - t_tts:.2f}s audio={bool(audio_url)}")
 
     result = compose_response(transcript, reply, audio_url, session, grammar_feedback, plan)
-    print(f"[ORCH] Total turn: {time.time() - t_start:.2f}s")
+    print(f"[ORCH] Total turn: {time.time() - t_start:.2f}s transcript={transcript[:240]!r}")
     return result
 
 class ReplyRequest(BaseModel):
@@ -172,6 +252,7 @@ async def transcribe(
     user_id: str = Depends(get_current_user_id),
 ):
     session = get_session(user_id)
+    print(f"[TURN] /reply transcript={req.transcript[:240]!r}")
     file_extension = (audio_file.filename or "webm").split(".")[-1]
     input_audio_path = os.path.join("uploads", f"{uuid.uuid4().hex}.{file_extension}")
 
@@ -204,6 +285,10 @@ async def reply(
     if is_injection(req.transcript):
         print(f"[SEC] Injection detected in /reply, user={user_id}")
 
+    vocabulary_answer = _vocabulary_answer(req.transcript)
+    if vocabulary_answer:
+        return _vocabulary_result(req.transcript, vocabulary_answer, session)
+
     t_eval = time.time()
     grammar_feedback = await asyncio.to_thread(
         analyze_grammar, req.transcript, level=session.level,
@@ -222,15 +307,17 @@ async def reply(
     t_llm = time.time()
     reply_text = get_ai_reply(messages)
     print(f"[ORCH] LLM: {time.time() - t_llm:.2f}s")
-    print(f"[LLM REPLY] {reply_text}")
+    print(f"[LLM REPLY] {reply_text[:240]!r}")
 
     session = add_history(updated, req.transcript, reply_text)
     store_session(user_id, session)
 
+    t_tts = time.time()
     audio_url = generate_audio(reply_text)
+    print(f"[ORCH] TTS: {time.time() - t_tts:.2f}s audio={bool(audio_url)}")
 
     result = compose_response(req.transcript, reply_text, audio_url, session, grammar_feedback, plan)
-    print(f"[ORCH] Total reply: {time.time() - t_start:.2f}s")
+    print(f"[ORCH] Total reply: {time.time() - t_start:.2f}s reply={reply_text[:240]!r}")
     return result
 
 # ----------------- WEBSOCKET STREAMING ENDPOINT -----------------
@@ -340,6 +427,23 @@ async def websocket_stream(websocket: WebSocket):
                             "level": session.level,
                             "score": session.score,
                         })
+
+                        # Streaming mode must follow the same deterministic
+                        # vocabulary-answer path as /reply and /conversation.
+                        vocabulary_answer = _vocabulary_answer(transcript)
+                        if vocabulary_answer:
+                            session = add_history(session, transcript, vocabulary_answer)
+                            store_session(user_id, session)
+                            await websocket.send_json({"type": "ai_token", "text": vocabulary_answer})
+                            audio_url = await asyncio.to_thread(generate_audio, vocabulary_answer)
+                            if audio_url:
+                                audio_path = Path("uploads") / audio_url.replace("/audio/", "")
+                                if audio_path.exists():
+                                    await websocket.send_bytes(audio_path.read_bytes())
+                            await websocket.send_json({"type": "done"})
+                            audio_bytes = bytearray()
+                            stt_last_audio_len = 0
+                            continue
 
                         grammar_start = time.time()
                         grammar_feedback = await asyncio.to_thread(
@@ -597,4 +701,3 @@ async def process_pdf(
         "total_pages": len(pages_data),
         "pages": pages_data
     }
-

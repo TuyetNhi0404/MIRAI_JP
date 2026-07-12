@@ -60,7 +60,7 @@ services:
       LOCAL_LLM_MODEL: ${LOCAL_LLM_MODEL:-qwen3-1.7b}
       MELO_TTS_URL: ${MELO_TTS_URL:-http://melo-tts:8001}
       WHISPER_BIN: ${WHISPER_BIN:-/usr/local/bin/whisper-cli}
-      WHISPER_MODEL: ${WHISPER_MODEL:-/models/ggml-small.bin}
+      WHISPER_MODEL: ${WHISPER_MODEL:-/models/ggml-medium.bin}
       # Fallback APIs
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
@@ -154,4 +154,3 @@ volumes:
   redis_data:
   grammar_uploads:
   ocr_uploads:
-

@@ -16,6 +16,7 @@ export function useMessageTranslation(text: string) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const prefetchedRef = useRef(false);
+  const fetchingRef = useRef(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchTranslation = useCallback(async () => {
@@ -24,8 +25,9 @@ export function useMessageTranslation(text: string) {
       setTranslation(translationCache.get(text)!);
       return;
     }
-    if (loading) return;
+    if (fetchingRef.current) return;
 
+    fetchingRef.current = true;
     setLoading(true);
     setError(null);
     try {
@@ -34,15 +36,33 @@ export function useMessageTranslation(text: string) {
         { text },
       );
       const vi = (data.translation || "").trim();
+      if (!vi) {
+        // Do not cache an empty provider response: it made a bubble display
+        // the hover hint forever and prevented later retries.
+        setError("Chưa dịch được. Di chuột hoặc chạm lại để thử lại.");
+        return;
+      }
       translationCache.set(text, vi);
       setTranslation(vi);
     } catch (err) {
       const msg = getSpeakingErrorMessage(err);
       setError(msg);
     } finally {
+      fetchingRef.current = false;
       setLoading(false);
     }
-  }, [text, loading]);
+  }, [text]);
+
+  // A streamed/partial message can keep the same React component while its
+  // text changes. Reset its state so a previous failed or cached translation
+  // cannot prevent the final user sentence from being translated.
+  useEffect(() => {
+    prefetchedRef.current = false;
+    fetchingRef.current = false;
+    setTranslation(translationCache.get(text) ?? null);
+    setError(null);
+    setLoading(false);
+  }, [text]);
 
   useEffect(() => {
     if (prefetchedRef.current) return;

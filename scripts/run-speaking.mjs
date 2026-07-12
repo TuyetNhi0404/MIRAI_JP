@@ -1,37 +1,78 @@
 #!/usr/bin/env node
 import { spawn, execSync } from "node:child_process";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
-import { homedir, tmpdir } from "node:os";
-import { createInterface } from "node:readline";
+import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { basename, isAbsolute, join } from "node:path";
+import { homedir } from "node:os";
 import { ensureSpeakingPython } from "./lib/ensure-python.mjs";
 import { root, speakingDir } from "./lib/paths.mjs";
 
-async function ask(query) {
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise(resolve => {
-    rl.question(query, ans => { rl.close(); resolve(ans.trim().toLowerCase()); });
-  });
+const isWin = process.platform === "win32";
+
+function readDotEnv(path) {
+  if (!existsSync(path)) return {};
+  const values = {};
+  for (const line of readFileSync(path, "utf8").split(/\r?\n/)) {
+    const match = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/);
+    if (!match || line.trimStart().startsWith("#")) continue;
+    let value = match[2];
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    }
+    values[match[1]] = value;
+  }
+  return values;
 }
 
-const isWin = process.platform === "win32";
+// Values in services/speaking-practice/.env work for this bootstrap too.
+// Shell environment takes precedence, so temporary PowerShell overrides work.
+const speakingEnv = readDotEnv(join(speakingDir, ".env"));
+const runtimeEnv = { ...speakingEnv, ...process.env };
 
 const WHISPER_DIR = join(homedir(), "whisper.cpp");
 const WHISPER_BIN = join(WHISPER_DIR, "build", "bin", isWin ? "whisper-cli.exe" : "whisper-cli");
-const WHISPER_MODEL = join(WHISPER_DIR, "models", "ggml-small.bin");
+const WHISPER_MODEL_SIZE = runtimeEnv.WHISPER_MODEL_SIZE || "medium";
+const WHISPER_MODEL = join(WHISPER_DIR, "models", `ggml-${WHISPER_MODEL_SIZE}.bin`);
 const LLAMA_DIR = join(homedir(), "llama.cpp-src");
 const LLAMA_BIN = join(LLAMA_DIR, "build", "bin", isWin ? "llama-server.exe" : "llama-server");
-const MODEL_PATH = join(root, "models", "qwen3-1.7b.Q4_K_M.gguf");
 const MELO_DIR = join(root, "services", "melo-tts");
 const MELO_PYTHON = isWin
   ? join(MELO_DIR, "venv", "Scripts", "python.exe")
   : join(MELO_DIR, "venv", "bin", "python");
-const MELO_TEMP = join(isWin ? tmpdir() : "/tmp", "MeloTTS");
-
+const LLAMA_GPU_LAYERS = runtimeEnv.LLAMA_GPU_LAYERS || "0";
 const JOBS = isWin ? "" : `-j$(nproc)`;
 
 function run(cmd, opts = {}) {
   execSync(cmd, { stdio: "inherit", shell: true, ...opts });
+}
+
+function requireCommand(command, installHint) {
+  try {
+    execSync(isWin ? `where ${command}` : `command -v ${command}`, {
+      stdio: "ignore",
+      shell: true,
+    });
+  } catch {
+    throw new Error(`${command} chưa có trong PATH. ${installHint}`);
+  }
+}
+
+function resolveModelPath() {
+  const configured = runtimeEnv.LOCAL_LLM_MODEL_PATH;
+  if (configured) return isAbsolute(configured) ? configured : join(root, configured);
+
+  const modelsDir = join(root, "models");
+  if (!existsSync(modelsDir)) return null;
+  const preferred = join(modelsDir, "mirai-jp.gguf");
+  if (existsSync(preferred)) return preferred;
+  const models = readdirSync(modelsDir)
+    .filter(name => name.toLowerCase().endsWith(".gguf"))
+    .map(name => join(modelsDir, name));
+
+  if (models.length === 1) return models[0];
+  if (models.length > 1) {
+    console.log("[speaking] Có nhiều file GGUF trong models/. Đặt LOCAL_LLM_MODEL_PATH để chọn model cần chạy.");
+  }
+  return null;
 }
 
 // --- Bootstrap whisper.cpp ---
@@ -40,6 +81,8 @@ function ensureWhisper() {
 
   console.log("\n=== Installing whisper.cpp (STT) ===");
   if (!existsSync(WHISPER_BIN)) {
+    requireCommand("git", "Cài Git for Windows: https://git-scm.com/download/win");
+    requireCommand("cmake", "Cài CMake và chọn 'Add CMake to PATH': https://cmake.org/download/");
     if (!existsSync(WHISPER_DIR)) {
       console.log("Cloning whisper.cpp ...");
       run(`git clone --depth=1 https://github.com/ggerganov/whisper.cpp.git "${WHISPER_DIR}"`);
@@ -49,19 +92,21 @@ function ensureWhisper() {
     run(`cmake --build "${join(WHISPER_DIR, "build")}" --config Release ${JOBS}`, { cwd: WHISPER_DIR });
   }
   if (!existsSync(WHISPER_MODEL)) {
-    console.log("Downloading ggml-small model (~466MB) ...");
+    console.log(`Downloading ggml-${WHISPER_MODEL_SIZE} model ...`);
     if (isWin) {
-      run(`cmd /c "${join(WHISPER_DIR, "models", "download-ggml-model.cmd")}" small`, { cwd: WHISPER_DIR });
+      run(`cmd /c "${join(WHISPER_DIR, "models", "download-ggml-model.cmd")}" ${WHISPER_MODEL_SIZE}`, { cwd: WHISPER_DIR });
     } else {
-      run(`bash "${join(WHISPER_DIR, "models", "download-ggml-model.sh")}" small`, { cwd: WHISPER_DIR });
+      run(`bash "${join(WHISPER_DIR, "models", "download-ggml-model.sh")}" ${WHISPER_MODEL_SIZE}`, { cwd: WHISPER_DIR });
     }
   }
 }
 
-// --- Bootstrap llama-server + model ---
+// --- Bootstrap llama-server. Model GGUF do người dùng tự cung cấp. ---
 function ensureLlama() {
   if (!existsSync(LLAMA_BIN)) {
     console.log("\n=== Building llama-server (LLM) ===");
+    requireCommand("git", "Cài Git for Windows: https://git-scm.com/download/win");
+    requireCommand("cmake", "Cài CMake và chọn 'Add CMake to PATH': https://cmake.org/download/");
     if (!existsSync(LLAMA_DIR)) {
       run(`git clone --depth=1 https://github.com/ggerganov/llama.cpp.git "${LLAMA_DIR}"`);
     }
@@ -69,22 +114,10 @@ function ensureLlama() {
       -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_SERVER=ON -DLLAMA_BUILD_CLI=OFF`);
     run(`cmake --build "${join(LLAMA_DIR, "build")}" --config Release ${JOBS}`);
   }
-
-  if (!existsSync(MODEL_PATH)) {
-    console.log("\n=== Downloading Qwen3 GGUF model (~1.2GB) ===");
-    mkdirSync(join(root, "models"), { recursive: true });
-    if (isWin) {
-      run(`curl.exe -Lo "${MODEL_PATH}" \
-        https://huggingface.co/Antigma/Qwen3-1.7B-GGUF/resolve/main/qwen3-1.7b-q4_k_m.gguf`);
-    } else {
-      run(`wget -O "${MODEL_PATH}" \
-        https://huggingface.co/Antigma/Qwen3-1.7B-GGUF/resolve/main/qwen3-1.7b-q4_k_m.gguf`);
-    }
-  }
 }
 
 // --- Bootstrap MeloTTS ---
-function ensureMeloTTS() {
+function ensureMeloTTS(basePython) {
   const MELO_TAG = join(MELO_DIR, ".melo-installed");
 
   if (!existsSync(MELO_TAG) && existsSync(MELO_PYTHON)) {
@@ -100,27 +133,16 @@ function ensureMeloTTS() {
   if (existsSync(MELO_TAG)) return;
 
   console.log("\n=== Installing MeloTTS (TTS) — this may take a while ===");
-  const pythonCmd = isWin ? "python" : "python3";
-  run(`${pythonCmd} -m venv "${join(MELO_DIR, "venv")}"`);
+  // Use the Python provisioned by uv for the main service. This keeps Windows
+  // setup self-contained: no globally installed Python is required.
+  run(`"${basePython}" -m venv "${join(MELO_DIR, "venv")}"`);
 
   try {
-    if (!existsSync(join(MELO_TEMP, ".git"))) {
-      execSync(`git clone --depth=1 https://github.com/myshell-ai/MeloTTS.git "${MELO_TEMP}"`, { stdio: "pipe" });
-    }
-
-    run(`"${MELO_PYTHON}" -m pip install --quiet setuptools wheel cython`);
-    run(`"${MELO_PYTHON}" -m pip install --quiet --no-build-isolation --no-deps "${MELO_TEMP}"`);
-
-    const deps = [
-      "fugashi", "txtsplit", "cached_path", "num2words",
-      "pykakasi", "unidic-lite", "unidic", "librosa",
-      "soundfile", "scipy", "cn2an", "pypinyin", "jieba",
-      "transformers", "torch", "torchaudio",
-      "g2p_en", "anyascii", "eng_to_ipa", "g2pkk",
-      "gruut", "inflect", "jamo", "langid", "loguru",
-      "pydub", "unidecode", "tensorboard",
-    ];
-    run(`"${MELO_PYTHON}" -m pip install --quiet ${deps.join(" ")} --index-url https://download.pytorch.org/whl/cpu`);
+    // Install PyTorch from its CPU index first; remaining Melo dependencies
+    // continue to resolve from PyPI (not from the PyTorch index).
+    run(`"${MELO_PYTHON}" -m pip install --upgrade pip setuptools wheel`, { cwd: MELO_DIR });
+    run(`"${MELO_PYTHON}" -m pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu`, { cwd: MELO_DIR });
+    run(`"${MELO_PYTHON}" -m pip install fastapi uvicorn -r requirements.txt`, { cwd: MELO_DIR });
 
     try {
       execSync(`"${MELO_PYTHON}" -m unidic download`, { stdio: "pipe", timeout: 600000 });
@@ -139,33 +161,34 @@ function ensureMeloTTS() {
 async function main() {
   const children = [];
 
-  // Bootstrap
-  ensureWhisper();
-
-  ensureMeloTTS();
-
-  console.log("\n⚠️  Local LLM (llama-server + 1.2GB Qwen3 model) rất nặng.");
-  console.log("   Nếu chưa có, sẽ phải build llama.cpp + download model (~2GB).");
-  console.log("   Backend đã hỗ trợ Gemini → OpenRouter fallback — có thể bỏ qua.\n");
-  const runLLM = await ask("➡️  Run local LLM? (y/N): ");
-  const useLocalLLM = runLLM === "y" || runLLM === "yes";
-  if (useLocalLLM) {
-    console.log("[speaking] Đang chuẩn bị local LLM ...");
-    ensureLlama();
-  } else {
-    console.log("[speaking] Bỏ qua local LLM — dùng Gemini/OpenRouter fallback\n");
-  }
-
+  // Python and FastAPI dependencies are installed automatically by uv.
   const speakingPython = await ensureSpeakingPython();
+
+  // Bootstrap native runtimes and TTS.
+  ensureWhisper();
+  ensureMeloTTS(speakingPython);
+
+  // llama.cpp is always bootstrapped, but this script NEVER downloads a GGUF.
+  // Put exactly one fine-tuned .gguf in models/, or set LOCAL_LLM_MODEL_PATH.
+  ensureLlama();
+  const modelPath = resolveModelPath();
+  const useLocalLLM = Boolean(modelPath && existsSync(modelPath));
+  const localModelName = modelPath ? basename(modelPath, ".gguf") : "mirai-jp";
+  if (useLocalLLM) {
+    console.log(`[speaking] Dùng GGUF local: ${modelPath}`);
+  } else {
+    console.log("[speaking] Chưa có GGUF local. Bỏ qua llama-server và dùng Gemini/OpenRouter fallback.");
+    console.log("           Chép model fine-tune vào models/ hoặc đặt LOCAL_LLM_MODEL_PATH.\n");
+  }
 
   // 1. llama-server
   if (useLocalLLM) {
-    if (existsSync(LLAMA_BIN) && existsSync(MODEL_PATH)) {
+    if (existsSync(LLAMA_BIN) && modelPath) {
       console.log("\n[speaking] Starting llama-server :8080 ...");
       const llama = spawn(LLAMA_BIN, [
-        "-m", MODEL_PATH,
+        "-m", modelPath,
         "--port", "8080",
-        "-ngl", "999",
+        "-ngl", LLAMA_GPU_LAYERS,
         "-c", "4096",
         "--jinja",
       ], { stdio: "pipe" });
@@ -198,14 +221,14 @@ async function main() {
     cwd: speakingDir,
     stdio: "inherit",
     env: {
-      ...process.env,
+      ...runtimeEnv,
       PYTHONIOENCODING: "utf-8",
       WHISPER_BIN,
       WHISPER_MODEL,
       MELO_TTS_URL: "http://localhost:8001",
       ...(useLocalLLM ? {
         LOCAL_LLM_URL: "http://localhost:8080",
-        LOCAL_LLM_MODEL: "qwen3-1.7b.Q4_K_M",
+        LOCAL_LLM_MODEL: localModelName,
       } : {}),
     },
   });

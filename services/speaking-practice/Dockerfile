@@ -25,8 +25,8 @@ RUN git clone --depth=1 https://github.com/ggerganov/whisper.cpp /tmp/whisper.cp
 
 # Download whisper model
 RUN mkdir -p /models && \
-    curl -L "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin" \
-    -o /models/ggml-small.bin
+    curl -L "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.bin" \
+    -o /models/ggml-medium.bin
 
 # -----------------------------------------------------------------------------
 # Builder: CPU PyTorch first (easyocr otherwise pulls ~2 GB CUDA/nvidia wheels)
@@ -77,7 +77,7 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy whisper.cpp binary and model from whisper-builder
 COPY --from=whisper-builder /usr/local/bin/whisper-cli /usr/local/bin/whisper-cli
-COPY --from=whisper-builder /models/ggml-small.bin /models/ggml-small.bin
+COPY --from=whisper-builder /models/ggml-medium.bin /models/ggml-medium.bin
 
 COPY main.py stt.py llm.py coach.py tts.py sessions.py auth.py ./
 

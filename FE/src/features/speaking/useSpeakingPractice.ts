@@ -25,7 +25,7 @@ export function useSpeakingPractice() {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "welcome",
-      text: "こんにちは！今日は何をしますか？",
+      text: "こんにちは！料理、旅行、映画、趣味など、何について話したいですか？",
       sender: "system",
     },
   ]);
@@ -211,7 +211,7 @@ export function useSpeakingPractice() {
       setMessages([
         {
           id: "welcome-reset",
-          text: "こんにちは！準備はいいですか？始めましょう！",
+          text: "こんにちは！料理、旅行、映画、趣味など、何について話したいですか？",
           sender: "system",
         },
       ]);
@@ -237,20 +237,19 @@ export function useSpeakingPractice() {
       const form = new FormData();
       form.append("audio_file", blob, "recording.webm");
       try {
-        const sttRes = await speakingApi.post(speakingApiPath("/transcribe"), form);
-        const transcript = sttRes.data.transcript as string;
+        // One endpoint runs STT → coaching → reply → TTS. Previously request
+        // mode made two sequential HTTP requests (/transcribe then /reply).
+        const { data } = await speakingApi.post(speakingApiPath("/conversation"), form);
+        const transcript = data.transcript as string;
         if (!transcript) {
-          appendMessage("すみません、聞き取れませんでした。もう一度お願いします！", "system");
+          if (data.reply) appendMessage(data.reply as string, "system");
           return;
         }
         appendMessage(transcript, "user");
         setTypingVisible(true);
         setLoadingText("Thinking...");
-        const replyRes = await speakingApi.post(speakingApiPath("/reply"), {
-          transcript,
-        });
         setTypingVisible(false);
-        const { reply, audio_url, level: lv, score: sc } = replyRes.data;
+        const { reply, audio_url, level: lv, score: sc } = data;
         if (lv) setLevel(lv);
         if (sc !== undefined) setScore(sc);
         if (reply) appendMessage(reply, "system");

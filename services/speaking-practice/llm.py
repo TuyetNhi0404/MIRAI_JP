@@ -19,6 +19,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import threading
 import time
 from collections import OrderedDict
@@ -71,6 +72,17 @@ class AllProvidersExhausted(Exception):
     """Raised when every provider in the chain has failed."""
 
 
+def _max_tokens_for(messages: list[dict]) -> int:
+    """Honor a per-turn level cap embedded by the speaking prompt builder."""
+    for message in reversed(messages):
+        if message.get("role") != "system":
+            continue
+        match = re.search(r"\[OUTPUT_TOKEN_LIMIT:\s*(\d+)\]", message.get("content", ""))
+        if match:
+            return min(MAX_TOKENS, max(16, int(match.group(1))))
+    return MAX_TOKENS
+
+
 # ── Provider: Local llama.cpp ────────────────────────────────────────────────
 
 def _inject_no_think(messages: list[dict]) -> list[dict]:
@@ -87,7 +99,7 @@ def _local_reply(messages: list[dict]) -> str:
     payload = {
         "model": LOCAL_LLM_MODEL,
         "messages": _inject_no_think(messages),
-        "max_tokens": MAX_TOKENS,
+        "max_tokens": _max_tokens_for(messages),
         "temperature": 0.7,
         "stream": False,
     }
@@ -102,7 +114,7 @@ def _local_stream(messages: list[dict]) -> Generator[str, None, None]:
     payload = {
         "model": LOCAL_LLM_MODEL,
         "messages": _inject_no_think(messages),
-        "max_tokens": MAX_TOKENS,
+        "max_tokens": _max_tokens_for(messages),
         "temperature": 0.7,
         "stream": True,
     }
@@ -168,7 +180,7 @@ def _gemini_reply(messages: list[dict]) -> str:
             contents=contents,
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
-                max_output_tokens=MAX_TOKENS,
+                max_output_tokens=_max_tokens_for(messages),
                 thinking_config=types.ThinkingConfig(thinking_budget=0),
             ),
         )
@@ -195,7 +207,7 @@ def _gemini_stream(messages: list[dict]) -> Generator[str, None, None]:
             contents=contents,
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
-                max_output_tokens=MAX_TOKENS,
+                max_output_tokens=_max_tokens_for(messages),
                 thinking_config=types.ThinkingConfig(thinking_budget=0),
             ),
         )
@@ -237,7 +249,7 @@ def _openrouter_reply(messages: list[dict]) -> str:
             json={
                 "model": OPENROUTER_MODEL,
                 "messages": messages,
-                "max_tokens": MAX_TOKENS,
+                "max_tokens": _max_tokens_for(messages),
             },
         )
         resp.raise_for_status()
@@ -267,7 +279,7 @@ def _openrouter_stream(messages: list[dict]) -> Generator[str, None, None]:
             json={
                 "model": OPENROUTER_MODEL,
                 "messages": messages,
-                "max_tokens": MAX_TOKENS,
+                "max_tokens": _max_tokens_for(messages),
                 "stream": True,
             },
         ) as resp:
@@ -320,6 +332,16 @@ TRANSLATE_CACHE_TTL = 3600
 _translate_cache: OrderedDict[str, tuple[str, float]] = OrderedDict()
 _cache_lock = threading.Lock()
 
+# Fast path for the first, very common speaking-topic words. It keeps the
+# vocabulary tooltip useful even while an LLM provider is slow or unavailable.
+_JAPANESE_GLOSSARY = {
+    "音楽": "Âm nhạc",
+    "料理": "Nấu ăn / ẩm thực",
+    "旅行": "Du lịch",
+    "映画": "Phim ảnh",
+    "趣味": "Sở thích",
+}
+
 
 def _translate_cache_key(text: str) -> str:
     return hashlib.sha256(text.encode()).hexdigest()[:16]
@@ -330,6 +352,10 @@ def translate_japanese_to_vietnamese(text: str) -> str:
     cleaned = (text or "").strip()
     if not cleaned:
         return ""
+
+    glossary_key = cleaned.strip("()（）[]［］ ")
+    if glossary_key in _JAPANESE_GLOSSARY:
+        return _JAPANESE_GLOSSARY[glossary_key]
 
     cache_key = _translate_cache_key(cleaned)
 
@@ -363,11 +389,11 @@ def translate_japanese_to_vietnamese(text: str) -> str:
 
 
 def _translate_reply(messages: list[dict]) -> str:
-    """Translate-only chain: Gemini → Local (skip OpenRouter, max 80 tokens)."""
+    """Translate-only chain: OpenRouter → Local (max 80 tokens)."""
     try:
-        return _gemini_reply_short(messages)
-    except (GeminiUnavailable, Exception) as e:
-        print(f"[TRANSLATE] Gemini failed: {e}, fallback Local")
+        return _openrouter_reply_short(messages)
+    except Exception as e:
+        print(f"[TRANSLATE] OpenRouter failed: {e}, fallback Local")
 
     try:
         return _local_reply_short(messages)
@@ -405,6 +431,28 @@ def _local_reply_short(messages: list[dict]) -> str:
         resp.raise_for_status()
         data = resp.json()
         return (data["choices"][0]["message"]["content"] or "").strip()
+
+
+def _openrouter_reply_short(messages: list[dict]) -> str:
+    """OpenRouter fallback for a tooltip translation; keep it fast and concise."""
+    if not OPENROUTER_API_KEY:
+        raise AllProvidersExhausted("OPENROUTER_API_KEY not set.")
+
+    print(f"[TRANSLATE] Switching to OpenRouter ({OPENROUTER_MODEL})")
+    with httpx.Client(timeout=20.0) as http:
+        resp = http.post(
+            f"{OPENROUTER_BASE_URL}/chat/completions",
+            headers=OPENROUTER_HEADERS,
+            json={
+                "model": OPENROUTER_MODEL,
+                "messages": messages,
+                "max_tokens": 80,
+                "temperature": 0.3,
+            },
+        )
+        resp.raise_for_status()
+        data = resp.json()
+    return (data["choices"][0]["message"]["content"] or "").strip()
 
 
 def get_ai_reply_stream(messages: list[dict]) -> Generator[str, None, None]:

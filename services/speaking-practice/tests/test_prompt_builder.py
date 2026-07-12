@@ -1,10 +1,14 @@
 from prompt_builder import (
     _detect_mood,
     _format_mood_hint,
+    _language_guidance,
+    _vocabulary_translation_guidance,
+    _topic_guidance,
     build_messages,
     SYSTEM_PROMPT,
     LEVEL_PROMPT,
     MODE_PROMPT,
+    LEVEL_OUTPUT_GUARD,
 )
 from sessions import StudentModel
 
@@ -108,6 +112,32 @@ class TestSystemPromptPersonality:
     def test_has_security_section(self):
         assert "セキュリティ" in SYSTEM_PROMPT
 
+    def test_allows_vietnamese_scaffolding(self):
+        assert "Tiếng Việt" in SYSTEM_PROMPT
+
+
+class TestLevelOutputGuard:
+    def test_n5_has_hard_length_and_language_constraints(self):
+        guard = LEVEL_OUTPUT_GUARD["N5"]
+        assert "OUTPUT_TOKEN_LIMIT: 48" in guard
+        assert "exactly one short Japanese sentence" in guard
+        assert "hiragana" in guard
+
+
+class TestLanguageGuidance:
+    def test_vietnamese_question_enables_bilingual_support(self):
+        guidance = _language_guidance("Câu này nghĩa là gì?")
+        assert "LANGUAGE SUPPORT" in guidance
+        assert "concise Vietnamese first" in guidance
+
+    def test_japanese_turn_keeps_japanese_practice(self):
+        assert _language_guidance("音楽が好きです") == ""
+
+    def test_vocabulary_question_has_highest_priority(self):
+        guidance = _vocabulary_translation_guidance("ongaku nghĩa là gì")
+        assert "HIGHEST PRIORITY" in guidance
+        assert "Vietnamese meaning" in guidance
+
 
 class TestLevelPromptDialogExamples:
     def test_n5_has_dialog_example(self):
@@ -183,3 +213,39 @@ class TestBuildMessagesMood:
         system_texts = [m["content"] for m in messages if m["role"] == "system"]
         combined = "".join(system_texts)
         assert "neutral" in combined.lower()
+
+    def test_n5_output_guard_is_injected(self):
+        messages = build_messages(StudentModel(user_id="test", level="N5"), "こんにちは")
+        system_texts = [m["content"] for m in messages if m["role"] == "system"]
+        assert any("OUTPUT_TOKEN_LIMIT: 48" in text for text in system_texts)
+
+    def test_vietnamese_support_is_injected_when_requested(self):
+        messages = build_messages(StudentModel(user_id="test", level="N5"), "Từ này nghĩa là gì?")
+        system_texts = [m["content"] for m in messages if m["role"] == "system"]
+        assert any("LANGUAGE SUPPORT" in text for text in system_texts)
+
+    def test_vocabulary_question_is_the_last_system_instruction(self):
+        messages = build_messages(StudentModel(user_id="test", level="N5"), "ongaku nghĩa là gì")
+        system_texts = [m["content"] for m in messages if m["role"] == "system"]
+        assert "VIETNAMESE VOCABULARY QUESTION" in system_texts[-1]
+
+
+class TestTopicGuidance:
+    def test_new_conversation_prompts_topic_choices(self):
+        guidance = _topic_guidance(StudentModel(user_id="test"), "こんにちは")
+        assert "CONVERSATION START" in guidance
+        assert "cooking" in guidance
+        assert "Wait for the learner" in guidance
+
+    def test_topic_switch_is_prioritized(self):
+        session = StudentModel(
+            user_id="test",
+            history=[{"role": "user", "text": "映画が好きです"}],
+        )
+        guidance = _topic_guidance(session, "話題を変えたいです")
+        assert "TOPIC SWITCH REQUEST" in guidance
+        assert "old topic" in guidance
+
+    def test_vietnamese_topic_switch_is_detected(self):
+        guidance = _topic_guidance(StudentModel(user_id="test"), "đổi chủ đề khác")
+        assert "TOPIC SWITCH REQUEST" in guidance

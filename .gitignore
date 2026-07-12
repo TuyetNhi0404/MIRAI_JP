@@ -84,7 +84,7 @@ services/melo-tts/.venv/
 services/melo-tts/.melo-installed
 
 # Local AI model files (GGUF, whisper.cpp models, etc.)
-models/
+
 
 # whisper.cpp build artefacts (if cloned inside project)
 whisper.cpp/

@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cài AI Speaking - MIRAI JP</title>
+  </head>
+  <body>
+    <h1>Cài AI Speaking sau khi clone MIRAI JP</h1>
+
+    <p>
+      Lệnh <code>npm run dev:speaking</code> tự tải/cài Python service, Whisper
+      STT, MeloTTS và llama.cpp. File model GGUF fine-tune phải do người dùng tự
+      tải và chép vào dự án.
+    </p>
+
+    <h2>1. Cài công cụ nền</h2>
+
+    <h3>Windows</h3>
+    <ol>
+      <li>
+        Cài Node.js 18+,
+        <a href="https://git-scm.com/download/win">Git for Windows</a>,
+        <a href="https://cmake.org/download/">CMake</a> (chọn
+        <code>Add CMake to PATH</code>).
+      </li>
+      <li>
+        Cài
+        <a href="https://visualstudio.microsoft.com/visual-cpp-build-tools/"
+          >Microsoft C++ Build Tools</a
+        >, chọn workload <code>Desktop development with C++</code>.
+      </li>
+      <li>
+        Đóng và mở lại PowerShell, kiểm tra: <code>git --version</code>,
+        <code>cmake --version</code>, <code>node --version</code>.
+      </li>
+    </ol>
+
+    <h3>Linux Ubuntu/Debian</h3>
+    <pre><code>sudo apt update
+sudo apt install -y git cmake build-essential ffmpeg
+node --version
+</code></pre>
+
+    <h2>2. Clone và đặt model GGUF</h2>
+    tải model từ link google drive, model là qwen3-1.7b.Q4_K_M.gguf , lưu ý
+    không được đổi tên file model
+
+    <h3>Windows PowerShell</h3>
+    <pre><code>git clone &lt;URL_REPOSITORY&gt; MIRAI_JP
+cd MIRAI_JP -> tải thư viện cho FE/ BE/ bằng lệnh ```npm install``` 
+</code></pre>
+
+    <h2>3. Cấu hình Speaking service</h2>
+    <p>
+      Tạo file <code>services/speaking-practice/.env</code> từ
+      <code>.env.example</code>
+    </p>
+
+    <p>Giữ các giá trị local sau trong file <code>.env</code>:</p>
+    <pre><code>LOCAL_LLM_MODEL_PATH=models/qwen3-1.7b.Q4_K_M.gguf
+LOCAL_LLM_URL=http://localhost:8080
+MELO_TTS_URL=http://localhost:8001
+LLAMA_GPU_LAYERS=0
+WHISPER_MODEL_SIZE=medium
+SPEAKING_INTERNAL_KEY=mirai-speaking-dev-key
+ALLOWED_ORIGINS=http://localhost:5000,http://localhost:5173
+</code></pre>
+
+    <p>
+      Không cần cấu hình <code>WHISPER_BIN</code> hoặc
+      <code>WHISPER_MODEL</code> khi chạy bằng npm. Script tự tạo đường dẫn đúng
+      theo hệ điều hành, ví dụ Windows:
+      <code>C:\Users\&lt;user&gt;\whisper.cpp\build\bin\whisper-cli.exe</code>.
+      Nếu có sẵn các biến này với đường dẫn Linux trong <code>.env</code>, hãy
+      xóa hoặc comment chúng.
+    </p>
+
+    <h2>4. Chạy</h2>
+    <pre><code>npm run dev:speaking
+</code></pre>
+    <p>
+      Lần chạy đầu tải dependency và build C++ nên sẽ lâu. Khi thành công:
+      FastAPI ở port <code>8000</code>, MeloTTS ở <code>8001</code>, llama.cpp ở
+      <code>8080</code>.
+    </p>
+
+    <h2>5. Kết nối với Backend</h2>
+    <p>Trong <code>BE/.env</code>, kiểm tra:</p>
+    <pre><code>ENABLE_SPEAKING_PRACTICE=true
+SPEAKING_SERVICE_URL=http://127.0.0.1:8000
+SPEAKING_INTERNAL_KEY=mirai-speaking-dev-key
+</code></pre>
+    <p>
+      <code>SPEAKING_INTERNAL_KEY</code> phải giống giá trị trong
+      <code>services/speaking-practice/.env</code>. Khởi động Backend và
+      Frontend như bình thường.
+    </p>
+
+    <h2>6. Lỗi thường gặp</h2>
+    <ul>
+      <li>
+        <code>git/cmake chưa có trong PATH</code>: cài công cụ, mở terminal mới
+        rồi chạy lại.
+      </li>
+      <li>
+        Không nhận model: kiểm tra file là
+        <code>models/mirai-jp.gguf</code> hoặc sửa
+        <code>LOCAL_LLM_MODEL_PATH</code>.
+      </li>
+      <li>
+        Không cần model để test service: thêm <code>GEMINI_API_KEY</code> hoặc
+        <code>OPENROUTER_API_KEY</code> vào <code>.env</code>; hệ thống sẽ dùng
+        cloud fallback.
+      </li>
+    </ul>
+  </body>
+</html>

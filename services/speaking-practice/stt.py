@@ -2,13 +2,20 @@ import asyncio
 import subprocess
 import json
 import os
+import time
 from pathlib import Path
 
 from dotenv import load_dotenv
 load_dotenv()
 
 WHISPER_BIN = os.getenv("WHISPER_BIN", "/usr/local/bin/whisper-cli")
-WHISPER_MODEL = os.getenv("WHISPER_MODEL", "/models/ggml-small.bin")
+# Medium is substantially more accurate for Japanese/Vietnamese mixed speech
+# than small. Deployments can override this with a smaller GGML model path.
+WHISPER_MODEL = os.getenv("WHISPER_MODEL", "/models/ggml-medium.bin")
+# Auto detection preserves Vietnamese questions in the transcript while still
+# recognizing Japanese speaking practice. Set WHISPER_LANGUAGE=ja to force
+# Japanese-only transcription in a deployment that needs it.
+WHISPER_LANGUAGE = os.getenv("WHISPER_LANGUAGE", "auto")
 
 async def transcribe_audio(audio_path: str) -> tuple[str, float]:
     return await asyncio.to_thread(_run_whisper, audio_path)
@@ -27,6 +34,7 @@ def _convert_to_wav(src: str) -> str:
     return dst
 
 def _run_whisper(audio_path: str) -> tuple[str, float]:
+    started_at = time.perf_counter()
     convert = not audio_path.lower().endswith(".wav")
     wav_path = _convert_to_wav(audio_path) if convert else audio_path
 
@@ -35,7 +43,7 @@ def _run_whisper(audio_path: str) -> tuple[str, float]:
             WHISPER_BIN,
             "-m", WHISPER_MODEL,
             "-f", wav_path,
-            "-l", "ja",
+            "-l", WHISPER_LANGUAGE,
             "--output-json-full",
             "--no-prints",
         ],
@@ -70,4 +78,9 @@ def _run_whisper(audio_path: str) -> tuple[str, float]:
     else:
         confidence = 0.75
 
-    return transcript.strip(), confidence
+    transcript = transcript.strip()
+    print(
+        f"[STT] language={WHISPER_LANGUAGE} duration={time.perf_counter() - started_at:.2f}s "
+        f"confidence={confidence:.2f} transcript={transcript[:240]!r}"
+    )
+    return transcript, confidence
