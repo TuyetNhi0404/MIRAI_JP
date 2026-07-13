@@ -11,9 +11,9 @@ class GrammarExample {
 
   factory GrammarExample.fromJson(Map<String, dynamic> json) {
     return GrammarExample(
-      jp: json['jp']?.toString() ?? '',
-      vi: json['vi']?.toString() ?? '',
-      romaji: json['romaji']?.toString(),
+      jp: json['jp']?.toString() ?? json['japanese']?.toString() ?? '',
+      vi: json['vi']?.toString() ?? json['vietnamese']?.toString() ?? '',
+      romaji: json['romaji']?.toString() ?? json['furigana']?.toString(),
     );
   }
 

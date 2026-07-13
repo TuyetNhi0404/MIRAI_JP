@@ -378,51 +378,37 @@ class _GrammarPracticeScreenState extends State<GrammarPracticeScreen>
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFF0F0F0)),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          IconButton(
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            icon: const Icon(Icons.volume_up_rounded, color: _red, size: 18),
-            onPressed: () => _playSpeech(example.jp),
+          // Japanese sentence
+          Text(
+            example.jp,
+            style: const TextStyle(
+              color: Color(0xFF1A1A1A),
+              fontSize: 14.5,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Japanese sentence
-                Text(
-                  example.jp,
-                  style: const TextStyle(
-                    color: Color(0xFF1A1A1A),
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                // Romaji if present
-                if (example.romaji != null && example.romaji!.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    example.romaji!,
-                    style: TextStyle(
-                      color: Colors.black.withOpacity(0.4),
-                      fontSize: 12,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 4),
-                // Vietnamese translation
-                Text(
-                  example.vi,
-                  style: TextStyle(
-                    color: Colors.black.withOpacity(0.65),
-                    fontSize: 12.5,
-                  ),
-                ),
-              ],
+          // Romaji if present
+          if (example.romaji != null && example.romaji!.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              example.romaji!,
+              style: TextStyle(
+                color: Colors.black.withOpacity(0.4),
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+          const SizedBox(height: 4),
+          // Vietnamese translation
+          Text(
+            example.vi,
+            style: TextStyle(
+              color: Colors.black.withOpacity(0.65),
+              fontSize: 12.5,
             ),
           ),
         ],

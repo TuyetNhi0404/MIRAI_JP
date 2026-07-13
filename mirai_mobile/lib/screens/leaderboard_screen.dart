@@ -119,7 +119,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
 
       final List<LeaderboardEntry> entries = [];
       if (response['success'] == true && response['data'] != null) {
-        final list = response['data'] as List? ?? [];
+        final dataMap = response['data'] as Map<String, dynamic>? ?? {};
+        final list = dataMap['topStudents'] as List? ?? [];
         for (var item in list) {
           entries.add(LeaderboardEntry.fromJson(Map<String, dynamic>.from(item)));
         }
@@ -360,13 +361,20 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
     double height,
     String componentType,
   ) {
-    String scoreLabel = '';
-    final score = entry.finalScore;
-
+    double displayScore = entry.finalScore;
     if (componentType == 'attendance') {
-      scoreLabel = '${score.toStringAsFixed(0)}%';
+      displayScore = entry.attendanceScore ?? entry.score ?? entry.finalScore;
+    } else if (componentType == 'assignment') {
+      displayScore = entry.assignmentScore ?? entry.score ?? entry.finalScore;
+    } else if (componentType == 'quiz') {
+      displayScore = entry.quizScore ?? entry.score ?? entry.finalScore;
+    }
+
+    String scoreLabel = '';
+    if (componentType == 'attendance') {
+      scoreLabel = '${displayScore.toStringAsFixed(0)}%';
     } else {
-      scoreLabel = score.toStringAsFixed(1);
+      scoreLabel = displayScore.toStringAsFixed(1);
     }
 
     return Column(
@@ -513,9 +521,17 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> with SingleTicker
         itemBuilder: (context, index) {
           final entry = list[index];
           final rank = entry.rank;
-          final score = entry.finalScore;
+          
+          double displayScore = entry.finalScore;
+          if (componentType == 'attendance') {
+            displayScore = entry.attendanceScore ?? entry.score ?? entry.finalScore;
+          } else if (componentType == 'assignment') {
+            displayScore = entry.assignmentScore ?? entry.score ?? entry.finalScore;
+          } else if (componentType == 'quiz') {
+            displayScore = entry.quizScore ?? entry.score ?? entry.finalScore;
+          }
 
-          String scoreText = componentType == 'attendance' ? '${score.toStringAsFixed(0)}%' : score.toStringAsFixed(1);
+          String scoreText = componentType == 'attendance' ? '${displayScore.toStringAsFixed(0)}%' : displayScore.toStringAsFixed(1);
 
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),

@@ -38,6 +38,7 @@ class LeaderboardEntry {
   final double? attendanceScore;
   final double? assignmentScore;
   final double? quizScore;
+  final double? score;
 
   LeaderboardEntry({
     required this.rank,
@@ -47,6 +48,7 @@ class LeaderboardEntry {
     this.attendanceScore,
     this.assignmentScore,
     this.quizScore,
+    this.score,
   });
 
   factory LeaderboardEntry.fromJson(Map<String, dynamic> json) {
@@ -58,6 +60,7 @@ class LeaderboardEntry {
       attendanceScore: (json['attendanceScore'] as num?)?.toDouble(),
       assignmentScore: (json['assignmentScore'] as num?)?.toDouble(),
       quizScore: (json['quizScore'] as num?)?.toDouble(),
+      score: (json['score'] as num?)?.toDouble(),
     );
   }
 }
