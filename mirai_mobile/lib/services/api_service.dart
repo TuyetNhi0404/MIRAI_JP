@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
+import '../models/quiz_models.dart';
 
 class ApiService {
   final http.Client _client = http.Client();
@@ -268,6 +269,109 @@ class ApiService {
         return Map<String, dynamic>.from(decoded['data']);
       }
       return null;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Fetch available student quizzes
+  Future<List<QuizWithAttempt>> fetchStudentQuizzes(String token) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/quizzes/student/my-quizzes');
+    try {
+      final response = await _client.get(
+        url,
+        headers: _getHeaders(token: token),
+      );
+      final decoded = _processResponse(response);
+      if (decoded != null && decoded['quizzes'] != null) {
+        final List<dynamic> list = decoded['quizzes'];
+        return list.map((item) => QuizWithAttempt.fromJson(item)).toList();
+      }
+      return [];
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Start selected quiz (fetch questions)
+  Future<Quiz> startQuiz(String token, String quizId, String studentId) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/quizzes/$quizId/start?studentId=$studentId');
+    try {
+      final response = await _client.get(
+        url,
+        headers: _getHeaders(token: token),
+      );
+      final decoded = _processResponse(response);
+      if (decoded != null && decoded['quiz'] != null) {
+        return Quiz.fromJson(decoded['quiz']);
+      }
+      throw Exception('Không có dữ liệu bài kiểm tra');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Submit quiz answers
+  Future<AttemptDetailResponse> submitQuiz(
+    String token,
+    String quizId,
+    List<int> answers,
+    int timeSpent,
+    String studentId,
+  ) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/quizzes/$quizId/submit');
+    try {
+      final response = await _client.post(
+        url,
+        headers: _getHeaders(token: token),
+        body: jsonEncode({
+          'answers': answers,
+          'timeSpent': timeSpent,
+          'studentId': studentId,
+        }),
+      );
+      final decoded = _processResponse(response);
+      if (decoded != null && decoded['result'] != null) {
+        return AttemptDetailResponse.fromJson(decoded['result']);
+      }
+      throw Exception('Không nhận được phản hồi kết quả thi');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Fetch student quiz history
+  Future<List<QuizAttempt>> fetchStudentQuizHistory(String token, String studentId) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/quizzes/history?studentId=$studentId');
+    try {
+      final response = await _client.get(
+        url,
+        headers: _getHeaders(token: token),
+      );
+      final decoded = _processResponse(response);
+      if (decoded != null && decoded['history'] != null) {
+        final List<dynamic> list = decoded['history'];
+        return list.map((item) => QuizAttempt.fromJson(item)).toList();
+      }
+      return [];
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Fetch detailed attempt result
+  Future<AttemptDetailResponse> fetchAttemptResult(String token, String attemptId, String studentId) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/quizzes/attempt/$attemptId/result?studentId=$studentId');
+    try {
+      final response = await _client.get(
+        url,
+        headers: _getHeaders(token: token),
+      );
+      final decoded = _processResponse(response);
+      if (decoded != null && decoded['result'] != null) {
+        return AttemptDetailResponse.fromJson(decoded['result']);
+      }
+      throw Exception('Không tìm thấy kết quả chi tiết');
     } catch (e) {
       rethrow;
     }
