@@ -252,4 +252,24 @@ class ApiService {
       rethrow;
     }
   }
+
+  // Get student course statistics
+  Future<Map<String, dynamic>?> fetchStudentCourseStatistics(
+      String token, String studentId, String courseId) async {
+    final Uri url = Uri.parse(
+        '${ApiConfig.baseUrl}/api/statistics/students/$studentId/courses/$courseId');
+    try {
+      final response = await _client.get(
+        url,
+        headers: _getHeaders(token: token),
+      );
+      final decoded = _processResponse(response);
+      if (decoded != null && decoded['data'] != null) {
+        return Map<String, dynamic>.from(decoded['data']);
+      }
+      return null;
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

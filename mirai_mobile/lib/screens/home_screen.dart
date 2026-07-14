@@ -4,6 +4,7 @@ import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
 import 'profile_screen.dart';
 import 'admin_enrollment_requests_screen.dart';
+import 'student_statistics_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -377,6 +378,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       title: 'Học từ vựng (Vocab)',
                       viewId: 'vocab',
                     ),
+                    _buildStatisticsDrawerItem(),
                   ],
                 ],
               ),
@@ -490,6 +492,31 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  Widget _buildStatisticsDrawerItem() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListTile(
+        leading: const Icon(Icons.bar_chart_rounded, color: Colors.black54, size: 22),
+        title: const Text(
+          'Thống kê kết quả',
+          style: TextStyle(color: Colors.black87, fontSize: 14),
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        onTap: () {
+          Navigator.of(context).pop();
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const StudentStatisticsScreen()),
+          );
+        },
+      ),
+    );
+  }
+
 
   String _getRoleName(String? role) {
     switch (role) {
