@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
 import 'profile_screen.dart';
+import 'admin_enrollment_requests_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -80,50 +81,6 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
   }
-
-  // Admin Approval Action
-  Future<void> _processEnrollment(String enrollmentId, bool approve) async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(color: Color(0xFFB90000)),
-      ),
-    );
-
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final token = authProvider.accessToken;
-
-    try {
-      if (approve) {
-        await _apiService.approveEnrollment(token!, enrollmentId);
-      } else {
-        await _apiService.rejectEnrollment(token!, enrollmentId);
-      }
-
-      if (mounted) {
-        Navigator.of(context).pop(); // pop loading dialog
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(approve ? 'Đã duyệt thành công!' : 'Đã từ chối đơn đăng ký!'),
-            backgroundColor: approve ? Colors.green : Colors.orange,
-          ),
-        );
-      }
-      _loadRoleSpecificData(); // Reload list
-    } catch (e) {
-      if (mounted) {
-        Navigator.of(context).pop(); // pop loading
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Lỗi xử lý: ${e.toString()}'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-      }
-    }
-  }
-
   // Teacher Class Roster Details modal
   void _showClassRoster(String courseId, String courseName) async {
     showDialog(
@@ -389,11 +346,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   
                   // Admin options
                   if (role == 'admin') ...[
-                    _buildDrawerItem(
-                      icon: Icons.how_to_reg_rounded,
-                      title: 'Duyệt đơn đăng ký',
-                      viewId: 'enrollments',
-                    ),
+                    _buildEnrollmentsDrawerItem(),
                     _buildDrawerItem(
                       icon: Icons.people_outline_rounded,
                       title: 'Quản lý tài khoản',
@@ -510,6 +463,30 @@ class _HomeScreenState extends State<HomeScreen> {
           Navigator.of(context).pop(); // Close drawer
           Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const ProfileScreen()),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildEnrollmentsDrawerItem() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListTile(
+        leading: const Icon(Icons.how_to_reg_rounded, color: Colors.white70, size: 22),
+        title: const Text(
+          'Duyệt đơn đăng ký',
+          style: TextStyle(color: Colors.white70, fontSize: 14),
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        onTap: () {
+          Navigator.of(context).pop(); // Close drawer
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const AdminEnrollmentRequestsScreen()),
           );
         },
       ),
@@ -775,9 +752,9 @@ class _HomeScreenState extends State<HomeScreen> {
           value: '${_adminPendingEnrollments.length} đơn',
           color: Colors.orange,
           onTap: () {
-            setState(() {
-              _currentView = 'enrollments';
-            });
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AdminEnrollmentRequestsScreen()),
+            );
           },
         ),
         const SizedBox(height: 16),
@@ -863,7 +840,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // --- FULL VIEWS NAVIGATED FROM SIDEBAR ---
 
   Widget _buildAdminEnrollmentsView() {
-    return _buildAdminEnrollmentsList();
+    return const AdminEnrollmentRequestsScreen();
   }
 
   Widget _buildTeacherRosterView() {
@@ -1006,106 +983,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
-  Widget _buildAdminEnrollmentsList() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _adminPendingEnrollments.isEmpty
-            ? Container(
-                padding: const EdgeInsets.all(28),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.02),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white.withOpacity(0.05)),
-                ),
-                child: const Center(
-                  child: Column(
-                    children: [
-                      Icon(Icons.mark_email_read_outlined, color: Colors.white38, size: 40),
-                      SizedBox(height: 12),
-                      Text(
-                        'Không có đơn đăng ký nào chờ duyệt!',
-                        style: TextStyle(color: Colors.white60, fontSize: 13),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            : ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _adminPendingEnrollments.length,
-                itemBuilder: (context, index) {
-                  final enrollment = _adminPendingEnrollments[index];
-                  final course = enrollment['courseId'] as Map<String, dynamic>?;
-                  final courseName = course != null ? (course['name']?.toString() ?? '') : 'Khóa học';
-                  final enrollmentId = enrollment['_id']?.toString() ?? '';
-
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.03),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white.withOpacity(0.06)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.person_pin_rounded, color: Colors.white70, size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              enrollment['studentName']?.toString() ?? 'Không rõ tên',
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Email: ${enrollment['studentEmail']?.toString() ?? ''}',
-                          style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Khóa học: $courseName',
-                          style: const TextStyle(color: Color(0xFFFF8B8B), fontSize: 12, fontWeight: FontWeight.bold),
-                        ),
-                        const Divider(color: Colors.white12, height: 24),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            TextButton(
-                              onPressed: () => _processEnrollment(enrollmentId, false),
-                              style: TextButton.styleFrom(
-                                foregroundColor: Colors.redAccent,
-                              ),
-                              child: const Text('Từ chối', style: TextStyle(fontWeight: FontWeight.bold)),
-                            ),
-                            const SizedBox(width: 12),
-                            ElevatedButton(
-                              onPressed: () => _processEnrollment(enrollmentId, true),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFB90000),
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              ),
-                              child: const Text('Phê duyệt', style: TextStyle(fontWeight: FontWeight.bold)),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-      ],
-    );
-  }
-
   Widget _buildTeacherCoursesList() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
