@@ -3,6 +3,10 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
 import 'profile_screen.dart';
+import 'admin_enrollment_requests_screen.dart';
+import 'student_statistics_screen.dart';
+import 'kana_practice_screen.dart';
+import 'student_quizzes_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -80,50 +84,6 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
   }
-
-  // Admin Approval Action
-  Future<void> _processEnrollment(String enrollmentId, bool approve) async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(color: Color(0xFFB90000)),
-      ),
-    );
-
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final token = authProvider.accessToken;
-
-    try {
-      if (approve) {
-        await _apiService.approveEnrollment(token!, enrollmentId);
-      } else {
-        await _apiService.rejectEnrollment(token!, enrollmentId);
-      }
-
-      if (mounted) {
-        Navigator.of(context).pop(); // pop loading dialog
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(approve ? 'Đã duyệt thành công!' : 'Đã từ chối đơn đăng ký!'),
-            backgroundColor: approve ? Colors.green : Colors.orange,
-          ),
-        );
-      }
-      _loadRoleSpecificData(); // Reload list
-    } catch (e) {
-      if (mounted) {
-        Navigator.of(context).pop(); // pop loading
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Lỗi xử lý: ${e.toString()}'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-      }
-    }
-  }
-
   // Teacher Class Roster Details modal
   void _showClassRoster(String courseId, String courseName) async {
     showDialog(
@@ -211,19 +171,19 @@ class _HomeScreenState extends State<HomeScreen> {
                             margin: const EdgeInsets.only(bottom: 12),
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.04),
+                              color: const Color(0xFFFAF8F5),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.white.withOpacity(0.08)),
+                              border: Border.all(color: Colors.grey.withOpacity(0.12)),
                             ),
                             child: Row(
                               children: [
                                 CircleAvatar(
-                                  backgroundColor: const Color(0xFFB90000).withOpacity(0.2),
+                                  backgroundColor: const Color(0xFFFFEDED),
                                   child: Text(
                                     (student['name']?.toString() ?? 'U').isNotEmpty
                                         ? student['name'].toString()[0].toUpperCase()
                                         : 'U',
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                    style: const TextStyle(color: Color(0xFFB90000), fontWeight: FontWeight.bold),
                                   ),
                                 ),
                                 const SizedBox(width: 16),
@@ -233,12 +193,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                     children: [
                                       Text(
                                         student['name']?.toString() ?? 'Học viên',
-                                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                                        style: const TextStyle(color: Color(0xFF1A1A1A), fontWeight: FontWeight.bold, fontSize: 14),
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
                                         student['email']?.toString() ?? '',
-                                        style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
+                                        style: const TextStyle(color: Colors.black45, fontSize: 12),
                                       ),
                                     ],
                                   ),
@@ -299,7 +259,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final avatar = user?.avatar;
 
     return Drawer(
-      backgroundColor: const Color(0xFF11111E),
+      backgroundColor: Colors.white,
       child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -307,9 +267,10 @@ class _HomeScreenState extends State<HomeScreen> {
             // Drawer Header containing User Info
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
+                color: Color(0xFFFAF8F5),
                 border: Border(
-                  bottom: BorderSide(color: Colors.white.withOpacity(0.08), width: 1.0),
+                  bottom: BorderSide(color: Color(0xFFEEEEEE), width: 1.0),
                 ),
               ),
               child: Column(
@@ -317,7 +278,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   CircleAvatar(
                     radius: 30,
-                    backgroundColor: const Color(0xFFB90000).withOpacity(0.2),
+                    backgroundColor: const Color(0xFFFFEDED),
                     backgroundImage: avatar != null && avatar.isNotEmpty
                         ? NetworkImage(avatar)
                         : null,
@@ -327,7 +288,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: Color(0xFFB90000),
                             ),
                           )
                         : null,
@@ -338,16 +299,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: Color(0xFF1A1A1A),
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     email,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 12,
-                      color: Colors.white.withOpacity(0.5),
+                      color: Colors.black45,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -356,15 +317,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFB90000).withOpacity(0.15),
+                      color: const Color(0xFFFFEDED),
                       borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: const Color(0xFFB90000).withOpacity(0.25)),
                     ),
                     child: Text(
                       _getRoleName(role),
                       style: const TextStyle(
                         fontSize: 9,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFFFF8B8B),
+                        color: Color(0xFFB90000),
                         letterSpacing: 0.5,
                       ),
                     ),
@@ -389,11 +351,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   
                   // Admin options
                   if (role == 'admin') ...[
-                    _buildDrawerItem(
-                      icon: Icons.how_to_reg_rounded,
-                      title: 'Duyệt đơn đăng ký',
-                      viewId: 'enrollments',
-                    ),
+                    _buildEnrollmentsDrawerItem(),
                     _buildDrawerItem(
                       icon: Icons.people_outline_rounded,
                       title: 'Quản lý tài khoản',
@@ -422,28 +380,27 @@ class _HomeScreenState extends State<HomeScreen> {
                       title: 'Học từ vựng (Vocab)',
                       viewId: 'vocab',
                     ),
+                    _buildKanaPracticeDrawerItem(),
+                    _buildQuizDrawerItem(),
+                    _buildStatisticsDrawerItem(),
                   ],
                 ],
               ),
             ),
 
             // Logout item at the bottom
+            const Divider(height: 1, color: Color(0xFFEEEEEE)),
             Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: Colors.white.withOpacity(0.05), width: 1.0),
-                ),
-              ),
+              padding: const EdgeInsets.all(12),
               child: ListTile(
-                leading: const Icon(Icons.logout_rounded, color: Colors.redAccent),
+                leading: const Icon(Icons.logout_rounded, color: Color(0xFFB90000)),
                 title: const Text(
                   'Đăng xuất',
-                  style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 14),
+                  style: TextStyle(color: Color(0xFFB90000), fontWeight: FontWeight.bold, fontSize: 14),
                 ),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 onTap: () {
-                  Navigator.of(context).pop(); // Close drawer
+                  Navigator.of(context).pop();
                   _handleLogout(context);
                 },
               ),
@@ -464,19 +421,19 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 4),
       decoration: BoxDecoration(
-        color: isSelected ? const Color(0xFFB90000).withOpacity(0.12) : Colors.transparent,
+        color: isSelected ? const Color(0xFFFFEDED) : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
         leading: Icon(
           icon,
-          color: isSelected ? const Color(0xFFFF8B8B) : Colors.white70,
+          color: isSelected ? const Color(0xFFB90000) : Colors.black54,
           size: 22,
         ),
         title: Text(
           title,
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.white70,
+            color: isSelected ? const Color(0xFFB90000) : Colors.black87,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             fontSize: 14,
           ),
@@ -486,7 +443,7 @@ class _HomeScreenState extends State<HomeScreen> {
           setState(() {
             _currentView = viewId;
           });
-          Navigator.of(context).pop(); // Close drawer
+          Navigator.of(context).pop();
         },
       ),
     );
@@ -500,14 +457,14 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
-        leading: const Icon(Icons.person_outline_rounded, color: Colors.white70, size: 22),
+        leading: const Icon(Icons.person_outline_rounded, color: Colors.black54, size: 22),
         title: const Text(
           'Hồ sơ cá nhân',
-          style: TextStyle(color: Colors.white70, fontSize: 14),
+          style: TextStyle(color: Colors.black87, fontSize: 14),
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         onTap: () {
-          Navigator.of(context).pop(); // Close drawer
+          Navigator.of(context).pop();
           Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const ProfileScreen()),
           );
@@ -515,6 +472,103 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  Widget _buildEnrollmentsDrawerItem() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListTile(
+        leading: const Icon(Icons.how_to_reg_rounded, color: Colors.black54, size: 22),
+        title: const Text(
+          'Duyệt đơn đăng ký',
+          style: TextStyle(color: Colors.black87, fontSize: 14),
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        onTap: () {
+          Navigator.of(context).pop();
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const AdminEnrollmentRequestsScreen()),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildKanaPracticeDrawerItem() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListTile(
+        leading: const Icon(Icons.edit_rounded, color: Colors.black54, size: 22),
+        title: const Text(
+          'Luyện viết Kana',
+          style: TextStyle(color: Colors.black87, fontSize: 14),
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        onTap: () {
+          Navigator.of(context).pop();
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const KanaPracticeScreen()),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildQuizDrawerItem() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListTile(
+        leading: const Icon(Icons.quiz_outlined, color: Colors.black54, size: 22),
+        title: const Text(
+          'Bài kiểm tra',
+          style: TextStyle(color: Colors.black87, fontSize: 14),
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        onTap: () {
+          Navigator.of(context).pop();
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const StudentQuizzesScreen()),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildStatisticsDrawerItem() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListTile(
+        leading: const Icon(Icons.bar_chart_rounded, color: Colors.black54, size: 22),
+        title: const Text(
+          'Thống kê kết quả',
+          style: TextStyle(color: Colors.black87, fontSize: 14),
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        onTap: () {
+          Navigator.of(context).pop();
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const StudentStatisticsScreen()),
+          );
+        },
+      ),
+    );
+  }
+
 
   String _getRoleName(String? role) {
     switch (role) {
@@ -535,82 +589,44 @@ class _HomeScreenState extends State<HomeScreen> {
     final user = authProvider.user;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF11111E), // Dark theme
+      backgroundColor: const Color(0xFFFAF8F5), // Light cream theme
       appBar: AppBar(
         title: Text(
           _getViewTitle(),
           style: const TextStyle(
-            color: Colors.white,
+            color: Color(0xFF023665),
             fontSize: 16,
             fontWeight: FontWeight.bold,
             letterSpacing: 1.2,
           ),
         ),
-        iconTheme: const IconThemeData(color: Colors.white), // Set drawer button icon color to white
-        backgroundColor: Colors.transparent,
+        iconTheme: const IconThemeData(color: Color(0xFFB90000)),
+        backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, color: Color(0xFFEEEEEE)),
+        ),
         actions: [
           if (_currentView == 'dashboard' || _currentView == 'enrollments' || _currentView == 'roster')
             IconButton(
-              icon: const Icon(Icons.refresh_rounded, color: Colors.white70),
+              icon: const Icon(Icons.refresh_rounded, color: Color(0xFFB90000)),
               onPressed: _loadRoleSpecificData,
               tooltip: 'Làm mới',
             ),
         ],
       ),
       drawer: _buildRoleSidebar(context, user),
-      body: Stack(
-        children: [
-          // Background decoration lights
-          Positioned(
-            top: -50,
-            right: -50,
-            child: Container(
-              width: 250,
-              height: 250,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFB90000).withOpacity(0.08),
-                    blurRadius: 100,
-                    spreadRadius: 50,
-                  ),
-                ],
+      body: SafeArea(
+        child: _isDataLoading && (_currentView == 'dashboard' || _currentView == 'enrollments' || _currentView == 'roster')
+            ? const Center(
+                child: CircularProgressIndicator(color: Color(0xFFB90000)),
+              )
+            : SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+                child: _buildActiveViewContent(user),
               ),
-            ),
-          ),
-          Positioned(
-            bottom: -50,
-            left: -50,
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFB90000).withOpacity(0.04),
-                    blurRadius: 80,
-                    spreadRadius: 40,
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          SafeArea(
-            child: _isDataLoading && (_currentView == 'dashboard' || _currentView == 'enrollments' || _currentView == 'roster')
-                ? const Center(
-                    child: CircularProgressIndicator(color: Color(0xFFB90000)),
-                  )
-                : SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-                    child: _buildActiveViewContent(user),
-                  ),
-          ),
-        ],
       ),
     );
   }
@@ -682,38 +698,46 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.all(24.0),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            const Color(0xFFB90000).withOpacity(0.12),
-            const Color(0xFFB90000).withOpacity(0.03),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: const Color(0xFFB90000).withOpacity(0.2),
-          width: 1.0,
-        ),
+        border: Border.all(color: Colors.grey.withOpacity(0.12)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFB90000).withOpacity(0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 36,
-            backgroundColor: const Color(0xFFB90000).withOpacity(0.2),
-            backgroundImage: user?.avatar != null && user.avatar.isNotEmpty
-                ? NetworkImage(user.avatar)
-                : null,
-            child: user?.avatar == null || user.avatar.isEmpty
-                ? Text(
-                    (user != null && user.name.isNotEmpty) ? user.name[0].toUpperCase() : 'U',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  )
-                : null,
+          Container(
+            padding: const EdgeInsets.all(3),
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [Color(0xFFB90000), Color(0xFFFF6B6B)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: CircleAvatar(
+              radius: 34,
+              backgroundColor: const Color(0xFFFFEDED),
+              backgroundImage: user?.avatar != null && user.avatar.isNotEmpty
+                  ? NetworkImage(user.avatar)
+                  : null,
+              child: user?.avatar == null || user.avatar.isEmpty
+                  ? Text(
+                      (user != null && user.name.isNotEmpty) ? user.name[0].toUpperCase() : 'U',
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFFB90000),
+                      ),
+                    )
+                  : null,
+            ),
           ),
           const SizedBox(width: 18),
           Expanded(
@@ -725,16 +749,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: Color(0xFF1A1A1A),
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
                   user?.email ?? '',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
-                    color: Colors.white.withOpacity(0.6),
+                    color: Colors.black45,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -742,16 +766,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFB90000).withOpacity(0.2),
+                    color: const Color(0xFFFFEDED),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0xFFB90000).withOpacity(0.4)),
+                    border: Border.all(color: const Color(0xFFB90000).withOpacity(0.3)),
                   ),
                   child: Text(
                     _getRoleName(user?.role),
                     style: const TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFFFF8B8B),
+                      color: Color(0xFFB90000),
                     ),
                   ),
                 ),
@@ -775,9 +799,9 @@ class _HomeScreenState extends State<HomeScreen> {
           value: '${_adminPendingEnrollments.length} đơn',
           color: Colors.orange,
           onTap: () {
-            setState(() {
-              _currentView = 'enrollments';
-            });
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AdminEnrollmentRequestsScreen()),
+            );
           },
         ),
         const SizedBox(height: 16),
@@ -856,6 +880,36 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _buildActionGridCard(
+                icon: Icons.edit_rounded,
+                title: 'Luyện viết Kana',
+                color: const Color(0xFFB90000),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const KanaPracticeScreen()),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildActionGridCard(
+                icon: Icons.quiz_outlined,
+                title: 'Bài kiểm tra',
+                color: Colors.orange.shade800,
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const StudentQuizzesScreen()),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -863,7 +917,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // --- FULL VIEWS NAVIGATED FROM SIDEBAR ---
 
   Widget _buildAdminEnrollmentsView() {
-    return _buildAdminEnrollmentsList();
+    return const AdminEnrollmentRequestsScreen();
   }
 
   Widget _buildTeacherRosterView() {
@@ -878,9 +932,16 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.02),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border.all(color: Colors.grey.withOpacity(0.12)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -888,22 +949,22 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 20),
           Container(
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: const Color(0xFFB90000).withOpacity(0.1),
+            decoration: const BoxDecoration(
+              color: Color(0xFFFFEDED),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: const Color(0xFFFF8B8B), size: 48),
+            child: Icon(icon, color: const Color(0xFFB90000), size: 48),
           ),
           const SizedBox(height: 24),
           Text(
             title,
-            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+            style: const TextStyle(color: Color(0xFF1A1A1A), fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           Text(
             description,
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 13, height: 1.5),
+            style: const TextStyle(color: Colors.black54, fontSize: 13, height: 1.5),
           ),
           const SizedBox(height: 20),
         ],
@@ -920,45 +981,55 @@ class _HomeScreenState extends State<HomeScreen> {
     required Color color,
     required VoidCallback onTap,
   }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.03),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withOpacity(0.06)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(12),
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.withOpacity(0.12)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
-              child: Icon(icon, color: color, size: 24),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 13),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    value,
-                    style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ],
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 24),
               ),
-            ),
-            const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white30, size: 14),
-          ],
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(color: Colors.black54, fontSize: 13),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      value,
+                      style: const TextStyle(color: Color(0xFF1A1A1A), fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.arrow_forward_ios_rounded, color: Colors.black.withOpacity(0.2), size: 14),
+            ],
+          ),
         ),
       ),
     );
@@ -970,142 +1041,52 @@ class _HomeScreenState extends State<HomeScreen> {
     required Color color,
     required VoidCallback onTap,
   }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.03),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withOpacity(0.06)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.15),
-                shape: BoxShape.circle,
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.withOpacity(0.12)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Khám phá ngay',
-              style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11),
-            ),
-          ],
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                title,
+                style: const TextStyle(color: Color(0xFF1A1A1A), fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Khám phá ngay',
+                style: TextStyle(color: Colors.black38, fontSize: 11),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
-
-  Widget _buildAdminEnrollmentsList() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _adminPendingEnrollments.isEmpty
-            ? Container(
-                padding: const EdgeInsets.all(28),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.02),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white.withOpacity(0.05)),
-                ),
-                child: const Center(
-                  child: Column(
-                    children: [
-                      Icon(Icons.mark_email_read_outlined, color: Colors.white38, size: 40),
-                      SizedBox(height: 12),
-                      Text(
-                        'Không có đơn đăng ký nào chờ duyệt!',
-                        style: TextStyle(color: Colors.white60, fontSize: 13),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            : ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _adminPendingEnrollments.length,
-                itemBuilder: (context, index) {
-                  final enrollment = _adminPendingEnrollments[index];
-                  final course = enrollment['courseId'] as Map<String, dynamic>?;
-                  final courseName = course != null ? (course['name']?.toString() ?? '') : 'Khóa học';
-                  final enrollmentId = enrollment['_id']?.toString() ?? '';
-
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.03),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white.withOpacity(0.06)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.person_pin_rounded, color: Colors.white70, size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              enrollment['studentName']?.toString() ?? 'Không rõ tên',
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Email: ${enrollment['studentEmail']?.toString() ?? ''}',
-                          style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Khóa học: $courseName',
-                          style: const TextStyle(color: Color(0xFFFF8B8B), fontSize: 12, fontWeight: FontWeight.bold),
-                        ),
-                        const Divider(color: Colors.white12, height: 24),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            TextButton(
-                              onPressed: () => _processEnrollment(enrollmentId, false),
-                              style: TextButton.styleFrom(
-                                foregroundColor: Colors.redAccent,
-                              ),
-                              child: const Text('Từ chối', style: TextStyle(fontWeight: FontWeight.bold)),
-                            ),
-                            const SizedBox(width: 12),
-                            ElevatedButton(
-                              onPressed: () => _processEnrollment(enrollmentId, true),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFB90000),
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              ),
-                              child: const Text('Phê duyệt', style: TextStyle(fontWeight: FontWeight.bold)),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-      ],
-    );
-  }
-
   Widget _buildTeacherCoursesList() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1114,18 +1095,18 @@ class _HomeScreenState extends State<HomeScreen> {
             ? Container(
                 padding: const EdgeInsets.all(28),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.02),
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white.withOpacity(0.05)),
+                  border: Border.all(color: Colors.grey.withOpacity(0.12)),
                 ),
                 child: const Center(
                   child: Column(
                     children: [
-                      Icon(Icons.menu_book_rounded, color: Colors.white38, size: 40),
+                      Icon(Icons.menu_book_rounded, color: Colors.black26, size: 40),
                       SizedBox(height: 12),
                       Text(
                         'Bạn chưa làm chủ nhiệm lớp học nào.',
-                        style: TextStyle(color: Colors.white60, fontSize: 13),
+                        style: TextStyle(color: Colors.black54, fontSize: 13),
                       ),
                     ],
                   ),
@@ -1146,21 +1127,28 @@ class _HomeScreenState extends State<HomeScreen> {
                     margin: const EdgeInsets.only(bottom: 16),
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.03),
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white.withOpacity(0.06)),
+                      border: Border.all(color: Colors.grey.withOpacity(0.12)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.02),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           courseName,
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                          style: const TextStyle(color: Color(0xFF023665), fontWeight: FontWeight.bold, fontSize: 16),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           course['description']?.toString() ?? 'Không có mô tả',
-                          style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12, height: 1.4),
+                          style: const TextStyle(color: Colors.black54, fontSize: 12, height: 1.4),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -1170,7 +1158,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             Text(
                               'Học viên: $enrolled/$capacity',
-                              style: const TextStyle(color: Color(0xFFFF8B8B), fontSize: 12, fontWeight: FontWeight.bold),
+                              style: const TextStyle(color: Color(0xFFB90000), fontSize: 12, fontWeight: FontWeight.bold),
                             ),
                             ElevatedButton.icon(
                               onPressed: () => _showClassRoster(courseId, courseName),
