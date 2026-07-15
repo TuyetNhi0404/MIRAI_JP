@@ -56,7 +56,6 @@ const SpeakingPracticePage = lazy(() => import("./features/speaking/SpeakingPrac
 const AdminGrammarManagement = lazy(() => import("./pages/Admin/AdminGrammarManagement"));
 const StudentGrammarPractice = lazy(() => import("./pages/Student/StudentGrammarPractice"));
 const TeacherQuizManagement = lazy(() => import("./pages/Teacher/TeacherQuizManagement"));
-const TeacherGrammarMaterials = lazy(() => import("./pages/Teacher/TeacherGrammarMaterials"));
 
 const PageLoader = () => (
   <div
@@ -137,7 +136,6 @@ const AppRouter = () => {
             <Route path="teacher/questions/:chapterId" element={<ChapterQuestionsPage />} />
             <Route path="teacher/quizzes" element={<QuizzesPage />} />
             <Route path="teacher/grammar" element={<TeacherQuizManagement />} />
-            <Route path="teacher/grammar-materials" element={<TeacherGrammarMaterials />} />
             <Route path="teacher/submissions" element={<TeacherSubmissionsPage />} />
             <Route path="teacher/listening" element={<ListeningListPage />} />
             <Route path="teacher/listening/:id" element={<ListeningDetailPage />} />

@@ -11,6 +11,14 @@ import 'home/widgets/home_shared_widgets.dart';
 import 'home/views/admin_dashboard_view.dart';
 import 'home/views/teacher_dashboard_view.dart';
 import 'home/views/student_dashboard_view.dart';
+import 'profile_screen.dart';
+import 'leaderboard_screen.dart';
+import 'grammar_practice_screen.dart';
+import 'ocr_vocab_screen.dart';
+import 'admin_enrollment_requests_screen.dart';
+import 'student_statistics_screen.dart';
+import 'kana_practice_screen.dart';
+import 'student_quizzes_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -90,7 +98,6 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
   }
-
   Future<void> _loadUnreadNotificationCount() async {
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -380,6 +387,51 @@ class _HomeScreenState extends State<HomeScreen> {
                 onViewCourses: () {},
                 onViewSpeaking: () => setState(() => _currentView = 'speaking'),
                 onViewVocab: () => setState(() => _currentView = 'vocab'),
+                onViewLeaderboard: () {
+                  if (_studentCourses.isNotEmpty) {
+                    final first = _studentCourses.first;
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => LeaderboardScreen(
+                          courseId: first['_id']?.toString() ?? '',
+                          courseName: first['name']?.toString() ?? 'Lớp học',
+                        ),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Bạn chưa tham gia lớp học nào để xem xếp hạng!'),
+                        backgroundColor: Color(0xFFB90000),
+                      ),
+                    );
+                  }
+                },
+                onViewGrammar: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const GrammarPracticeScreen()),
+                  );
+                },
+                onViewOcr: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const OcrVocabScreen()),
+                  );
+                },
+                onViewKana: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const KanaPracticeScreen()),
+                  );
+                },
+                onViewQuizzes: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const StudentQuizzesScreen()),
+                  );
+                },
+                onViewStatistics: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const StudentStatisticsScreen()),
+                  );
+                },
               ),
             ],
           ],
@@ -419,12 +471,12 @@ class _HomeScreenState extends State<HomeScreen> {
     final user = authProvider.user;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5), // Light theme background
+      backgroundColor: const Color(0xFFFAF8F5), // Light theme background
       appBar: AppBar(
         title: Text(
           _getViewTitle(),
           style: const TextStyle(
-            color: Color(0xFFB90000),
+            color: Color(0xFF023665),
             fontSize: 16,
             fontWeight: FontWeight.bold,
             letterSpacing: 1.2,
@@ -434,9 +486,9 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: const Color(0xFFB90000).withOpacity(0.12)),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, color: Color(0xFFEEEEEE)),
         ),
         actions: [
           Stack(
@@ -496,6 +548,7 @@ class _HomeScreenState extends State<HomeScreen> {
           });
         },
         onLogout: _handleLogout,
+        studentCourses: _studentCourses,
       ),
       body: Stack(
         children: [
@@ -515,35 +568,33 @@ class _HomeScreenState extends State<HomeScreen> {
                     spreadRadius: 50,
                   ),
                 ],
-              ),
             ),
           ),
           Positioned(
             bottom: -50,
             left: -50,
             child: Container(
-              width: 200,
-              height: 200,
+              width: 250,
+              height: 250,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFB90000).withOpacity(0.04),
-                    blurRadius: 80,
-                    spreadRadius: 40,
+                    color: const Color(0xFFB90000).withOpacity(0.05),
+                    blurRadius: 100,
+                    spreadRadius: 50,
                   ),
                 ],
               ),
             ),
           ),
-
           SafeArea(
             child: _isDataLoading && (_currentView == 'dashboard' || _currentView == 'enrollments' || _currentView == 'roster')
                 ? const Center(
                     child: CircularProgressIndicator(color: Color(0xFFB90000)),
                   )
                 : SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
                     child: _buildActiveViewContent(user),
                   ),
           ),

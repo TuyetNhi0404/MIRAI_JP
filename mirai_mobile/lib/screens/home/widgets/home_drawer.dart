@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import '../../../models/user_model.dart';
 import '../../profile_screen.dart';
+import '../../leaderboard_screen.dart';
+import '../../grammar_practice_screen.dart';
+import '../../ocr_vocab_screen.dart';
+import '../../student_statistics_screen.dart';
+import '../../kana_practice_screen.dart';
+import '../../student_quizzes_screen.dart';
 
 class HomeDrawer extends StatelessWidget {
   final UserModel? user;
   final String currentView;
   final Function(String) onSelectView;
   final VoidCallback onLogout;
+  final List<Map<String, dynamic>> studentCourses;
 
   const HomeDrawer({
     super.key,
@@ -14,6 +21,7 @@ class HomeDrawer extends StatelessWidget {
     required this.currentView,
     required this.onSelectView,
     required this.onLogout,
+    required this.studentCourses,
   });
 
   String _getRoleName(String? role) {
@@ -226,6 +234,119 @@ class HomeDrawer extends StatelessWidget {
                       icon: Icons.translate_rounded,
                       title: 'Học từ vựng (Vocab)',
                       viewId: 'vocab',
+                    ),
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ListTile(
+                        leading: const Icon(Icons.camera_alt_outlined, color: Colors.white70, size: 22),
+                        title: const Text('Quét ảnh tra từ', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        onTap: () {
+                          Navigator.of(context).pop(); // Close drawer
+                          Navigator.of(context).push(MaterialPageRoute(builder: (_) => const OcrVocabScreen()));
+                        },
+                      ),
+                    ),
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ListTile(
+                        leading: const Icon(Icons.emoji_events_outlined, color: Colors.white70, size: 22),
+                        title: const Text('Bảng xếp hạng', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        onTap: () {
+                          Navigator.of(context).pop(); // Close drawer
+                          if (studentCourses.isNotEmpty) {
+                            final first = studentCourses.first;
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => LeaderboardScreen(
+                                  courseId: first['_id']?.toString() ?? '',
+                                  courseName: first['name']?.toString() ?? 'Lớp học',
+                                ),
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Bạn chưa tham gia lớp học nào để xem xếp hạng!'),
+                                backgroundColor: Color(0xFFB90000),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    ),
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ListTile(
+                        leading: const Icon(Icons.menu_book_rounded, color: Colors.white70, size: 22),
+                        title: const Text('Luyện ngữ pháp', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        onTap: () {
+                          Navigator.of(context).pop(); // Close drawer
+                          Navigator.of(context).push(MaterialPageRoute(builder: (_) => const GrammarPracticeScreen()));
+                        },
+                      ),
+                    ),
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ListTile(
+                        leading: const Icon(Icons.edit_rounded, color: Colors.white70, size: 22),
+                        title: const Text('Luyện viết Kana', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        onTap: () {
+                          Navigator.of(context).pop(); // Close drawer
+                          Navigator.of(context).push(MaterialPageRoute(builder: (_) => const KanaPracticeScreen()));
+                        },
+                      ),
+                    ),
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ListTile(
+                        leading: const Icon(Icons.quiz_outlined, color: Colors.white70, size: 22),
+                        title: const Text('Bài kiểm tra', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        onTap: () {
+                          Navigator.of(context).pop(); // Close drawer
+                          Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StudentQuizzesScreen()));
+                        },
+                      ),
+                    ),
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ListTile(
+                        leading: const Icon(Icons.bar_chart_rounded, color: Colors.white70, size: 22),
+                        title: const Text('Thống kê kết quả', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        onTap: () {
+                          Navigator.of(context).pop(); // Close drawer
+                          Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StudentStatisticsScreen()));
+                        },
+                      ),
                     ),
                   ],
                 ],

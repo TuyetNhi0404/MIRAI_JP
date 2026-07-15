@@ -267,20 +267,26 @@ const TeacherGrammarMaterials: React.FC = () => {
           <Paper
             elevation={0}
             sx={{
-              p: 2,
+              p: 2.5,
               border: `1px solid ${brandColors.border}`,
-              borderRadius: "12px",
+              borderRadius: "16px",
               bgcolor: "#ffffff",
             }}
           >
-            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, alignItems: "center" }}>
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, alignItems: "center" }}>
               {/* JLPT Level filter */}
               <FormControl size="small" sx={{ width: 140 }}>
-                <InputLabel>Cấp độ JLPT</InputLabel>
+                <InputLabel sx={{ '&.Mui-focused': { color: brandColors.red } }}>Cấp độ JLPT</InputLabel>
                 <Select
                   label="Cấp độ JLPT"
                   value={filterLevel}
                   onChange={(e) => setFilterLevel(e.target.value as JLPTLevel | "")}
+                  sx={{
+                    borderRadius: '8px',
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: brandColors.red
+                    }
+                  }}
                 >
                   <MenuItem value="">Tất cả</MenuItem>
                   {LEVELS.map(l => (
@@ -294,7 +300,21 @@ const TeacherGrammarMaterials: React.FC = () => {
 
               {/* Reload Button */}
               <Tooltip title="Làm mới">
-                <IconButton onClick={fetchDocuments} sx={{ border: "1px solid #eee", height: 38, width: 38, borderRadius: "8px" }}>
+                <IconButton 
+                  onClick={fetchDocuments} 
+                  sx={{ 
+                    border: `1px solid ${brandColors.borderLight}`, 
+                    height: 38, 
+                    width: 38, 
+                    borderRadius: "8px",
+                    color: brandColors.textSecondary,
+                    '&:hover': {
+                      color: brandColors.red,
+                      borderColor: brandColors.red,
+                      backgroundColor: brandColors.bg
+                    }
+                  }}
+                >
                   <RefreshCw size={16} />
                 </IconButton>
               </Tooltip>
@@ -302,7 +322,20 @@ const TeacherGrammarMaterials: React.FC = () => {
               {/* Total count - align to right */}
               {totalCount !== null && (
                 <Box sx={{ marginLeft: "auto" }}>
-                  <Chip size="small" variant="outlined" label={`Tổng: ${totalCount} tài liệu`} sx={{ fontWeight: 600 }} />
+                  <Chip 
+                    size="small" 
+                    variant="outlined" 
+                    label={`Tổng: ${totalCount} tài liệu`} 
+                    sx={{ 
+                      fontWeight: 700,
+                      borderColor: brandColors.redLight,
+                      color: brandColors.red,
+                      bgcolor: brandColors.redSoft,
+                      borderRadius: '8px',
+                      px: 1,
+                      py: 1.8
+                    }} 
+                  />
                 </Box>
               )}
             </Box>

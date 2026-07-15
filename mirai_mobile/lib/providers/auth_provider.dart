@@ -179,6 +179,14 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Update local user details and sync to SharedPreferences
+  Future<void> updateLocalUser(UserModel updatedUser) async {
+    _user = updatedUser;
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user', jsonEncode(_user!.toJson()));
+    notifyListeners();
+  }
+
   // Reset states and clear cache
   Future<void> clearSession() async {
     _user = null;

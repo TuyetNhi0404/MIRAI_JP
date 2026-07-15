@@ -69,8 +69,8 @@ class _AvatarCardState extends State<AvatarCard> {
         final token = authProvider.accessToken;
         if (token == null) return;
 
-        final apiService = ApiService();
-        final newAvatarUrl = await apiService.updateAvatar(token, image.path);
+        final response = await apiService.updateAvatar(token, image.path);
+        final newAvatarUrl = response['data']['avatar'] as String;
         
         await authProvider.updateUserLocalAvatar(newAvatarUrl);
         
