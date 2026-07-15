@@ -64,6 +64,7 @@ import { getAxiosErrorMessage } from "../../utils/axiosError";
 import courseService from "../../services/courseService";
 import type { Course } from "../../services/courseService";
 import { quizService } from "../../services/quiz.service";
+import type { Quiz } from "../../types/quiz.types";
 import { brandColors } from "../../theme/theme";
 
 const TeacherQuizManagement: React.FC = () => {
@@ -99,7 +100,7 @@ const TeacherQuizManagement: React.FC = () => {
   const [aiSuccess, setAiSuccess] = useState("");
 
   // Quiz list and score tracking states
-  const [teacherQuizzes, setTeacherQuizzes] = useState<Array<{ _id?: string; id?: string; title?: string }>>([]);
+  const [teacherQuizzes, setTeacherQuizzes] = useState<Quiz[]>([]);
   const [loadingQuizzes, setLoadingQuizzes] = useState(false);
   const [selectedQuizId, setSelectedQuizId] = useState("");
   const [attempts, setAttempts] = useState<IQuizAttempt[]>([]);
@@ -800,18 +801,18 @@ const TeacherQuizManagement: React.FC = () => {
                     <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
                       {teacherQuizzes.map((quiz) => (
                         <Paper
-                          key={quiz._id || quiz.id}
+                          key={quiz._id}
                           elevation={0}
-                          onClick={() => setSelectedQuizId(quiz._id || quiz.id)}
+                          onClick={() => setSelectedQuizId(quiz._id)}
                           sx={{
                             p: 2,
                             borderRadius: '12px',
                             border: "1px solid",
-                            borderColor: selectedQuizId === (quiz._id || quiz.id) ? brandColors.red : brandColors.borderLight,
-                            bgcolor: selectedQuizId === (quiz._id || quiz.id) ? brandColors.redSoft : "#ffffff",
+                            borderColor: selectedQuizId === quiz._id ? brandColors.red : brandColors.borderLight,
+                            bgcolor: selectedQuizId === quiz._id ? brandColors.redSoft : "#ffffff",
                             cursor: "pointer",
                             transition: 'all 0.2s ease',
-                            "&:hover": { bgcolor: selectedQuizId === (quiz._id || quiz.id) ? brandColors.redSoft : brandColors.bg },
+                            "&:hover": { bgcolor: selectedQuizId === quiz._id ? brandColors.redSoft : brandColors.bg },
                             display: "flex",
                             justifyContent: "space-between",
                             alignItems: "center",
@@ -823,7 +824,7 @@ const TeacherQuizManagement: React.FC = () => {
                               Số câu: {quiz.totalQuestions} | Hạn: {quiz.durationMinutes} phút
                             </Typography>
                           </Box>
-                          <ChevronRight size={16} color={selectedQuizId === (quiz._id || quiz.id) ? brandColors.red : brandColors.textTertiary} />
+                          <ChevronRight size={16} color={selectedQuizId === quiz._id ? brandColors.red : brandColors.textTertiary} />
                         </Paper>
                       ))}
                     </Box>

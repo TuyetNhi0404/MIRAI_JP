@@ -72,6 +72,7 @@ export interface IGeneratedQuestion {
   answer2: string;
   answer3: string;
   answer4: string;
+  explanation?: string;
 }
 
 export interface IQuizAttempt {

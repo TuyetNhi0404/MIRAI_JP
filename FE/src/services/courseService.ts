@@ -17,6 +17,7 @@ export interface Course {
   createdBy?: string;
   createdAt?: string;
   updatedAt?: string;
+  level?: string;
 }
 
 export interface EnrolledStudent {
@@ -38,11 +39,18 @@ export interface EnrolledStudentsResponse {
   students: EnrolledStudent[];
 }
 
-const normalizeCourse = (raw: Course | null | undefined): Course | null => {
+const extractLevelFromName = (name: string): string | undefined => {
+  const match = name.match(/(?:_|\b)(N[1-5])(?:_|\b)/i);
+  return match ? match[1].toUpperCase() : undefined;
+};
+
+const normalizeCourse = (raw: any): Course | null => {
   if (!raw) return null;
+  const level = raw.level || extractLevelFromName(raw.name);
   return {
     ...raw,
     id: raw._id || raw.id,
+    level,
   } as Course;
 };
 
