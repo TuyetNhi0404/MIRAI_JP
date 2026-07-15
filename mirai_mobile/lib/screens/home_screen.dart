@@ -3,6 +3,9 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
 import 'profile_screen.dart';
+import 'teacher/teacher_my_classes_screen.dart';
+import 'teacher/teacher_schedule_screen.dart';
+import 'student/listening/listening_list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -403,15 +406,47 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   // Teacher options
                   if (role == 'teacher') ...[
+                    _buildCustomDrawerItem(
+                      icon: Icons.class_outlined,
+                      title: 'Lớp của tôi',
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const TeacherMyClassesScreen()));
+                      },
+                    ),
+                    _buildCustomDrawerItem(
+                      icon: Icons.calendar_month_outlined,
+                      title: 'Lịch giảng dạy',
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const TeacherScheduleScreen()));
+                      },
+                    ),
                     _buildDrawerItem(
                       icon: Icons.school_outlined,
                       title: 'Quản lý lớp học',
                       viewId: 'roster',
                     ),
+                    _buildCustomDrawerItem(
+                      icon: Icons.headphones_outlined,
+                      title: 'Luyện nghe',
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const ListeningListScreen()));
+                      },
+                    ),
                   ],
 
                   // Student options
                   if (role == 'student' || role == 'user') ...[
+                    _buildCustomDrawerItem(
+                      icon: Icons.headphones_outlined,
+                      title: 'Luyện nghe',
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const ListeningListScreen()));
+                      },
+                    ),
                     _buildDrawerItem(
                       icon: Icons.record_voice_over_outlined,
                       title: 'Luyện nói (Speaking)',
@@ -488,6 +523,26 @@ class _HomeScreenState extends State<HomeScreen> {
           });
           Navigator.of(context).pop(); // Close drawer
         },
+      ),
+    );
+  }
+
+  Widget _buildCustomDrawerItem({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: Colors.white70, size: 22),
+        title: Text(title, style: const TextStyle(color: Colors.white70, fontSize: 14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        onTap: onTap,
       ),
     );
   }
