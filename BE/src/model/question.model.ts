@@ -9,6 +9,7 @@ export interface IQuestion extends Document {
   answer2: string;
   answer3: string;
   answer4: string;
+  explanation?: string;
 }
 
 const questionSchema = new Schema<IQuestion>(
@@ -21,6 +22,7 @@ const questionSchema = new Schema<IQuestion>(
     answer2: { type: String, required: true },
     answer3: { type: String, required: true },
     answer4: { type: String, required: true },
+    explanation: { type: String, required: false },
   },
   { timestamps: true }
 );
