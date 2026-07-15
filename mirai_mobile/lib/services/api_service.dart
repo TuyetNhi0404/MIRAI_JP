@@ -256,6 +256,32 @@ class ApiService {
     }
   }
 
+  // Fetch Vocabularies
+  Future<List<Map<String, dynamic>>> fetchVocabularies({String? token, String? level, String? topic}) async {
+    String urlStr = '${ApiConfig.baseUrl}/api/vocabulary';
+    final queryParams = <String>[];
+    if (level != null && level.isNotEmpty) queryParams.add('level=$level');
+    if (topic != null && topic.isNotEmpty) queryParams.add('topic=$topic');
+    if (queryParams.isNotEmpty) {
+      urlStr += '?${queryParams.join('&')}';
+    }
+    
+    final Uri url = Uri.parse(urlStr);
+    try {
+      final response = await _client.get(
+        url,
+        headers: _getHeaders(token: token),
+      );
+      final decoded = _processResponse(response);
+      if (decoded != null && decoded['data'] != null) {
+        return List<Map<String, dynamic>>.from(decoded['data']);
+      }
+      return [];
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   // ─── LEADERBOARD API ───────────────────────────────────────────────────────
   
   // Fetch course leaderboard
@@ -510,6 +536,68 @@ class ApiService {
         return AttemptDetailResponse.fromJson(decoded['result']);
       }
       throw Exception('Không tìm thấy kết quả chi tiết');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // --- Notifications API ---
+
+  Future<List<Map<String, dynamic>>> fetchNotifications(String token, {int page = 1, int limit = 20}) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/notifications/my-notifications?page=$page&limit=$limit');
+    try {
+      final response = await _client.get(
+        url,
+        headers: _getHeaders(token: token),
+      );
+      final decoded = _processResponse(response);
+      if (decoded != null && decoded['data'] != null && decoded['data']['notifications'] != null) {
+        return List<Map<String, dynamic>>.from(decoded['data']['notifications']);
+      }
+      return [];
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<int> getUnreadNotificationCount(String token) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/notifications/unread-count');
+    try {
+      final response = await _client.get(
+        url,
+        headers: _getHeaders(token: token),
+      );
+      final decoded = _processResponse(response);
+      if (decoded != null && decoded['data'] != null && decoded['data']['count'] != null) {
+        return decoded['data']['count'] as int;
+      }
+      return 0;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> markNotificationAsRead(String token, String notificationId) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/notifications/$notificationId/read');
+    try {
+      final response = await _client.patch(
+        url,
+        headers: _getHeaders(token: token),
+      );
+      _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> markAllNotificationsAsRead(String token) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/notifications/mark-all-read');
+    try {
+      final response = await _client.patch(
+        url,
+        headers: _getHeaders(token: token),
+      );
+      _processResponse(response);
     } catch (e) {
       rethrow;
     }
