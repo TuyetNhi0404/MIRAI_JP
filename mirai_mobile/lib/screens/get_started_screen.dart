@@ -474,8 +474,9 @@ class _GetStartedScreenState extends State<GetStartedScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: isDarkHighlight ? const Color(0xFF1A2138) : Colors.white,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.withOpacity(0.12)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
@@ -513,33 +514,34 @@ class _GetStartedScreenState extends State<GetStartedScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: isDarkHighlight ? Colors.white.withOpacity(0.15) : const Color(0xFFB90000).withOpacity(0.08),
+                    color: const Color(0xFFFFEDED),
                     borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: const Color(0xFFB90000).withOpacity(0.2)),
                   ),
                   child: Text(
                     tag,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
-                      color: isDarkHighlight ? Colors.white : const Color(0xFFB90000),
+                      color: Color(0xFFB90000),
                     ),
                   ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   title,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: isDarkHighlight ? Colors.white : const Color(0xFF1A1A1A),
+                    color: Color(0xFF023665),
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   desc,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 13,
-                    color: isDarkHighlight ? Colors.white.withOpacity(0.7) : const Color(0xFF666666),
+                    color: Color(0xFF666666),
                     height: 1.5,
                   ),
                 ),
