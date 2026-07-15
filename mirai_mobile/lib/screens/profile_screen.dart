@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
 import '../providers/auth_provider.dart';
+import '../services/api_service.dart';
+import '../models/user_model.dart';
+
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -11,12 +15,19 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen>
     with TickerProviderStateMixin {
+  final ApiService _apiService = ApiService();
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
 
   final _nameController = TextEditingController();
   bool _isEditing = false;
   bool _isSaving = false;
+
+  // Role-specific data states
+  List<Map<String, dynamic>> _roleCourses = [];
+  int _pendingEnrollmentsCount = 0;
+  bool _isLoadingRoleData = false;
+  bool _isUploadingAvatar = false;
 
   static const _red = Color(0xFFB90000);
   static const _redLight = Color(0xFFFFEDED);
@@ -34,8 +45,120 @@ class _ProfileScreenState extends State<ProfileScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final user = Provider.of<AuthProvider>(context, listen: false).user;
       _nameController.text = user?.name ?? '';
+      _loadRoleSpecificData();
     });
   }
+
+  Future<void> _loadRoleSpecificData() async {
+    if (!mounted) return;
+    setState(() => _isLoadingRoleData = true);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final user = authProvider.user;
+    final token = authProvider.accessToken;
+
+    if (user == null || token == null) {
+      if (mounted) setState(() => _isLoadingRoleData = false);
+      return;
+    }
+
+    try {
+      if (user.role == 'admin') {
+        final enrollments = await _apiService.fetchAllEnrollments(token, status: 'pending');
+        if (mounted) {
+          setState(() {
+            _pendingEnrollmentsCount = enrollments.length;
+          });
+        }
+      } else if (user.role == 'teacher') {
+        final courses = await _apiService.fetchTeacherCourses(token);
+        if (mounted) {
+          setState(() {
+            _roleCourses = courses;
+          });
+        }
+      } else if (user.role == 'student' || user.role == 'user') {
+        final courses = await _apiService.fetchStudentCourses(token);
+        if (mounted) {
+          setState(() {
+            _roleCourses = courses;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading role specific data in profile: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingRoleData = false);
+      }
+    }
+  }
+
+  Future<void> _pickAndUploadAvatar() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final token = authProvider.accessToken;
+    if (token == null) return;
+
+    try {
+      final ImagePicker picker = ImagePicker();
+      final ImageSource? source = await showDialog<ImageSource>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Chọn ảnh đại diện', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
+          actions: [
+            TextButton.icon(
+              onPressed: () => Navigator.pop(ctx, ImageSource.camera),
+              icon: const Icon(Icons.camera_alt_rounded, color: _red),
+              label: const Text('Máy ảnh', style: TextStyle(color: _red)),
+            ),
+            TextButton.icon(
+              onPressed: () => Navigator.pop(ctx, ImageSource.gallery),
+              icon: const Icon(Icons.photo_library_rounded, color: _red),
+              label: const Text('Thư viện', style: TextStyle(color: _red)),
+            ),
+          ],
+        ),
+      );
+
+      if (source == null) return;
+
+      final XFile? file = await picker.pickImage(
+        source: source,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 85,
+      );
+
+      if (file == null) return;
+
+      setState(() => _isUploadingAvatar = true);
+
+      final response = await _apiService.updateAvatar(token, file.path);
+      
+      if (response['success'] == true && response['user'] != null) {
+        final updatedUser = UserModel.fromJson(response['user']);
+        await authProvider.updateLocalUser(updatedUser);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Đã cập nhật ảnh đại diện!'), backgroundColor: Colors.green),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Không thể tải ảnh: ${e.toString()}'), backgroundColor: _redMid),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploadingAvatar = false);
+      }
+    }
+  }
+
 
   @override
   void dispose() {
@@ -142,6 +265,8 @@ class _ProfileScreenState extends State<ProfileScreen>
               _buildAvatarCard(user),
               const SizedBox(height: 20),
               _buildInfoCard(user),
+              const SizedBox(height: 20),
+              _buildRoleSpecificCard(user),
               const SizedBox(height: 24),
               _buildSectionLabel('Cài đặt tài khoản'),
               const SizedBox(height: 10),
@@ -213,47 +338,62 @@ class _ProfileScreenState extends State<ProfileScreen>
           Stack(
             alignment: Alignment.bottomRight,
             children: [
-              Container(
-                padding: const EdgeInsets.all(3),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [_red, Color(0xFFFF6B6B)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+              GestureDetector(
+                onTap: _isUploadingAvatar ? null : _pickAndUploadAvatar,
+                child: Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      colors: [_red, Color(0xFFFF6B6B)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  child: CircleAvatar(
+                    radius: 48,
+                    backgroundColor: _redLight,
+                    backgroundImage:
+                        user?.avatar != null && user.avatar.isNotEmpty
+                            ? NetworkImage(user.avatar)
+                            : null,
+                    child: _isUploadingAvatar
+                        ? const CircularProgressIndicator(color: _red)
+                        : (user?.avatar == null || user.avatar.isEmpty
+                            ? Text(
+                                (user?.name?.isNotEmpty == true)
+                                    ? user.name[0].toUpperCase()
+                                    : 'U',
+                                style: const TextStyle(
+                                  fontSize: 38,
+                                  fontWeight: FontWeight.bold,
+                                  color: _red,
+                                ),
+                              )
+                            : null),
                   ),
                 ),
-                child: CircleAvatar(
-                  radius: 48,
-                  backgroundColor: _redLight,
-                  backgroundImage:
-                      user?.avatar != null && user.avatar.isNotEmpty
-                          ? NetworkImage(user.avatar)
-                          : null,
-                  child: user?.avatar == null || user.avatar.isEmpty
-                      ? Text(
-                          (user?.name?.isNotEmpty == true)
-                              ? user.name[0].toUpperCase()
-                              : 'U',
-                          style: const TextStyle(
-                            fontSize: 38,
-                            fontWeight: FontWeight.bold,
-                            color: _red,
-                          ),
-                        )
-                      : null,
-                ),
               ),
-              // Role badge icon
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: _red,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
+              // Camera / Role badge icon
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: GestureDetector(
+                  onTap: _isUploadingAvatar ? null : _pickAndUploadAvatar,
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: _red,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: Icon(
+                      _isEditing ? Icons.camera_alt_rounded : _getRoleIcon(user?.role),
+                      size: 13,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
-                child: Icon(_getRoleIcon(user?.role),
-                    size: 13, color: Colors.white),
               ),
             ],
           ),
@@ -392,6 +532,182 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ),
                   ],
           ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Role Specific Card ──────────────────────────────────────────────────────
+  Widget _buildRoleSpecificCard(dynamic user) {
+    if (_isLoadingRoleData) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            )
+          ],
+        ),
+        child: const Center(
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(color: _red, strokeWidth: 2),
+          ),
+        ),
+      );
+    }
+
+    final role = user?.role ?? 'student';
+
+    if (role == 'admin') {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            )
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'QUẢN TRỊ HỆ THỐNG',
+              style: TextStyle(
+                color: _red,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.2,
+              ),
+            ),
+            const SizedBox(height: 14),
+            _buildInfoRow(
+              Icons.how_to_reg_rounded,
+              'Đơn đăng ký chờ duyệt',
+              '$_pendingEnrollmentsCount đơn',
+              valueColor: _pendingEnrollmentsCount > 0 ? Colors.orange : Colors.green,
+            ),
+          ],
+        ),
+      );
+    }
+
+    final isTeacher = role == 'teacher';
+    final cardTitle = isTeacher ? 'LỚP HỌC PHỤ TRÁCH' : 'KHÓA HỌC ĐANG HỌC';
+    final emptyMsg = isTeacher 
+        ? 'Bạn chưa làm chủ nhiệm lớp học nào.' 
+        : 'Bạn chưa đăng ký khóa học nào.';
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            cardTitle,
+            style: const TextStyle(
+              color: _red,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 14),
+          _roleCourses.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Text(
+                    emptyMsg,
+                    style: TextStyle(color: Colors.black.withOpacity(0.4), fontSize: 13),
+                  ),
+                )
+              : ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _roleCourses.length,
+                  separatorBuilder: (_, __) => const Divider(height: 16, color: Color(0xFFF0F0F0)),
+                  itemBuilder: (context, idx) {
+                    final course = _roleCourses[idx];
+                    final name = course['name']?.toString() ?? 'Khóa học';
+                    final code = course['code']?.toString() ?? (course['_id'] != null ? course['_id'].toString().substring(0, 6) : '');
+                    final desc = course['description']?.toString() ?? 'Không có mô tả';
+
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: _redLight,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(
+                            isTeacher ? Icons.class_outlined : Icons.menu_book_rounded,
+                            size: 16,
+                            color: _red,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                name,
+                                style: const TextStyle(
+                                  color: Color(0xFF1A1A1A),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              if (code.isNotEmpty)
+                                Text(
+                                  'Mã: ${code.toUpperCase()}',
+                                  style: TextStyle(
+                                    color: Colors.black.withOpacity(0.4),
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              const SizedBox(height: 2),
+                              Text(
+                                desc,
+                                style: TextStyle(
+                                  color: Colors.black.withOpacity(0.5),
+                                  fontSize: 12,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
         ],
       ),
     );

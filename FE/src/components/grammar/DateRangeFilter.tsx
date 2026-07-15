@@ -110,74 +110,157 @@ const DateRangeFilter: React.FC<DateRangeFilterProps> = ({ value, onChange, show
     }
   }, [preset]);
 
-  return (
-    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, alignItems: "center" }}>
-      {/* Khoảng ngày preset */}
-      <FormControl size="small" sx={{ width: 130 }}>
-        <InputLabel id="date-preset-label">Khoảng ngày</InputLabel>
-        <Select
-          labelId="date-preset-label"
-          label="Khoảng ngày"
-          value={preset}
-          onChange={(e) => handlePresetChange(e.target.value as DateRangePreset)}
-        >
-          <MenuItem value="all">Tất cả</MenuItem>
-          <MenuItem value="today">Hôm nay</MenuItem>
-          <MenuItem value="7d">7 ngày qua</MenuItem>
-          <MenuItem value="30d">30 ngày qua</MenuItem>
-          <MenuItem value="custom">Tùy chỉnh</MenuItem>
-        </Select>
-      </FormControl>
+  const isCompact = !showSort;
 
-      {/* Từ ngày & Đến ngày nhóm chung 1 Box để luôn nằm cùng 1 hàng */}
-      <Box sx={{ display: "flex", gap: 1.5 }}>
+  return (
+    <Box 
+      sx={{ 
+        display: "flex", 
+        flexWrap: isCompact ? "nowrap" : "wrap", 
+        gap: isCompact ? 1 : 2, 
+        alignItems: "center",
+        width: isCompact ? "100%" : "auto"
+      }}
+    >
+      {/* Group A: Khoảng ngày preset + Reset */}
+      <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+        <FormControl size="small" sx={{ width: isCompact ? 100 : 130, minWidth: isCompact ? 90 : 120 }}>
+          <InputLabel id="date-preset-label" sx={{ fontSize: isCompact ? 12 : undefined }}>Khoảng ngày</InputLabel>
+          <Select
+            labelId="date-preset-label"
+            label="Khoảng ngày"
+            value={preset}
+            onChange={(e) => handlePresetChange(e.target.value as DateRangePreset)}
+            sx={{ 
+              fontSize: isCompact ? 12 : undefined,
+              borderRadius: '8px',
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: brandColors.border
+              },
+              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                borderColor: brandColors.red
+              }
+            }}
+          >
+            <MenuItem value="all">Tất cả</MenuItem>
+            <MenuItem value="today">Hôm nay</MenuItem>
+            <MenuItem value="7d">7 ngày qua</MenuItem>
+            <MenuItem value="30d">30 ngày qua</MenuItem>
+            <MenuItem value="custom">Tùy chỉnh</MenuItem>
+          </Select>
+        </FormControl>
+
+        <Tooltip title={`Đặt lại (hiện tại: ${presetLabel})`}>
+          <span>
+            <IconButton
+              size="small"
+              onClick={handleReset}
+              disabled={preset === "all" && !value.dateFrom && !value.dateTo}
+              sx={{ 
+                border: `1px solid ${brandColors.borderLight}`, 
+                height: isCompact ? 34 : 38, 
+                width: isCompact ? 34 : 38, 
+                borderRadius: "8px",
+                color: brandColors.textSecondary,
+                '&:hover': {
+                  color: brandColors.red,
+                  borderColor: brandColors.red,
+                  backgroundColor: brandColors.bg
+                }
+              }}
+            >
+              <RotateCcw size={isCompact ? 14 : 16} />
+            </IconButton>
+          </span>
+        </Tooltip>
+      </Box>
+
+      {/* Group B: Từ & Đến ngày */}
+      <Box 
+        sx={{ 
+          display: "flex", 
+          gap: isCompact ? 1 : 1.5, 
+          flex: isCompact ? 1 : undefined, 
+          minWidth: 0,
+          width: isCompact ? undefined : 'auto'
+        }}
+      >
         <TextField
           type="date"
           size="small"
-          label="Từ ngày"
+          label={isCompact ? "Từ" : "Từ ngày"}
           value={value.dateFrom || ""}
           onChange={(e) => handleFromChange(e.target.value)}
           InputLabelProps={{ shrink: true }}
-          sx={{ width: 145 }}
+          sx={{ 
+            flex: isCompact ? 1 : undefined, 
+            width: isCompact ? undefined : 145,
+            minWidth: 0,
+            '& .MuiInputLabel-root': { fontSize: isCompact ? 12 : undefined },
+            '& .MuiInputBase-input': { fontSize: isCompact ? 11 : undefined, p: isCompact ? '8.5px 8px' : undefined },
+            '& .MuiOutlinedInput-root': {
+              borderRadius: '8px',
+              '&.Mui-focused fieldset': { borderColor: brandColors.red }
+            }
+          }}
         />
         <TextField
           type="date"
           size="small"
-          label="Đến ngày"
+          label={isCompact ? "Đến" : "Đến ngày"}
           value={value.dateTo || ""}
           onChange={(e) => handleToChange(e.target.value)}
           InputLabelProps={{ shrink: true }}
-          sx={{ width: 145 }}
+          sx={{ 
+            flex: isCompact ? 1 : undefined, 
+            width: isCompact ? undefined : 145,
+            minWidth: 0,
+            '& .MuiInputLabel-root': { fontSize: isCompact ? 12 : undefined },
+            '& .MuiInputBase-input': { fontSize: isCompact ? 11 : undefined, p: isCompact ? '8.5px 8px' : undefined },
+            '& .MuiOutlinedInput-root': {
+              borderRadius: '8px',
+              '&.Mui-focused fieldset': { borderColor: brandColors.red }
+            }
+          }}
         />
       </Box>
 
+      {/* Group C: Sắp xếp & Order */}
       {showSort && (
-        <>
-          {/* Sắp xếp */}
+        <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
           <FormControl size="small" sx={{ width: 130 }}>
-            <InputLabel id="sort-by-label">Sắp xếp</InputLabel>
+            <InputLabel id="sort-by-label" sx={{ '&.Mui-focused': { color: brandColors.red } }}>Sắp xếp</InputLabel>
             <Select
               labelId="sort-by-label"
               label="Sắp xếp"
               value={currentSortBy}
               onChange={(e) => handleSortChange(e.target.value as "createdAt" | "title")}
+              sx={{
+                borderRadius: '8px',
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: brandColors.border
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: brandColors.red
+                }
+              }}
             >
               <MenuItem value="createdAt">Ngày tạo</MenuItem>
               <MenuItem value="title">Tên</MenuItem>
             </Select>
           </FormControl>
 
-          {/* Tăng / Giảm dần */}
           <Button
             size="small"
             variant="outlined"
             onClick={handleOrderToggle}
             sx={{
               height: 38,
-              px: 1.5,
+              px: 2,
               textTransform: "none",
               color: brandColors.red,
               borderColor: brandColors.red,
+              borderRadius: '8px',
               fontWeight: 600,
               fontSize: 13,
               whiteSpace: "nowrap",
@@ -189,22 +272,8 @@ const DateRangeFilter: React.FC<DateRangeFilterProps> = ({ value, onChange, show
           >
             {currentOrder === "asc" ? "↑ Tăng dần" : "↓ Giảm dần"}
           </Button>
-        </>
+        </Box>
       )}
-
-      {/* Reset Button */}
-      <Tooltip title={`Đặt lại (hiện tại: ${presetLabel})`}>
-        <span>
-          <IconButton
-            size="small"
-            onClick={handleReset}
-            disabled={preset === "all" && !value.dateFrom && !value.dateTo}
-            sx={{ border: "1px solid #eee", height: 38, width: 38, borderRadius: "8px" }}
-          >
-            <RotateCcw size={16} />
-          </IconButton>
-        </span>
-      </Tooltip>
     </Box>
   );
 };
