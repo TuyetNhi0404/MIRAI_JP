@@ -34,6 +34,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   static const _red = Color(0xFFB90000);
   static const _redMid = Color(0xFFE53935);
+  static const _redLight = Color(0xFFFFEDED);
 
   @override
   void initState() {
@@ -557,5 +558,4 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
     );
   }
-}
 }

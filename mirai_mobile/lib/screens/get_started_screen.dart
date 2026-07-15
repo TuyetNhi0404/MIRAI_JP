@@ -132,4 +132,3 @@ class _GetStartedScreenState extends State<GetStartedScreen> {
     );
   }
 }
-}

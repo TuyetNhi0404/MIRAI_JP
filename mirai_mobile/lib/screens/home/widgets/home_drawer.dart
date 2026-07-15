@@ -48,19 +48,19 @@ class HomeDrawer extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 4),
       decoration: BoxDecoration(
-        color: isSelected ? const Color(0xFFB90000).withOpacity(0.12) : Colors.transparent,
+        color: isSelected ? const Color(0xFFB90000).withOpacity(0.08) : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
         leading: Icon(
           icon,
-          color: isSelected ? const Color(0xFFFF8B8B) : Colors.white70,
+          color: isSelected ? const Color(0xFFB90000) : const Color(0xFF5F6368),
           size: 22,
         ),
         title: Text(
           title,
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.white70,
+            color: isSelected ? const Color(0xFFB90000) : const Color(0xFF3C4043),
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             fontSize: 14,
           ),
@@ -82,16 +82,45 @@ class HomeDrawer extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
-        leading: const Icon(Icons.person_outline_rounded, color: Colors.white70, size: 22),
+        leading: const Icon(Icons.person_outline_rounded, color: Color(0xFF5F6368), size: 22),
         title: const Text(
           'Hồ sơ cá nhân',
-          style: TextStyle(color: Colors.white70, fontSize: 14),
+          style: TextStyle(color: Color(0xFF3C4043), fontSize: 14),
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         onTap: () {
           Navigator.of(context).pop(); // Close drawer
           Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const ProfileScreen()),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildNavigationDrawerItem({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required Widget targetScreen,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: const Color(0xFF5F6368), size: 22),
+        title: Text(
+          title,
+          style: const TextStyle(color: Color(0xFF3C4043), fontSize: 14),
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        onTap: () {
+          Navigator.of(context).pop(); // Close drawer
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => targetScreen),
           );
         },
       ),
@@ -106,7 +135,7 @@ class HomeDrawer extends StatelessWidget {
     final avatar = user?.avatar;
 
     return Drawer(
-      backgroundColor: const Color(0xFF11111E),
+      backgroundColor: Colors.white,
       child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -114,9 +143,9 @@ class HomeDrawer extends StatelessWidget {
             // Drawer Header containing User Info
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 border: Border(
-                  bottom: BorderSide(color: Colors.white.withOpacity(0.08), width: 1.0),
+                  bottom: BorderSide(color: Color(0xFFEEEEEE), width: 1.0),
                 ),
               ),
               child: Column(
@@ -124,7 +153,7 @@ class HomeDrawer extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 30,
-                    backgroundColor: const Color(0xFFB90000).withOpacity(0.2),
+                    backgroundColor: const Color(0xFFB90000).withOpacity(0.1),
                     backgroundImage: avatar != null && avatar.isNotEmpty
                         ? NetworkImage(avatar)
                         : null,
@@ -134,7 +163,7 @@ class HomeDrawer extends StatelessWidget {
                             style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: Color(0xFFB90000),
                             ),
                           )
                         : null,
@@ -145,16 +174,16 @@ class HomeDrawer extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: Color(0xFF1A1A1A),
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     email,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 12,
-                      color: Colors.white.withOpacity(0.5),
+                      color: Color(0xFF757575),
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -163,7 +192,7 @@ class HomeDrawer extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFB90000).withOpacity(0.15),
+                      color: const Color(0xFFB90000).withOpacity(0.08),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -171,7 +200,7 @@ class HomeDrawer extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 9,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFFFF8B8B),
+                        color: Color(0xFFB90000),
                         letterSpacing: 0.5,
                       ),
                     ),
@@ -235,21 +264,11 @@ class HomeDrawer extends StatelessWidget {
                       title: 'Học từ vựng (Vocab)',
                       viewId: 'vocab',
                     ),
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: ListTile(
-                        leading: const Icon(Icons.camera_alt_outlined, color: Colors.white70, size: 22),
-                        title: const Text('Quét ảnh tra từ', style: TextStyle(color: Colors.white70, fontSize: 14)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        onTap: () {
-                          Navigator.of(context).pop(); // Close drawer
-                          Navigator.of(context).push(MaterialPageRoute(builder: (_) => const OcrVocabScreen()));
-                        },
-                      ),
+                    _buildNavigationDrawerItem(
+                      context: context,
+                      icon: Icons.camera_alt_outlined,
+                      title: 'Quét ảnh tra từ',
+                      targetScreen: const OcrVocabScreen(),
                     ),
                     Container(
                       margin: const EdgeInsets.only(bottom: 4),
@@ -258,8 +277,8 @@ class HomeDrawer extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: ListTile(
-                        leading: const Icon(Icons.emoji_events_outlined, color: Colors.white70, size: 22),
-                        title: const Text('Bảng xếp hạng', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                        leading: const Icon(Icons.emoji_events_outlined, color: Color(0xFF5F6368), size: 22),
+                        title: const Text('Bảng xếp hạng', style: TextStyle(color: Color(0xFF3C4043), fontSize: 14)),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         onTap: () {
                           Navigator.of(context).pop(); // Close drawer
@@ -284,69 +303,29 @@ class HomeDrawer extends StatelessWidget {
                         },
                       ),
                     ),
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: ListTile(
-                        leading: const Icon(Icons.menu_book_rounded, color: Colors.white70, size: 22),
-                        title: const Text('Luyện ngữ pháp', style: TextStyle(color: Colors.white70, fontSize: 14)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        onTap: () {
-                          Navigator.of(context).pop(); // Close drawer
-                          Navigator.of(context).push(MaterialPageRoute(builder: (_) => const GrammarPracticeScreen()));
-                        },
-                      ),
+                    _buildNavigationDrawerItem(
+                      context: context,
+                      icon: Icons.menu_book_rounded,
+                      title: 'Luyện ngữ pháp',
+                      targetScreen: const GrammarPracticeScreen(),
                     ),
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: ListTile(
-                        leading: const Icon(Icons.edit_rounded, color: Colors.white70, size: 22),
-                        title: const Text('Luyện viết Kana', style: TextStyle(color: Colors.white70, fontSize: 14)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        onTap: () {
-                          Navigator.of(context).pop(); // Close drawer
-                          Navigator.of(context).push(MaterialPageRoute(builder: (_) => const KanaPracticeScreen()));
-                        },
-                      ),
+                    _buildNavigationDrawerItem(
+                      context: context,
+                      icon: Icons.edit_rounded,
+                      title: 'Luyện viết Kana',
+                      targetScreen: const KanaPracticeScreen(),
                     ),
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: ListTile(
-                        leading: const Icon(Icons.quiz_outlined, color: Colors.white70, size: 22),
-                        title: const Text('Bài kiểm tra', style: TextStyle(color: Colors.white70, fontSize: 14)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        onTap: () {
-                          Navigator.of(context).pop(); // Close drawer
-                          Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StudentQuizzesScreen()));
-                        },
-                      ),
+                    _buildNavigationDrawerItem(
+                      context: context,
+                      icon: Icons.quiz_outlined,
+                      title: 'Bài kiểm tra',
+                      targetScreen: const StudentQuizzesScreen(),
                     ),
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: ListTile(
-                        leading: const Icon(Icons.bar_chart_rounded, color: Colors.white70, size: 22),
-                        title: const Text('Thống kê kết quả', style: TextStyle(color: Colors.white70, fontSize: 14)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        onTap: () {
-                          Navigator.of(context).pop(); // Close drawer
-                          Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StudentStatisticsScreen()));
-                        },
-                      ),
+                    _buildNavigationDrawerItem(
+                      context: context,
+                      icon: Icons.bar_chart_rounded,
+                      title: 'Thống kê kết quả',
+                      targetScreen: const StudentStatisticsScreen(),
                     ),
                   ],
                 ],
@@ -356,16 +335,16 @@ class HomeDrawer extends StatelessWidget {
             // Logout item at the bottom
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 border: Border(
-                  top: BorderSide(color: Colors.white.withOpacity(0.05), width: 1.0),
+                  top: BorderSide(color: Color(0xFFEEEEEE), width: 1.0),
                 ),
               ),
               child: ListTile(
-                leading: const Icon(Icons.logout_rounded, color: Colors.redAccent),
+                leading: const Icon(Icons.logout_rounded, color: Color(0xFFD93025)),
                 title: const Text(
                   'Đăng xuất',
-                  style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 14),
+                  style: TextStyle(color: Color(0xFFD93025), fontWeight: FontWeight.bold, fontSize: 14),
                 ),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 onTap: () {

@@ -44,13 +44,26 @@ class StudentOverview extends StatelessWidget {
           children: [
             Expanded(
               child: ActionGridCard(
+                icon: Icons.translate_rounded,
+                title: 'Học từ vựng',
+                color: Colors.pink,
+                onTap: onViewVocab,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: ActionGridCard(
                 icon: Icons.emoji_events_outlined,
                 title: 'Xếp hạng',
                 color: Colors.amber,
                 onTap: onViewLeaderboard,
               ),
             ),
-            const SizedBox(width: 16),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
             Expanded(
               child: ActionGridCard(
                 icon: Icons.menu_book_rounded,
@@ -59,11 +72,7 @@ class StudentOverview extends StatelessWidget {
                 onTap: onViewGrammar,
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
+            const SizedBox(width: 16),
             Expanded(
               child: ActionGridCard(
                 icon: Icons.camera_alt_outlined,
@@ -72,7 +81,11 @@ class StudentOverview extends StatelessWidget {
                 onTap: onViewOcr,
               ),
             ),
-            const SizedBox(width: 16),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
             Expanded(
               child: ActionGridCard(
                 icon: Icons.record_voice_over_outlined,
@@ -81,11 +94,7 @@ class StudentOverview extends StatelessWidget {
                 onTap: onViewSpeaking,
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
+            const SizedBox(width: 16),
             Expanded(
               child: ActionGridCard(
                 icon: Icons.edit_rounded,
@@ -94,16 +103,15 @@ class StudentOverview extends StatelessWidget {
                 onTap: onViewKana,
               ),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: ActionGridCard(
-                icon: Icons.quiz_outlined,
-                title: 'Bài kiểm tra',
-                color: Colors.orange.shade800,
-                onTap: onViewQuizzes,
-              ),
-            ),
           ],
+        ),
+        const SizedBox(height: 16),
+        StatCard(
+          icon: Icons.quiz_outlined,
+          title: 'Bài kiểm tra',
+          value: 'Đánh giá năng lực',
+          color: Colors.orange.shade800,
+          onTap: onViewQuizzes,
         ),
         const SizedBox(height: 16),
         StatCard(

@@ -568,6 +568,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     spreadRadius: 50,
                   ),
                 ],
+              ),
             ),
           ),
           Positioned(

@@ -31,6 +31,7 @@ class _AvatarCardState extends State<AvatarCard> {
   static const _red = Color(0xFFB90000);
   static const _redLight = Color(0xFFFFEDED);
   bool _isUploading = false;
+  final ApiService _apiService = ApiService();
 
   String _getRoleName(String? role) {
     switch (role) {
@@ -69,7 +70,7 @@ class _AvatarCardState extends State<AvatarCard> {
         final token = authProvider.accessToken;
         if (token == null) return;
 
-        final response = await apiService.updateAvatar(token, image.path);
+        final response = await _apiService.updateAvatar(token, image.path);
         final newAvatarUrl = response['data']['avatar'] as String;
         
         await authProvider.updateUserLocalAvatar(newAvatarUrl);
