@@ -66,5 +66,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app needs access to your photo library to upload a profile avatar.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>This app needs camera access to take a profile avatar photo.</string>
 </dict>
 </plist>

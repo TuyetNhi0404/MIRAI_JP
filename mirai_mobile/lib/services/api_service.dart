@@ -195,7 +195,7 @@ class ApiService {
     String courseId,
   ) async {
     final Uri url = Uri.parse(
-      '${ApiConfig.baseUrl}/api/courses/$courseId/members',
+      '${ApiConfig.baseUrl}/api/courses/teacher/courses/$courseId/members',
     );
     try {
       final response = await _client.get(

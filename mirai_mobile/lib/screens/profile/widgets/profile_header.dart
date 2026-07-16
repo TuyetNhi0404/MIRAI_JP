@@ -71,7 +71,13 @@ class _AvatarCardState extends State<AvatarCard> {
         if (token == null) return;
 
         final response = await _apiService.updateAvatar(token, image.path);
-        final newAvatarUrl = response['data']['avatar'] as String;
+        if (response is! Map) {
+          throw Exception('Phản hồi từ máy chủ không hợp lệ.');
+        }
+        final newAvatarUrl = (response['avatar'] ?? response['data']?['avatar']) as String?;
+        if (newAvatarUrl == null || newAvatarUrl.isEmpty) {
+          throw Exception(response['message']?.toString() ?? 'Tải ảnh thất bại (thiếu avatar).');
+        }
         
         await authProvider.updateUserLocalAvatar(newAvatarUrl);
         
@@ -122,7 +128,7 @@ class _AvatarCardState extends State<AvatarCard> {
             alignment: Alignment.bottomRight,
             children: [
               GestureDetector(
-                onTap: isEditing ? _pickAndUploadImage : null,
+                onTap: _isUploading ? null : _pickAndUploadImage,
                 child: Container(
                   padding: const EdgeInsets.all(3),
                   decoration: const BoxDecoration(

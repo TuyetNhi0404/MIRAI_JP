@@ -8,6 +8,8 @@ import 'providers/schedule_provider.dart';
 import 'providers/speaking_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/get_started_screen.dart';
+import 'providers/teacher_provider.dart';
+import 'providers/listening_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,6 +22,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => SubmissionProvider()),
         ChangeNotifierProvider(create: (_) => ScheduleProvider()),
         ChangeNotifierProvider(create: (_) => SpeakingProvider()),
+        ChangeNotifierProvider(create: (_) => TeacherProvider()),
+        ChangeNotifierProvider(create: (_) => ListeningProvider()),
       ],
       child: const MyApp(),
     ),
@@ -49,7 +53,11 @@ class MyApp extends StatelessWidget {
         ),
         cardColor: Colors.white,
         textTheme: const TextTheme(
-          titleLarge: TextStyle(fontFamily: 'Roboto', fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A)),
+          titleLarge: TextStyle(
+            fontFamily: 'Roboto',
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF1A1A1A),
+          ),
           bodyMedium: TextStyle(fontFamily: 'Roboto', color: Color(0xFF1A1A1A)),
         ),
       ),

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../widgets/home_shared_widgets.dart';
+import '../../teacher/teacher_my_classes_screen.dart';
+import '../../teacher/teacher_schedule_screen.dart';
+import '../../student/listening/listening_list_screen.dart';
 
 class TeacherOverview extends StatelessWidget {
   final int coursesCount;
@@ -22,6 +25,49 @@ class TeacherOverview extends StatelessWidget {
           value: '$coursesCount lớp học',
           color: Colors.green,
           onTap: onViewRoster,
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: ActionGridCard(
+                icon: Icons.class_outlined,
+                title: 'Lớp của tôi',
+                color: Colors.blueAccent,
+                onTap: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const TeacherMyClassesScreen()));
+                },
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: ActionGridCard(
+                icon: Icons.calendar_month_outlined,
+                title: 'Lịch giảng dạy',
+                color: Colors.orange,
+                onTap: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const TeacherScheduleScreen()));
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: ActionGridCard(
+                icon: Icons.headphones_outlined,
+                title: 'Luyện nghe',
+                color: const Color(0xFFB90000),
+                onTap: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ListeningListScreen()));
+                },
+              ),
+            ),
+            const SizedBox(width: 16),
+            const Expanded(child: SizedBox()),
+          ],
         ),
       ],
     );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/home_shared_widgets.dart';
+import '../../student/listening/listening_list_screen.dart';
 
 class StudentOverview extends StatelessWidget {
   final int coursesCount;
@@ -81,6 +82,22 @@ class StudentOverview extends StatelessWidget {
                 onTap: onViewOcr,
               ),
             ),
+          ],
+        ),
+        Row(
+          children: [
+            Expanded(
+              child: ActionGridCard(
+                icon: Icons.headphones_outlined,
+                title: 'Luyện nghe',
+                color: const Color(0xFFB90000),
+                onTap: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ListeningListScreen()));
+                },
+              ),
+            ),
+            const SizedBox(width: 16),
+            const Expanded(child: SizedBox()),
           ],
         ),
         const SizedBox(height: 16),
