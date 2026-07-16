@@ -27,7 +27,6 @@ import {
   CalendarClock,
   NotebookText,
   FileQuestion,
-  BookOpen,
   Headphones,
   ClipboardCheck
 } from 'lucide-react';
@@ -299,9 +298,11 @@ const TeacherDashboard = () => {
                           </Avatar>
                         </ListItemAvatar>
                         <ListItemText
+                          primaryTypographyProps={{ component: 'div' }}
+                          secondaryTypographyProps={{ component: 'div' }}
                           primary={
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
-                              <Typography variant="subtitle1" fontWeight={700} color={brandColors.ink}>
+                              <Typography variant="subtitle1" component="div" fontWeight={700} color={brandColors.ink}>
                                 {course.name}
                               </Typography>
                               <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
@@ -516,35 +517,6 @@ const TeacherDashboard = () => {
                   </Box>
                 </Grid>
 
-                {/* Link 5: Grammar Materials */}
-                <Grid item xs={6}>
-                  <Box
-                    onClick={() => navigate('/dashboard/teacher/grammar-materials')}
-                    className="mira-button-hover"
-                    sx={{
-                      p: 2,
-                      borderRadius: '12px',
-                      bgcolor: '#FAF5FF',
-                      color: '#6A2A91',
-                      border: '1px solid #F3EAFF',
-                      cursor: 'pointer',
-                      textAlign: 'center',
-                      boxShadow: '0 2px 6px rgba(106, 42, 145, 0.02)',
-                      height: 124,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      '&:hover': {
-                        borderColor: '#6A2A91',
-                        boxShadow: '0 4px 12px rgba(106, 42, 145, 0.08)'
-                      }
-                    }}
-                  >
-                    <BookOpen size={28} style={{ marginBottom: 8 }} />
-                    <Typography variant="body2" fontWeight={700}>Tài liệu Ngữ pháp</Typography>
-                  </Box>
-                </Grid>
 
                 {/* Link 6: Grammar Quiz Creator */}
                 <Grid item xs={6}>

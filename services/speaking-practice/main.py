@@ -631,48 +631,28 @@ async def process_pdf(
     pages_data = []
     doc_fitz = None
     try:
-        # Try to import pypdf
-        try:
-            import pypdf
-        except ImportError:
-            raise HTTPException(
-                status_code=500,
-                detail="Thư viện 'pypdf' chưa được cài đặt ở môi trường Python. Hãy chạy pip install pypdf."
-            )
-            
-        reader = pypdf.PdfReader(temp_path)
-        total_pages = len(reader.pages)
+        import fitz  # PyMuPDF
+        import easyocr
         
-        try:
-            import fitz  # PyMuPDF
-            doc_fitz = fitz.open(temp_path)
-            print("[PDF-OCR] Đã mở tài liệu bằng PyMuPDF để chuẩn bị OCR dự phòng.")
-        except ImportError:
-            print("[PDF-OCR] Thư viện PyMuPDF (fitz) chưa được cài đặt. Không thể chạy OCR.")
-
+        doc_fitz = fitz.open(temp_path)
+        total_pages = len(doc_fitz)
+        print(f"[PDF-OCR] Processing PDF: {file.filename} with {total_pages} pages using PyMuPDF.")
+        
         reader_ocr = None
         
         for page_idx in range(total_pages):
-            page = reader.pages[page_idx]
-            text = (page.extract_text() or "").strip()
+            page = doc_fitz[page_idx]
+            text = (page.get_text() or "").strip()
             
-            # If text is empty or very short, try OCR
-            if len(text) < 20 and doc_fitz is not None:
+            # If extracted text is very short, run local EasyOCR
+            if len(text) < 50:
                 try:
-                    try:
-                        import easyocr
-                    except ImportError:
-                        print("[PDF-OCR] Thư viện easyocr chưa được cài đặt. Bỏ qua OCR.")
-                        continue
-                    
-                    print(f"[PDF-OCR] Trang {page_idx + 1}/{total_pages} thiếu text kỹ thuật số. Bắt đầu OCR bằng EasyOCR...")
-                    
-                    fitz_page = doc_fitz[page_idx]
-                    pix = fitz_page.get_pixmap()
+                    print(f"[PDF-OCR] Page {page_idx + 1}/{total_pages} has short digital text. Running EasyOCR locally...")
+                    matrix = fitz.Matrix(1.5, 1.5)
+                    pix = page.get_pixmap(matrix=matrix)
                     img_data = pix.tobytes("png")
                     
                     if reader_ocr is None:
-                        print("[PDF-OCR] Khởi tạo mô hình EasyOCR cho ngôn ngữ ['ja', 'en'] (Lần đầu sẽ tốn vài giây)...")
                         ocr_model_dir = os.environ.get(
                             "EASYOCR_MODULE_PATH",
                             os.path.join(os.path.dirname(__file__), ".cache", "easyocr"),
@@ -682,20 +662,19 @@ async def process_pdf(
                             gpu=False,
                             model_storage_directory=ocr_model_dir,
                         )
-                        
-                    ocr_result = reader_ocr.readtext(img_data, detail=0)
-                    text = " ".join(ocr_result)
-                    print(f"[PDF-OCR] Hoàn thành OCR trang {page_idx + 1}. Kích thước text: {len(text)} ký tự.")
+                    
+                    ocr_res = reader_ocr.readtext(img_data, detail=0)
+                    if ocr_res:
+                        text = " ".join(ocr_res)
+                    print(f"[PDF-OCR] Local EasyOCR completed for page {page_idx + 1}. Extracted: {len(text)} chars.")
                 except Exception as ocr_err:
-                    print(f"[PDF-OCR] Lỗi chạy OCR cho trang {page_idx + 1}: {ocr_err}")
+                    print(f"[PDF-OCR] EasyOCR error on page {page_idx + 1}: {ocr_err}")
             
             pages_data.append({
                 "page_number": page_idx + 1,
                 "text": text
             })
             
-    except HTTPException:
-        raise
     except Exception as e:
         print(f"[PDF-OCR] Lỗi phân tích tài liệu PDF: {e}")
         raise HTTPException(status_code=500, detail=f"Lỗi phân tích cú pháp PDF: {str(e)}")

@@ -46,7 +46,7 @@ LOCAL_LLM_MODEL: str = os.getenv("LOCAL_LLM_MODEL", "qwen3-1.7b")
 GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
 OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
 
-LLM_MODEL: str = os.getenv("LLM_MODEL", "gemini-2.5-flash")
+LLM_MODEL: str = os.getenv("LLM_MODEL", "gemini-flash-latest")
 OPENROUTER_MODEL: str = os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
 MAX_TOKENS: int = int(os.getenv("LLM_MAX_TOKENS", "256"))
 

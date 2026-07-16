@@ -306,7 +306,13 @@ class GrammarController {
       if (centerId) filter.centerId = centerId;
       if (level) filter.level = level;
       if (search) {
-        filter.title = { $regex: search, $options: "i" };
+        const searchRegex = { $regex: search, $options: "i" };
+        filter.$or = [
+          { title: searchRegex },
+          { meaningVi: searchRegex },
+          { explanation: searchRegex },
+          { structure: searchRegex }
+        ];
       }
 
       // Phase 6: date filter
@@ -506,21 +512,34 @@ class GrammarController {
 
   // ─── TEACHER: AUTO GENERATE MCQ QUESTIONS BY GEMINI ─────────────────────────
   async teacherGenerateQuestions(req: Request, res: Response) {
+    console.log("[TeacherQuizGen] Bắt đầu gọi sinh câu hỏi. Request body:", {
+      grammarCardIdsCount: req.body.grammarCardIds?.length,
+      grammarCardIds: req.body.grammarCardIds,
+      numQuestions: req.body.numQuestions
+    });
+
     try {
       const { grammarCardIds, numQuestions } = req.body;
 
       if (!grammarCardIds || !Array.isArray(grammarCardIds) || grammarCardIds.length === 0) {
+        console.warn("[TeacherQuizGen] Kiểm tra hợp lệ thất bại: grammarCardIds rỗng hoặc không đúng định dạng.");
         return res.status(400).json({ success: false, message: "Vui lòng chọn ít nhất một cấu trúc ngữ pháp." });
       }
 
+      console.log("[TeacherQuizGen] Đang gửi yêu cầu sinh câu hỏi tới GrammarService...");
       const questions = await GrammarService.generateQuizQuestions(
         grammarCardIds,
         numQuestions || 5
       );
 
+      console.log(`[TeacherQuizGen] Sinh câu hỏi thành công! Số lượng câu hỏi tạo ra: ${questions?.length}`);
       res.json({ success: true, questions });
     } catch (error: any) {
-      console.error("[TeacherQuizGen] error:", error);
+      console.error("[TeacherQuizGen] Xảy ra lỗi khi sinh câu hỏi:", {
+        message: error.message,
+        stack: error.stack,
+        details: error
+      });
       res.status(500).json({ success: false, message: error.message || "Lỗi AI sinh câu hỏi trắc nghiệm." });
     }
   }
@@ -545,6 +564,7 @@ class GrammarController {
           answer2: q.answer2,
           answer3: q.answer3,
           answer4: q.answer4,
+          explanation: q.explanation,
           grammarCardId: q.grammarCardId ? new mongoose.Types.ObjectId(q.grammarCardId) : undefined
         });
         createdQuestionIds.push(questionDoc._id as mongoose.Types.ObjectId);
