@@ -111,12 +111,14 @@ class SpeakingProvider extends ChangeNotifier {
     try {
       final res = await _apiService.sendSpeakingText(token, text);
       final reply = res['reply'] as String? ?? '';
-      _lastAudioUrl = res['audio_url'] as String?;
+      final audioUrl = res['audio_url'] as String?;
+      _lastAudioUrl = audioUrl;
       if (reply.isNotEmpty) {
         _messages.add(SpeakingMessage(
           id: 'coach-${DateTime.now().millisecondsSinceEpoch}',
           sender: 'coach',
           text: reply,
+          audioUrl: audioUrl,
         ));
       }
       _level = res['level'] as String? ?? _level;
@@ -140,7 +142,8 @@ class SpeakingProvider extends ChangeNotifier {
       final res = await _apiService.sendSpeakingAudio(token, audioBase64);
       final transcript = res['transcript'] as String? ?? '';
       final reply = res['reply'] as String? ?? '';
-      _lastAudioUrl = res['audio_url'] as String?;
+      final audioUrl = res['audio_url'] as String?;
+      _lastAudioUrl = audioUrl;
       if (transcript.isNotEmpty) {
         _messages.add(SpeakingMessage(
           id: 'user-${DateTime.now().millisecondsSinceEpoch}',
@@ -153,6 +156,7 @@ class SpeakingProvider extends ChangeNotifier {
           id: 'coach-${DateTime.now().millisecondsSinceEpoch}',
           sender: 'coach',
           text: reply,
+          audioUrl: audioUrl,
         ));
       }
       _level = res['level'] as String? ?? _level;
@@ -162,6 +166,35 @@ class SpeakingProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<String?> fetchTranslation(String token, String messageId, String text) async {
+    final idx = _messages.indexWhere((m) => m.id == messageId);
+    if (idx == -1) return null;
+    final current = _messages[idx];
+    if (current.translation != null && current.translation!.isNotEmpty) {
+      return current.translation;
+    }
+
+    if (_offline) {
+      const fallback = '(Chế độ offline — không thể dịch)';
+      _messages[idx] = current.copyWith(translation: fallback);
+      notifyListeners();
+      return fallback;
+    }
+
+    try {
+      final res = await _apiService.translateSpeakingText(token, text);
+      final translation = (res['translation'] as String? ?? '').trim();
+      if (translation.isNotEmpty) {
+        _messages[idx] = current.copyWith(translation: translation);
+        notifyListeners();
+        return translation;
+      }
+    } catch (_) {
+      // ignore — leave translation empty, UI will show nothing
+    }
+    return null;
   }
 
   void _addMockReply() {

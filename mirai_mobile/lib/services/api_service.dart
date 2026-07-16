@@ -847,6 +847,23 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> translateSpeakingText(
+    String token,
+    String text,
+  ) async {
+    final Uri url = Uri.parse('${ApiConfig.baseUrl}/api/speaking/translate');
+    try {
+      final response = await _client.post(
+        url,
+        headers: _getHeaders(token: token),
+        body: jsonEncode({'text': text}),
+      );
+      return _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   // Fetch student quiz history
   Future<List<QuizAttempt>> fetchStudentQuizHistory(
     String token,

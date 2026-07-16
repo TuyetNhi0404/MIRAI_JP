@@ -154,7 +154,9 @@ class _TeacherClassDetailScreenState extends State<TeacherClassDetailScreen> {
                                 ),
                               ],
                             ),
-                            child: ListTile(
+                            child: Material(
+                              color: Colors.transparent,
+                              child: ListTile(
                               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                               leading: CircleAvatar(
                                 backgroundColor: _redLight,
@@ -165,6 +167,7 @@ class _TeacherClassDetailScreenState extends State<TeacherClassDetailScreen> {
                               ),
                               title: Text(student.name, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
                               subtitle: Text(student.email, style: TextStyle(color: Colors.black.withOpacity(0.5), fontSize: 12)),
+                              ),
                             ),
                           );
                         },

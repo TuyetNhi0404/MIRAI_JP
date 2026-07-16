@@ -413,6 +413,10 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  bool _requiresFullScreen(String view) {
+    return view == 'speaking' || view == 'vocab';
+  }
+
   Widget _buildActiveViewContent(dynamic user) {
     switch (_currentView) {
       case 'dashboard':
@@ -516,11 +520,8 @@ class _HomeScreenState extends State<HomeScreen> {
           onShowClassRoster: _showClassRoster,
         );
       case 'speaking':
-        return const PlaceholderView(
-          icon: Icons.record_voice_over_outlined,
-          title: 'Luyện nói AI',
-          description:
-              'Phòng luyện nói tiếng Nhật giao tiếp tương tác với công nghệ chấm điểm AI thông minh của MIRAI sắp được ra mắt.',
+        return SpeakingPracticeScreen(
+          onBack: () => setState(() => _currentView = 'dashboard'),
         );
       case 'vocab':
         return const VocabFlashcardView();
@@ -671,13 +672,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 ? const Center(
                     child: CircularProgressIndicator(color: Color(0xFFB90000)),
                   )
-                : SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20.0,
-                      vertical: 16.0,
-                    ),
-                    child: _buildActiveViewContent(user),
-                  ),
+                : _requiresFullScreen(_currentView)
+                    ? Positioned.fill(child: _buildActiveViewContent(user))
+                    : SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20.0,
+                          vertical: 16.0,
+                        ),
+                        child: _buildActiveViewContent(user),
+                      ),
           ),
         ],
       ),

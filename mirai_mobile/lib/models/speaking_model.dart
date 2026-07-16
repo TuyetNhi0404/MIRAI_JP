@@ -6,6 +6,8 @@ class SpeakingMessage {
   final bool partial;
   final String? turnId;
   final String? analysis;
+  final String? translation;
+  final String? audioUrl;
   final DateTime timestamp;
 
   SpeakingMessage({
@@ -16,6 +18,8 @@ class SpeakingMessage {
     this.partial = false,
     this.turnId,
     this.analysis,
+    this.translation,
+    this.audioUrl,
     DateTime? timestamp,
   }) : timestamp = timestamp ?? DateTime.now();
 
@@ -28,12 +32,40 @@ class SpeakingMessage {
       partial: json['partial'] as bool? ?? false,
       turnId: json['turnId'] as String?,
       analysis: json['analysis'] as String?,
+      translation: json['translation'] as String?,
+      audioUrl: json['audio_url'] as String?,
       timestamp: json['timestamp'] != null ? DateTime.tryParse(json['timestamp'] as String) ?? DateTime.now() : DateTime.now(),
     );
   }
 
   bool get isUser => sender == 'user';
   bool get isCoach => sender == 'coach' || sender == 'assistant' || sender == 'ai';
+
+  SpeakingMessage copyWith({
+    String? id,
+    String? sender,
+    String? text,
+    String? japanese,
+    bool? partial,
+    String? turnId,
+    String? analysis,
+    String? translation,
+    String? audioUrl,
+    DateTime? timestamp,
+  }) {
+    return SpeakingMessage(
+      id: id ?? this.id,
+      sender: sender ?? this.sender,
+      text: text ?? this.text,
+      japanese: japanese ?? this.japanese,
+      partial: partial ?? this.partial,
+      turnId: turnId ?? this.turnId,
+      analysis: analysis ?? this.analysis,
+      translation: translation ?? this.translation,
+      audioUrl: audioUrl ?? this.audioUrl,
+      timestamp: timestamp ?? this.timestamp,
+    );
+  }
 }
 
 class GrammarNote {
