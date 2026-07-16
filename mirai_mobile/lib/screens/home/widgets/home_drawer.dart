@@ -7,6 +7,9 @@ import '../../ocr_vocab_screen.dart';
 import '../../student_statistics_screen.dart';
 import '../../kana_practice_screen.dart';
 import '../../student_quizzes_screen.dart';
+import '../../teacher/teacher_my_classes_screen.dart';
+import '../../teacher/teacher_schedule_screen.dart';
+import '../../student/listening/listening_list_screen.dart';
 
 class HomeDrawer extends StatelessWidget {
   final UserModel? user;
@@ -242,16 +245,40 @@ class HomeDrawer extends StatelessWidget {
 
                   // Teacher options
                   if (role == 'teacher') ...[
+                    _buildNavigationDrawerItem(
+                      context: context,
+                      icon: Icons.class_outlined,
+                      title: 'Lớp của tôi',
+                      targetScreen: const TeacherMyClassesScreen(),
+                    ),
+                    _buildNavigationDrawerItem(
+                      context: context,
+                      icon: Icons.calendar_month_outlined,
+                      title: 'Lịch giảng dạy',
+                      targetScreen: const TeacherScheduleScreen(),
+                    ),
                     _buildDrawerItem(
                       context: context,
                       icon: Icons.school_outlined,
                       title: 'Quản lý lớp học',
                       viewId: 'roster',
                     ),
+                    _buildNavigationDrawerItem(
+                      context: context,
+                      icon: Icons.headphones_outlined,
+                      title: 'Luyện nghe',
+                      targetScreen: const ListeningListScreen(),
+                    ),
                   ],
 
                   // Student options
                   if (role == 'student' || role == 'user') ...[
+                    _buildNavigationDrawerItem(
+                      context: context,
+                      icon: Icons.headphones_outlined,
+                      title: 'Luyện nghe',
+                      targetScreen: const ListeningListScreen(),
+                    ),
                     _buildDrawerItem(
                       context: context,
                       icon: Icons.record_voice_over_outlined,
