@@ -1,13 +1,25 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import ScheduleGrid from "../../components/scheduleStudent/ScheduleGrid";
 import dayjs from "dayjs";
 import axiosInstance from "../../api/axiosInstance";
 import { AxiosError } from "axios";
 import type { SessionItem, AttendanceStatus } from "../../types/schedule.types";
-import { ChevronLeft, ChevronRight, Calendar, Info, LogIn } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
+  Info,
+  LogIn,
+  BookOpen,
+  CheckCircle2,
+  Hourglass,
+  CalendarDays,
+} from "lucide-react";
 import { PageLayout } from "../../components/ui/PageLayout";
 import { BaseCard } from "../../components/ui/BaseCard";
 import { EmptyState } from "../../components/ui/EmptyState";
+import { brandColors } from "../../theme/theme";
+import { LiftCard, MagneticButton, Stagger } from "../../components/ui/MotionPatterns";
 
 interface CourseData {
   _id?: string;
@@ -312,7 +324,7 @@ const StudentSchedulePage: React.FC = () => {
             }
           }
 
-          const sessionName = (sessionObj as any)?.sessionName ?? `Slot ${slotNumber}`;
+          const sessionName = (sessionObj && typeof sessionObj === "object" ? sessionObj.sessionName : null) ?? `Slot ${slotNumber}`;
 
           return {
             calendarId,
@@ -376,26 +388,39 @@ const StudentSchedulePage: React.FC = () => {
   const weekStartString = dayjs(weekStart).format("DD/MM/YYYY");
   const weekEndString = dayjs(weekStart).add(6, "day").format("DD/MM/YYYY");
 
+  const weekStats = useMemo(() => {
+    const today = dayjs().format("YYYY-MM-DD");
+    const sessionsThisWeek = items.filter(
+      (it) => it.date >= dayjs(weekStart).format("YYYY-MM-DD") && it.date <= dayjs(weekStart).add(6, "day").format("YYYY-MM-DD")
+    ).length;
+    const todaySessions = items.filter((it) => it.date === today).length;
+    const attended = items.filter((it) => it.attendance?.status === "present").length;
+    const attendanceRate = items.length > 0 ? Math.round((attended / items.length) * 100) : 0;
+    return { sessionsThisWeek, todaySessions, attendanceRate, totalSessions: items.length };
+  }, [items, weekStart]);
+
   return (
     <PageLayout
       title="Lịch học của tôi"
       subtitle="Xem và theo dõi lịch học, lịch chuyên cần của bạn theo từng tuần"
       extra={
         <div className="flex items-center gap-2">
-          <button
+          <MagneticButton
+            strength={8}
+            className="flex items-center gap-1.5 px-3 py-2 border border-border-color rounded-xl bg-surface-base hover:bg-accent-color hover:border-primary-color text-text-main hover:text-primary-color transition active:scale-95 shrink-0 text-xs font-bold mira-press"
             onClick={goCurrentWeek}
-            className="flex items-center gap-1.5 px-3 py-2 border border-border-color rounded-xl bg-surface-base hover:bg-accent-color hover:border-primary-color text-text-main hover:text-primary-color transition active:scale-95 shrink-0 text-xs font-bold"
             title="Quay lại tuần hiện tại"
           >
             Hôm nay
-          </button>
+          </MagneticButton>
 
-          <button
+          <MagneticButton
+            strength={6}
+            className="p-2 border border-border-color rounded-xl bg-surface-base hover:bg-accent-color hover:border-primary-color text-text-main hover:text-primary-color transition active:scale-95 shrink-0 mira-press"
             onClick={goPrevWeek}
-            className="p-2 border border-border-color rounded-xl bg-surface-base hover:bg-accent-color hover:border-primary-color text-text-main hover:text-primary-color transition active:scale-95 shrink-0"
           >
             <ChevronLeft size={18} />
-          </button>
+          </MagneticButton>
 
           <div className="relative shrink-0">
             <div className="!flex !flex-row !flex-nowrap !items-center gap-2 border border-transparent rounded-xl px-4 py-1.5 bg-primary-color hover:bg-primary-color-hover text-white cursor-pointer transition whitespace-nowrap shadow-sm">
@@ -412,12 +437,13 @@ const StudentSchedulePage: React.FC = () => {
             />
           </div>
 
-          <button
+          <MagneticButton
+            strength={6}
+            className="p-2 border border-border-color rounded-xl bg-surface-base hover:bg-accent-color hover:border-primary-color text-text-main hover:text-primary-color transition active:scale-95 shrink-0 mira-press"
             onClick={goNextWeek}
-            className="p-2 border border-border-color rounded-xl bg-surface-base hover:bg-accent-color hover:border-primary-color text-text-main hover:text-primary-color transition active:scale-95 shrink-0"
           >
             <ChevronRight size={18} />
-          </button>
+          </MagneticButton>
         </div>
       }
     >
@@ -438,6 +464,56 @@ const StudentSchedulePage: React.FC = () => {
           </button>
         </BaseCard>
       )}
+
+      {/* Bento summary: 1 hero card + 3 stat tiles */}
+      <Stagger className="mb-5" delay={0.05}>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mira-stagger">
+          <LiftCard lift={3} className="mira-hover-halo rounded-xl col-span-2 md:col-span-1">
+            <div className="rounded-xl p-4 flex items-center gap-3" style={{ background: brandColors.paper, border: `1px solid ${brandColors.border}` }}>
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${brandColors.red}14`, color: brandColors.red }}>
+                <CalendarDays size={18} />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[11px] uppercase tracking-wider text-text-secondary font-medium">Tuần hiện tại</div>
+                <div className="text-sm font-bold leading-tight text-text-primary">{weekStats.sessionsThisWeek} ca</div>
+              </div>
+            </div>
+          </LiftCard>
+          <LiftCard lift={2} className="mira-hover-halo rounded-xl">
+            <div className="rounded-xl p-4 flex items-center gap-3" style={{ background: brandColors.paper, border: `1px solid ${brandColors.border}` }}>
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: "#3B82F614", color: "#3B82F6" }}>
+                <BookOpen size={18} />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[11px] uppercase tracking-wider text-text-secondary font-medium">Hôm nay</div>
+                <div className="text-sm font-bold leading-tight text-text-primary">{weekStats.todaySessions} ca</div>
+              </div>
+            </div>
+          </LiftCard>
+          <LiftCard lift={2} className="mira-hover-halo rounded-xl">
+            <div className="rounded-xl p-4 flex items-center gap-3" style={{ background: brandColors.paper, border: `1px solid ${brandColors.border}` }}>
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: "#10B98114", color: "#10B98114" }}>
+                <CheckCircle2 size={18} style={{ color: "#10B981" }} />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[11px] uppercase tracking-wider text-text-secondary font-medium">Tỷ lệ chuyên cần</div>
+                <div className="text-sm font-bold leading-tight text-text-primary">{weekStats.attendanceRate}%</div>
+              </div>
+            </div>
+          </LiftCard>
+          <LiftCard lift={2} className="mira-hover-halo rounded-xl">
+            <div className="rounded-xl p-4 flex items-center gap-3" style={{ background: brandColors.paper, border: `1px solid ${brandColors.border}` }}>
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: "#F59E0B14", color: "#F59E0B" }}>
+                <Hourglass size={18} />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[11px] uppercase tracking-wider text-text-secondary font-medium">Tổng ca đã học</div>
+                <div className="text-sm font-bold leading-tight text-text-primary">{weekStats.totalSessions}</div>
+              </div>
+            </div>
+          </LiftCard>
+        </div>
+      </Stagger>
 
       {loading ? (
         <BaseCard className="flex items-center justify-center min-h-[420px]">

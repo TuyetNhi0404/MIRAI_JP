@@ -2,6 +2,8 @@
 import { spawn, execSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, delimiter } from "node:path";
+import readline from "node:readline/promises";
+import { stdin as input, stdout as output } from "node:process";
 import { ensureSpeakingPython } from "./lib/ensure-python.mjs";
 import { ensureUv } from "./lib/uv.mjs";
 import { ensureSpeakingEnvFile } from "./lib/ensure-env.mjs";
@@ -67,6 +69,32 @@ function resolveModelPath() {
     console.log("[speaking] Có nhiều file GGUF trong models/. Đặt LOCAL_LLM_MODEL_PATH để chọn model cần chạy.");
   }
   return null;
+}
+
+async function askUseLocalLLM(autoDetected) {
+  if (runtimeEnv.SKIP_LOCAL_LLM_PROMPT === "1") {
+    return autoDetected;
+  }
+  if (!input.isTTY) {
+    console.log("[speaking] Không có TTY — dùng auto-detect.");
+    return autoDetected;
+  }
+
+  const rl = readline.createInterface({ input, output });
+  try {
+    const detectedLabel = autoDetected
+      ? "đã tìm thấy GGUF local"
+      : "chưa có GGUF local";
+    const answer = await rl.question(
+      `\n[speaking] ${detectedLabel}. Dùng local LLM fallback? (Y/N, mặc định ${autoDetected ? "Y" : "N"}): `,
+    );
+    const trimmed = answer.trim().toLowerCase();
+    if (trimmed === "y" || trimmed === "yes") return true;
+    if (trimmed === "n" || trimmed === "no") return false;
+    return autoDetected;
+  } finally {
+    rl.close();
+  }
 }
 
 // --- Bootstrap prebuilt CPU runtimes (no CMake, compiler, or Git required). ---
@@ -182,9 +210,17 @@ async function main() {
   // Put exactly one fine-tuned .gguf in models/, or set LOCAL_LLM_MODEL_PATH.
   const llamaBin = await ensurePrebuiltLlama();
   const modelPath = resolveModelPath();
-  const useLocalLLM = Boolean(modelPath && existsSync(modelPath));
+  const autoDetected = Boolean(modelPath && existsSync(modelPath));
+  const useLocalLLM = await askUseLocalLLM(autoDetected);
   const localModelName = modelPath ? basename(modelPath, ".gguf") : "mirai-jp";
-  if (useLocalLLM) {
+  if (!autoDetected && useLocalLLM) {
+    console.log(`[speaking] Người dùng đã chọn dùng local LLM nhưng không tìm thấy GGUF.`);
+    console.log("           Chép model fine-tune vào models/ hoặc đặt LOCAL_LLM_MODEL_PATH.");
+    console.log("           Fallback qua Gemini / OpenRouter.\n");
+  } else if (autoDetected && !useLocalLLM) {
+    console.log(`[speaking] Người dùng đã chọn KHÔNG dùng local LLM. Bỏ qua llama-server.`);
+    console.log("           LLM sẽ chạy qua Gemini / OpenRouter fallback.\n");
+  } else if (useLocalLLM) {
     console.log(`[speaking] Dùng GGUF local: ${modelPath}`);
   } else {
     console.log("[speaking] Chưa có GGUF local. Bỏ qua llama-server và dùng Gemini/OpenRouter fallback.");
@@ -192,8 +228,8 @@ async function main() {
   }
 
   // 1. llama-server
-  if (useLocalLLM) {
-    if (existsSync(llamaBin) && modelPath) {
+  if (useLocalLLM && modelPath && existsSync(modelPath)) {
+    if (existsSync(llamaBin)) {
       console.log("\n[speaking] Starting llama-server :8080 ...");
       const llama = spawn(llamaBin, [
         "-m", modelPath,

@@ -390,6 +390,7 @@ const SpeakingPracticePage = () => {
             {messages.map((msg) => (
               <Box
                 key={msg.id}
+                className="mira-msg-enter"
                 sx={{
                   display: "flex",
                   flexDirection: "column",

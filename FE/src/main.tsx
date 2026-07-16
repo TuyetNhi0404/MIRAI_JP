@@ -8,6 +8,7 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import { antdThemeConfig, brandColors } from "./theme/theme";
 import { globalStyles } from "./theme/animations";
 import "./styles/globals.css";
+import "./styles/mira-motion.css";
 import AppRouter from "./AppRouter";
 
 setStore(store);

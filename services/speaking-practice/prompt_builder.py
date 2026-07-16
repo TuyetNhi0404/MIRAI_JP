@@ -422,6 +422,13 @@ def build_messages(
     system += "\n\nREMEMBER: You are Mirai (ミライ). Your name is Mirai. When asked your name, say わたしのなまえは ミライ です。"
     messages.append({"role": "system", "content": system})
 
+    user_turns = sum(1 for item in session.history if item["role"] == "user")
+    if user_turns >= 4 and user_turns % 6 == 0:
+        messages.append({
+            "role": "system",
+            "content": "AVOID suggesting new topics from the curated list more than once every ~6 user turns. Use them only when the user is stuck, asks to change topic, or the conversation dead-ends.",
+        })
+
     if teaching_plan:
         messages.append({
             "role": "system",

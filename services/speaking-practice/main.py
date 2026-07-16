@@ -19,6 +19,7 @@ from dialogue_manager import evaluate_turn
 from grammar_agent import analyze_grammar
 from composer import compose_response
 from sanitizer import is_injection
+from topics import suggest_topics
 
 
 _ROMAJI_VOCABULARY = {
@@ -246,13 +247,27 @@ async def translate(
     return {"translation": translation.strip()}
 
 
+class TopicSuggestRequest(BaseModel):
+    level: str = "N5"
+    count: int = 5
+
+
+@app.post("/topics/suggest")
+async def topics_suggest(
+    req: TopicSuggestRequest,
+    user_id: str = Depends(get_current_user_id),
+):
+    del user_id  # auth gate only
+    topics = suggest_topics(req.level, count=req.count)
+    return {"level": req.level.upper(), "topics": topics}
+
+
 @app.post("/transcribe")
 async def transcribe(
     audio_file: UploadFile = File(...),
     user_id: str = Depends(get_current_user_id),
 ):
     session = get_session(user_id)
-    print(f"[TURN] /reply transcript={req.transcript[:240]!r}")
     file_extension = (audio_file.filename or "webm").split(".")[-1]
     input_audio_path = os.path.join("uploads", f"{uuid.uuid4().hex}.{file_extension}")
 

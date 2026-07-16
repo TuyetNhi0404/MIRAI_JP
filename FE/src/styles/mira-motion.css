@@ -1,0 +1,173 @@
+/**
+ * MIRAI micro-motion tokens (taste-skill §3.B).
+ * Override globals nếu conflict; vars đổi brand red sang ink + cream linh hoạt.
+ */
+:root {
+  /* Easing curves */
+  --mira-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --mira-ease-snap: cubic-bezier(0.4, 0, 0.2, 1);
+  --mira-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --mira-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* Durations */
+  --mira-dur-fast: 120ms;
+  --mira-dur-base: 200ms;
+  --mira-dur-smooth: 320ms;
+  --mira-dur-slow: 520ms;
+
+  /* Shadows */
+  --mira-shadow-rest: 0 1px 2px 0 rgba(31, 34, 56, 0.04), 0 1px 6px -1px rgba(31, 34, 56, 0.02);
+  --mira-shadow-lift: 0 6px 18px -6px rgba(185, 0, 0, 0.18), 0 2px 6px -2px rgba(31, 34, 56, 0.06);
+  --mira-shadow-float: 0 14px 32px -12px rgba(185, 0, 0, 0.22), 0 4px 10px -4px rgba(31, 34, 56, 0.08);
+  --mira-shadow-press: 0 1px 2px 0 rgba(31, 34, 56, 0.08);
+
+  /* Brand surface tones (taste-skill §4.2: max 1 accent, decrees outside palette) */
+  --mira-accent-rgb: 185, 0, 0;
+  --mira-ink-rgb: 31, 34, 56;
+}
+
+/* hairline-hover halo around interactive surface */
+.mira-hover-halo {
+  position: relative;
+}
+.mira-hover-halo::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    135deg,
+    rgba(var(--mira-accent-rgb), 0.18),
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity var(--mira-dur-smooth) var(--mira-ease-out);
+}
+.mira-hover-halo:hover::after {
+  opacity: 1;
+}
+
+.mira-press:active {
+  transform: translateY(1px) scale(0.99);
+  transition: transform var(--mira-dur-fast) var(--mira-ease-snap);
+}
+
+.mira-lift {
+  transition: transform var(--mira-dur-smooth) var(--mira-ease-out),
+    box-shadow var(--mira-dur-smooth) var(--mira-ease-out);
+}
+.mira-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--mira-shadow-lift);
+}
+
+/* shimmer used on loading skeletons */
+@keyframes mira-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+.mira-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(31, 34, 56, 0.04) 25%,
+    rgba(31, 34, 56, 0.09) 50%,
+    rgba(31, 34, 56, 0.04) 75%
+  );
+  background-size: 200% 100%;
+  animation: mira-shimmer 1.6s linear infinite;
+}
+
+/* Subtle pulse for live indicators (recording mic, presence) */
+@keyframes mira-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(var(--mira-accent-rgb), 0.4);
+  }
+  60% {
+    box-shadow: 0 0 0 12px rgba(var(--mira-accent-rgb), 0);
+  }
+}
+.mira-pulse {
+  animation: mira-pulse 1.6s var(--mira-ease-in-out) infinite;
+}
+
+/* Soft fade-in for any element. Apply class once mounted */
+@keyframes mira-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.mira-rise {
+  animation: mira-rise var(--mira-dur-smooth) var(--mira-ease-out) both;
+}
+
+/* Stagger children using nth-child for quick bake-in */
+.mira-stagger > * {
+  animation: mira-rise var(--mira-dur-smooth) var(--mira-ease-out) both;
+}
+.mira-stagger > *:nth-child(1) { animation-delay: 40ms; }
+.mira-stagger > *:nth-child(2) { animation-delay: 90ms; }
+.mira-stagger > *:nth-child(3) { animation-delay: 140ms; }
+.mira-stagger > *:nth-child(4) { animation-delay: 190ms; }
+.mira-stagger > *:nth-child(5) { animation-delay: 240ms; }
+.mira-stagger > *:nth-child(6) { animation-delay: 290ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mira-rise,
+  .mira-stagger > *,
+  .mira-pulse,
+  .mira-shimmer {
+    animation: none !important;
+  }
+  .mira-lift,
+  .mira-hover-halo::after {
+    transition: none !important;
+  }
+}
+
+/* Chat message fade-in-up */
+@keyframes mira-msg-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mira-msg-enter {
+  animation: mira-msg-enter 350ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Orb glow pulse */
+@keyframes mira-orb-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(185, 0, 0, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 32px rgba(185, 0, 0, 0.28);
+  }
+}
+
+.mira-orb-glow {
+  animation: mira-orb-glow 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mira-msg-enter,
+  .mira-orb-glow {
+    animation: none;
+  }
+}

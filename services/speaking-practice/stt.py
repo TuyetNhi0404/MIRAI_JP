@@ -25,7 +25,7 @@ def _convert_to_wav(src: str) -> str:
     proc = subprocess.run(
         ["ffmpeg", "-y", "-i", src, "-ar", "16000", "-ac", "1", "-sample_fmt", "s16", dst],
         capture_output=True,
-        timeout=30,
+        timeout=120,
     )
     if proc.returncode != 0:
         raise RuntimeError(f"ffmpeg conversion failed: {proc.stderr.decode().strip()}")
@@ -49,7 +49,7 @@ def _run_whisper(audio_path: str) -> tuple[str, float]:
         ],
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=60,
     )
     if proc.returncode != 0:
         raise RuntimeError(f"whisper.cpp error: {proc.stderr.strip()}")

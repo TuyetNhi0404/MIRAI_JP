@@ -65,6 +65,9 @@ def _normalize_review(data: dict[str, Any], fallback_original: str) -> dict[str,
     corrected = str(data.get("corrected") or original).strip()
     explanation_vi = str(data.get("explanation_vi") or "").strip()
 
+    if severity == "minor":
+        corrected = original
+
     return {
         "original": original,
         "corrected": corrected,

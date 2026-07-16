@@ -1,8 +1,9 @@
-import { Box, Chip, CircularProgress, Typography } from "@mui/material";
+import { Box, Chip, CircularProgress, Tooltip, Typography } from "@mui/material";
 import { Sparkles } from "lucide-react";
 import type { CoachReview } from "./types";
 import { SEVERITY_LABEL } from "./speakingUtils";
 import { sp } from "./speakingPracticeTheme";
+import { useMessageTranslation } from "./useMessageTranslation";
 
 const BRAND = sp.brand;
 
@@ -18,6 +19,49 @@ const SEVERITY_PALETTE: Record<CoachReview["severity"], { color: string; bg: str
   should_fix: { color: "#D97706", bg: "#FEF3C7", label: "Nên sửa" },
   minor: { color: "#16A34A", bg: "#DCFCE7", label: "Tốt rồi" },
 };
+
+function TranslatableSuggestion({ text }: { text: string }) {
+  const { translation, loading, error, fetchTranslation, translatable } =
+    useMessageTranslation(text);
+
+  const title = !translatable
+    ? null
+    : loading
+      ? "Đang dịch..."
+      : error
+        ? error
+        : translation
+          ? translation
+          : "Di chuột để xem nghĩa tiếng Việt";
+
+  return (
+    <Tooltip
+      title={title}
+      arrow
+      placement="top"
+      enterDelay={200}
+      onOpen={() => void fetchTranslation()}
+      slotProps={{
+        tooltip: { sx: { maxWidth: 320, fontSize: "0.85rem", lineHeight: 1.55 } },
+      }}
+    >
+      <Box
+        component="span"
+        sx={{
+          cursor: translatable ? "help" : "default",
+          fontFamily: '"Noto Sans JP", sans-serif',
+          fontWeight: 600,
+          color: sp.text,
+          lineHeight: 1.5,
+          fontSize: "0.85rem",
+          borderBottom: translatable ? `1px dotted ${sp.hairline}` : "none",
+        }}
+      >
+        {text}
+      </Box>
+    </Tooltip>
+  );
+}
 
 export function CoachSuggestionBubble({
   loading,
@@ -92,18 +136,15 @@ export function CoachSuggestionBubble({
         />
       </Box>
 
-      <Typography
-        variant="body2"
-        sx={{
-          fontFamily: '"Noto Sans JP", sans-serif',
-          fontWeight: 600,
-          color: sp.text,
-          lineHeight: 1.5,
-          fontSize: "0.85rem",
-        }}
-      >
-        {corrected}
+      <Typography variant="body2" sx={{ m: 0 }}>
+        <TranslatableSuggestion text={corrected} />
       </Typography>
+
+      {original && original !== corrected && (
+        <Typography variant="caption" display="block" sx={{ mt: 0.5, color: sp.textFaint, fontSize: "0.7rem", textDecoration: "line-through" }}>
+          <TranslatableSuggestion text={original} />
+        </Typography>
+      )}
 
       {review.explanation_vi && (
         <Typography
