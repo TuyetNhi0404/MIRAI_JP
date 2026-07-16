@@ -60,6 +60,11 @@ class _SpeakingPracticeScreenState extends State<SpeakingPracticeScreen>
       duration: const Duration(milliseconds: 1500),
     )..repeat(reverse: true);
 
+    _audioPlayer.onPlayerError.listen((error) {
+      debugPrint('AudioPlayer error: $error');
+      if (mounted) _showError('Lỗi phát âm thanh');
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) => _startSession());
   }
 
@@ -124,8 +129,11 @@ class _SpeakingPracticeScreenState extends State<SpeakingPracticeScreen>
     if (audioUrl.isEmpty) return;
     try {
       final base = ApiConfig.baseUrl;
-      await _audioPlayer.play(UrlSource('$base$audioUrl'));
-    } catch (_) {}
+      await _audioPlayer.play(UrlSource('$base/api/speaking$audioUrl'));
+    } catch (e) {
+      debugPrint('Audio playback error: $e');
+      _showError('Không thể phát âm thanh');
+    }
   }
 
   Future<void> _stopAndSend() async {
