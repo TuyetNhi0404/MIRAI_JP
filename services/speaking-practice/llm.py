@@ -9,7 +9,7 @@ GEMINI_API_KEY        – Gemini API key        (primary)
 OPENROUTER_API_KEY    – OpenRouter key        (fallback)
 LOCAL_LLM_URL         – llama.cpp server URL  (default: http://local-llm:11434 | final fallback)
 LOCAL_LLM_MODEL       – local model name      (default: qwen3-1.7b)
-LLM_MODEL             – Gemini model          (default: gemini-2.5-flash)
+LLM_MODEL             – Gemini model          (default: gemini-3.5-flash)
 OPENROUTER_MODEL      – fallback model        (default: openai/gpt-4o-mini)
 LLM_MAX_TOKENS        – max output tokens     (default: 256)
 """
@@ -48,7 +48,7 @@ OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
 # When false (default): Gemini first, then OpenRouter. Local is never used.
 USE_LOCAL_LLM: bool = os.getenv("USE_LOCAL_LLM", "false").lower() in {"1", "true", "yes"}
 
-LLM_MODEL: str = os.getenv("LLM_MODEL", "gemini-flash-latest")
+LLM_MODEL: str = os.getenv("LLM_MODEL", "gemini-3.5-flash")
 OPENROUTER_MODEL: str = os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
 MAX_TOKENS: int = int(os.getenv("LLM_MAX_TOKENS", "256"))
 

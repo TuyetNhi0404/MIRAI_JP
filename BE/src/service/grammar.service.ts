@@ -16,8 +16,8 @@ export interface OcrResponse {
 // Setup Gemini API client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 const embeddingModel = genAI.getGenerativeModel({ model: "gemini-embedding-001" });
-// gemini-flash-latest: có free tier, tự động map tới stable flash model phù hợp nhất
-const flashModel = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+// gemini-3.5-flash: fix cứng model, không dùng alias tự động
+const flashModel = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
 
 // ─── Phase 1: Performance constants ─────────────────────────────────────────
 const EMBED_BATCH_SIZE = 100;          // batch size cho batchEmbedContents (tiết kiệm quota)
@@ -216,7 +216,7 @@ async function callGeminiWithRetry(
 
   // ─── FALLBACK TO OPENROUTER ────────────────────────────────────────────────
   const openRouterKey = process.env.OPENROUTER_API_KEY;
-  const openRouterModel = process.env.OPENROUTER_MODEL || "google/gemini-2.5-flash";
+  const openRouterModel = process.env.OPENROUTER_MODEL || "google/gemini-3.5-flash";
 
   if (openRouterKey) {
     console.warn(`[GrammarService] Lỗi Gemini kéo dài. Đang kích hoạt Fallback OpenRouter (${openRouterModel})...`);

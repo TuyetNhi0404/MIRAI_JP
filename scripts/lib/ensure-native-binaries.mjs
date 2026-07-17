@@ -38,7 +38,8 @@ async function download(url, dest) {
   await pipeline(response.body, createWriteStream(dest));
 }
 
-export async function ensureDownload({ url, destination, label }) {
+export async function ensureDownload({ url, destination, label, skipIfExists = false }) {
+  if (skipIfExists && existsSync(destination)) return destination;
   if (existsSync(destination)) return destination;
   console.log(`[speaking] Tải ${label} ...`);
   mkdirSync(dirname(destination), { recursive: true });

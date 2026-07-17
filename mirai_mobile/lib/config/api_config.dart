@@ -16,4 +16,17 @@ class ApiConfig {
   static const String googleLoginEndpoint = '/api/auth/google';
   static const String logoutEndpoint = '/api/auth/logout';
   static const String refreshTokenEndpoint = '/api/auth/refresh-token';
+
+  // The mobile app reaches the speaking service WebSocket directly on its own
+  // port (8000). The BE HTTP proxy at /api/speaking is only used for the
+  // request/response endpoints; connecting the WS through that proxy proved
+  // unreliable for upgrade forwarding, so we talk to the speaking service
+  // directly (it authenticates via the internal key + x-user-id).
+  static String get speakingWsUrl {
+    final host = baseUrl.replaceFirst(RegExp(r'^https?://'), '');
+    final bareHost = host.contains(':') ? host.split(':').first : host;
+    return 'ws://$bareHost:8000/ws';
+  }
+
+  static const String speakingInternalKey = 'mirai-speaking-dev-key';
 }

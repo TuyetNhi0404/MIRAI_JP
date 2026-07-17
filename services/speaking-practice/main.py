@@ -1,4 +1,5 @@
 from fastapi import Depends, FastAPI, File, UploadFile, Form, WebSocket, HTTPException
+from starlette.websockets import WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 import shutil
@@ -20,6 +21,7 @@ from sanitizer import is_injection, sanitize_transcript
 from topics import suggest_topics
 from vocabulary import vocabulary_answer, vocabulary_result
 from stream_handler import handle_stream
+from ws_push import registry as ws_registry
 
 
 def _derive_text_confidence(grammar_feedback: dict) -> float:
@@ -128,6 +130,7 @@ async def conversation(
                 "transcript": "",
                 "reply": "すみません、聞き取れませんでした。もう一度お願いします！",
                 "audio_url": "",
+                "pending": False,
                 "level": session.level,
                 "score": session.score,
             }
@@ -140,13 +143,53 @@ async def conversation(
         if answer:
             return vocabulary_result(transcript, answer, session)
 
+        # Show the transcript to the client immediately; run the (slow) LLM +
+        # grammar + TTS pipeline in the background and push the reply over the
+        # user's WebSocket connection when it is ready.
         session = update_score(session, confidence)
+        store_session(user_id, session)
 
+        asyncio.create_task(
+            _process_turn_background(
+                user_id=user_id,
+                transcript=transcript,
+                confidence=confidence,
+                level=session.level,
+                t_start=t_start,
+            )
+        )
+
+        return {
+            "transcript": transcript,
+            "reply": None,
+            "audio_url": None,
+            "pending": True,
+            "level": session.level,
+            "score": session.score,
+        }
+    finally:
+        if os.path.exists(input_path):
+            try:
+                os.remove(input_path)
+            except Exception:
+                pass
+
+
+async def _process_turn_background(
+    user_id: str,
+    transcript: str,
+    confidence: float,
+    level: str,
+    t_start: float,
+) -> None:
+    """Run LLM + grammar + TTS off the request path and push the result via WS."""
+    try:
+        session = get_session(user_id)
         t_llm = time.time()
         reply, grammar_feedback = await asyncio.to_thread(
             get_reply_and_grammar,
             transcript,
-            session.level,
+            level,
             history=[h["text"] for h in session.history[-6:] if h["role"] == "user"],
         )
         print(f"[ORCH] LLM+Grammar: {time.time() - t_llm:.2f}s sev={grammar_feedback.get('severity')} reply={reply[:240]!r}")
@@ -162,13 +205,24 @@ async def conversation(
 
         result = compose_response(transcript, reply, audio_url, session, grammar_feedback, plan)
         print(f"[ORCH] Total turn: {time.time() - t_start:.2f}s transcript={transcript[:240]!r}")
-        return result
-    finally:
-        if os.path.exists(input_path):
-            try:
-                os.remove(input_path)
-            except Exception:
-                pass
+
+        # Push to the connected client (mobile uses WS; FE web can poll too).
+        pushed = await ws_registry.push(user_id, {"type": "reply", **result})
+        if not pushed:
+            print(f"[ORCH] No WS connection for {user_id}; reply dropped (client should poll /reply).")
+    except Exception as exc:
+        print(f"[ORCH] Background turn failed for {user_id}: {exc}")
+        await ws_registry.push(
+            user_id,
+            {
+                "type": "reply",
+                "transcript": transcript,
+                "reply": "すみません、少し問題が起きました。もう一度お願いします。",
+                "audio_url": None,
+                "level": level,
+                "score": confidence,
+            },
+        )
 
 
 @app.post("/transcribe")
@@ -276,6 +330,29 @@ async def websocket_stream(websocket: WebSocket):
     user_id = await authenticate_websocket(websocket)
     await websocket.accept()
     await handle_stream(websocket, user_id)
+
+
+@app.websocket("/ws")
+async def websocket_push(websocket: WebSocket):
+    """Event-based push channel: the client connects here, then calls the HTTP
+    /conversation endpoint. The transcript is returned by HTTP immediately, and
+    the finished coach reply is pushed back through this socket as a
+    {"type": "reply", ...} message."""
+    user_id = await authenticate_websocket(websocket)
+    await websocket.accept()
+    await ws_registry.connect(user_id, websocket)
+    print(f"[WS /ws] client connected user_id={user_id!r}")
+    try:
+        # Keep the connection open. We don't expect client messages; just wait
+        # until the client disconnects so we can clean up the registry.
+        while True:
+            await websocket.receive()
+    except WebSocketDisconnect:
+        print(f"[WS /ws] client disconnected user_id={user_id!r}")
+    except Exception as e:
+        print(f"[WS /ws] closed user_id={user_id!r}: {e}")
+    finally:
+        await ws_registry.disconnect(user_id)
 
 
 # ── Session reset ────────────────────────────────────────────

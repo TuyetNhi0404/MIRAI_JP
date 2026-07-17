@@ -62,6 +62,12 @@ class _SpeakingPracticeScreenState extends State<SpeakingPracticeScreen>
     )..repeat(reverse: true);
 
     WidgetsBinding.instance.addPostFrameCallback((_) => _startSession());
+
+    // Auto-play coach replies pushed over the WebSocket (transcript shows first,
+    // audio plays as soon as the LLM+TTS turn finishes).
+    context.read<SpeakingProvider>().onCoachReply = (audioUrl) {
+      if (mounted) _playAudio(audioUrl);
+    };
   }
 
   @override
@@ -160,10 +166,6 @@ class _SpeakingPracticeScreenState extends State<SpeakingPracticeScreen>
       final token = context.read<AuthProvider>().accessToken;
       if (token != null) {
         await context.read<SpeakingProvider>().sendAudio(token, b64);
-        final p = context.read<SpeakingProvider>();
-        if (p.lastAudioUrl != null && p.lastAudioUrl!.isNotEmpty) {
-          await _playAudio(p.lastAudioUrl!);
-        }
         _scrollToBottom();
       }
     } catch (e) {
@@ -248,6 +250,7 @@ class _SpeakingPracticeScreenState extends State<SpeakingPracticeScreen>
             child: const Icon(Icons.arrow_back_ios_rounded, size: 16, color: AppColors.ink),
           ),
           onPressed: () {
+            context.read<SpeakingProvider>().closeSocket();
             if (widget.onBack != null) {
               widget.onBack!();
             } else if (Navigator.of(context).canPop()) {
@@ -868,7 +871,7 @@ class _MessageBubbleState extends State<_MessageBubble>
   }
 
   Widget _buildBubble(SpeakingMessage msg, bool isUser) {
-    final showTranslate = msg.isCoach && !_translating && _showTranslation && msg.translation != null && msg.translation!.isNotEmpty;
+    final showTranslate = !_translating && _showTranslation && msg.translation != null && msg.translation!.isNotEmpty;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -904,8 +907,8 @@ class _MessageBubbleState extends State<_MessageBubble>
               crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
                 GestureDetector(
-                  onTap: msg.isCoach ? _toggleTranslation : null,
-                  onLongPress: msg.isCoach ? _toggleTranslation : null,
+                  onTap: msg.text.isNotEmpty && !msg.partial ? _toggleTranslation : null,
+                  onLongPress: msg.text.isNotEmpty && !msg.partial ? _toggleTranslation : null,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
@@ -923,7 +926,7 @@ class _MessageBubbleState extends State<_MessageBubble>
                           offset: Offset(0, isUser ? 4 : 2),
                         ),
                       ],
-                      border: msg.isCoach && _showTranslation
+                      border: showTranslate
                           ? Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 1.5)
                           : null,
                     ),
@@ -933,14 +936,41 @@ class _MessageBubbleState extends State<_MessageBubble>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          msg.text,
-                          style: TextStyle(
-                            color: isUser ? Colors.white : AppColors.ink,
-                            fontSize: 14,
-                            height: 1.4,
+                        if (msg.partial) ...[
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SizedBox(
+                                width: 12,
+                                height: 12,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: isUser ? Colors.white.withValues(alpha: 0.8) : AppColors.primary,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  msg.text.isEmpty ? 'Đang transcribe…' : msg.text,
+                                  style: TextStyle(
+                                    color: isUser ? Colors.white.withValues(alpha: 0.85) : AppColors.textTertiary,
+                                    fontSize: 14,
+                                    height: 1.4,
+                                    fontStyle: msg.text.isEmpty ? FontStyle.normal : FontStyle.italic,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
+                        ] else
+                          Text(
+                            msg.text,
+                            style: TextStyle(
+                              color: isUser ? Colors.white : AppColors.ink,
+                              fontSize: 14,
+                              height: 1.4,
+                            ),
+                          ),
                         if (msg.japanese != null && msg.japanese!.isNotEmpty) ...[
                           const SizedBox(height: 6),
                           Container(

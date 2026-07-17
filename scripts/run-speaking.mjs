@@ -34,8 +34,12 @@ const speakingEnv = readDotEnv(join(speakingDir, ".env"));
 const runtimeEnv = { ...speakingEnv, ...process.env };
 
 const NATIVE_DIR = join(root, ".mirai", "native");
-const WHISPER_MODEL_SIZE = runtimeEnv.WHISPER_MODEL_SIZE || "medium";
-const WHISPER_MODEL = join(root, ".mirai", "models", `ggml-${WHISPER_MODEL_SIZE}.bin`);
+const WHISPER_MODEL_SIZE = runtimeEnv.WHISPER_MODEL_SIZE || "small";
+// Honor an explicit WHISPER_MODEL path from .env (e.g. a pre-downloaded model)
+// instead of always computing one under .mirai/models.
+const WHISPER_MODEL = runtimeEnv.WHISPER_MODEL && existsSync(runtimeEnv.WHISPER_MODEL)
+  ? runtimeEnv.WHISPER_MODEL
+  : join(root, ".mirai", "models", `ggml-${WHISPER_MODEL_SIZE}.bin`);
 const LLAMA_GPU_LAYERS = runtimeEnv.LLAMA_GPU_LAYERS || "0";
 const WHISPER_SERVER_PORT = runtimeEnv.WHISPER_SERVER_PORT || "8082";
 
@@ -104,6 +108,7 @@ async function ensurePrebuiltWhisper() {
     url: `https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-${WHISPER_MODEL_SIZE}.bin?download=true`,
     destination: WHISPER_MODEL,
     label: `Whisper model ggml-${WHISPER_MODEL_SIZE}`,
+    skipIfExists: true,
   });
   const whisperServer = await ensureReleaseBinary({
     repo: "ggml-org/whisper.cpp",
@@ -186,7 +191,7 @@ async function main() {
   }
 
   // 2. Keep Whisper loaded between requests (persistent server). `-ng` prevents it
-  // from competing with the Android emulator's GPU. Default model is medium for a
+  // from competing with the Android emulator's GPU. Default model is small for a
   // good speed/accuracy balance on CPU; override with WHISPER_MODEL_SIZE.
   if (existsSync(whisperServer)) {
     console.log(`[speaking] Starting persistent Whisper :${WHISPER_SERVER_PORT} ...`);

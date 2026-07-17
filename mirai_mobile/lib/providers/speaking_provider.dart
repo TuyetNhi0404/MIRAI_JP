@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:audioplayers/audioplayers.dart';
 import '../models/speaking_model.dart';
 import '../services/api_service.dart';
+import '../services/speaking_socket.dart';
 
 class SpeakingProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  SpeakingSocket? _socket;
 
   bool _enabled = false;
   List<SpeakingMessage> _messages = [];
@@ -54,6 +58,7 @@ class SpeakingProvider extends ChangeNotifier {
       _messages = [
         SpeakingMessage(id: 'welcome', sender: 'coach', text: 'こんにちは！準備はいいですか？始めましょう！'),
       ];
+      ensureSocket(token);
     } catch (e) {
       _offline = true;
       _enabled = true;
@@ -83,6 +88,7 @@ class SpeakingProvider extends ChangeNotifier {
     _messages = [
       SpeakingMessage(id: 'welcome', sender: 'coach', text: 'こんにちは！準備はいいですか？始めましょう！'),
     ];
+    if (!_offline) ensureSocket(token);
     notifyListeners();
   }
 
@@ -136,6 +142,15 @@ class SpeakingProvider extends ChangeNotifier {
       return;
     }
     _isLoading = true;
+
+    // Show a temporary "transcribing" bubble while the server processes audio.
+    final userId = 'user-${DateTime.now().millisecondsSinceEpoch}';
+    _messages.add(SpeakingMessage(
+      id: userId,
+      sender: 'user',
+      text: '',
+      partial: true,
+    ));
     notifyListeners();
 
     try {
@@ -144,28 +159,91 @@ class SpeakingProvider extends ChangeNotifier {
       final reply = res['reply'] as String? ?? '';
       final audioUrl = res['audio_url'] as String?;
       _lastAudioUrl = audioUrl;
-      if (transcript.isNotEmpty) {
-        _messages.add(SpeakingMessage(
-          id: 'user-${DateTime.now().millisecondsSinceEpoch}',
-          sender: 'user',
-          text: transcript,
-        ));
-      }
-      if (reply.isNotEmpty) {
-        _messages.add(SpeakingMessage(
-          id: 'coach-${DateTime.now().millisecondsSinceEpoch}',
-          sender: 'coach',
-          text: reply,
-          audioUrl: audioUrl,
-        ));
-      }
       _level = res['level'] as String? ?? _level;
+
+      final idx = _messages.indexWhere((m) => m.id == userId);
+      if (idx != -1) {
+        if (transcript.isNotEmpty) {
+          _messages[idx] = _messages[idx].copyWith(text: transcript, partial: false);
+          _autoTranslate(token, _messages[idx]);
+        } else {
+          _messages.removeAt(idx);
+        }
+      }
+
+      // If the server returned the reply inline (no WS client connected), show it.
+      // Otherwise the reply will arrive later through the /ws push channel.
+      if (reply.isNotEmpty) {
+        _appendCoachReply(token, reply, audioUrl);
+      }
     } catch (e) {
+      final idx = _messages.indexWhere((m) => m.id == userId);
+      if (idx != -1) _messages.removeAt(idx);
       _addMockReply();
     } finally {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  void _appendCoachReply(String token, String reply, String? audioUrl) {
+    if (reply.isEmpty) return;
+    _messages.add(SpeakingMessage(
+      id: 'coach-${DateTime.now().millisecondsSinceEpoch}',
+      sender: 'coach',
+      text: reply,
+      audioUrl: audioUrl,
+    ));
+    _autoTranslate(token, _messages.last);
+    notifyListeners();
+    // Let the UI handle playback so it reuses the screen's tested audio pipeline.
+    if (audioUrl != null && audioUrl.isNotEmpty) {
+      onCoachReply?.call(audioUrl);
+    }
+  }
+
+  /// Called when a new coach reply (with audio) arrives, so the screen can
+  /// auto-play it using its own (verified) audio pipeline.
+  void Function(String audioUrl)? onCoachReply;
+
+  void _handleWsMessage(Map<String, dynamic> message) {
+    if (message['type'] != 'reply') return;
+    final reply = (message['reply'] as String?) ?? '';
+    final audioUrl = message['audio_url'] as String?;
+    final token = _currentToken;
+    if (token != null) _appendCoachReply(token, reply, audioUrl);
+  }
+
+  String? _currentToken;
+
+  void ensureSocket(String token) {
+    _currentToken = token;
+    if (_socket != null) return;
+    _socket = SpeakingSocket(
+      token: token,
+      onMessage: _handleWsMessage,
+      onClose: () {
+        // attempt a single reconnect on drop
+        _socket = null;
+        if (_currentToken != null && !_offline) {
+          Future.delayed(const Duration(seconds: 2), () => ensureSocket(_currentToken!));
+        }
+      },
+    );
+    _socket!.connect();
+  }
+
+  void closeSocket() {
+    _socket?.close();
+    _socket = null;
+  }
+
+  @override
+  void dispose() {
+    _socket?.close();
+    _socket = null;
+    _audioPlayer.dispose();
+    super.dispose();
   }
 
   Future<String?> fetchTranslation(String token, String messageId, String text) async {
@@ -195,6 +273,36 @@ class SpeakingProvider extends ChangeNotifier {
       // ignore — leave translation empty, UI will show nothing
     }
     return null;
+  }
+
+  // Auto-translate a message in the background (mirrors FE's prefetch behaviour
+  // so the user's own Japanese is also shown with a Vietnamese translation).
+  Future<void> _autoTranslate(String token, SpeakingMessage msg) async {
+    final text = msg.text;
+    if (text.isEmpty) return;
+    if (!RegExp(r'[\u3040-\u30FF\u4E00-\u9FFF]').hasMatch(text)) return;
+    if (_offline) {
+      _translateInPlace(msg.id, '(Chế độ offline — không thể dịch)');
+      return;
+    }
+    try {
+      final res = await _apiService.translateSpeakingText(token, text);
+      final translation = (res['translation'] as String? ?? '').trim();
+      if (translation.isNotEmpty) {
+        _translateInPlace(msg.id, translation);
+      }
+    } catch (_) {
+      // ignore — translation is optional, user can tap to retry
+    }
+  }
+
+  void _translateInPlace(String messageId, String translation) {
+    final idx = _messages.indexWhere((m) => m.id == messageId);
+    if (idx == -1) return;
+    final current = _messages[idx];
+    if (current.translation != null && current.translation!.isNotEmpty) return;
+    _messages[idx] = current.copyWith(translation: translation);
+    notifyListeners();
   }
 
   void _addMockReply() {
