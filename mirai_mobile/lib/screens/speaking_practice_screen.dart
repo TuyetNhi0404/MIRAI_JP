@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:record/record.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:http/http.dart' as http;
 import '../models/speaking_model.dart';
 import '../providers/speaking_provider.dart';
 import '../providers/auth_provider.dart';
@@ -59,11 +60,6 @@ class _SpeakingPracticeScreenState extends State<SpeakingPracticeScreen>
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     )..repeat(reverse: true);
-
-    _audioPlayer.onPlayerError.listen((error) {
-      debugPrint('AudioPlayer error: $error');
-      if (mounted) _showError('Lỗi phát âm thanh');
-    });
 
     WidgetsBinding.instance.addPostFrameCallback((_) => _startSession());
   }
@@ -129,7 +125,21 @@ class _SpeakingPracticeScreenState extends State<SpeakingPracticeScreen>
     if (audioUrl.isEmpty) return;
     try {
       final base = ApiConfig.baseUrl;
-      await _audioPlayer.play(UrlSource('$base/api/speaking$audioUrl'));
+      final token = context.read<AuthProvider>().accessToken;
+      final uri = Uri.parse('$base/api/speaking$audioUrl');
+      final response = await http.get(
+        uri,
+        headers: token != null ? {'Authorization': 'Bearer $token'} : null,
+      );
+      if (response.statusCode != 200) {
+        debugPrint('Audio download failed: ${response.statusCode}');
+        _showError('Không thể tải âm thanh');
+        return;
+      }
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/mirai_audio_${audioUrl.hashCode}.mp3');
+      await file.writeAsBytes(response.bodyBytes);
+      await _audioPlayer.play(DeviceFileSource(file.path));
     } catch (e) {
       debugPrint('Audio playback error: $e');
       _showError('Không thể phát âm thanh');
@@ -175,9 +185,9 @@ class _SpeakingPracticeScreenState extends State<SpeakingPracticeScreen>
           return;
         }
         final dir = await getTemporaryDirectory();
-        final path = '${dir.path}/mirai_recording.m4a';
+        final path = '${dir.path}/mirai_recording.wav';
         await _audioRecorder
-            .start(const RecordConfig(encoder: AudioEncoder.aacLc), path: path)
+            .start(const RecordConfig(encoder: AudioEncoder.wav), path: path)
             .timeout(const Duration(seconds: 5));
         if (mounted) {
           _micController.repeat(reverse: true);

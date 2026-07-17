@@ -836,7 +836,7 @@ class ApiService {
           http.MultipartFile.fromBytes(
             'audio_file',
             bytes,
-            filename: 'audio.webm',
+            filename: 'audio.wav',
           ),
         );
       final streamed = await request.send();
