@@ -1,11 +1,17 @@
-export type CoachSeverity = "minor" | "should_fix" | "important";
+export type CoachSeverity = "none" | "minor" | "should_fix" | "important";
 
-export type CoachReview = {
-  original: string;
-  corrected: string;
-  explanation_vi: string;
+/** Grammar feedback shape returned inline by the speaking service
+ *  (single LLM call: reply + grammar). */
+export type GrammarFeedback = {
   severity: CoachSeverity;
-  tags: string[];
+  grammar: string;
+  explanation: string;
+  suggestion: string;
+};
+
+/** Coach review is now derived from GrammarFeedback + the user transcript. */
+export type CoachReview = GrammarFeedback & {
+  original: string;
 };
 
 export type GrammarNoteStatus = "new" | "reviewing" | "mastered";

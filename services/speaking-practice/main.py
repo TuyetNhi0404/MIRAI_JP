@@ -1,99 +1,25 @@
-from fastapi import Depends, FastAPI, File, UploadFile, Form, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import Depends, FastAPI, File, UploadFile, Form, WebSocket, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 import shutil
 import os
 import uuid
 import asyncio
+import time
 from pathlib import Path
 from pydantic import BaseModel
 
 from auth import authenticate_websocket, get_current_user_id
 from sessions import get_session, store_session, reset_user_session, update_score, add_history
 from stt import transcribe_audio
-from llm import get_ai_reply, get_ai_reply_stream, translate_japanese_to_vietnamese
-from coach import review_user_turn
+from llm import get_reply_and_grammar, translate_japanese_to_vietnamese
 from tts import generate_audio
-from prompt_builder import build_messages
 from dialogue_manager import evaluate_turn
-from grammar_agent import analyze_grammar
 from composer import compose_response
-from sanitizer import is_injection
+from sanitizer import is_injection, sanitize_transcript
 from topics import suggest_topics
-
-
-_ROMAJI_VOCABULARY = {
-    "ongaku": ("音楽", "おんがく", "âm nhạc"),
-    "ryouri": ("料理", "りょうり", "nấu ăn / ẩm thực"),
-    "ryokou": ("旅行", "りょこう", "du lịch"),
-    "eiga": ("映画", "えいが", "phim ảnh"),
-    "shumi": ("趣味", "しゅみ", "sở thích"),
-}
-
-_JAPANESE_VOCABULARY = {
-    "音楽": "âm nhạc",
-    "おんがく": "âm nhạc",
-    "料理": "nấu ăn / ẩm thực",
-    "りょうり": "nấu ăn / ẩm thực",
-    "旅行": "du lịch",
-    "りょこう": "du lịch",
-    "映画": "phim ảnh",
-    "えいが": "phim ảnh",
-    "趣味": "sở thích",
-    "しゅみ": "sở thích",
-}
-
-_VIETNAMESE_TO_JAPANESE = {
-    "rạp chiếu phim": "映画館（えいがかん）です。",
-    "rap chieu phim": "映画館（えいがかん）です。",
-    "phim ảnh": "映画（えいが）です。",
-    "phim anh": "映画（えいが）です。",
-    "âm nhạc": "音楽（おんがく）です。",
-    "am nhac": "音楽（おんがく）です。",
-    "du lịch": "旅行（りょこう）です。",
-    "du lich": "旅行（りょこう）です。",
-    "sở thích": "趣味（しゅみ）です。",
-    "so thich": "趣味（しゅみ）です。",
-}
-
-
-def _vocabulary_answer(transcript: str) -> str | None:
-    """Answer common Vietnamese/Japanese vocabulary questions without an LLM."""
-    lowered = (transcript or "").lower()
-    asks_japanese_word = any(marker in lowered for marker in (
-        "tiếng nhật", "tieng nhat", "trong tiếng nhật", "trong tieng nhat",
-        "nhật gọi là gì", "nhat goi la gi", "tiếng nhật gọi", "tieng nhat goi",
-    ))
-    if asks_japanese_word:
-        for vietnamese, japanese_answer in _VIETNAMESE_TO_JAPANESE.items():
-            if vietnamese in lowered:
-                return japanese_answer
-
-    asks_vietnamese_meaning = any(marker in lowered for marker in (
-        "nghĩa là gì", "nghia la gi", "có nghĩa gì", "co nghia gi",
-        "dịch là gì", "dich la gi",
-    ))
-    asks_in_japanese = "ベトナム語" in transcript or "越南語" in transcript
-    if not asks_vietnamese_meaning and not asks_in_japanese:
-        return None
-
-    if asks_in_japanese:
-        for japanese, vietnamese in _JAPANESE_VOCABULARY.items():
-            if japanese in transcript:
-                return vietnamese.capitalize() + "."
-
-    for romaji, (kanji, reading, vietnamese) in _ROMAJI_VOCABULARY.items():
-        if romaji in lowered:
-            return f"{romaji}（{kanji}・{reading}）nghĩa là {vietnamese}."
-    return None
-
-
-def _vocabulary_result(transcript: str, answer: str, session):
-    session = add_history(session, transcript, answer)
-    store_session(session.user_id, session)
-    audio_url = generate_audio(answer)
-    print(f"[TURN] vocabulary transcript={transcript[:240]!r} reply={answer[:240]!r} audio={bool(audio_url)}")
-    return compose_response(transcript, answer, audio_url, session)
+from vocabulary import vocabulary_answer, vocabulary_result
+from stream_handler import handle_stream
 
 
 def _derive_text_confidence(grammar_feedback: dict) -> float:
@@ -108,9 +34,11 @@ def _derive_text_confidence(grammar_feedback: dict) -> float:
         return 0.35
     return 0.70
 
+
 app = FastAPI(title="MIRAI Speaking Practice")
 
 _app_started = False
+
 
 @app.on_event("startup")
 async def warmup():
@@ -119,6 +47,26 @@ async def warmup():
         return
     _app_started = True
     print("[speaking] Service started")
+
+    async def _cleanup_old_audio():
+        while True:
+            try:
+                now = time.time()
+                uploads = Path("uploads")
+                if uploads.exists():
+                    for f in uploads.iterdir():
+                        if f.is_file() and f.suffix in (".mp3", ".wav", ".json", ".webm"):
+                            if now - f.stat().st_mtime > 3600:
+                                try:
+                                    f.unlink()
+                                except Exception:
+                                    pass
+            except Exception:
+                pass
+            await asyncio.sleep(600)
+
+    asyncio.create_task(_cleanup_old_audio())
+
 
 _allowed_origins = os.getenv(
     "ALLOWED_ORIGINS",
@@ -134,7 +82,24 @@ app.add_middleware(
 )
 
 os.makedirs("uploads", exist_ok=True)
-# ----------------- ENDPOINTS -----------------
+
+
+# ── Models ───────────────────────────────────────────────────
+
+class ReplyRequest(BaseModel):
+    transcript: str
+
+
+class TranslateRequest(BaseModel):
+    text: str
+
+
+class TopicSuggestRequest(BaseModel):
+    level: str = "N5"
+    count: int = 5
+
+
+# ── Endpoints ────────────────────────────────────────────────
 
 @app.get("/health")
 async def health():
@@ -146,120 +111,64 @@ async def conversation(
     audio_file: UploadFile = File(...),
     user_id: str = Depends(get_current_user_id),
 ):
-    import time
     t_start = time.time()
     session = get_session(user_id)
+    ext = (audio_file.filename or "webm").split(".")[-1]
+    input_path = os.path.join("uploads", f"{uuid.uuid4().hex}.{ext}")
 
-    file_extension = (audio_file.filename or "webm").split(".")[-1]
-    input_audio_path = os.path.join("uploads", f"{uuid.uuid4().hex}.{file_extension}")
+    with open(input_path, "wb") as buf:
+        shutil.copyfileobj(audio_file.file, buf)
 
-    with open(input_audio_path, "wb") as buffer:
-        shutil.copyfileobj(audio_file.file, buffer)
+    try:
+        transcript, confidence = await transcribe_audio(input_path)
+        print(f"[ORCH] STT: {time.time() - t_start:.2f}s confidence={confidence:.2f}")
 
-    t_stt = time.time()
-    transcript, confidence = await transcribe_audio(input_audio_path)
-    print(f"[ORCH] STT: {time.time() - t_stt:.2f}s confidence={confidence:.2f}")
+        if not transcript:
+            return {
+                "transcript": "",
+                "reply": "すみません、聞き取れませんでした。もう一度お願いします！",
+                "audio_url": "",
+                "level": session.level,
+                "score": session.score,
+            }
 
-    if not transcript:
-        return {
-            "transcript": "",
-            "reply": "すみません、聞き取れませんでした。もう一度お願いします！",
-            "audio_url": "",
-            "level": session.level,
-            "score": session.score,
-        }
+        if is_injection(transcript):
+            print(f"[SEC] Injection detected in /conversation, user={user_id}")
+            transcript, _ = sanitize_transcript(transcript)
 
-    if is_injection(transcript):
-        print(f"[SEC] Injection detected in /conversation, user={user_id}")
+        answer = vocabulary_answer(transcript)
+        if answer:
+            return vocabulary_result(transcript, answer, session)
 
-    session = update_score(session, confidence)
+        session = update_score(session, confidence)
 
-    vocabulary_answer = _vocabulary_answer(transcript)
-    if vocabulary_answer:
-        return _vocabulary_result(transcript, vocabulary_answer, session)
+        t_llm = time.time()
+        reply, grammar_feedback = await asyncio.to_thread(
+            get_reply_and_grammar,
+            transcript,
+            session.level,
+            history=[h["text"] for h in session.history[-6:] if h["role"] == "user"],
+        )
+        print(f"[ORCH] LLM+Grammar: {time.time() - t_llm:.2f}s sev={grammar_feedback.get('severity')} reply={reply[:240]!r}")
 
-    t_eval = time.time()
-    grammar_feedback = await asyncio.to_thread(
-        analyze_grammar, transcript, level=session.level,
-        history=[h["text"] for h in session.history[-6:] if h["role"] == "user"],
-    )
-    print(f"[ORCH] Grammar: {time.time() - t_eval:.2f}s sev={grammar_feedback.get('severity')}")
+        updated, plan = evaluate_turn(transcript, confidence, session, grammar_feedback)
+        print(f"[ORCH] Plan goal={plan.get('goal')} diff={plan.get('difficulty')}")
 
-    updated, plan = evaluate_turn(transcript, confidence, session, grammar_feedback)
-    print(f"[ORCH] Plan goal={plan.get('goal')} diff={plan.get('difficulty')}")
+        session = add_history(updated, transcript, reply)
+        store_session(user_id, session)
 
-    messages = build_messages(updated, transcript, teaching_plan=plan)
+        audio_url = await asyncio.to_thread(generate_audio, reply)
+        print(f"[ORCH] TTS: {time.time() - t_llm:.2f}s audio={bool(audio_url)}")
 
-    t_llm = time.time()
-    reply = get_ai_reply(messages)
-    print(f"[ORCH] LLM: {time.time() - t_llm:.2f}s reply={reply[:240]!r}")
-
-    session = add_history(updated, transcript, reply)
-    store_session(user_id, session)
-
-    t_tts = time.time()
-    audio_url = generate_audio(reply)
-    print(f"[ORCH] TTS: {time.time() - t_tts:.2f}s audio={bool(audio_url)}")
-
-    result = compose_response(transcript, reply, audio_url, session, grammar_feedback, plan)
-    print(f"[ORCH] Total turn: {time.time() - t_start:.2f}s transcript={transcript[:240]!r}")
-    return result
-
-class ReplyRequest(BaseModel):
-    transcript: str
-
-
-class TranslateRequest(BaseModel):
-    text: str
-
-
-class ReviewTurnRequest(BaseModel):
-    transcript: str
-    level: str = "N5"
-    history: list[str] | None = None
-
-
-@app.post("/coach/review-turn")
-async def coach_review_turn(
-    req: ReviewTurnRequest,
-    user_id: str = Depends(get_current_user_id),
-):
-    del user_id
-    transcript = (req.transcript or "").strip()
-    if not transcript:
-        raise HTTPException(status_code=400, detail="transcript is required")
-    if len(transcript) > 500:
-        raise HTTPException(status_code=400, detail="transcript too long")
-    level = (req.level or "N5").upper()
-    if level not in ("N5", "N4", "N3", "N2", "N1"):
-        level = "N5"
-    review = review_user_turn(transcript, level=level, history=req.history)
-    return review
-
-
-@app.post("/translate")
-async def translate(
-    req: TranslateRequest,
-    user_id: str = Depends(get_current_user_id),
-):
-    del user_id  # auth gate only
-    translation = translate_japanese_to_vietnamese(req.text)
-    return {"translation": translation.strip()}
-
-
-class TopicSuggestRequest(BaseModel):
-    level: str = "N5"
-    count: int = 5
-
-
-@app.post("/topics/suggest")
-async def topics_suggest(
-    req: TopicSuggestRequest,
-    user_id: str = Depends(get_current_user_id),
-):
-    del user_id  # auth gate only
-    topics = suggest_topics(req.level, count=req.count)
-    return {"level": req.level.upper(), "topics": topics}
+        result = compose_response(transcript, reply, audio_url, session, grammar_feedback, plan)
+        print(f"[ORCH] Total turn: {time.time() - t_start:.2f}s transcript={transcript[:240]!r}")
+        return result
+    finally:
+        if os.path.exists(input_path):
+            try:
+                os.remove(input_path)
+            except Exception:
+                pass
 
 
 @app.post("/transcribe")
@@ -268,15 +177,18 @@ async def transcribe(
     user_id: str = Depends(get_current_user_id),
 ):
     session = get_session(user_id)
-    file_extension = (audio_file.filename or "webm").split(".")[-1]
-    input_audio_path = os.path.join("uploads", f"{uuid.uuid4().hex}.{file_extension}")
+    ext = (audio_file.filename or "webm").split(".")[-1]
+    input_path = os.path.join("uploads", f"{uuid.uuid4().hex}.{ext}")
 
     try:
-        with open(input_audio_path, "wb") as buffer:
-            shutil.copyfileobj(audio_file.file, buffer)
+        with open(input_path, "wb") as buf:
+            shutil.copyfileobj(audio_file.file, buf)
 
-        print(f"[speaking] transcribe user={user_id} file={input_audio_path}")
-        transcript, confidence = await transcribe_audio(input_audio_path)
+        try:
+            transcript, confidence = await transcribe_audio(input_path)
+        except Exception as exc:
+            print(f"[speaking] transcribe audio failed: {exc}")
+            return {"transcript": "", "confidence": 0.0}
 
         if not transcript:
             return {"transcript": "", "confidence": 0.0}
@@ -287,309 +199,86 @@ async def transcribe(
     except Exception as exc:
         print(f"[speaking] transcribe error: {exc}")
         raise
+    finally:
+        if os.path.exists(input_path):
+            try:
+                os.remove(input_path)
+            except Exception:
+                pass
+
 
 @app.post("/reply")
 async def reply(
     req: ReplyRequest,
     user_id: str = Depends(get_current_user_id),
 ):
-    import time
     t_start = time.time()
     session = get_session(user_id)
 
     if is_injection(req.transcript):
         print(f"[SEC] Injection detected in /reply, user={user_id}")
+        req = ReplyRequest(transcript=sanitize_transcript(req.transcript)[0])
 
-    vocabulary_answer = _vocabulary_answer(req.transcript)
-    if vocabulary_answer:
-        return _vocabulary_result(req.transcript, vocabulary_answer, session)
+    answer = vocabulary_answer(req.transcript)
+    if answer:
+        return vocabulary_result(req.transcript, answer, session)
 
-    t_eval = time.time()
-    grammar_feedback = await asyncio.to_thread(
-        analyze_grammar, req.transcript, level=session.level,
+    proxy_confidence = _derive_text_confidence({"severity": "none"})
+
+    t_llm = time.time()
+    reply_text, grammar_feedback = await asyncio.to_thread(
+        get_reply_and_grammar,
+        req.transcript,
+        session.level,
         history=[h["text"] for h in session.history[-6:] if h["role"] == "user"],
     )
-    print(f"[ORCH] Grammar: {time.time() - t_eval:.2f}s sev={grammar_feedback.get('severity')}")
-
-    proxy_confidence = _derive_text_confidence(grammar_feedback)
-    session = update_score(session, proxy_confidence)
+    print(f"[ORCH] LLM+Grammar: {time.time() - t_llm:.2f}s sev={grammar_feedback.get('severity')}")
+    print(f"[LLM REPLY] {reply_text[:240]!r}")
 
     updated, plan = evaluate_turn(req.transcript, proxy_confidence, session, grammar_feedback)
     print(f"[ORCH] Plan goal={plan.get('goal')} diff={plan.get('difficulty')}")
 
-    messages = build_messages(updated, req.transcript, teaching_plan=plan)
-
-    t_llm = time.time()
-    reply_text = get_ai_reply(messages)
-    print(f"[ORCH] LLM: {time.time() - t_llm:.2f}s")
-    print(f"[LLM REPLY] {reply_text[:240]!r}")
-
     session = add_history(updated, req.transcript, reply_text)
     store_session(user_id, session)
 
-    t_tts = time.time()
-    audio_url = generate_audio(reply_text)
-    print(f"[ORCH] TTS: {time.time() - t_tts:.2f}s audio={bool(audio_url)}")
+    audio_url = await asyncio.to_thread(generate_audio, reply_text)
+    print(f"[ORCH] TTS: {time.time() - t_llm:.2f}s audio={bool(audio_url)}")
 
     result = compose_response(req.transcript, reply_text, audio_url, session, grammar_feedback, plan)
     print(f"[ORCH] Total reply: {time.time() - t_start:.2f}s reply={reply_text[:240]!r}")
     return result
 
-# ----------------- WEBSOCKET STREAMING ENDPOINT -----------------
+
+@app.post("/translate")
+async def translate(
+    req: TranslateRequest,
+    user_id: str = Depends(get_current_user_id),
+):
+    del user_id
+    translation = await asyncio.to_thread(translate_japanese_to_vietnamese, req.text)
+    return {"translation": translation.strip()}
+
+
+@app.post("/topics/suggest")
+async def topics_suggest(
+    req: TopicSuggestRequest,
+    user_id: str = Depends(get_current_user_id),
+):
+    del user_id
+    topics = suggest_topics(req.level, count=req.count)
+    return {"level": req.level.upper(), "topics": topics}
+
+
+# ── WebSocket streaming ──────────────────────────────────────
 
 @app.websocket("/stream")
 async def websocket_stream(websocket: WebSocket):
     user_id = await authenticate_websocket(websocket)
-    session = get_session(user_id)
     await websocket.accept()
-    
-    # We will accumulate audio bytes received from the client
-    audio_bytes = bytearray()
-    
-    # Unique file name for the stream
-    stream_id = uuid.uuid4().hex
-    temp_audio_path = os.path.join("uploads", f"stream_{stream_id}.webm")
-    
-    # Progressive STT state (asyncio.Lock protected)
-    stt_lock = asyncio.Lock()
-    stt_in_progress = False
-    stt_last_run_time = 0.0
-    stt_last_audio_len = 0
+    await handle_stream(websocket, user_id)
 
-    async def run_progressive_stt(data_to_transcribe: bytes):
-        temp_prog_path = os.path.join("uploads", f"temp_prog_{uuid.uuid4().hex}.webm")
-        try:
-            with open(temp_prog_path, "wb") as f:
-                f.write(data_to_transcribe)
-            transcript, confidence = await transcribe_audio(temp_prog_path)
-            if transcript.strip():
-                await websocket.send_json({
-                    "type": "transcript_partial",
-                    "text": transcript
-                })
-        except Exception as e:
-            print("Error in progressive STT:", e)
-        finally:
-            async with stt_lock:
-                nonlocal stt_in_progress
-                stt_in_progress = False
-            if os.path.exists(temp_prog_path):
-                try:
-                    os.remove(temp_prog_path)
-                except Exception:
-                    pass
-    
-    try:
-        while True:
-            data = await websocket.receive()
-            
-            if "bytes" in data:
-                audio_bytes.extend(data["bytes"])
-                
-                # Check if we should trigger progressive STT (e.g. every 1.5s, when not running, and when new data > 15KB accumulated)
-                current_time = asyncio.get_event_loop().time()
-                async with stt_lock:
-                    if (current_time - stt_last_run_time > 1.5 and
-                        not stt_in_progress and
-                        len(audio_bytes) - stt_last_audio_len > 15000):
-                        stt_in_progress = True
-                        stt_last_run_time = current_time
-                        stt_last_audio_len = len(audio_bytes)
-                        asyncio.create_task(run_progressive_stt(bytes(audio_bytes)))
-                
-            elif "text" in data:
-                import json
-                try:
-                    message = json.loads(data["text"])
-                    if message.get("type") == "stop_talking":
-                        if len(audio_bytes) == 0:
-                            await websocket.send_json({"type": "error", "message": "No audio received."})
-                            continue
-                            
-                        import time
-                        start_time = time.time()
-                        
-                        # Save audio bytes
-                        with open(temp_audio_path, "wb") as f:
-                            f.write(audio_bytes)
-                            
-                        # 1. STT
-                        await websocket.send_json({"type": "status", "message": "Transcribing..."})
-                        stt_start = time.time()
-                        transcript, confidence = await transcribe_audio(temp_audio_path)
-                        stt_duration = time.time() - stt_start
-                        print(f"[PERF] STT took {stt_duration:.2f}s (confidence: {confidence})")
-                        
-                        if not transcript:
-                            await websocket.send_json({
-                                "type": "transcript",
-                                "text": "",
-                                "reply": "すみません、聞き取れませんでした。もう一度お願いします！"
-                            })
-                            await websocket.send_json({"type": "done"})
-                            audio_bytes = bytearray()
-                            stt_last_audio_len = 0
-                            continue
-                            
-                        await websocket.send_json({"type": "transcript", "text": transcript})
 
-                        if is_injection(transcript):
-                            print(f"[SEC] Injection detected in /stream, user={user_id}")
-
-                        session = update_score(session, confidence)
-                        await websocket.send_json({
-                            "type": "stats",
-                            "level": session.level,
-                            "score": session.score,
-                        })
-
-                        # Streaming mode must follow the same deterministic
-                        # vocabulary-answer path as /reply and /conversation.
-                        vocabulary_answer = _vocabulary_answer(transcript)
-                        if vocabulary_answer:
-                            session = add_history(session, transcript, vocabulary_answer)
-                            store_session(user_id, session)
-                            await websocket.send_json({"type": "ai_token", "text": vocabulary_answer})
-                            audio_url = await asyncio.to_thread(generate_audio, vocabulary_answer)
-                            if audio_url:
-                                audio_path = Path("uploads") / audio_url.replace("/audio/", "")
-                                if audio_path.exists():
-                                    await websocket.send_bytes(audio_path.read_bytes())
-                            await websocket.send_json({"type": "done"})
-                            audio_bytes = bytearray()
-                            stt_last_audio_len = 0
-                            continue
-
-                        grammar_start = time.time()
-                        grammar_feedback = await asyncio.to_thread(
-                            analyze_grammar, transcript, level=session.level,
-                            history=[h["text"] for h in session.history[-6:] if h["role"] == "user"],
-                        )
-                        print(f"[ORCH] Grammar: {time.time() - grammar_start:.2f}s sev={grammar_feedback.get('severity')}")
-
-                        updated, plan = evaluate_turn(transcript, confidence, session, grammar_feedback)
-                        print(f"[ORCH] Plan goal={plan.get('goal')} diff={plan.get('difficulty')}")
-
-                        messages = build_messages(updated, transcript, teaching_plan=plan)
-                        
-                        tts_queue = asyncio.Queue()
-                        
-                        async def tts_worker():
-                            while True:
-                                sentence = await tts_queue.get()
-                                try:
-                                    if sentence is None:
-                                        break
-                                    audio_url = await asyncio.to_thread(generate_audio, sentence)
-                                    if audio_url:
-                                        filename = audio_url.replace("/audio/", "")
-                                        audio_path = Path("uploads") / filename
-                                        if audio_path.exists():
-                                            audio_bytes_out = audio_path.read_bytes()
-                                            try:
-                                                await websocket.send_bytes(audio_bytes_out)
-                                            except Exception as send_err:
-                                                print("TTS worker: websocket closed while sending audio:", send_err)
-                                except Exception as e:
-                                    print("TTS worker: error generating audio:", e)
-                                finally:
-                                    tts_queue.task_done()
-                                
-                        worker_task = asyncio.create_task(tts_worker())
-                        
-                        await websocket.send_json({"type": "status", "message": "Thinking..."})
-                        full_reply = ""
-                        current_sentence = ""
-                        
-                        llm_token_queue = asyncio.Queue()
-                        
-                        current_loop = asyncio.get_running_loop()
-                        def run_llm_sync():
-                            try:
-                                for token in get_ai_reply_stream(messages):
-                                    current_loop.call_soon_threadsafe(llm_token_queue.put_nowait, token)
-                            finally:
-                                current_loop.call_soon_threadsafe(llm_token_queue.put_nowait, None)
-                        
-                        llm_start = time.time()
-                        llm_thread = asyncio.create_task(asyncio.to_thread(run_llm_sync))
-                        
-                        first_token = True
-                        while True:
-                            token = await llm_token_queue.get()
-                            if token is None:
-                                break
-                            
-                            if first_token:
-                                first_token = False
-                                print(f"[PERF] Time to first LLM token: {time.time() - llm_start:.2f}s")
-                                
-                            full_reply += token
-                            current_sentence += token
-                            
-                            try:
-                                await websocket.send_json({"type": "ai_token", "text": token})
-                            except Exception:
-                                break
-                            
-                            split_idx = -1
-                            for idx, char in enumerate(current_sentence):
-                                if char in ["。", "！", "？", "\n", ".", "!", "?"]:
-                                    split_idx = idx
-                                    break
-                            
-                            if split_idx != -1:
-                                sentence_to_speak = current_sentence[:split_idx + 1].strip()
-                                current_sentence = current_sentence[split_idx + 1:]
-                                if len(sentence_to_speak) > 1:
-                                    await tts_queue.put(sentence_to_speak)
-                        
-                        await llm_thread
-                        llm_duration = time.time() - llm_start
-                        print(f"[PERF] LLM Stream complete. Total duration: {llm_duration:.2f}s")
-                        print(f"[LLM REPLY (STREAM)] {full_reply}")
-                        
-                        if current_sentence.strip():
-                            await tts_queue.put(current_sentence.strip())
-                            
-                        await tts_queue.put(None)
-                        try:
-                            await asyncio.wait_for(tts_queue.join(), timeout=30.0)
-                        except asyncio.TimeoutError:
-                            print("Warning: TTS queue join timed out after 30s.")
-                        
-                        worker_task.cancel()
-                        total_duration = time.time() - start_time
-                        print(f"[PERF] Total response roundtrip took {total_duration:.2f}s")
-
-                        session = add_history(updated, transcript, full_reply)
-                        store_session(user_id, session)
-                        
-                        await websocket.send_json({"type": "done"})
-                        
-                        # Reset audio buffer
-                        audio_bytes = bytearray()
-                        stt_last_audio_len = 0
-                        
-                except Exception as e:
-                    print("Error parsing WS message:", e)
-                    await websocket.send_json({"type": "error", "message": str(e)})
-                    
-    except WebSocketDisconnect:
-        print("WebSocket client disconnected.")
-    except RuntimeError as e:
-        if "disconnect" in str(e) or "Cannot call \"receive\"" in str(e):
-            print("WebSocket client disconnected gracefully.")
-        else:
-            print("WebSocket RuntimeError:", e)
-    finally:
-        if os.path.exists(temp_audio_path):
-            try:
-                os.remove(temp_audio_path)
-            except Exception:
-                pass
-
-# ----------------- SESSION RESET -----------------
+# ── Session reset ────────────────────────────────────────────
 
 @app.post("/reset")
 async def reset_session_endpoint(
@@ -597,11 +286,7 @@ async def reset_session_endpoint(
     user_id: str = Depends(get_current_user_id),
 ):
     session = reset_user_session(user_id, level)
-    return {
-        "status": "success",
-        "level": session.level,
-        "score": session.score,
-    }
+    return {"status": "success", "level": session.level, "score": session.score}
 
 
 @app.get("/audio/{filename}")
@@ -609,49 +294,50 @@ async def get_audio(
     filename: str,
     user_id: str = Depends(get_current_user_id),
 ):
+    if "/" in filename or "\\" in filename or ".." in filename:
+        raise HTTPException(status_code=404, detail="File not found")
     file_path = os.path.join("uploads", filename)
-    if os.path.exists(file_path):
-        return FileResponse(file_path, media_type="audio/mpeg")
-    return {"error": "File not found"}
+    if not os.path.isfile(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(file_path, media_type="audio/mpeg")
 
 
-# ----------------- PDF OCR/PARSING ENDPOINT -----------------
+# ── PDF OCR ──────────────────────────────────────────────────
 
 @app.post("/process-pdf")
 async def process_pdf(
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    user_id: str = Depends(get_current_user_id),
 ):
-    # Save uploaded file to temp path
     suffix = os.path.splitext(file.filename or "")[1] or ".pdf"
     temp_path = os.path.join("uploads", f"temp_{uuid.uuid4().hex}{suffix}")
-    
-    with open(temp_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-        
+
+    with open(temp_path, "wb") as buf:
+        shutil.copyfileobj(file.file, buf)
+
     pages_data = []
     doc_fitz = None
     try:
-        import fitz  # PyMuPDF
+        import fitz
         import easyocr
-        
+
         doc_fitz = fitz.open(temp_path)
         total_pages = len(doc_fitz)
         print(f"[PDF-OCR] Processing PDF: {file.filename} with {total_pages} pages using PyMuPDF.")
-        
+
         reader_ocr = None
-        
+
         for page_idx in range(total_pages):
             page = doc_fitz[page_idx]
             text = (page.get_text() or "").strip()
-            
-            # If extracted text is very short, run local EasyOCR
+
             if len(text) < 50:
                 try:
                     print(f"[PDF-OCR] Page {page_idx + 1}/{total_pages} has short digital text. Running EasyOCR locally...")
                     matrix = fitz.Matrix(1.5, 1.5)
                     pix = page.get_pixmap(matrix=matrix)
                     img_data = pix.tobytes("png")
-                    
+
                     if reader_ocr is None:
                         ocr_model_dir = os.environ.get(
                             "EASYOCR_MODULE_PATH",
@@ -662,19 +348,16 @@ async def process_pdf(
                             gpu=False,
                             model_storage_directory=ocr_model_dir,
                         )
-                    
+
                     ocr_res = reader_ocr.readtext(img_data, detail=0)
                     if ocr_res:
                         text = " ".join(ocr_res)
                     print(f"[PDF-OCR] Local EasyOCR completed for page {page_idx + 1}. Extracted: {len(text)} chars.")
                 except Exception as ocr_err:
                     print(f"[PDF-OCR] EasyOCR error on page {page_idx + 1}: {ocr_err}")
-            
-            pages_data.append({
-                "page_number": page_idx + 1,
-                "text": text
-            })
-            
+
+            pages_data.append({"page_number": page_idx + 1, "text": text})
+
     except Exception as e:
         print(f"[PDF-OCR] Lỗi phân tích tài liệu PDF: {e}")
         raise HTTPException(status_code=500, detail=f"Lỗi phân tích cú pháp PDF: {str(e)}")
@@ -689,9 +372,5 @@ async def process_pdf(
                 os.remove(temp_path)
             except Exception:
                 pass
-                
-    return {
-        "filename": file.filename,
-        "total_pages": len(pages_data),
-        "pages": pages_data
-    }
+
+    return {"filename": file.filename, "total_pages": len(pages_data), "pages": pages_data}

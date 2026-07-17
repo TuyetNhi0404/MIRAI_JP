@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass, field, replace
 from typing import Any
 
@@ -35,6 +36,8 @@ class StudentModel:
 
 
 _user_sessions: dict[str, StudentModel] = {}
+_session_access_time: dict[str, float] = {}
+MAX_SESSIONS = 1000
 
 
 def default_session(user_id: str, level: str = "N5") -> StudentModel:
@@ -47,17 +50,32 @@ def default_session(user_id: str, level: str = "N5") -> StudentModel:
 
 def get_session(user_id: str) -> StudentModel:
     if user_id not in _user_sessions:
+        if len(_user_sessions) >= MAX_SESSIONS:
+            _evict_oldest()
         _user_sessions[user_id] = default_session(user_id)
+    _session_access_time[user_id] = time.time()
     return _user_sessions[user_id]
 
 
 def store_session(user_id: str, session: StudentModel) -> None:
+    if user_id not in _user_sessions and len(_user_sessions) >= MAX_SESSIONS:
+        _evict_oldest()
     _user_sessions[user_id] = session
+    _session_access_time[user_id] = time.time()
+
+
+def _evict_oldest() -> None:
+    if not _session_access_time:
+        return
+    oldest_uid = min(_session_access_time, key=_session_access_time.get)  # type: ignore[arg-type]
+    _user_sessions.pop(oldest_uid, None)
+    _session_access_time.pop(oldest_uid, None)
 
 
 def reset_user_session(user_id: str, level: str) -> StudentModel:
     new_session = default_session(user_id, level)
     _user_sessions[user_id] = new_session
+    _session_access_time[user_id] = time.time()
     return new_session
 
 

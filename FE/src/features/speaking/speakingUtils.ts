@@ -1,5 +1,5 @@
 import type { ChatMessage } from "./useSpeakingPractice";
-import type { CoachReview } from "./types";
+import type { CoachReview, GrammarFeedback } from "./types";
 
 /** Tin system ngay sau tin user (ngữ cảnh coach). */
 export function getAiReplyAfterUser(
@@ -15,14 +15,6 @@ export function getAiReplyAfterUser(
     if (messages[i].sender === "user") break;
   }
   return undefined;
-}
-
-/** Lịch sử vài câu gần nhất cho coach API. */
-export function buildCoachHistory(messages: ChatMessage[], limit = 6): string[] {
-  return messages
-    .filter((m) => !m.partial && m.text.trim())
-    .slice(-limit)
-    .map((m) => `${m.sender === "user" ? "User" : "AI"}: ${m.text}`);
 }
 
 /** So khớp đơn giản sau khi luyện nói lại (0–1). */
@@ -47,6 +39,7 @@ export function transcriptSimilarity(a: string, b: string): number {
 }
 
 export const SEVERITY_LABEL: Record<string, string> = {
+  none: "Không lỗi",
   minor: "Nhẹ",
   should_fix: "Nên sửa",
   important: "Quan trọng",
@@ -58,10 +51,21 @@ export const STATUS_LABEL: Record<string, string> = {
   mastered: "Đã thuần",
 };
 
+/** Build a CoachReview from inline grammar feedback + the user transcript. */
+export function reviewFromFeedback(
+  feedback: GrammarFeedback,
+  transcript: string,
+): CoachReview {
+  return {
+    ...feedback,
+    original: transcript.trim(),
+  };
+}
+
 /** Có lỗi ngữ pháp đáng ghi nhận (khác câu gốc, không chỉ lỗi nhẹ). */
 export function hasGrammarIssue(review: CoachReview): boolean {
   const original = review.original.trim();
-  const corrected = review.corrected.trim();
+  const corrected = (review.suggestion ?? "").trim();
   if (!corrected || original === corrected) return false;
   return review.severity === "should_fix" || review.severity === "important";
 }
@@ -77,9 +81,9 @@ export function noteFromReview(
     turnId,
     sessionId,
     original: review.original.trim(),
-    corrected: review.corrected.trim(),
-    explanationVi: review.explanation_vi,
-    tags: review.tags ?? [],
+    corrected: (review.suggestion ?? "").trim(),
+    explanationVi: review.explanation,
+    tags: review.grammar ? [review.grammar] : [],
     severity: review.severity,
     level,
     aiReplyContext,

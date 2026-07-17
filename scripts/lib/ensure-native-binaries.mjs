@@ -61,14 +61,13 @@ function verifySha256(path, digest) {
 }
 
 function extract(archive, destination) {
-  if (isWin) {
-    execFileSync("powershell.exe", [
-      "-NoProfile", "-Command",
-      `Expand-Archive -LiteralPath '${archive.replace(/'/g, "''")}' -DestinationPath '${destination.replace(/'/g, "''")}' -Force`,
-    ], { stdio: "inherit" });
-  } else {
-    execFileSync("tar", [archive.endsWith(".xz") ? "-xJf" : "-xzf", archive, "-C", destination], { stdio: "inherit" });
-  }
+  // Use the built-in `tar` (available on both Windows 10+ and Linux) instead of
+  // PowerShell's Expand-Archive. This avoids ExecutionPolicy prompts and the need
+  // to launch an elevated PowerShell console on Windows.
+  execFileSync("tar", [archive.endsWith(".xz") ? "-xJf" : "-xf", archive, "-C", destination], {
+    stdio: "inherit",
+    shell: isWin,
+  });
 }
 
 async function latestAsset(repo, matches) {

@@ -23,7 +23,6 @@ import re
 import threading
 import time
 from collections import OrderedDict
-from typing import Generator
 
 import httpx
 from dotenv import load_dotenv
@@ -33,8 +32,8 @@ try:
     from google.genai import types
     _GENAI_AVAILABLE = True
 except ImportError:
-    genai = None  # type: ignore[assignment]
-    types = None  # type: ignore[assignment]
+    genai = None
+    types = None
     _GENAI_AVAILABLE = False
 
 load_dotenv()
@@ -45,6 +44,9 @@ LOCAL_LLM_URL: str = os.getenv("LOCAL_LLM_URL", "http://local-llm:11434")
 LOCAL_LLM_MODEL: str = os.getenv("LOCAL_LLM_MODEL", "qwen3-1.7b")
 GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
 OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
+# When true: local llama.cpp is tried first, then OpenRouter, then Gemini.
+# When false (default): Gemini first, then OpenRouter. Local is never used.
+USE_LOCAL_LLM: bool = os.getenv("USE_LOCAL_LLM", "false").lower() in {"1", "true", "yes"}
 
 LLM_MODEL: str = os.getenv("LLM_MODEL", "gemini-flash-latest")
 OPENROUTER_MODEL: str = os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
@@ -58,22 +60,29 @@ OPENROUTER_HEADERS = {
     **({"X-Title": os.getenv("YOUR_SITE_NAME")} if os.getenv("YOUR_SITE_NAME") else {}),
 }
 
+# ── Gemini client singleton ──────────────────────────────────────────────────
+_gemini_client: genai.Client | None = (
+    genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY and _GENAI_AVAILABLE else None
+)
+
+# ── Shared HTTP clients (connection pooling) ─────────────────────────────────
+
+_local_client = httpx.Client(timeout=20.0)
+_openrouter_client = httpx.Client(timeout=15.0)
+
 # ── Sentinel exceptions ──────────────────────────────────────────────────────
 
 class LocalUnavailable(Exception):
-    """Raised when local LLM fails."""
-
+    pass
 
 class GeminiUnavailable(Exception):
-    """Raised when Gemini should not be tried (missing key or rate-limited)."""
-
+    pass
 
 class AllProvidersExhausted(Exception):
-    """Raised when every provider in the chain has failed."""
+    pass
 
 
 def _max_tokens_for(messages: list[dict]) -> int:
-    """Honor a per-turn level cap embedded by the speaking prompt builder."""
     for message in reversed(messages):
         if message.get("role") != "system":
             continue
@@ -86,7 +95,6 @@ def _max_tokens_for(messages: list[dict]) -> int:
 # ── Provider: Local llama.cpp ────────────────────────────────────────────────
 
 def _inject_no_think(messages: list[dict]) -> list[dict]:
-    """Add /no_think prefix to system prompt to disable Qwen3 thinking mode."""
     msgs = [m.copy() for m in messages]
     for m in msgs:
         if m["role"] == "system":
@@ -103,48 +111,11 @@ def _local_reply(messages: list[dict]) -> str:
         "temperature": 0.7,
         "stream": False,
     }
-    with httpx.Client(timeout=30.0) as client:
-        resp = client.post(f"{LOCAL_LLM_URL}/v1/chat/completions", json=payload)
-        resp.raise_for_status()
-        data = resp.json()
-        return data["choices"][0]["message"]["content"]
+    resp = _local_client.post(f"{LOCAL_LLM_URL}/v1/chat/completions", json=payload)
+    resp.raise_for_status()
+    data = resp.json()
+    return data["choices"][0]["message"]["content"]
 
-
-def _local_stream(messages: list[dict]) -> Generator[str, None, None]:
-    payload = {
-        "model": LOCAL_LLM_MODEL,
-        "messages": _inject_no_think(messages),
-        "max_tokens": _max_tokens_for(messages),
-        "temperature": 0.7,
-        "stream": True,
-    }
-    with httpx.Client(timeout=30.0) as http:
-        with http.stream(
-            "POST",
-            f"{LOCAL_LLM_URL}/v1/chat/completions",
-            json=payload,
-        ) as resp:
-            resp.raise_for_status()
-            for line in resp.iter_lines():
-                if not line or not line.startswith("data:"):
-                    continue
-                raw = line[5:].strip()
-                if raw == "[DONE]":
-                    break
-                try:
-                    chunk = json.loads(raw)
-                    delta = chunk["choices"][0]["delta"].get("content", "")
-                    if delta:
-                        yield delta
-                except (json.JSONDecodeError, KeyError):
-                    continue
-
-
-# ── Provider: Gemini ─────────────────────────────────────────────────────────
-
-_gemini_client: genai.Client | None = (
-    genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY and _GENAI_AVAILABLE else None
-)
 
 
 def _is_rate_limit(err_msg: str) -> bool:
@@ -196,35 +167,6 @@ def _gemini_reply(messages: list[dict]) -> str:
         raise
 
 
-def _gemini_stream(messages: list[dict]) -> Generator[str, None, None]:
-    if not _gemini_client:
-        raise GeminiUnavailable("GEMINI_API_KEY not set.")
-
-    system_instruction, contents = _build_gemini_contents(messages)
-    try:
-        stream = _gemini_client.models.generate_content_stream(
-            model=LLM_MODEL,
-            contents=contents,
-            config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
-                max_output_tokens=_max_tokens_for(messages),
-                thinking_config=types.ThinkingConfig(thinking_budget=0),
-            ),
-        )
-        for chunk in stream:
-            if chunk.text:
-                yield chunk.text
-            if getattr(chunk, "usage_metadata", None):
-                _log_gemini_usage(chunk.usage_metadata)
-
-    except Exception as e:
-        err_msg = str(e)
-        if _is_rate_limit(err_msg):
-            print(f"[GEMINI RATE LIMIT] {err_msg}")
-            raise GeminiUnavailable("Rate limit hit.") from e
-        print(f"[GEMINI ERROR] {err_msg}")
-        raise
-
 
 def _log_gemini_usage(usage) -> None:
     if usage:
@@ -242,18 +184,17 @@ def _openrouter_reply(messages: list[dict]) -> str:
         raise AllProvidersExhausted("OPENROUTER_API_KEY not set.")
 
     print(f"[FALLBACK] Switching to OpenRouter ({OPENROUTER_MODEL})…")
-    with httpx.Client(timeout=60) as http:
-        resp = http.post(
-            f"{OPENROUTER_BASE_URL}/chat/completions",
-            headers=OPENROUTER_HEADERS,
-            json={
-                "model": OPENROUTER_MODEL,
-                "messages": messages,
-                "max_tokens": _max_tokens_for(messages),
-            },
-        )
-        resp.raise_for_status()
-        data = resp.json()
+    resp = _openrouter_client.post(
+        f"{OPENROUTER_BASE_URL}/chat/completions",
+        headers=OPENROUTER_HEADERS,
+        json={
+            "model": OPENROUTER_MODEL,
+            "messages": messages,
+            "max_tokens": _max_tokens_for(messages),
+        },
+    )
+    resp.raise_for_status()
+    data = resp.json()
 
     usage = data.get("usage", {})
     if usage:
@@ -266,63 +207,34 @@ def _openrouter_reply(messages: list[dict]) -> str:
     return data["choices"][0]["message"]["content"]
 
 
-def _openrouter_stream(messages: list[dict]) -> Generator[str, None, None]:
-    if not OPENROUTER_API_KEY:
-        raise AllProvidersExhausted("OPENROUTER_API_KEY not set.")
-
-    print(f"[FALLBACK] Switching to OpenRouter stream ({OPENROUTER_MODEL})…")
-    with httpx.Client(timeout=60) as http:
-        with http.stream(
-            "POST",
-            f"{OPENROUTER_BASE_URL}/chat/completions",
-            headers=OPENROUTER_HEADERS,
-            json={
-                "model": OPENROUTER_MODEL,
-                "messages": messages,
-                "max_tokens": _max_tokens_for(messages),
-                "stream": True,
-            },
-        ) as resp:
-            resp.raise_for_status()
-            for line in resp.iter_lines():
-                if not line or not line.startswith("data:"):
-                    continue
-                payload = line[5:].strip()
-                if payload == "[DONE]":
-                    break
-                try:
-                    chunk = json.loads(payload)
-                    delta = chunk["choices"][0]["delta"].get("content", "")
-                    if delta:
-                        yield delta
-                except (json.JSONDecodeError, KeyError):
-                    continue
-
-
-# ── Public API ───────────────────────────────────────────────────────────────
 
 def get_ai_reply(messages: list[dict]) -> str:
-    """
-    Non-streaming reply.
-    Provider chain: Gemini → OpenRouter → Local llama.cpp
-    """
-    # 1. Try Gemini (primary)
+    if USE_LOCAL_LLM:
+        try:
+            return _local_reply(messages)
+        except Exception as e:
+            print(f"[LLM] Local failed: {e}, fallback OpenRouter")
+
+        try:
+            return _openrouter_reply(messages)
+        except Exception as e:
+            print(f"[LLM] OpenRouter failed: {e}, fallback Gemini")
+
+        try:
+            return _gemini_reply(messages)
+        except Exception as e:
+            print(f"[LLM] Gemini failed: {e}")
+            return "Tất cả API providers đều không khả dụng. Vui lòng kiểm tra API key."
+
     try:
         return _gemini_reply(messages)
-    except GeminiUnavailable as e:
-        print(f"[LLM] Gemini unavailable: {e}, fallback OpenRouter")
+    except Exception as e:
+        print(f"[LLM] Gemini failed: {e}, fallback OpenRouter")
 
-    # 2. Try OpenRouter
     try:
         return _openrouter_reply(messages)
     except Exception as e:
-        print(f"[LLM] OpenRouter failed: {e}, fallback Local")
-
-    # 3. Try Local llama.cpp (final fallback)
-    try:
-        return _local_reply(messages)
-    except Exception as e:
-        print(f"[LLM] Local failed: {e}")
+        print(f"[LLM] OpenRouter failed: {e}")
         return "Tất cả API providers đều không khả dụng. Vui lòng kiểm tra API key."
 
 
@@ -332,8 +244,6 @@ TRANSLATE_CACHE_TTL = 3600
 _translate_cache: OrderedDict[str, tuple[str, float]] = OrderedDict()
 _cache_lock = threading.Lock()
 
-# Fast path for the first, very common speaking-topic words. It keeps the
-# vocabulary tooltip useful even while an LLM provider is slow or unavailable.
 _JAPANESE_GLOSSARY = {
     "音楽": "Âm nhạc",
     "料理": "Nấu ăn / ẩm thực",
@@ -348,7 +258,6 @@ def _translate_cache_key(text: str) -> str:
 
 
 def translate_japanese_to_vietnamese(text: str) -> str:
-    """Dịch câu tiếng Nhật sang tiếng Việt — LRU cache + thread-safe + TTL."""
     cleaned = (text or "").strip()
     if not cleaned:
         return ""
@@ -389,7 +298,6 @@ def translate_japanese_to_vietnamese(text: str) -> str:
 
 
 def _translate_reply(messages: list[dict]) -> str:
-    """Translate-only chain: OpenRouter → Local (max 80 tokens)."""
     try:
         return _openrouter_reply_short(messages)
     except Exception as e:
@@ -426,67 +334,126 @@ def _local_reply_short(messages: list[dict]) -> str:
         "temperature": 0.3,
         "stream": False,
     }
-    with httpx.Client(timeout=10.0) as client:
-        resp = client.post(f"{LOCAL_LLM_URL}/v1/chat/completions", json=payload)
-        resp.raise_for_status()
-        data = resp.json()
-        return (data["choices"][0]["message"]["content"] or "").strip()
+    resp = _local_client.post(f"{LOCAL_LLM_URL}/v1/chat/completions", json=payload)
+    resp.raise_for_status()
+    data = resp.json()
+    return (data["choices"][0]["message"]["content"] or "").strip()
 
 
 def _openrouter_reply_short(messages: list[dict]) -> str:
-    """OpenRouter fallback for a tooltip translation; keep it fast and concise."""
     if not OPENROUTER_API_KEY:
         raise AllProvidersExhausted("OPENROUTER_API_KEY not set.")
 
     print(f"[TRANSLATE] Switching to OpenRouter ({OPENROUTER_MODEL})")
-    with httpx.Client(timeout=20.0) as http:
-        resp = http.post(
-            f"{OPENROUTER_BASE_URL}/chat/completions",
-            headers=OPENROUTER_HEADERS,
-            json={
-                "model": OPENROUTER_MODEL,
-                "messages": messages,
-                "max_tokens": 80,
-                "temperature": 0.3,
-            },
-        )
-        resp.raise_for_status()
-        data = resp.json()
+    resp = _openrouter_client.post(
+        f"{OPENROUTER_BASE_URL}/chat/completions",
+        headers=OPENROUTER_HEADERS,
+        json={
+            "model": OPENROUTER_MODEL,
+            "messages": messages,
+            "max_tokens": 80,
+            "temperature": 0.3,
+        },
+    )
+    resp.raise_for_status()
+    data = resp.json()
     return (data["choices"][0]["message"]["content"] or "").strip()
 
 
-def get_ai_reply_stream(messages: list[dict]) -> Generator[str, None, None]:
-    """
-    Streaming reply.
-    Provider chain: Gemini → OpenRouter → Local llama.cpp
-    """
-    # 1. Try Gemini (primary)
-    try:
-        gen = _gemini_stream(messages)
-        first = next(gen)
-        yield first
-        yield from gen
-        return
-    except StopIteration:
-        return
-    except GeminiUnavailable as e:
-        print(f"[LLM] Gemini stream unavailable: {e}, fallback OpenRouter")
+# ── Combined reply + grammar (single LLM call) ──────────────────────────────
 
-    # 2. Try OpenRouter
-    try:
-        gen = _openrouter_stream(messages)
-        first = next(gen)
-        yield first
-        yield from gen
-        return
-    except StopIteration:
-        return
-    except Exception as e:
-        print(f"[LLM] OpenRouter stream failed: {e}, fallback Local")
+_COMBINED_SYSTEM = """You are Mirai (ミライ), a Japanese conversation coach for Vietnamese learners.
+Given the learner's Japanese sentence and the teaching context, respond ONCE with
+ONLY valid JSON (no markdown) of this exact shape:
 
-    # 3. Try Local llama.cpp (final fallback)
-    try:
-        yield from _local_stream(messages)
-    except Exception as e:
-        print(f"[LLM] Local stream failed: {e}")
-        yield "Tất cả API providers đều không khả dụng. Vui lòng kiểm tra API key."
+{
+  "reply": "<Mirai's natural Japanese reply, 1-3 sentences, following all persona/level rules>",
+  "severity": "none" | "minor" | "should_fix" | "important",
+  "grammar": "<grammar point as snake_case, or empty string if none>",
+  "explanation": "<1-2 sentences in Vietnamese explaining any issue, or praise if correct>",
+  "suggestion": "<corrected Japanese sentence, or same as original if no fix needed>"
+}
+
+Rules:
+- severity "none": sentence is correct.
+- severity "minor": small nuance, acceptable in conversation (suggestion MUST equal original).
+- severity "should_fix": clear grammar/word-form mistake.
+- severity "important": mistake blocking understanding.
+- The "reply" field is the real conversation turn and MUST obey the level/output
+  limits given in the context. Do NOT put grammar lectures in "reply".
+- Output ONLY the JSON object."""
+
+
+def get_reply_and_grammar(
+    transcript: str,
+    level: str,
+    history: list[str] | None = None,
+    reply_messages: list[dict] | None = None,
+) -> tuple[str, dict]:
+    """Single LLM call that returns both the conversation reply and grammar feedback."""
+    context = ""
+    if history:
+        recent = [h for h in history if h.strip()][-4:]
+        if recent:
+            context = "Recent conversation:\n" + "\n".join(f"- {h}" for h in recent) + "\n\n"
+
+    user_content = (
+        f"{context}"
+        f"JLPT level: {level}\n"
+        f"Learner said:\n{transcript}"
+    )
+    messages = [
+        {"role": "system", "content": _COMBINED_SYSTEM},
+        {"role": "user", "content": user_content},
+    ]
+
+    raw = get_ai_reply(messages)
+    parsed = _parse_combined_json(raw, transcript)
+    return parsed["reply"], parsed
+
+
+def _parse_combined_json(raw: str, fallback_original: str) -> dict:
+    import json as _json
+    import re as _re
+
+    text = (raw or "").strip()
+    match = _re.search(r"\{[\s\S]*\}", text)
+    if match:
+        try:
+            data = _json.loads(match.group())
+            if isinstance(data, dict) and data.get("reply"):
+                return _normalize_combined(data, fallback_original)
+        except _json.JSONDecodeError:
+            pass
+
+    # Fallback: treat the raw text as the reply, no grammar feedback.
+    return {
+        "reply": text or "すみません、もう一度お願いします。",
+        "severity": "none",
+        "grammar": "",
+        "explanation": "",
+        "suggestion": fallback_original,
+    }
+
+
+def _normalize_combined(data: dict, fallback_original: str) -> dict:
+    severity = str(data.get("severity", "none")).lower()
+    if severity not in ("none", "minor", "should_fix", "important"):
+        severity = "none"
+    grammar = str(data.get("grammar") or "").strip()
+    suggestion = str(data.get("suggestion") or fallback_original).strip()
+    explanation = str(data.get("explanation") or "").strip()
+    reply = str(data.get("reply") or "").strip()
+    if severity == "minor":
+        suggestion = fallback_original
+    if not reply:
+        reply = "すみません、もう一度お願いします。"
+    return {
+        "reply": reply,
+        "severity": severity,
+        "grammar": grammar,
+        "explanation": explanation or "Không có ghi chú thêm.",
+        "suggestion": suggestion,
+    }
+
+

@@ -71,6 +71,14 @@ def _redact_injection(text: str) -> str:
     """Remove injected instruction while preserving legitimate Japanese content."""
     for pattern, _label in INJECTION_PATTERNS:
         text = pattern.sub("[filtered]", text)
+    # Also redact keyword matches that don't have a corresponding regex
+    lower = text.lower()
+    for keyword in INJECTION_KEYWORDS:
+        if keyword in lower:
+            # Build a case-insensitive regex for the exact keyword
+            kw_pattern = re.compile(re.escape(keyword), re.IGNORECASE)
+            text = kw_pattern.sub("[filtered]", text)
+            lower = text.lower()
     text = re.sub(r"\s{2,}", " ", text)
     return text.strip()
 

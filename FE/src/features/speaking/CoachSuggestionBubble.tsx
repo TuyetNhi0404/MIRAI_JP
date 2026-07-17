@@ -11,7 +11,6 @@ type CoachSuggestionBubbleProps = {
   loading?: boolean;
   review?: CoachReview;
   error?: string;
-  onViewErrors?: () => void;
 };
 
 const SEVERITY_PALETTE: Record<CoachReview["severity"], { color: string; bg: string; label: string }> = {
@@ -67,7 +66,6 @@ export function CoachSuggestionBubble({
   loading,
   review,
   error,
-  onViewErrors,
 }: CoachSuggestionBubbleProps) {
   if (loading) {
     return (
@@ -97,7 +95,7 @@ export function CoachSuggestionBubble({
   if (!review) return null;
 
   const original = review.original.trim();
-  const corrected = review.corrected.trim();
+  const corrected = (review.suggestion ?? "").trim();
   const hasFix = corrected && corrected !== original;
 
   if (!hasFix) return null;
@@ -146,13 +144,13 @@ export function CoachSuggestionBubble({
         </Typography>
       )}
 
-      {review.explanation_vi && (
+      {review.explanation && (
         <Typography
           variant="caption"
           display="block"
           sx={{ mt: 0.5, lineHeight: 1.5, color: sp.textSoft, fontSize: "0.72rem" }}
         >
-          {review.explanation_vi}
+          {review.explanation}
         </Typography>
       )}
     </Box>

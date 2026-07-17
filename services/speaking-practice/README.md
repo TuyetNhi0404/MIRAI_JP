@@ -24,8 +24,9 @@ npm run dev:speaking # terminal 3
 
 `npm run dev:speaking` tự bootstrap lần đầu: tải Python portable qua `uv`, tạo
 venv/cài Python dependencies cho FastAPI, clone + build `whisper.cpp`, tải model
-STT Whisper, cài MeloTTS CPU và clone + build `llama.cpp`. Bạn **không cần cài
-Python toàn cục**.
+STT Whisper và clone + build `llama.cpp`. TTS chạy qua **ElevenLabs** (remote,
+cần `ELEVENLABS_API_KEY` + `ELEVENLABS_VOICE_ID` trong `.env`). Bạn **không cần
+cài Python toàn cục**.
 
 Trước lần chạy đầu, cài và mở lại terminal để chúng có trong `PATH`:
 
@@ -48,8 +49,9 @@ npm run dev:speaking
 Mặc định llama.cpp được build CPU và chạy `-ngl 0`. Nếu bạn tự build runtime có
 CUDA/Vulkan, có thể đặt `LLAMA_GPU_LAYERS` (ví dụ `999`) trước khi chạy.
 
-Khi chưa có GGUF, script vẫn chạy FastAPI + Whisper + MeloTTS và dùng Gemini/
-OpenRouter fallback (nếu API key được điền trong `services/speaking-practice/.env`).
+Khi chưa có GGUF, script vẫn chạy FastAPI + Whisper và dùng Gemini/
+OpenRouter fallback cho LLM (nếu API key được điền trong `services/speaking-practice/.env`).
+TTS luôn dùng ElevenLabs remote.
 
 ## MIRAI integration
 

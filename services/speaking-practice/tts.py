@@ -1,39 +1,51 @@
 import os
 import time
-import httpx
 import uuid
 from pathlib import Path
 
-MELO_TTS_URL = os.getenv("MELO_TTS_URL", "http://melo-tts:8001")
+import httpx
+
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY", "")
+ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "")
+ELEVENLABS_MODEL_ID = os.getenv("ELEVENLABS_MODEL_ID", "eleven_multilingual_v2")
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
+_tts_client = httpx.Client(timeout=60.0)
 
-def _contains_vietnamese(text: str) -> bool:
-    """Melo is Japanese-only; Vietnamese must remain text-only."""
-    return any(char in text.lower() for char in "ăâđêôơưàáạảãèéẹẻẽìíịỉĩòóọỏõùúụủũỳýỵỷỹ")
+_tts_cache: dict[str, tuple[str, float]] = {}
+_TTS_CACHE_MAX = 512
+_TTS_CACHE_TTL = 3600
 
 
 def generate_audio(text: str) -> str:
-    """Call MeloTTS local, return URL path of saved MP3."""
     if not text or not text.strip():
         return ""
-    if _contains_vietnamese(text):
-        print("[TTS] Skipped Vietnamese response; Japanese-only voice is enabled.")
+    if not ELEVENLABS_API_KEY or not ELEVENLABS_VOICE_ID:
+        print("[TTS] ElevenLabs credentials missing; skipped.")
         return ""
+
+    cached = _tts_cache.get(text)
+    if cached:
+        url, ts = cached
+        # Extract filename from /audio/{filename} and check if file still exists
+        filename = url.rsplit("/", 1)[-1] if "/" in url else ""
+        if filename and (UPLOAD_DIR / filename).exists() and (time.time() - ts) < _TTS_CACHE_TTL:
+            return url
+        _tts_cache.pop(text, None)
 
     try:
         started_at = time.perf_counter()
-        with httpx.Client(timeout=30.0) as client:
-            resp = client.post(
-                f"{MELO_TTS_URL}/tts",
-                json={
-                    "text": text,
-                    "language": "JA",
-                    "speed": 1.0,
-                }
-            )
-            resp.raise_for_status()
+        resp = _tts_client.post(
+            f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVENLABS_VOICE_ID}",
+            headers={"xi-api-key": ELEVENLABS_API_KEY, "Content-Type": "application/json"},
+            json={
+                "text": text,
+                "model_id": ELEVENLABS_MODEL_ID,
+                "voice_settings": {"stability": 0.5, "similarity_boost": 0.75},
+            },
+        )
+        resp.raise_for_status()
 
         filename = f"{uuid.uuid4().hex}.mp3"
         output_path = UPLOAD_DIR / filename
@@ -42,7 +54,15 @@ def generate_audio(text: str) -> str:
             f"[TTS] duration={time.perf_counter() - started_at:.2f}s "
             f"bytes={len(resp.content)} text={text[:240]!r}"
         )
-        return f"/audio/{filename}"
+        url = f"/audio/{filename}"
+
+        if len(_tts_cache) >= _TTS_CACHE_MAX:
+            # Evict oldest
+            oldest_key = min(_tts_cache, key=lambda k: _tts_cache[k][1])
+            _tts_cache.pop(oldest_key, None)
+        _tts_cache[text] = (url, time.time())
+
+        return url
     except Exception as e:
-        print(f"[TTS] MeloTTS error: {e}")
+        print(f"[TTS] ElevenLabs error: {e}")
         return ""

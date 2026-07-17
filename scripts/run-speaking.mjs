@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 import { spawn, execSync } from "node:child_process";
-import { existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, delimiter } from "node:path";
 import readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { ensureSpeakingPython } from "./lib/ensure-python.mjs";
-import { ensureUv } from "./lib/uv.mjs";
 import { ensureSpeakingEnvFile } from "./lib/ensure-env.mjs";
 import { ensureDownload, ensureReleaseBinary } from "./lib/ensure-native-binaries.mjs";
 import { pythonInstallDir, root, speakingDir } from "./lib/paths.mjs";
@@ -37,12 +36,8 @@ const runtimeEnv = { ...speakingEnv, ...process.env };
 const NATIVE_DIR = join(root, ".mirai", "native");
 const WHISPER_MODEL_SIZE = runtimeEnv.WHISPER_MODEL_SIZE || "medium";
 const WHISPER_MODEL = join(root, ".mirai", "models", `ggml-${WHISPER_MODEL_SIZE}.bin`);
-const MELO_DIR = join(root, "services", "melo-tts");
-const MELO_PYTHON = isWin
-  ? join(MELO_DIR, "venv", "Scripts", "python.exe")
-  : join(MELO_DIR, "venv", "bin", "python");
 const LLAMA_GPU_LAYERS = runtimeEnv.LLAMA_GPU_LAYERS || "0";
-const MELO_PYTHON_VERSION = "3.10";
+const WHISPER_SERVER_PORT = runtimeEnv.WHISPER_SERVER_PORT || "8082";
 
 function run(cmd, opts = {}) {
   execSync(cmd, { stdio: "inherit", shell: true, ...opts });
@@ -110,7 +105,13 @@ async function ensurePrebuiltWhisper() {
     destination: WHISPER_MODEL,
     label: `Whisper model ggml-${WHISPER_MODEL_SIZE}`,
   });
-  return whisperBin;
+  const whisperServer = await ensureReleaseBinary({
+    repo: "ggml-org/whisper.cpp",
+    destination: join(NATIVE_DIR, "whisper"),
+    executable: "whisper-server",
+    assetPatterns: isWin ? [/^whisper-bin-x64\.zip$/] : [/^whisper-bin-ubuntu-x64\.tar\.gz$/],
+  });
+  return { whisperBin, whisperServer };
 }
 
 async function ensurePrebuiltLlama() {
@@ -133,67 +134,6 @@ async function ensurePrebuiltFfmpeg() {
   });
 }
 
-// --- Bootstrap MeloTTS ---
-function meloPythonEnv() {
-  return { ...process.env, UV_PYTHON_INSTALL_DIR: pythonInstallDir };
-}
-
-async function ensureMeloTTS() {
-  const MELO_TAG = join(MELO_DIR, ".melo-installed");
-
-  if (existsSync(MELO_PYTHON)) {
-    try {
-      execSync(
-        `"${MELO_PYTHON}" -c "import sys, melo; assert sys.version_info[:2] == (3, 10); print('ok')"${isWin ? "" : " 2>/dev/null"}`,
-        { stdio: "pipe", env: { ...process.env, HF_HUB_OFFLINE: "1" } },
-      );
-      writeFileSync(MELO_TAG, "");
-      return;
-    } catch {
-      // MeloTTS not importable — fall through to full install
-    }
-  }
-
-  console.log("\n=== Installing MeloTTS (TTS) — this may take a while ===");
-  // Use the Python provisioned by uv for the main service. This keeps Windows
-  // setup self-contained: no globally installed Python is required.
-  // Python 3.12 would build old tokenizers/fugashi dependencies from source.
-  // Use uv's portable Python 3.10, which has compatible Windows wheels.
-  const uv = await ensureUv();
-  const venvDir = join(MELO_DIR, "venv");
-  rmSync(venvDir, { recursive: true, force: true });
-  run(`"${uv}" python install ${MELO_PYTHON_VERSION}`, { env: meloPythonEnv() });
-  run(`"${uv}" venv "${venvDir}" --seed --python ${MELO_PYTHON_VERSION}`, {
-    cwd: MELO_DIR,
-    env: meloPythonEnv(),
-  });
-
-  try {
-    // Install PyTorch from its CPU index first; remaining Melo dependencies
-    // continue to resolve from PyPI (not from the PyTorch index).
-    run(`"${MELO_PYTHON}" -m pip install --upgrade pip "setuptools<81" wheel`, { cwd: MELO_DIR });
-    run(`"${MELO_PYTHON}" -m pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu`, { cwd: MELO_DIR });
-    run(`"${MELO_PYTHON}" -m pip install fastapi uvicorn -r requirements.txt`, { cwd: MELO_DIR });
-
-    try {
-      execSync(`"${MELO_PYTHON}" -m unidic download`, { stdio: "pipe", timeout: 600000 });
-    } catch (e) {
-      throw e;
-    }
-
-    // Download and validate the Japanese voice model during setup, not on the
-    // first user request.
-    run(`"${MELO_PYTHON}" -c "from melo.api import TTS; TTS(language='JP', device='cpu')"`, {
-      cwd: MELO_DIR,
-    });
-
-    writeFileSync(MELO_TAG, "");
-    console.log("  MeloTTS installed OK");
-  } catch (e) {
-    throw new Error("Không thể cài MeloTTS; AI Speaking chưa sẵn sàng.", { cause: e });
-  }
-}
-
 // --- Main ---
 async function main() {
   const children = [];
@@ -201,10 +141,9 @@ async function main() {
   // Python and FastAPI dependencies are installed automatically by uv.
   const speakingPython = await ensureSpeakingPython();
 
-  // Bootstrap native runtimes and TTS.
-  const whisperBin = await ensurePrebuiltWhisper();
+  // Bootstrap native runtimes (TTS now handled remotely by ElevenLabs).
+  const { whisperBin, whisperServer } = await ensurePrebuiltWhisper();
   const ffmpegBin = await ensurePrebuiltFfmpeg();
-  await ensureMeloTTS();
 
   // llama.cpp is downloaded automatically, but this script NEVER downloads a GGUF.
   // Put exactly one fine-tuned .gguf in models/, or set LOCAL_LLM_MODEL_PATH.
@@ -246,21 +185,26 @@ async function main() {
     }
   }
 
-  // 2. MeloTTS
-  if (existsSync(MELO_PYTHON)) {
-    console.log("[speaking] Starting MeloTTS :8001 ...");
-    const melo = spawn(MELO_PYTHON, [
-      "-m", "uvicorn", "main:app", "--host", "127.0.0.1", "--port", "8001",
+  // 2. Keep Whisper loaded between requests (persistent server). `-ng` prevents it
+  // from competing with the Android emulator's GPU. Default model is medium for a
+  // good speed/accuracy balance on CPU; override with WHISPER_MODEL_SIZE.
+  if (existsSync(whisperServer)) {
+    console.log(`[speaking] Starting persistent Whisper :${WHISPER_SERVER_PORT} ...`);
+    const whisper = spawn(whisperServer, [
+      "-m", WHISPER_MODEL,
+      "--host", "127.0.0.1",
+      "--port", WHISPER_SERVER_PORT,
+      "-t", runtimeEnv.WHISPER_THREADS || "4",
+      "-ng",
+      "-bs", runtimeEnv.WHISPER_BEAM_SIZE || "3",
+      "--convert",
     ], {
-      cwd: MELO_DIR,
       stdio: "pipe",
-      env: { ...runtimeEnv, HF_HUB_OFFLINE: "1" },
+      env: { ...runtimeEnv, PATH: `${dirname(ffmpegBin)}${delimiter}${process.env.PATH || ""}` },
     });
-    melo.stdout.on("data", d => process.stdout.write(`[melo] ${d}`));
-    melo.stderr.on("data", d => process.stderr.write(`[melo] ${d}`));
-    children.push(melo);
-  } else {
-    console.log("[speaking] MeloTTS unavailable — TTS disabled");
+    whisper.stdout.on("data", d => process.stdout.write(`[whisper] ${d}`));
+    whisper.stderr.on("data", d => process.stderr.write(`[whisper] ${d}`));
+    children.push(whisper);
   }
 
   // 3. Speaking-practice
@@ -275,8 +219,12 @@ async function main() {
       PYTHONIOENCODING: "utf-8",
       WHISPER_BIN: whisperBin,
       WHISPER_MODEL,
+      WHISPER_LANGUAGE: runtimeEnv.WHISPER_LANGUAGE || "ja",
+      WHISPER_SERVER_URL: `http://127.0.0.1:${WHISPER_SERVER_PORT}`,
       PATH: `${dirname(ffmpegBin)}${delimiter}${process.env.PATH || ""}`,
-      MELO_TTS_URL: "http://localhost:8001",
+      ELEVENLABS_API_KEY: runtimeEnv.ELEVENLABS_API_KEY || "",
+      ELEVENLABS_VOICE_ID: runtimeEnv.ELEVENLABS_VOICE_ID || "",
+      ELEVENLABS_MODEL_ID: runtimeEnv.ELEVENLABS_MODEL_ID || "eleven_multilingual_v2",
       ...(useLocalLLM ? {
         LOCAL_LLM_URL: "http://localhost:8080",
         LOCAL_LLM_MODEL: localModelName,

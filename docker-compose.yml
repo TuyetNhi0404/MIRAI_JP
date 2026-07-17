@@ -36,15 +36,6 @@ services:
     restart: unless-stopped
     mem_limit: 1.5g
 
-  melo-tts:
-    build:
-      context: ./services/melo-tts
-      dockerfile: Dockerfile
-    ports:
-      - "8001:8001"
-    restart: unless-stopped
-    mem_limit: 512m
-
   ocr:
     build:
       context: ./services/speaking-practice
@@ -53,14 +44,12 @@ services:
     restart: unless-stopped
     depends_on:
       - local-llm
-      - melo-tts
     environment:
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:8080}
       LOCAL_LLM_URL: ${LOCAL_LLM_URL:-http://local-llm:11434}
       LOCAL_LLM_MODEL: ${LOCAL_LLM_MODEL:-qwen3-1.7b}
-      MELO_TTS_URL: ${MELO_TTS_URL:-http://melo-tts:8001}
       WHISPER_BIN: ${WHISPER_BIN:-/usr/local/bin/whisper-cli}
-      WHISPER_MODEL: ${WHISPER_MODEL:-/models/ggml-medium.bin}
+      WHISPER_MODEL: ${WHISPER_MODEL:-/models/ggml-base.bin}
       # Fallback APIs
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
@@ -68,6 +57,8 @@ services:
       LLM_MODEL: ${LLM_MODEL:-gemini-flash-latest}
       LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-100}
       ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
+      ELEVENLABS_VOICE_ID: ${ELEVENLABS_VOICE_ID:-}
+      ELEVENLABS_MODEL_ID: ${ELEVENLABS_MODEL_ID:-eleven_multilingual_v2}
       SPEAKING_INTERNAL_KEY: ${SPEAKING_INTERNAL_KEY:-mirai-speaking-dev-key}
       SKIP_SPEAKING_AUTH: ${SKIP_SPEAKING_AUTH:-true}
     volumes:
