@@ -338,11 +338,11 @@ function AudioOrb({
 
       const mm = gsap.matchMedia();
       mm.add("(prefers-reduced-motion: no-preference)", () => {
-        gsap.to(fieldT, { rotationY: Math.PI * 2, duration: 60, repeat: -1, ease: "none" });
-        gsap.to(fieldT, { rotationX: Math.PI * 2, duration: 95, repeat: -1, ease: "none" });
-        gsap.to(orbitT, { rotationY: Math.PI * 2, duration: 28, repeat: -1, ease: "none" });
-        gsap.to(orbitT, { rotationX: -Math.PI * 2, duration: 44, repeat: -1, ease: "none" });
-        gsap.to(orbitT, { rotationZ: Math.PI * 2, duration: 70, repeat: -1, ease: "none" });
+        gsap.to(fieldT.rotation, { y: Math.PI * 2, duration: 60, repeat: -1, ease: "none" });
+        gsap.to(fieldT.rotation, { x: Math.PI * 2, duration: 95, repeat: -1, ease: "none" });
+        gsap.to(orbitT.rotation, { y: Math.PI * 2, duration: 28, repeat: -1, ease: "none" });
+        gsap.to(orbitT.rotation, { x: -Math.PI * 2, duration: 44, repeat: -1, ease: "none" });
+        gsap.to(orbitT.rotation, { z: Math.PI * 2, duration: 70, repeat: -1, ease: "none" });
       });
       return () => mm.revert();
     },

@@ -12,6 +12,10 @@ import 'home/views/admin_dashboard_view.dart';
 import 'home/views/teacher_dashboard_view.dart';
 import 'home/views/student_dashboard_view.dart';
 import 'profile_screen.dart';
+import 'account_management_screen.dart';
+import 'submission_assignment_screen.dart';
+import 'student_schedule_screen.dart';
+import 'speaking_practice_screen.dart';
 import 'teacher/teacher_my_classes_screen.dart';
 import 'teacher/teacher_schedule_screen.dart';
 import 'student/listening/listening_list_screen.dart';
@@ -32,12 +36,12 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String _currentView = 'dashboard';
-  
+
   // Data lists
   List<Map<String, dynamic>> _adminPendingEnrollments = [];
   List<Map<String, dynamic>> _teacherCourses = [];
   List<Map<String, dynamic>> _studentCourses = [];
-  
+
   bool _isDataLoading = true;
   int _unreadNotificationCount = 0;
 
@@ -65,7 +69,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (token != null) {
         if (role == 'admin') {
-          final adminData = await _apiService.fetchAllEnrollments(token, status: 'pending');
+          final adminData = await _apiService.fetchAllEnrollments(
+            token,
+            status: 'pending',
+          );
           if (mounted) {
             setState(() {
               _adminPendingEnrollments = adminData;
@@ -87,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
           }
         }
       }
-      
+
       if (mounted) {
         setState(() {
           _isDataLoading = false;
@@ -101,6 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
   }
+
   Future<void> _loadUnreadNotificationCount() async {
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -123,25 +131,31 @@ class _HomeScreenState extends State<HomeScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator(color: Color(0xFFB90000))),
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(color: Color(0xFFB90000)),
+      ),
     );
 
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final token = authProvider.accessToken;
-      
+
       if (token != null) {
         if (approve) {
           await _apiService.approveEnrollment(token, enrollmentId);
         } else {
           await _apiService.rejectEnrollment(token, enrollmentId);
         }
-        
+
         if (mounted) {
           Navigator.of(context).pop(); // pop loading
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(approve ? 'Đã phê duyệt đơn thành công!' : 'Đã từ chối đơn đăng ký!'),
+              content: Text(
+                approve
+                    ? 'Đã phê duyệt đơn thành công!'
+                    : 'Đã từ chối đơn đăng ký!',
+              ),
               backgroundColor: approve ? Colors.green : Colors.blueGrey,
             ),
           );
@@ -152,10 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) {
         Navigator.of(context).pop(); // pop loading
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Lỗi: $e'),
-            backgroundColor: Colors.redAccent,
-          ),
+          SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.redAccent),
         );
       }
     }
@@ -166,19 +177,21 @@ class _HomeScreenState extends State<HomeScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator(color: Color(0xFFB90000))),
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(color: Color(0xFFB90000)),
+      ),
     );
 
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final token = authProvider.accessToken;
-      
+
       if (token != null) {
         final students = await _apiService.fetchClassMembers(token, courseId);
-        
+
         if (mounted) {
           Navigator.of(context).pop(); // pop loading
-          
+
           showModalBottomSheet(
             context: context,
             backgroundColor: Colors.transparent,
@@ -188,7 +201,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 height: MediaQuery.of(context).size.height * 0.75,
                 decoration: const BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.only(topLeft: Radius.circular(32), topRight: Radius.circular(32)),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(32),
+                    topRight: Radius.circular(32),
+                  ),
                 ),
                 child: Column(
                   children: [
@@ -206,7 +222,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: Row(
                         children: [
-                          const Icon(Icons.people_alt_rounded, color: Color(0xFFB90000)),
+                          const Icon(
+                            Icons.people_alt_rounded,
+                            color: Color(0xFFB90000),
+                          ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
@@ -219,7 +238,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(0xFFB90000).withOpacity(0.1),
                               borderRadius: BorderRadius.circular(12),
@@ -240,10 +262,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     Expanded(
                       child: students.isEmpty
                           ? const Center(
-                              child: Text('Lớp học chưa có học viên nào.', style: TextStyle(color: Colors.black54)),
+                              child: Text(
+                                'Lớp học chưa có học viên nào.',
+                                style: TextStyle(color: Colors.black54),
+                              ),
                             )
                           : ListView.builder(
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 8,
+                              ),
                               itemCount: students.length,
                               itemBuilder: (context, index) {
                                 final student = students[index];
@@ -253,7 +281,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                   decoration: BoxDecoration(
                                     color: Colors.white,
                                     borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(color: Colors.black.withOpacity(0.05)),
+                                    border: Border.all(
+                                      color: Colors.black.withOpacity(0.05),
+                                    ),
                                     boxShadow: [
                                       BoxShadow(
                                         color: Colors.black.withOpacity(0.02),
@@ -265,25 +295,41 @@ class _HomeScreenState extends State<HomeScreen> {
                                   child: Row(
                                     children: [
                                       CircleAvatar(
-                                        backgroundColor: const Color(0xFFB90000).withOpacity(0.1),
+                                        backgroundColor: const Color(
+                                          0xFFB90000,
+                                        ).withOpacity(0.1),
                                         child: Text(
-                                          (student['name']?.toString() ?? 'U')[0].toUpperCase(),
-                                          style: const TextStyle(color: Color(0xFFB90000), fontWeight: FontWeight.bold),
+                                          (student['name']?.toString() ??
+                                                  'U')[0]
+                                              .toUpperCase(),
+                                          style: const TextStyle(
+                                            color: Color(0xFFB90000),
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
                                       ),
                                       const SizedBox(width: 16),
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              student['name']?.toString() ?? 'Không rõ tên',
-                                              style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A)),
+                                              student['name']?.toString() ??
+                                                  'Không rõ tên',
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                color: Color(0xFF1A1A1A),
+                                              ),
                                             ),
                                             const SizedBox(height: 4),
                                             Text(
-                                              student['email']?.toString() ?? '',
-                                              style: const TextStyle(color: Colors.black54, fontSize: 12),
+                                              student['email']?.toString() ??
+                                                  '',
+                                              style: const TextStyle(
+                                                color: Colors.black54,
+                                                fontSize: 12,
+                                              ),
                                             ),
                                           ],
                                         ),
@@ -318,7 +364,9 @@ class _HomeScreenState extends State<HomeScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator(color: Colors.redAccent)),
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(color: Colors.redAccent),
+      ),
     );
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -365,6 +413,10 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  bool _requiresFullScreen(String view) {
+    return view == 'speaking' || view == 'vocab';
+  }
+
   Widget _buildActiveViewContent(dynamic user) {
     switch (_currentView) {
       case 'dashboard':
@@ -376,7 +428,8 @@ class _HomeScreenState extends State<HomeScreen> {
             if (user?.role == 'admin') ...[
               AdminOverview(
                 pendingEnrollmentsCount: _adminPendingEnrollments.length,
-                onViewEnrollments: () => setState(() => _currentView = 'enrollments'),
+                onViewEnrollments: () =>
+                    setState(() => _currentView = 'enrollments'),
                 onViewUsers: () => setState(() => _currentView = 'users'),
               ),
             ] else if (user?.role == 'teacher') ...[
@@ -404,7 +457,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Bạn chưa tham gia lớp học nào để xem xếp hạng!'),
+                        content: Text(
+                          'Bạn chưa tham gia lớp học nào để xem xếp hạng!',
+                        ),
                         backgroundColor: Color(0xFFB90000),
                       ),
                     );
@@ -412,7 +467,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
                 onViewGrammar: () {
                   Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const GrammarPracticeScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const GrammarPracticeScreen(),
+                    ),
                   );
                 },
                 onViewOcr: () {
@@ -422,17 +479,23 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
                 onViewKana: () {
                   Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const KanaPracticeScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const KanaPracticeScreen(),
+                    ),
                   );
                 },
                 onViewQuizzes: () {
                   Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const StudentQuizzesScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const StudentQuizzesScreen(),
+                    ),
                   );
                 },
                 onViewStatistics: () {
                   Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const StudentStatisticsScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const StudentStatisticsScreen(),
+                    ),
                   );
                 },
               ),
@@ -448,7 +511,8 @@ class _HomeScreenState extends State<HomeScreen> {
         return const PlaceholderView(
           icon: Icons.people_outline_rounded,
           title: 'Quản lý tài khoản',
-          description: 'Hệ thống đang đồng bộ dữ liệu người dùng. Tính năng quản lý phân quyền và khóa tài khoản sẽ hiển thị tại đây.',
+          description:
+              'Hệ thống đang đồng bộ dữ liệu người dùng. Tính năng quản lý phân quyền và khóa tài khoản sẽ hiển thị tại đây.',
         );
       case 'roster':
         return TeacherCoursesList(
@@ -456,10 +520,8 @@ class _HomeScreenState extends State<HomeScreen> {
           onShowClassRoster: _showClassRoster,
         );
       case 'speaking':
-        return const PlaceholderView(
-          icon: Icons.record_voice_over_outlined,
-          title: 'Luyện nói AI',
-          description: 'Phòng luyện nói tiếng Nhật giao tiếp tương tác với công nghệ chấm điểm AI thông minh của MIRAI sắp được ra mắt.',
+        return SpeakingPracticeScreen(
+          onBack: () => setState(() => _currentView = 'dashboard'),
         );
       case 'vocab':
         return const VocabFlashcardView();
@@ -485,7 +547,9 @@ class _HomeScreenState extends State<HomeScreen> {
             letterSpacing: 1.2,
           ),
         ),
-        iconTheme: const IconThemeData(color: Color(0xFFB90000)), // Set drawer button icon color to red
+        iconTheme: const IconThemeData(
+          color: Color(0xFFB90000),
+        ), // Set drawer button icon color to red
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
@@ -498,7 +562,10 @@ class _HomeScreenState extends State<HomeScreen> {
             alignment: Alignment.center,
             children: [
               IconButton(
-                icon: const Icon(Icons.notifications_outlined, color: Color(0xFFB90000)),
+                icon: const Icon(
+                  Icons.notifications_outlined,
+                  color: Color(0xFFB90000),
+                ),
                 onPressed: () {
                   showModalBottomSheet(
                     context: context,
@@ -520,7 +587,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       shape: BoxShape.circle,
                     ),
                     child: Text(
-                      _unreadNotificationCount > 9 ? '9+' : '$_unreadNotificationCount',
+                      _unreadNotificationCount > 9
+                          ? '9+'
+                          : '$_unreadNotificationCount',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 9,
@@ -531,7 +600,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
             ],
           ),
-          if (_currentView == 'dashboard' || _currentView == 'enrollments' || _currentView == 'roster')
+          if (_currentView == 'dashboard' ||
+              _currentView == 'enrollments' ||
+              _currentView == 'roster')
             IconButton(
               icon: const Icon(Icons.refresh_rounded, color: Color(0xFFB90000)),
               onPressed: () {
@@ -593,14 +664,23 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           SafeArea(
-            child: _isDataLoading && (_currentView == 'dashboard' || _currentView == 'enrollments' || _currentView == 'roster')
+            child:
+                _isDataLoading &&
+                    (_currentView == 'dashboard' ||
+                        _currentView == 'enrollments' ||
+                        _currentView == 'roster')
                 ? const Center(
                     child: CircularProgressIndicator(color: Color(0xFFB90000)),
                   )
-                : SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
-                    child: _buildActiveViewContent(user),
-                  ),
+                : _requiresFullScreen(_currentView)
+                    ? Positioned.fill(child: _buildActiveViewContent(user))
+                    : SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20.0,
+                          vertical: 16.0,
+                        ),
+                        child: _buildActiveViewContent(user),
+                      ),
           ),
         ],
       ),

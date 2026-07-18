@@ -139,15 +139,32 @@ export function attachSpeakingWebSocketUpgrade(server: Server): void {
 
     const decoded = verifyUpgrade(req);
     if (!decoded?.id) {
-      socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
-      socket.destroy();
-      return;
+      // Fallback: allow token via ?token= query param (used by the mobile WS client)
+      try {
+        const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+        const token = url.searchParams.get("token");
+        if (token) {
+          req.headers.authorization = `Bearer ${token}`;
+        }
+      } catch {
+        // ignore
+      }
+      const retry = verifyUpgrade(req);
+      if (!retry?.id) {
+        console.warn("[speaking] WS upgrade rejected: invalid token");
+        socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
+        socket.destroy();
+        return;
+      }
+      req.headers["x-user-id"] = retry.id;
+      req.headers["x-user-role"] = retry.role || "student";
+    } else {
+      req.headers["x-user-id"] = decoded.id;
+      req.headers["x-user-role"] = decoded.role || "student";
     }
-
-    req.headers["x-user-id"] = decoded.id;
-    req.headers["x-user-role"] = decoded.role || "student";
     req.headers["x-speaking-internal-key"] = INTERNAL_KEY;
 
+    console.log(`[speaking] WS upgrade → user ${req.headers["x-user-id"]}`);
     speakingPracticeProxy.upgrade?.(req, socket as Socket, head);
   });
 }

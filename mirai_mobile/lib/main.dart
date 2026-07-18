@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'providers/auth_provider.dart';
+import 'providers/account_provider.dart';
+import 'providers/submission_provider.dart';
+import 'providers/schedule_provider.dart';
+import 'providers/speaking_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/get_started_screen.dart';
 import 'providers/teacher_provider.dart';
@@ -14,6 +18,10 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => AccountProvider()),
+        ChangeNotifierProvider(create: (_) => SubmissionProvider()),
+        ChangeNotifierProvider(create: (_) => ScheduleProvider()),
+        ChangeNotifierProvider(create: (_) => SpeakingProvider()),
         ChangeNotifierProvider(create: (_) => TeacherProvider()),
         ChangeNotifierProvider(create: (_) => ListeningProvider()),
       ],
@@ -45,7 +53,11 @@ class MyApp extends StatelessWidget {
         ),
         cardColor: Colors.white,
         textTheme: const TextTheme(
-          titleLarge: TextStyle(fontFamily: 'Roboto', fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A)),
+          titleLarge: TextStyle(
+            fontFamily: 'Roboto',
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF1A1A1A),
+          ),
           bodyMedium: TextStyle(fontFamily: 'Roboto', color: Color(0xFF1A1A1A)),
         ),
       ),

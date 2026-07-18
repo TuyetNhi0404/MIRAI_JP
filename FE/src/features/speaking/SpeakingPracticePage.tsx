@@ -390,6 +390,7 @@ const SpeakingPracticePage = () => {
             {messages.map((msg) => (
               <Box
                 key={msg.id}
+                className="mira-msg-enter"
                 sx={{
                   display: "flex",
                   flexDirection: "column",
@@ -495,7 +496,6 @@ const SpeakingPracticePage = () => {
                 modeIcon={modeIcon}
                 onPointerDown={() => void onRecordPointerDown()}
                 onPointerUp={onRecordPointerUp}
-                onPointerLeave={onRecordPointerLeave}
               />
             </Box>
           </Box>
@@ -859,7 +859,7 @@ function CoachReviewContent({
   onViewErrors?: () => void;
 }) {
   const original = review.original.trim();
-  const corrected = review.corrected.trim();
+  const corrected = (review.suggestion ?? "").trim();
   const hasFix = corrected && corrected !== original;
   const severity =
     review.severity === "important"
@@ -927,16 +927,16 @@ function CoachReviewContent({
             lineHeight: 1.5,
           }}
         >
-          {review.corrected}
+          {review.suggestion}
         </Typography>
       </Box>
-      {review.explanation_vi && (
+      {review.explanation && (
         <Box>
           <Typography sx={{ fontSize: "0.62rem", fontWeight: 600, color: sp.textSoft, textTransform: "uppercase", letterSpacing: 0.4, mb: 0.25 }}>
             Giải thích
           </Typography>
           <Typography sx={{ fontSize: "0.78rem", color: sp.textMuted, lineHeight: 1.5 }}>
-            {review.explanation_vi}
+            {review.explanation}
           </Typography>
         </Box>
       )}

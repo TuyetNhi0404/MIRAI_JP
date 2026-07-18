@@ -2,14 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import type { ChatMessage } from "./useSpeakingPractice";
 import type { CoachReview } from "./types";
 import {
-  buildCoachHistory,
   getAiReplyAfterUser,
   hasGrammarIssue,
   noteFromReview,
+  reviewFromFeedback,
 } from "./speakingUtils";
 import { hasJapanese } from "./useMessageTranslation";
-import { useTurnCoach } from "./useTurnCoach";
-import type { useGrammarNotes } from "./useGrammarNotes";
 
 export type TurnCoachEntry = {
   loading?: boolean;
@@ -17,7 +15,10 @@ export type TurnCoachEntry = {
   error?: string;
 };
 
-type GrammarNotesApi = ReturnType<typeof useGrammarNotes>;
+type GrammarNotesApi = {
+  hasNoteForTurn: (turnId: string) => boolean;
+  saveNote: (note: unknown) => Promise<unknown>;
+};
 
 export function useAutoTurnCoach(
   enabled: boolean,
@@ -26,7 +27,6 @@ export function useAutoTurnCoach(
   sessionId: string,
   grammarNotes: GrammarNotesApi,
 ) {
-  const { reviewTurn } = useTurnCoach();
   const [byTurnId, setByTurnId] = useState<Record<string, TurnCoachEntry>>({});
   const processedRef = useRef<Set<string>>(new Set());
   const savingRef = useRef<Set<string>>(new Set());
@@ -45,27 +45,28 @@ export function useAutoTurnCoach(
 
     for (const msg of pending) {
       const turnId = msg.turnId!;
+
+      const feedback = msg.grammarFeedback;
+      if (!feedback) {
+        // Grammar is produced inline by the speaking service; if absent, skip.
+        continue;
+      }
+
+      const review = reviewFromFeedback(feedback, msg.text);
+      setByTurnId((prev) => ({ ...prev, [turnId]: { review } }));
+
+      if (!hasGrammarIssue(review)) {
+        processedRef.current.add(turnId);
+        continue;
+      }
+      if (grammarNotes.hasNoteForTurn(turnId) || savingRef.current.has(turnId)) {
+        processedRef.current.add(turnId);
+        continue;
+      }
+
+      savingRef.current.add(turnId);
       processedRef.current.add(turnId);
-      setByTurnId((prev) => ({ ...prev, [turnId]: { loading: true } }));
-
       void (async () => {
-        const history = buildCoachHistory(messages);
-        const review = await reviewTurn(msg.text, level, history, { silent: true });
-
-        if (!review) {
-          setByTurnId((prev) => ({
-            ...prev,
-            [turnId]: { error: "Không phân tích được câu này." },
-          }));
-          return;
-        }
-
-        setByTurnId((prev) => ({ ...prev, [turnId]: { review } }));
-
-        if (!hasGrammarIssue(review)) return;
-        if (grammarNotes.hasNoteForTurn(turnId) || savingRef.current.has(turnId)) return;
-
-        savingRef.current.add(turnId);
         try {
           await grammarNotes.saveNote(
             noteFromReview(
@@ -83,7 +84,7 @@ export function useAutoTurnCoach(
         }
       })();
     }
-  }, [enabled, messages, level, sessionId, grammarNotes, reviewTurn]);
+  }, [enabled, messages, level, sessionId, grammarNotes]);
 
   const getEntry = (turnId: string) => byTurnId[turnId];
 

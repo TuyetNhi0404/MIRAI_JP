@@ -8,11 +8,12 @@ import {
   Typography,
 } from "@mui/material";
 import { Mic, X } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import speakingApi from "./speakingApi";
 import { speakingApiPath } from "./config";
 import type { GrammarNote } from "./types";
 import { sp } from "./speakingPracticeTheme";
+import { transcriptSimilarity } from "./speakingUtils";
 
 const BRAND = sp.brand;
 
@@ -29,6 +30,16 @@ export function NotePracticeDialog({ note, open, onClose, onMastered }: NotePrac
   const [error, setError] = useState<string | null>(null);
   const mrRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      const mr = mrRef.current;
+      if (mr && mr.state === "recording") mr.stop();
+      mrRef.current?.stream?.getTracks().forEach((t) => t.stop());
+    };
+  }, []);
 
   const stopRecording = useCallback(() => {
     const mr = mrRef.current;
@@ -71,7 +82,7 @@ export function NotePracticeDialog({ note, open, onClose, onMastered }: NotePrac
       };
       mr.start();
       setRecording(true);
-      setTimeout(() => stopRecording(), 5000);
+      timerRef.current = setTimeout(() => stopRecording(), 5000);
     } catch {
       setError("Không truy cập được micro.");
     }

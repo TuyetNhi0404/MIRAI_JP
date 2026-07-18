@@ -19,20 +19,46 @@ services:
       timeout: 3s
       retries: 10
 
+  local-llm:
+    image: ghcr.io/ggerganov/llama.cpp:server
+    volumes:
+      - ./models:/models:ro
+    command: >
+      -m /models/qwen3-1.7b-q4_k_m.gguf
+      --host 0.0.0.0
+      --port 11434
+      -c 2048
+      -n 256
+      --threads 4
+      -ngl 0
+    ports:
+      - "11434:11434"
+    restart: unless-stopped
+    mem_limit: 1.5g
+
   ocr:
     build:
       context: ./services/speaking-practice
       args:
         PREBAKE_MODELS: ${OCR_PREBAKE_MODELS:-1}
     restart: unless-stopped
+    depends_on:
+      - local-llm
     environment:
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:8080}
+      LOCAL_LLM_URL: ${LOCAL_LLM_URL:-http://local-llm:11434}
+      LOCAL_LLM_MODEL: ${LOCAL_LLM_MODEL:-qwen3-1.7b}
+      WHISPER_BIN: ${WHISPER_BIN:-/usr/local/bin/whisper-cli}
+      WHISPER_MODEL: ${WHISPER_MODEL:-/models/ggml-base.bin}
+      # Fallback APIs
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       OPENROUTER_MODEL: ${OPENROUTER_MODEL:-openai/gpt-4o-mini}
-      LLM_MODEL: ${LLM_MODEL:-gemini-flash-latest}
+      LLM_MODEL: ${LLM_MODEL:-gemini-3.5-flash}
       LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-100}
       ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
+      ELEVENLABS_VOICE_ID: ${ELEVENLABS_VOICE_ID:-}
+      ELEVENLABS_MODEL_ID: ${ELEVENLABS_MODEL_ID:-eleven_multilingual_v2}
       SPEAKING_INTERNAL_KEY: ${SPEAKING_INTERNAL_KEY:-mirai-speaking-dev-key}
       SKIP_SPEAKING_AUTH: ${SKIP_SPEAKING_AUTH:-true}
     volumes:
@@ -41,7 +67,7 @@ services:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
       interval: 30s
       timeout: 10s
-      start_period: 180s
+      start_period: 30s
       retries: 5
 
   backend:
@@ -60,7 +86,7 @@ services:
       GEMINI_API_KEY_AUDIT: ${GEMINI_API_KEY_AUDIT:-}
       GEMINI_API_KEY_CV: ${GEMINI_API_KEY_CV:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
-      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-google/gemini-2.5-flash}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-google/gemini-3.5-flash}
       ELEVEN_API_KEY: ${ELEVEN_API_KEY:-}
       ELEVEN_VOICE_ID: ${ELEVEN_VOICE_ID:-JBFqnCBsd6RMkjVDRZzb}
       ELEVEN_MODEL: ${ELEVEN_MODEL:-eleven_flash_v2_5}
@@ -122,4 +148,3 @@ volumes:
   redis_data:
   grammar_uploads:
   ocr_uploads:
-
