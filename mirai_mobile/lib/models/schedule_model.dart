@@ -47,8 +47,29 @@ class SessionItem {
   String get slotLabel => 'Ca $slotNumber';
   String get dateDisplay {
     try {
-      final parts = date.split('-');
-      if (parts.length == 3) return '${parts[2]}/${parts[1]}/${parts[0]}';
+      String cleanDate = date;
+      if (cleanDate.contains('T')) {
+        cleanDate = cleanDate.split('T')[0];
+      }
+      final parts = cleanDate.split('-');
+      if (parts.length == 3) {
+        final year = int.parse(parts[0]);
+        final month = int.parse(parts[1]);
+        final day = int.parse(parts[2]);
+        final dt = DateTime(year, month, day);
+        const weekdays = [
+          '',
+          'Thứ Hai',
+          'Thứ Ba',
+          'Thứ Tư',
+          'Thứ Năm',
+          'Thứ Sáu',
+          'Thứ Bảy',
+          'Chủ Nhật'
+        ];
+        final dayName = weekdays[dt.weekday];
+        return '$dayName, ${parts[2].padLeft(2, '0')}/${parts[1].padLeft(2, '0')}/${parts[0]}';
+      }
     } catch (_) {}
     return date;
   }

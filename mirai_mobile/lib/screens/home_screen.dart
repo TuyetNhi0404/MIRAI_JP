@@ -428,9 +428,20 @@ class _HomeScreenState extends State<HomeScreen> {
             if (user?.role == 'admin') ...[
               AdminOverview(
                 pendingEnrollmentsCount: _adminPendingEnrollments.length,
-                onViewEnrollments: () =>
-                    setState(() => _currentView = 'enrollments'),
-                onViewUsers: () => setState(() => _currentView = 'users'),
+                onViewEnrollments: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const AdminEnrollmentRequestsScreen(),
+                    ),
+                  ).then((_) => _loadRoleSpecificData());
+                },
+                onViewUsers: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const AccountManagementScreen(),
+                    ),
+                  ).then((_) => _loadRoleSpecificData());
+                },
               ),
             ] else if (user?.role == 'teacher') ...[
               TeacherOverview(
@@ -440,7 +451,13 @@ class _HomeScreenState extends State<HomeScreen> {
             ] else ...[
               StudentOverview(
                 coursesCount: _studentCourses.length,
-                onViewCourses: () {},
+                onViewCourses: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const StudentScheduleScreen(),
+                    ),
+                  );
+                },
                 onViewSpeaking: () => setState(() => _currentView = 'speaking'),
                 onViewVocab: () => setState(() => _currentView = 'vocab'),
                 onViewLeaderboard: () {

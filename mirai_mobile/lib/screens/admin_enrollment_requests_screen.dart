@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
+import '../config/design_tokens.dart';
 
 class AdminEnrollmentRequestsScreen extends StatefulWidget {
   const AdminEnrollmentRequestsScreen({super.key});
@@ -18,10 +19,6 @@ class _AdminEnrollmentRequestsScreenState extends State<AdminEnrollmentRequestsS
   bool _isLoading = true;
   String _selectedStatus = 'pending'; // 'pending', 'approved', 'rejected', 'all'
   String _searchQuery = '';
-
-  static const Color _red = Color(0xFFB90000);
-  static const Color _navy = Color(0xFF023665);
-  static const Color _background = Color(0xFFFAF8F5);
 
   @override
   void initState() {
@@ -74,7 +71,7 @@ class _AdminEnrollmentRequestsScreenState extends State<AdminEnrollmentRequestsS
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Lỗi tải danh sách đăng ký: ${e.toString()}'),
-            backgroundColor: Colors.red[700],
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -103,39 +100,6 @@ class _AdminEnrollmentRequestsScreenState extends State<AdminEnrollmentRequestsS
     return '$day/$month/$year';
   }
 
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'approved':
-        return Colors.green[700]!;
-      case 'rejected':
-        return Colors.red[700]!;
-      default:
-        return Colors.orange[855] ?? Colors.orange[800]!;
-    }
-  }
-
-  Color _getStatusBgColor(String status) {
-    switch (status) {
-      case 'approved':
-        return Colors.green.withOpacity(0.08);
-      case 'rejected':
-        return Colors.red.withOpacity(0.08);
-      default:
-        return Colors.orange.withOpacity(0.08);
-    }
-  }
-
-  String _getStatusLabel(String status) {
-    switch (status) {
-      case 'approved':
-        return 'Đã phê duyệt';
-      case 'rejected':
-        return 'Đã từ chối';
-      default:
-        return 'Chờ duyệt';
-    }
-  }
-
   Future<void> _processEnrollmentAction(String enrollmentId, bool approve) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final token = authProvider.accessToken;
@@ -151,7 +115,7 @@ class _AdminEnrollmentRequestsScreenState extends State<AdminEnrollmentRequestsS
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(approve ? 'Đã duyệt yêu cầu thành công!' : 'Đã từ chối yêu cầu đăng ký!'),
-            backgroundColor: approve ? Colors.green[700] : Colors.orange[800],
+            backgroundColor: approve ? AppColors.success : AppColors.warning,
           ),
         );
       }
@@ -161,7 +125,7 @@ class _AdminEnrollmentRequestsScreenState extends State<AdminEnrollmentRequestsS
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Lỗi xử lý: ${e.toString()}'),
-            backgroundColor: Colors.red[700],
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -177,170 +141,217 @@ class _AdminEnrollmentRequestsScreenState extends State<AdminEnrollmentRequestsS
     final createdAt = enrollment['createdAt']?.toString();
     final status = enrollment['status']?.toString() ?? 'pending';
 
+    Color statusColor;
+    Color statusBgColor;
+    String statusLabel;
+
+    if (status == 'approved') {
+      statusColor = AppColors.success;
+      statusBgColor = AppColors.successBg;
+      statusLabel = 'Đã phê duyệt';
+    } else if (status == 'rejected') {
+      statusColor = AppColors.error;
+      statusBgColor = AppColors.errorBg;
+      statusLabel = 'Đã từ chối';
+    } else {
+      statusColor = AppColors.warning;
+      statusBgColor = AppColors.warningBg;
+      statusLabel = 'Đang chờ duyệt';
+    }
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.white,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
         bool isProcessingLocal = false;
 
         return StatefulBuilder(
           builder: (context, setModalState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 24,
-                right: 24,
-                top: 24,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Title / Close button
-                  Row(
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF5F3EE),
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                  ),
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
                         'Chi tiết đơn đăng ký',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: 17,
                           fontWeight: FontWeight.bold,
-                          color: _navy,
+                          color: Color(0xFF023665),
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.black54),
-                        onPressed: () => Navigator.of(context).pop(),
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).pop(),
+                        child: const Icon(Icons.close, color: Colors.black54),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  
-                  // Status pill inside bottom sheet
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: _getStatusBgColor(status),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: _getStatusColor(status).withOpacity(0.3)),
-                      ),
-                      child: Text(
-                        _getStatusLabel(status),
-                        style: TextStyle(
-                          color: _getStatusColor(status),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
+                ),
+                Padding(
+                  padding: EdgeInsets.only(
+                    left: 20,
+                    right: 20,
+                    top: 16,
+                    bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: statusBgColor,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: statusColor.withOpacity(0.2)),
+                        ),
+                        child: Text(
+                          statusLabel,
+                          style: TextStyle(
+                            color: statusColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                  const Divider(color: Colors.black12, height: 24),
-                  
-                  // Details list
-                  const Text('Khóa học', style: TextStyle(color: Colors.black45, fontSize: 13, fontWeight: FontWeight.w500)),
-                  const SizedBox(height: 4),
-                  Text(
-                    courseName,
-                    style: const TextStyle(color: _navy, fontWeight: FontWeight.bold, fontSize: 15),
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  const Text('Họ và tên học viên', style: TextStyle(color: Colors.black45, fontSize: 13, fontWeight: FontWeight.w500)),
-                  const SizedBox(height: 4),
-                  Text(
-                    studentName,
-                    style: const TextStyle(color: Color(0xFF1a1a1a), fontWeight: FontWeight.w600, fontSize: 15),
-                  ),
-                  const SizedBox(height: 16),
+                      const SizedBox(height: 16),
+                      
+                      const Text('Khóa học', style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
+                      const SizedBox(height: 4),
+                      Text(
+                        courseName,
+                        style: const TextStyle(color: AppColors.ink, fontWeight: FontWeight.bold, fontSize: 14.5),
+                      ),
+                      const SizedBox(height: 12),
+                      const Divider(height: 1, thickness: 1, color: AppColors.border),
+                      const SizedBox(height: 12),
 
-                  const Text('Địa chỉ Email', style: TextStyle(color: Colors.black45, fontSize: 13, fontWeight: FontWeight.w500)),
-                  const SizedBox(height: 4),
-                  Text(
-                    studentEmail,
-                    style: const TextStyle(color: Color(0xFF1a1a1a), fontSize: 15),
-                  ),
-                  const SizedBox(height: 16),
+                      const Text('Họ và tên', style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
+                      const SizedBox(height: 4),
+                      Text(
+                        studentName,
+                        style: const TextStyle(color: AppColors.ink, fontSize: 14),
+                      ),
+                      const SizedBox(height: 12),
+                      const Divider(height: 1, thickness: 1, color: AppColors.border),
+                      const SizedBox(height: 12),
 
-                  const Text('Ngày đăng ký', style: TextStyle(color: Colors.black45, fontSize: 13, fontWeight: FontWeight.w500)),
-                  const SizedBox(height: 4),
-                  Text(
-                    _formatDate(createdAt),
-                    style: const TextStyle(color: Color(0xFF1a1a1a), fontSize: 15),
-                  ),
-                  const SizedBox(height: 28),
+                      const Text('Email', style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
+                      const SizedBox(height: 4),
+                      Text(
+                        studentEmail,
+                        style: const TextStyle(color: AppColors.ink, fontSize: 14),
+                      ),
+                      const SizedBox(height: 12),
+                      const Divider(height: 1, thickness: 1, color: AppColors.border),
+                      const SizedBox(height: 12),
 
-                  // Actions for pending
-                  if (status == 'pending') ...[
-                    if (isProcessingLocal)
-                      const Center(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 8.0),
-                          child: CircularProgressIndicator(color: _red),
+                      const Text('Ngày đăng ký', style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
+                      const SizedBox(height: 4),
+                      Text(
+                        _formatDate(createdAt),
+                        style: const TextStyle(color: AppColors.ink, fontSize: 14),
+                      ),
+                      
+                      const SizedBox(height: 24),
+                      if (status == 'pending') ...[
+                        if (isProcessingLocal)
+                          const Center(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 8.0),
+                              child: CircularProgressIndicator(color: AppColors.primary),
+                            ),
+                          )
+                        else
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: () async {
+                                    setModalState(() => isProcessingLocal = true);
+                                    await _processEnrollmentAction(enrollmentId, false);
+                                    if (context.mounted) Navigator.of(context).pop();
+                                  },
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppColors.error,
+                                    side: const BorderSide(color: AppColors.error),
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  child: const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.cancel_outlined, size: 18),
+                                      SizedBox(width: 6),
+                                      Text('Từ chối', style: TextStyle(fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: () async {
+                                    setModalState(() => isProcessingLocal = true);
+                                    await _processEnrollmentAction(enrollmentId, true);
+                                    if (context.mounted) Navigator.of(context).pop();
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.success,
+                                    foregroundColor: AppColors.white,
+                                    elevation: 0,
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  child: const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.check_circle_outline, size: 18),
+                                      SizedBox(width: 6),
+                                      Text('Phê duyệt', style: TextStyle(fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                      ] else ...[
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFF5F5F5),
+                              foregroundColor: AppColors.textSecondary,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text('Đóng'),
+                          ),
                         ),
-                      )
-                    else
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () async {
-                                setModalState(() => isProcessingLocal = true);
-                                await _processEnrollmentAction(enrollmentId, false);
-                                if (context.mounted) Navigator.of(context).pop();
-                              },
-                              icon: const Icon(Icons.close_rounded, size: 18),
-                              label: const Text('Từ chối'),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.red[700],
-                                side: BorderSide(color: Colors.red[400]!),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () async {
-                                setModalState(() => isProcessingLocal = true);
-                                await _processEnrollmentAction(enrollmentId, true);
-                                if (context.mounted) Navigator.of(context).pop();
-                              },
-                              icon: const Icon(Icons.check_rounded, size: 18),
-                              label: const Text('Phê duyệt'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green[700],
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                  ] else ...[
-                    ElevatedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey[200],
-                        foregroundColor: Colors.black87,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                      child: const Text('Đóng'),
-                    ),
-                  ],
-                  const SizedBox(height: 12),
-                ],
-              ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
             );
           },
         );
@@ -348,43 +359,61 @@ class _AdminEnrollmentRequestsScreenState extends State<AdminEnrollmentRequestsS
     );
   }
 
-  Widget _buildStatusChip(String status, String label) {
-    final isSelected = _selectedStatus == status;
-    return GestureDetector(
-      onTap: () {
-        if (_selectedStatus != status) {
-          setState(() {
-            _selectedStatus = status;
-          });
-          _loadEnrollments();
-        }
-      },
-      child: Container(
-        margin: const EdgeInsets.only(right: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? _red : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? _red : Colors.grey.withOpacity(0.25),
-            width: 1.0,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.02),
-              blurRadius: 4,
-              offset: const Offset(0, 1),
+  Widget _buildSegmentedFilter() {
+    final statuses = ['pending', 'approved', 'rejected', 'all'];
+    final labels = ['Chờ duyệt', 'Đã duyệt', 'Đã từ chối', 'Tất cả'];
+
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0F0F0),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: List.generate(statuses.length, (index) {
+          final status = statuses[index];
+          final label = labels[index];
+          final isSelected = _selectedStatus == status;
+
+          return Expanded(
+            child: GestureDetector(
+              onTap: () {
+                if (_selectedStatus != status) {
+                  setState(() {
+                    _selectedStatus = status;
+                  });
+                  _loadEnrollments();
+                }
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? Colors.white : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          )
+                        ]
+                      : [],
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    color: isSelected ? AppColors.ink : AppColors.textSecondary,
+                  ),
+                ),
+              ),
             ),
-          ],
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : Colors.black87,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-            fontSize: 13,
-          ),
-        ),
+          );
+        }),
       ),
     );
   }
@@ -394,31 +423,25 @@ class _AdminEnrollmentRequestsScreenState extends State<AdminEnrollmentRequestsS
     final filtered = _filteredEnrollments;
 
     return Scaffold(
-      backgroundColor: _background,
+      backgroundColor: const Color(0xFFF8F9FD),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.ink,
         elevation: 0,
-        centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _red, size: 20),
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text(
-          'YÊU CẦU GHI DANH',
+          'Yêu cầu ghi danh',
           style: TextStyle(
-            color: _navy,
-            fontSize: 15,
+            color: AppColors.white,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
           ),
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: _red.withOpacity(0.12)),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: _red),
+            icon: const Icon(Icons.refresh, color: AppColors.white),
             onPressed: _loadEnrollments,
           ),
         ],
@@ -426,73 +449,49 @@ class _AdminEnrollmentRequestsScreenState extends State<AdminEnrollmentRequestsS
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _loadEnrollments,
-          color: _red,
-          backgroundColor: Colors.white,
+          color: AppColors.primary,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // 1. Search Bar Card
                 Container(
-                  padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey.withOpacity(0.2)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.02),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      )
-                    ],
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.border),
+                    boxShadow: AppShadow.card,
                   ),
                   child: TextField(
                     controller: _searchController,
-                    style: const TextStyle(color: Colors.black87, fontSize: 14),
+                    style: const TextStyle(fontSize: 14, color: AppColors.ink),
                     decoration: InputDecoration(
                       hintText: 'Tìm theo tên, email, khóa học...',
-                      hintStyle: TextStyle(color: Colors.grey.withOpacity(0.7), fontSize: 14),
-                      prefixIcon: Icon(Icons.search, color: Colors.grey.withOpacity(0.7)),
+                      hintStyle: const TextStyle(color: AppColors.textTertiary, fontSize: 13),
+                      prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary, size: 20),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear, color: Colors.black54, size: 18),
+                              icon: const Icon(Icons.clear, color: AppColors.textSecondary, size: 18),
                               onPressed: () => _searchController.clear(),
                             )
                           : null,
-                      filled: true,
-                      fillColor: Colors.transparent,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                   ),
                 ),
                 const SizedBox(height: 14),
 
-                // 2. Horizontal Scroll Status Filter Pills
-                SizedBox(
-                  height: 38,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: [
-                      _buildStatusChip('pending', 'Chờ duyệt'),
-                      _buildStatusChip('approved', 'Đã duyệt'),
-                      _buildStatusChip('rejected', 'Đã từ chối'),
-                      _buildStatusChip('all', 'Tất cả'),
-                    ],
-                  ),
-                ),
+                // 2. Segmented status selector
+                _buildSegmentedFilter(),
                 const SizedBox(height: 14),
 
-                // 3. Main content
+                // 3. Main list
                 Expanded(
                   child: _isLoading
                       ? const Center(
-                          child: CircularProgressIndicator(color: _red),
+                          child: CircularProgressIndicator(color: AppColors.primary),
                         )
                       : filtered.isEmpty
                           ? ListView(
@@ -501,23 +500,24 @@ class _AdminEnrollmentRequestsScreenState extends State<AdminEnrollmentRequestsS
                                 Container(
                                   padding: const EdgeInsets.all(32),
                                   decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: Colors.grey.withOpacity(0.15)),
+                                    color: AppColors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: AppColors.border),
+                                    boxShadow: AppShadow.card,
                                   ),
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Icon(
-                                        Icons.inbox_outlined,
+                                      const Icon(
+                                        Icons.mail_outline_rounded,
                                         size: 48,
-                                        color: Colors.grey.withOpacity(0.5),
+                                        color: AppColors.textTertiary,
                                       ),
                                       const SizedBox(height: 16),
                                       Text(
-                                        'Không tìm thấy yêu cầu đăng ký nào!',
+                                        'Không có đơn đăng ký nào chờ duyệt!',
                                         style: TextStyle(
-                                          color: Colors.grey[600],
+                                          color: AppColors.textSecondary,
                                           fontSize: 14,
                                           fontWeight: FontWeight.w500,
                                         ),
@@ -528,174 +528,273 @@ class _AdminEnrollmentRequestsScreenState extends State<AdminEnrollmentRequestsS
                                 ),
                               ],
                             )
-                          : ListView.separated(
+                          : ListView.builder(
                               itemCount: filtered.length,
-                              separatorBuilder: (context, index) => const SizedBox(height: 12),
                               itemBuilder: (context, index) {
                                 final enrollment = filtered[index];
-                                final studentName = enrollment['studentName']?.toString() ?? 'Không rõ';
-                                final studentEmail = enrollment['studentEmail']?.toString() ?? 'N/A';
-                                final status = enrollment['status']?.toString() ?? 'pending';
-                                final createdAt = enrollment['createdAt']?.toString();
-                                final course = enrollment['courseId'] as Map<String, dynamic>?;
-                                final courseName = course != null ? (course['name']?.toString() ?? '') : 'Khóa học';
-
-                                return Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(color: Colors.grey.withOpacity(0.15)),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.02),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      )
-                                    ],
-                                  ),
-                                  child: Material(
-                                    color: Colors.transparent,
-                                    child: InkWell(
-                                      borderRadius: BorderRadius.circular(16),
-                                      onTap: () => _showDetailsBottomSheet(enrollment),
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(16),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                                          children: [
-                                            // Row: Avatar & Name
-                                            Row(
-                                              children: [
-                                                CircleAvatar(
-                                                  radius: 18,
-                                                  backgroundColor: _red.withOpacity(0.08),
-                                                  child: Text(
-                                                    studentName.isNotEmpty ? studentName[0].toUpperCase() : 'U',
-                                                    style: const TextStyle(
-                                                      color: _red,
-                                                      fontWeight: FontWeight.bold,
-                                                      fontSize: 14,
-                                                    ),
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 12),
-                                                Expanded(
-                                                  child: Column(
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                    children: [
-                                                      Text(
-                                                        studentName,
-                                                        style: const TextStyle(
-                                                          color: Color(0xFF1a1a1a),
-                                                          fontWeight: FontWeight.bold,
-                                                          fontSize: 14.5,
-                                                        ),
-                                                        overflow: TextOverflow.ellipsis,
-                                                      ),
-                                                      const SizedBox(height: 2),
-                                                      Text(
-                                                        studentEmail,
-                                                        style: TextStyle(
-                                                          color: Colors.black.withOpacity(0.45),
-                                                          fontSize: 12,
-                                                        ),
-                                                        overflow: TextOverflow.ellipsis,
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                                // Status Pill Tag
-                                                Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                                  decoration: BoxDecoration(
-                                                    color: _getStatusBgColor(status),
-                                                    border: Border.all(color: _getStatusColor(status).withOpacity(0.3)),
-                                                    borderRadius: BorderRadius.circular(6),
-                                                  ),
-                                                  child: Text(
-                                                    _getStatusLabel(status),
-                                                    style: TextStyle(
-                                                      color: _getStatusColor(status),
-                                                      fontWeight: FontWeight.bold,
-                                                      fontSize: 10.5,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            const Divider(color: Colors.black12, height: 20),
-                                            
-                                            // Course and date details
-                                            Row(
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                              children: [
-                                                Expanded(
-                                                  child: RichText(
-                                                    overflow: TextOverflow.ellipsis,
-                                                    text: TextSpan(
-                                                      text: 'Khóa học: ',
-                                                      style: TextStyle(color: Colors.black54, fontSize: 13),
-                                                      children: [
-                                                        TextSpan(
-                                                          text: courseName,
-                                                          style: const TextStyle(
-                                                            color: _red,
-                                                            fontWeight: FontWeight.bold,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ),
-                                                Text(
-                                                  _formatDate(createdAt),
-                                                  style: TextStyle(
-                                                    color: Colors.black.withOpacity(0.4),
-                                                    fontSize: 12,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            
-                                            // Action buttons row if pending
-                                            if (status == 'pending') ...[
-                                              const SizedBox(height: 12),
-                                              Row(
-                                                mainAxisAlignment: MainAxisAlignment.end,
-                                                children: [
-                                                  TextButton(
-                                                    onPressed: () => _processEnrollmentAction(enrollment['_id'], false),
-                                                    style: TextButton.styleFrom(
-                                                      foregroundColor: Colors.red[700],
-                                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                                    ),
-                                                    child: const Text('Từ chối', style: TextStyle(fontWeight: FontWeight.bold)),
-                                                  ),
-                                                  const SizedBox(width: 12),
-                                                  ElevatedButton(
-                                                    onPressed: () => _processEnrollmentAction(enrollment['_id'], true),
-                                                    style: ElevatedButton.styleFrom(
-                                                      backgroundColor: Colors.green[700],
-                                                      foregroundColor: Colors.white,
-                                                      elevation: 0,
-                                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                                    ),
-                                                    child: const Text('Phê duyệt', style: TextStyle(fontWeight: FontWeight.bold)),
-                                                  ),
-                                                ],
-                                              ),
-                                            ],
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
+                                return _EnrollmentCard(
+                                  enrollment: enrollment,
+                                  onTap: () => _showDetailsBottomSheet(enrollment),
+                                  onAction: (approve) => _processEnrollmentAction(enrollment['_id'], approve),
                                 );
                               },
                             ),
                 ),
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EnrollmentCard extends StatelessWidget {
+  final Map<String, dynamic> enrollment;
+  final VoidCallback onTap;
+  final Function(bool approve) onAction;
+
+  const _EnrollmentCard({
+    required this.enrollment,
+    required this.onTap,
+    required this.onAction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final studentName = enrollment['studentName']?.toString() ?? 'Không rõ';
+    final studentEmail = enrollment['studentEmail']?.toString() ?? 'N/A';
+    final status = enrollment['status']?.toString() ?? 'pending';
+    final createdAt = enrollment['createdAt']?.toString();
+    
+    final course = enrollment['courseId'] as Map<String, dynamic>?;
+    final courseName = course != null ? (course['name']?.toString() ?? '') : 'Khóa học';
+    final isDeleted = course == null;
+
+    Color statusColor;
+    Color statusBgColor;
+    String statusLabel;
+
+    if (status == 'approved') {
+      statusColor = AppColors.success;
+      statusBgColor = AppColors.successBg;
+      statusLabel = 'Đã phê duyệt';
+    } else if (status == 'rejected') {
+      statusColor = AppColors.error;
+      statusBgColor = AppColors.errorBg;
+      statusLabel = 'Đã từ chối';
+    } else {
+      statusColor = AppColors.warning;
+      statusBgColor = AppColors.warningBg;
+      statusLabel = 'Chờ duyệt';
+    }
+
+    String formatDate(String? dateStr) {
+      if (dateStr == null) return 'N/A';
+      final dt = DateTime.tryParse(dateStr);
+      if (dt == null) return 'N/A';
+      return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.border),
+        boxShadow: AppShadow.card,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundColor: AppColors.primaryLight,
+                        child: Text(
+                          studentName.isNotEmpty ? studentName[0].toUpperCase() : 'U',
+                          style: const TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              studentName,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.ink,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              studentEmail,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: statusBgColor,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: statusColor.withOpacity(0.2),
+                          ),
+                        ),
+                        child: Text(
+                          statusLabel,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: statusColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 24, thickness: 1, color: AppColors.border),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Khóa học:',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textTertiary,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    courseName,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.ink,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (isDeleted) ...[
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.errorBg,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Text(
+                                      'Đã xóa',
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        color: AppColors.error,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          const Text(
+                            'Ngày đăng ký:',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textTertiary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            formatDate(createdAt),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  if (status == 'pending') ...[
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => onAction(false),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.error,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          ),
+                          child: const Text(
+                            'Từ chối',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: () => onAction(true),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.success,
+                            foregroundColor: AppColors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          ),
+                          child: const Text(
+                            'Phê duyệt',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
         ),

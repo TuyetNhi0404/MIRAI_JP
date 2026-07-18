@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/home_shared_widgets.dart';
 import '../../student/listening/listening_list_screen.dart';
+import '../../student_schedule_screen.dart';
 
 class StudentOverview extends StatelessWidget {
   final int coursesCount;
@@ -149,7 +150,21 @@ class StudentOverview extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 16),
-            const Expanded(child: SizedBox()),
+            Expanded(
+              child: ActionGridCard(
+                icon: Icons.calendar_month_outlined,
+                title: 'Lịch học',
+                color: Colors.orange.shade700,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const StudentScheduleScreen(),
+                    ),
+                  );
+                },
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 16),
