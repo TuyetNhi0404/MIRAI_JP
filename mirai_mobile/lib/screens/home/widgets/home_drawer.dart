@@ -10,6 +10,9 @@ import '../../student_quizzes_screen.dart';
 import '../../teacher/teacher_my_classes_screen.dart';
 import '../../teacher/teacher_schedule_screen.dart';
 import '../../student/listening/listening_list_screen.dart';
+import '../../student_schedule_screen.dart';
+import '../../admin_enrollment_requests_screen.dart';
+import '../../account_management_screen.dart';
 
 class HomeDrawer extends StatelessWidget {
   final UserModel? user;
@@ -229,17 +232,17 @@ class HomeDrawer extends StatelessWidget {
                   
                   // Admin options
                   if (role == 'admin') ...[
-                    _buildDrawerItem(
+                    _buildNavigationDrawerItem(
                       context: context,
                       icon: Icons.how_to_reg_rounded,
                       title: 'Duyệt đơn đăng ký',
-                      viewId: 'enrollments',
+                      targetScreen: const AdminEnrollmentRequestsScreen(),
                     ),
-                    _buildDrawerItem(
+                    _buildNavigationDrawerItem(
                       context: context,
                       icon: Icons.people_outline_rounded,
                       title: 'Quản lý tài khoản',
-                      viewId: 'users',
+                      targetScreen: const AccountManagementScreen(),
                     ),
                   ],
 
@@ -273,6 +276,12 @@ class HomeDrawer extends StatelessWidget {
 
                   // Student options
                   if (role == 'student' || role == 'user') ...[
+                    _buildNavigationDrawerItem(
+                      context: context,
+                      icon: Icons.calendar_month_outlined,
+                      title: 'Lịch học',
+                      targetScreen: const StudentScheduleScreen(),
+                    ),
                     _buildNavigationDrawerItem(
                       context: context,
                       icon: Icons.headphones_outlined,

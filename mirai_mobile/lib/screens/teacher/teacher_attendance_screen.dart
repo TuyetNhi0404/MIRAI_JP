@@ -56,6 +56,7 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
 
     bool isEditable = true;
     String? lockMessage;
+    String? infoMessage;
     
     if (parsedDate != null && widget.calendar.endTime.isNotEmpty && widget.calendar.startTime.isNotEmpty) {
       try {
@@ -74,8 +75,14 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
           final classEndTime = DateTime(parsedDate.year, parsedDate.month, parsedDate.day, endHour, endMinute);
           
           if (now.isAfter(classEndTime)) {
-            isEditable = false;
-            lockMessage = 'Ca học này đã kết thúc, không thể thay đổi điểm danh.';
+            final deadline = classEndTime.add(const Duration(hours: 24));
+            if (now.isAfter(deadline)) {
+              isEditable = false;
+              lockMessage = 'Đã quá 24h kể từ khi ca học kết thúc, không thể thay đổi điểm danh.';
+            } else {
+              isEditable = true;
+              infoMessage = 'Ca học đã kết thúc. Bạn vẫn có thể chỉnh sửa điểm danh đến ${DateFormat('HH:mm dd/MM/yyyy').format(deadline)}.';
+            }
           } else if (now.isBefore(classStartTime)) {
             isEditable = false;
             lockMessage = 'Ca học này chưa bắt đầu, vui lòng đợi đến giờ vào lớp.';
@@ -145,6 +152,24 @@ class _TeacherAttendanceScreenState extends State<TeacherAttendanceScreen> {
                     child: Text(
                       lockMessage,
                       style: const TextStyle(color: Colors.orange, fontSize: 13, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (isEditable && infoMessage != null)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+              color: Colors.blue.withOpacity(0.1),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline_rounded, color: Colors.blue, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      infoMessage,
+                      style: const TextStyle(color: Colors.blue, fontSize: 13, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],

@@ -8,6 +8,7 @@ class ScheduleProvider extends ChangeNotifier {
   final Map<String, String> _teacherNameCache = {};
 
   List<SessionItem> _items = [];
+  List<SessionItem> _allSessions = [];
   bool _isLoading = false;
   String? _error;
   bool _authRequired = false;
@@ -32,16 +33,50 @@ class ScheduleProvider extends ChangeNotifier {
 
   void goPreviousWeek() {
     _currentMonday = _currentMonday.subtract(const Duration(days: 7));
-    notifyListeners();
+    _filterSessions();
   }
 
   void goNextWeek() {
     _currentMonday = _currentMonday.add(const Duration(days: 7));
-    notifyListeners();
+    _filterSessions();
   }
 
   void goCurrentWeek() {
     _currentMonday = _getMonday(DateTime.now());
+    _filterSessions();
+  }
+
+  void _filterSessions() {
+    final start = DateTime(_currentMonday.year, _currentMonday.month, _currentMonday.day);
+    final end = DateTime(_currentMonday.year, _currentMonday.month, _currentMonday.day + 7);
+
+    final filtered = <SessionItem>[];
+    for (final item in _allSessions) {
+      DateTime? sessionDate;
+      try {
+        String cleanDate = item.date;
+        if (cleanDate.contains('T')) {
+          cleanDate = cleanDate.split('T')[0];
+        }
+        final parts = cleanDate.split('-');
+        if (parts.length == 3) {
+          sessionDate = DateTime(
+            int.parse(parts[0]),
+            int.parse(parts[1]),
+            int.parse(parts[2]),
+          );
+        }
+      } catch (_) {}
+
+      if (sessionDate != null) {
+        if (sessionDate.isBefore(start) || !sessionDate.isBefore(end)) {
+          continue;
+        }
+        filtered.add(item);
+      }
+    }
+
+    _items = filtered;
     notifyListeners();
   }
 
@@ -51,11 +86,13 @@ class ScheduleProvider extends ChangeNotifier {
     return DateTime(dt.year, dt.month, dt.day - diff);
   }
 
-  Future<void> fetchSchedule(String token) async {
-    _isLoading = true;
-    _error = null;
-    _authRequired = false;
-    notifyListeners();
+  Future<void> fetchSchedule(String token, {bool silent = false}) async {
+    if (!silent) {
+      _isLoading = true;
+      _error = null;
+      _authRequired = false;
+      notifyListeners();
+    }
 
     try {
       final calRes = await _apiService.fetchCalendars(token);
@@ -90,26 +127,47 @@ class ScheduleProvider extends ChangeNotifier {
       for (final raw in rawData) {
         final cal = raw as Map<String, dynamic>;
         final cid = _resolveId(cal['courseId']);
-        if (cid != null) uniqueCourseIds.add(cid);
+        if (cid != null) {
+          uniqueCourseIds.add(cid);
+          if (cal['courseId'] is Map) {
+            final cMap = cal['courseId'] as Map;
+            final cName = cMap['name'] as String? ?? cMap['courseName'] as String?;
+            if (cName != null) {
+              _courseNameCache[cid] = cName;
+            }
+          }
+        }
         final tid = _resolveId(cal['teacherId']);
-        if (tid != null) uniqueTeacherIds.add(tid);
+        if (tid != null) {
+          uniqueTeacherIds.add(tid);
+          if (cal['teacherId'] is Map) {
+            final tMap = cal['teacherId'] as Map;
+            final tName = tMap['name'] as String?;
+            if (tName != null) {
+              _teacherNameCache[tid] = tName;
+            }
+          }
+        }
       }
 
       await Future.wait([
         for (final cid in uniqueCourseIds)
-          _courseNameCache.containsKey(cid)
+          _courseNameCache.containsKey(cid) && _courseNameCache[cid] != 'Chưa xác định'
               ? Future.value()
               : _apiService.fetchCourseById(token, cid).then((courseRes) {
                   final name = courseRes['courseName'] as String? ??
                       courseRes['name'] as String? ??
                       courseRes['data']?['courseName'] as String? ??
+                      courseRes['data']?['name'] as String? ??
                       'Chưa xác định';
                   _courseNameCache[cid] = name;
                 }).catchError((_) {
-                  _courseNameCache[cid] = 'Chưa xác định';
+                  if (!_courseNameCache.containsKey(cid)) {
+                    _courseNameCache[cid] = 'Chưa xác định';
+                  }
                 }),
         for (final tid in uniqueTeacherIds)
-          _teacherNameCache.containsKey(tid)
+          _teacherNameCache.containsKey(tid) && _teacherNameCache[tid] != 'GV'
               ? Future.value()
               : _apiService.fetchUserById(token, tid).then((userRes) {
                   final userData = userRes['data'] as Map<String, dynamic>? ?? userRes;
@@ -119,7 +177,9 @@ class ScheduleProvider extends ChangeNotifier {
                       'GV';
                   _teacherNameCache[tid] = name;
                 }).catchError((_) {
-                  _teacherNameCache[tid] = 'GV';
+                  if (!_teacherNameCache.containsKey(tid)) {
+                    _teacherNameCache[tid] = 'GV';
+                  }
                 }),
       ]);
 
@@ -137,13 +197,19 @@ class ScheduleProvider extends ChangeNotifier {
         final slotNum = cal['slotNumber'] as int? ?? (hour < 12 ? 1 : 4);
 
         final courseName = courseId != null
-            ? (_courseNameCache[courseId] ?? 'Chưa xác định')
+            ? (_courseNameCache[courseId] ??
+                (cal['courseId'] is Map
+                    ? (cal['courseId']['name'] as String? ?? cal['courseId']['courseName'] as String? ?? 'Chưa xác định')
+                    : 'Chưa xác định'))
             : 'Chưa xác định';
 
         String teacher = 'GV';
         final teacherId = _resolveId(cal['teacherId']);
         if (teacherId != null) {
-          teacher = _teacherNameCache[teacherId] ?? 'GV';
+          teacher = _teacherNameCache[teacherId] ??
+              (cal['teacherId'] is Map
+                  ? (cal['teacherId']['name'] as String? ?? 'GV')
+                  : 'GV');
         }
 
         final calId = cal['_id'] as String? ?? cal['id'] as String? ?? '';
@@ -171,16 +237,21 @@ class ScheduleProvider extends ChangeNotifier {
         return a.slotNumber.compareTo(b.slotNumber);
       });
 
-      _items = items;
+      _allSessions = items;
+      _filterSessions();
     } catch (e) {
       if (e.toString().contains('401') || e.toString().contains('Unauthorized')) {
         _authRequired = true;
       }
       _error = 'Không thể tải lịch học';
       _items = [];
-    } finally {
-      _isLoading = false;
+      _allSessions = [];
       notifyListeners();
+    } finally {
+      if (!silent) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 

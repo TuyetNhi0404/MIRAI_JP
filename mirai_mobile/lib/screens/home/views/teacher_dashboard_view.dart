@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../widgets/home_shared_widgets.dart';
 import '../../teacher/teacher_my_classes_screen.dart';
 import '../../teacher/teacher_schedule_screen.dart';
-import '../../student/listening/listening_list_screen.dart';
 
 class TeacherOverview extends StatelessWidget {
   final int coursesCount;
@@ -57,11 +56,11 @@ class TeacherOverview extends StatelessWidget {
           children: [
             Expanded(
               child: ActionGridCard(
-                icon: Icons.headphones_outlined,
-                title: 'Luyện nghe',
+                icon: Icons.how_to_reg,
+                title: 'Điểm danh',
                 color: const Color(0xFFB90000),
                 onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ListeningListScreen()));
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const TeacherScheduleScreen()));
                 },
               ),
             ),
