@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { useGSAP } from "@gsap/react";
 import { gsap } from "gsap";
+import AudioWaveSphere2D from "./AudioWaveSphere2D";
+import { isWebGLAvailable, WebGLErrorBoundary } from "./WebGLErrorBoundary";
 
 const PARTICLE_COUNT = 720;
 const FIELD_RADIUS = 0.82;
@@ -454,26 +456,55 @@ export default function AudioWaveSphere3D({
   colorBottom = "#B90000",
   tone = "light",
 }: AudioWaveSphere3DProps) {
+  const [webGLSupported, setWebGLSupported] = useState<boolean>(true);
+
+  useEffect(() => {
+    setWebGLSupported(isWebGLAvailable());
+  }, []);
+
   const tipColor = useMemo(() => new THREE.Color(colorBottom), [colorBottom]);
   const midColor = useMemo(() => new THREE.Color(colorMid), [colorMid]);
   const haloColor = useMemo(() => new THREE.Color(colorTop), [colorTop]);
 
+  const fallback = (
+    <AudioWaveSphere2D
+      isSpeaking={isSpeaking}
+      isResponding={isResponding}
+      audioLevel={audioLevel}
+      size={size}
+      colorTop={colorTop}
+      colorMid={colorMid}
+      colorBottom={colorBottom}
+    />
+  );
+
+  if (!webGLSupported) {
+    return fallback;
+  }
+
   return (
-    <Canvas
-      style={{ width: size, height: size, display: "block" }}
-      camera={{ position: [0, 0, 2.4], fov: 45 }}
-      dpr={[1, 2]}
-      gl={{ antialias: true, alpha: true }}
-    >
-      <AudioOrb
-        isSpeaking={isSpeaking}
-        isResponding={isResponding}
-        audioLevel={audioLevel}
-        tipColor={tipColor}
-        midColor={midColor}
-        haloColor={haloColor}
-        tone={tone}
-      />
-    </Canvas>
+    <WebGLErrorBoundary fallback={fallback}>
+      <Canvas
+        style={{ width: size, height: size, display: "block" }}
+        camera={{ position: [0, 0, 2.4], fov: 45 }}
+        dpr={[1, 2]}
+        gl={{
+          antialias: true,
+          alpha: true,
+          powerPreference: "default",
+          failIfMajorPerformanceCaveat: false,
+        }}
+      >
+        <AudioOrb
+          isSpeaking={isSpeaking}
+          isResponding={isResponding}
+          audioLevel={audioLevel}
+          tipColor={tipColor}
+          midColor={midColor}
+          haloColor={haloColor}
+          tone={tone}
+        />
+      </Canvas>
+    </WebGLErrorBoundary>
   );
 }
