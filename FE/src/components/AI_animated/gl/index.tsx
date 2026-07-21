@@ -1,11 +1,19 @@
+import { useState, useEffect } from "react";
 import { Perf } from "r3f-perf";
 import { Effects } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { useControls } from "leva";
 import { Particles } from "./particles";
 import { VignetteShader } from "./shaders/vignetteShader";
+import { isWebGLAvailable, WebGLErrorBoundary } from "../WebGLErrorBoundary";
 
 export const GL = ({ hovering }: { hovering: boolean }) => {
+  const [webGLSupported, setWebGLSupported] = useState<boolean>(true);
+
+  useEffect(() => {
+    setWebGLSupported(isWebGLAvailable());
+  }, []);
+
   const {
     speed,
     focus,
@@ -41,43 +49,58 @@ export const GL = ({ hovering }: { hovering: boolean }) => {
     useManualTime: { value: false },
     manualTime: { value: 0, min: 0, max: 50, step: 0.01 },
   });
+
+  const fallback = <div style={{ width: "100%", height: "100%", background: "#000" }} />;
+
+  if (!webGLSupported) {
+    return <div id="webgl">{fallback}</div>;
+  }
+
   return (
     <div id="webgl">
-      <Canvas
-        camera={{
-          position: [
-            1.2629783123314589, 2.664606471394044, -1.8178993743288914,
-          ],
-          fov: 50,
-          near: 0.01,
-          far: 300,
-        }}
-      >
-        {/* <Perf position="top-left" /> */}
-        <color attach="background" args={["#000"]} />
-        <Particles
-          speed={speed}
-          aperture={aperture}
-          focus={focus}
-          size={size}
-          noiseScale={noiseScale}
-          noiseIntensity={noiseIntensity}
-          timeScale={timeScale}
-          pointSize={pointSize}
-          opacity={opacity}
-          planeScale={planeScale}
-          useManualTime={useManualTime}
-          manualTime={manualTime}
-          introspect={hovering}
-        />
-        <Effects multisamping={0} disableGamma>
-          <shaderPass
-            args={[VignetteShader]}
-            uniforms-darkness-value={vignetteDarkness}
-            uniforms-offset-value={vignetteOffset}
+      <WebGLErrorBoundary fallback={fallback}>
+        <Canvas
+          camera={{
+            position: [
+              1.2629783123314589, 2.664606471394044, -1.8178993743288914,
+            ],
+            fov: 50,
+            near: 0.01,
+            far: 300,
+          }}
+          gl={{
+            antialias: true,
+            alpha: true,
+            powerPreference: "default",
+            failIfMajorPerformanceCaveat: false,
+          }}
+        >
+          {/* <Perf position="top-left" /> */}
+          <color attach="background" args={["#000"]} />
+          <Particles
+            speed={speed}
+            aperture={aperture}
+            focus={focus}
+            size={size}
+            noiseScale={noiseScale}
+            noiseIntensity={noiseIntensity}
+            timeScale={timeScale}
+            pointSize={pointSize}
+            opacity={opacity}
+            planeScale={planeScale}
+            useManualTime={useManualTime}
+            manualTime={manualTime}
+            introspect={hovering}
           />
-        </Effects>
-      </Canvas>
+          <Effects multisamping={0} disableGamma>
+            <shaderPass
+              args={[VignetteShader]}
+              uniforms-darkness-value={vignetteDarkness}
+              uniforms-offset-value={vignetteOffset}
+            />
+          </Effects>
+        </Canvas>
+      </WebGLErrorBoundary>
     </div>
   );
 };
