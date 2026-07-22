@@ -16,8 +16,8 @@ export interface OcrResponse {
 // Setup Gemini API client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 const embeddingModel = genAI.getGenerativeModel({ model: "gemini-embedding-001" });
-// gemini-3.5-flash: fix cứng model, không dùng alias tự động
-const flashModel = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
+// gemini-2.5-flash: fix cứng model, không dùng alias tự động
+const flashModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 // ─── Phase 1: Performance constants ─────────────────────────────────────────
 const EMBED_BATCH_SIZE = 100;          // batch size cho batchEmbedContents (tiết kiệm quota)
@@ -216,7 +216,7 @@ async function callGeminiWithRetry(
 
   // ─── FALLBACK TO OPENROUTER ────────────────────────────────────────────────
   const openRouterKey = process.env.OPENROUTER_API_KEY;
-  const openRouterModel = process.env.OPENROUTER_MODEL || "google/gemini-3.5-flash";
+  const openRouterModel = process.env.OPENROUTER_MODEL || "google/gemini-2.5-flash";
 
   if (openRouterKey) {
     console.warn(`[GrammarService] Lỗi Gemini kéo dài. Đang kích hoạt Fallback OpenRouter (${openRouterModel})...`);
@@ -303,6 +303,12 @@ export class GrammarService {
     fileName: string
   ): Promise<OcrResponse> {
     const speakingServiceUrl = process.env.SPEAKING_SERVICE_URL || "http://127.0.0.1:8000";
+    const internalKey = process.env.SPEAKING_INTERNAL_KEY || "mirai-speaking-dev-key";
+
+    // Lấy thông tin uploader từ document để gửi x-user-id qua header
+    const doc = await GrammarDocument.findById(documentId);
+    const userId = doc?.uploadedBy ? String(doc.uploadedBy) : "system";
+
     const formData = new FormData();
     const fileBlob = new Blob([fileBuffer], { type: "application/pdf" });
     formData.append("file", fileBlob, fileName);
@@ -311,6 +317,10 @@ export class GrammarService {
     try {
       response = await axios.post(`${speakingServiceUrl}/process-pdf`, formData, {
         timeout: 600000,
+        headers: {
+          "x-speaking-internal-key": internalKey,
+          "x-user-id": userId,
+        },
       });
     } catch (axiosError: any) {
       const status = axiosError.response?.status || "Unknown status";
