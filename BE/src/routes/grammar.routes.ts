@@ -86,6 +86,11 @@ router.get(
 
 // ─── TEACHER QUIZ CREATION & TRACKING ROUTES ────────────────────────────────
 router.post(
+  "/teacher/quiz/existing-questions",
+  authorizeRoles("teacher"),
+  GrammarController.teacherFetchExistingQuestions
+);
+router.post(
   "/teacher/quiz/generate-questions",
   authorizeRoles("teacher"),
   GrammarController.teacherGenerateQuestions

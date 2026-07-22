@@ -206,9 +206,21 @@ export const grammarService = {
     return res.data;
   },
 
+  // ─── TEACHER: FETCH EXISTING QUESTIONS (0đ AI) ─────────────────────────
+  fetchExistingQuestions: async (grammarCardIds: string[]): Promise<{ success: boolean; questions: IGeneratedQuestion[] }> => {
+    const res = await axiosInstance.post(`${BASE}/teacher/quiz/existing-questions`, { grammarCardIds });
+    return res.data;
+  },
+
   // ─── TEACHER: AUTO GENERATE MCQ QUESTIONS ─────────────────────────────────
   generateQuizQuestions: async (grammarCardIds: string[], numQuestions = 5): Promise<{ success: boolean; questions: IGeneratedQuestion[] }> => {
     const res = await axiosInstance.post(`${BASE}/teacher/quiz/generate-questions`, { grammarCardIds, numQuestions });
+    return res.data;
+  },
+
+  // ─── TEACHER: GET ALL GRAMMAR QUESTIONS FOR QUESTION BANK ──────────────────
+  getGrammarQuestionsBank: async (params?: { level?: string; search?: string }): Promise<{ success: boolean; questions: any[] }> => {
+    const res = await axiosInstance.get(`/questions/grammar-questions`, { params });
     return res.data;
   },
 

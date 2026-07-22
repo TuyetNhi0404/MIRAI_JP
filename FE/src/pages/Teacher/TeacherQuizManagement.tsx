@@ -45,6 +45,7 @@ import {
   Trash2,
   ChevronRight,
   BarChart2,
+  BookOpen,
 } from "lucide-react";
 import {
   BarChart,
@@ -219,6 +220,32 @@ const TeacherQuizManagement: React.FC = () => {
     );
   };
 
+  const handleFetchExistingQuestions = async () => {
+    if (selectedCardIds.length === 0) {
+      setAiError("Vui lòng chọn ít nhất một mẫu ngữ pháp để lấy câu hỏi.");
+      return;
+    }
+    setGeneratingQuestions(true);
+    setAiError("");
+    setAiSuccess("");
+    setGeneratedQuestions([]);
+
+    try {
+      const res = await grammarService.fetchExistingQuestions(selectedCardIds);
+      if (res.success && res.questions.length > 0) {
+        setGeneratedQuestions(res.questions);
+        setQuizTitle(`Bài kiểm tra Ngữ pháp ${selectedCourseLevel} - ${new Date().toLocaleDateString()}`);
+        setAiSuccess(`Đã lấy thành công ${res.questions.length} câu hỏi sẵn có từ Ngân hàng!`);
+      } else {
+        setAiError("Chưa có câu hỏi nào trong Ngân hàng cho các mẫu ngữ pháp đã chọn. Bạn có thể bấm 'Tạo mới bằng AI' để sinh câu hỏi.");
+      }
+    } catch (err: unknown) {
+      setAiError(getAxiosErrorMessage(err, "Lỗi khi lấy câu hỏi từ Ngân hàng."));
+    } finally {
+      setGeneratingQuestions(false);
+    }
+  };
+
   const handleGenerateQuestions = async () => {
     if (selectedCardIds.length === 0) {
       setAiError("Vui lòng chọn ít nhất một mẫu ngữ pháp để tạo câu hỏi.");
@@ -353,9 +380,9 @@ const TeacherQuizManagement: React.FC = () => {
             <Grid item xs={12} md={6}>
               <FormControl size="small" fullWidth>
                 <InputLabel sx={{ '&.Mui-focused': { color: brandColors.red } }}>Chọn Lớp học phụ trách</InputLabel>
-                <Select 
-                  value={selectedCourseId} 
-                  onChange={(e) => handleCourseChange(e.target.value)} 
+                <Select
+                  value={selectedCourseId}
+                  onChange={(e) => handleCourseChange(e.target.value)}
                   label="Chọn Lớp học phụ trách"
                   sx={{
                     borderRadius: '8px',
@@ -384,11 +411,11 @@ const TeacherQuizManagement: React.FC = () => {
 
       {/* Tab navigation */}
       <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 3 }}>
-        <Tabs 
-          value={activeTab} 
-          onChange={(_, v) => setActiveTab(v)} 
-          textColor="inherit" 
-          sx={{ 
+        <Tabs
+          value={activeTab}
+          onChange={(_, v) => setActiveTab(v)}
+          textColor="inherit"
+          sx={{
             "& .MuiTabs-indicator": { bgcolor: brandColors.red, height: '3px' },
             "& .MuiTab-root": { fontWeight: 700, color: brandColors.textSecondary, '&.Mui-selected': { color: brandColors.red } }
           }}
@@ -437,7 +464,7 @@ const TeacherQuizManagement: React.FC = () => {
                 onChange={(e) => setCardSearchQuery(e.target.value)}
                 size="small"
                 fullWidth
-                sx={{ 
+                sx={{
                   mb: 1.5,
                   '& .MuiOutlinedInput-root': {
                     borderRadius: '8px',
@@ -496,75 +523,75 @@ const TeacherQuizManagement: React.FC = () => {
                   <FormGroup sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
                     {grammarCards.slice(cardPage * cardsPerPage, cardPage * cardsPerPage + cardsPerPage).map((card) => {
                       const isSelected = selectedCardIds.includes(card._id);
-                    return (
-                      <Box
-                        key={card._id}
-                        onClick={() => handleToggleCardSelection(card._id)}
-                        sx={{
-                          display: "flex",
-                          alignItems: "flex-start",
-                          p: 1.5,
-                          borderRadius: "10px",
-                          border: "1px solid",
-                          borderColor: isSelected ? brandColors.red : brandColors.borderLight,
-                          bgcolor: isSelected ? `${brandColors.red}0a` : "transparent",
-                          cursor: "pointer",
-                          transition: "all 0.2s ease",
-                          "&:hover": {
-                            bgcolor: isSelected ? `${brandColors.red}12` : brandColors.bg,
-                            borderColor: isSelected ? brandColors.red : brandColors.border,
-                          },
-                        }}
-                      >
-                        <Checkbox
-                          checked={isSelected}
-                          size="small"
+                      return (
+                        <Box
+                          key={card._id}
+                          onClick={() => handleToggleCardSelection(card._id)}
                           sx={{
-                            p: 0,
-                            mr: 1.5,
-                            mt: 0.25,
-                            color: brandColors.border,
-                            "&.Mui-checked": { color: brandColors.red }
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                          onChange={() => handleToggleCardSelection(card._id)}
-                        />
-                        <Box sx={{ flex: 1 }}>
-                          <Typography fontSize={13} fontWeight={700} color={brandColors.ink}>
-                            {card.title}
-                          </Typography>
-                          <Typography fontSize={11} color="text.secondary" fontWeight={500} sx={{ mt: 0.5 }}>
-                            {card.meaningVi}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    );
-                  })}
-                </FormGroup>
-
-                {grammarCards.length > cardsPerPage && (
-                  <Box sx={{ display: "flex", justifyContent: "center", mt: 2, pt: 1 }}>
-                    <Pagination
-                      count={Math.ceil(grammarCards.length / cardsPerPage)}
-                      page={cardPage + 1}
-                      onChange={(_, p) => setCardPage(p - 1)}
-                      size="small"
-                      sx={{
-                        "& .MuiPaginationItem-root": {
-                          fontWeight: 700,
-                          "&.Mui-selected": {
-                            bgcolor: brandColors.red,
-                            color: "#fff",
+                            display: "flex",
+                            alignItems: "flex-start",
+                            p: 1.5,
+                            borderRadius: "10px",
+                            border: "1px solid",
+                            borderColor: isSelected ? brandColors.red : brandColors.borderLight,
+                            bgcolor: isSelected ? `${brandColors.red}0a` : "transparent",
+                            cursor: "pointer",
+                            transition: "all 0.2s ease",
                             "&:hover": {
-                              bgcolor: `${brandColors.red}dd`,
+                              bgcolor: isSelected ? `${brandColors.red}12` : brandColors.bg,
+                              borderColor: isSelected ? brandColors.red : brandColors.border,
+                            },
+                          }}
+                        >
+                          <Checkbox
+                            checked={isSelected}
+                            size="small"
+                            sx={{
+                              p: 0,
+                              mr: 1.5,
+                              mt: 0.25,
+                              color: brandColors.border,
+                              "&.Mui-checked": { color: brandColors.red }
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={() => handleToggleCardSelection(card._id)}
+                          />
+                          <Box sx={{ flex: 1 }}>
+                            <Typography fontSize={13} fontWeight={700} color={brandColors.ink}>
+                              {card.title}
+                            </Typography>
+                            <Typography fontSize={11} color="text.secondary" fontWeight={500} sx={{ mt: 0.5 }}>
+                              {card.meaningVi}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      );
+                    })}
+                  </FormGroup>
+
+                  {grammarCards.length > cardsPerPage && (
+                    <Box sx={{ display: "flex", justifyContent: "center", mt: 2, pt: 1 }}>
+                      <Pagination
+                        count={Math.ceil(grammarCards.length / cardsPerPage)}
+                        page={cardPage + 1}
+                        onChange={(_, p) => setCardPage(p - 1)}
+                        size="small"
+                        sx={{
+                          "& .MuiPaginationItem-root": {
+                            fontWeight: 700,
+                            "&.Mui-selected": {
+                              bgcolor: brandColors.red,
+                              color: "#fff",
+                              "&:hover": {
+                                bgcolor: `${brandColors.red}dd`,
+                              }
                             }
                           }
-                        }
-                      }}
-                    />
-                  </Box>
-                )}
-              </>
+                        }}
+                      />
+                    </Box>
+                  )}
+                </>
               )}
             </Box>
             <Box sx={{ p: 3, borderTop: `1px solid ${brandColors.borderLight}`, bgcolor: "#ffffff" }}>
@@ -584,7 +611,7 @@ const TeacherQuizManagement: React.FC = () => {
                       setNumQuestions(isNaN(num) ? "" : num);
                     }
                   }}
-                  sx={{ 
+                  sx={{
                     width: 100,
                     '& .MuiOutlinedInput-root': {
                       borderRadius: '8px',
@@ -597,24 +624,46 @@ const TeacherQuizManagement: React.FC = () => {
                 />
                 <Typography variant="body2" color="text.secondary" fontWeight={600}>câu</Typography>
               </Box>
-              <Button
-                variant="contained"
-                fullWidth
-                className="mira-button-hover"
-                startIcon={<Sparkles size={16} />}
-                onClick={handleGenerateQuestions}
-                disabled={generatingQuestions || selectedCardIds.length === 0}
-                sx={{ 
-                  bgcolor: brandColors.red, 
-                  borderRadius: '8px', 
-                  py: 1, 
-                  fontWeight: 700,
-                  textTransform: 'none',
-                  "&:hover": { bgcolor: brandColors.redDark } 
-                }}
-              >
-                {generatingQuestions ? <CircularProgress size={20} color="inherit" /> : "Tạo bằng AI"}
-              </Button>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  className="mira-button-hover"
+                  startIcon={<BookOpen size={16} />}
+                  onClick={handleFetchExistingQuestions}
+                  disabled={generatingQuestions || selectedCardIds.length === 0}
+                  sx={{
+                    borderColor: brandColors.navy || "#1E293B",
+                    color: brandColors.navy || "#1E293B",
+                    borderRadius: '8px',
+                    py: 1,
+                    fontWeight: 700,
+                    textTransform: 'none',
+                    "&:hover": { bgcolor: "#f1f5f9" }
+                  }}
+                >
+                  Lấy từ Ngân hàng
+                </Button>
+
+                <Button
+                  variant="contained"
+                  fullWidth
+                  className="mira-button-hover"
+                  startIcon={<Sparkles size={16} />}
+                  onClick={handleGenerateQuestions}
+                  disabled={generatingQuestions || selectedCardIds.length === 0}
+                  sx={{
+                    bgcolor: brandColors.red,
+                    borderRadius: '8px',
+                    py: 1,
+                    fontWeight: 700,
+                    textTransform: 'none',
+                    "&:hover": { bgcolor: brandColors.redDark }
+                  }}
+                >
+                  {generatingQuestions ? <CircularProgress size={20} color="inherit" /> : " Tạo mới bằng AI"}
+                </Button>
+              </Box>
             </Box>
           </Box>
 
@@ -687,7 +736,7 @@ const TeacherQuizManagement: React.FC = () => {
                     Xem trước câu hỏi đề xuất ({generatedQuestions.length})
                   </Typography>
                   <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                     {generatedQuestions.map((q, idx) => (
+                    {generatedQuestions.map((q, idx) => (
                       <Card variant="outlined" key={idx} sx={{ borderRadius: "12px", borderColor: brandColors.border, bgcolor: '#ffffff' }}>
                         <CardContent sx={{ p: 3 }}>
                           <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 1.5 }}>
@@ -700,12 +749,12 @@ const TeacherQuizManagement: React.FC = () => {
                               )}
                             </Box>
                             <Box sx={{ display: "flex", gap: 1 }}>
-                              <Button 
-                                size="small" 
-                                variant="outlined" 
+                              <Button
+                                size="small"
+                                variant="outlined"
                                 onClick={() => handleOpenEditQuestion(idx)}
-                                sx={{ 
-                                  borderRadius: '6px', 
+                                sx={{
+                                  borderRadius: '6px',
                                   fontSize: '0.75rem',
                                   color: brandColors.textPrimary,
                                   borderColor: brandColors.border,
@@ -762,13 +811,13 @@ const TeacherQuizManagement: React.FC = () => {
                   startIcon={<Save size={18} />}
                   onClick={handlePublishQuiz}
                   fullWidth
-                  sx={{ 
-                    bgcolor: brandColors.red, 
-                    borderRadius: '10px', 
-                    py: 1.5, 
+                  sx={{
+                    bgcolor: brandColors.red,
+                    borderRadius: '10px',
+                    py: 1.5,
                     fontWeight: 700,
                     textTransform: 'none',
-                    "&:hover": { bgcolor: brandColors.redDark } 
+                    "&:hover": { bgcolor: brandColors.redDark }
                   }}
                 >
                   Lưu & Xuất bản bài Quiz
@@ -952,9 +1001,9 @@ const TeacherQuizManagement: React.FC = () => {
 
           <FormControl size="small" fullWidth>
             <InputLabel sx={{ '&.Mui-focused': { color: brandColors.red } }}>Đáp án chính xác</InputLabel>
-            <Select 
-              value={editingCorrect} 
-              onChange={(e) => setEditingCorrect(e.target.value as number)} 
+            <Select
+              value={editingCorrect}
+              onChange={(e) => setEditingCorrect(e.target.value as number)}
               label="Đáp án chính xác"
               sx={{
                 borderRadius: '8px',
