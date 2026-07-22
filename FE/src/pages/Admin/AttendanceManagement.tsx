@@ -162,7 +162,7 @@ export default function ManageScheduleWithAttendance() {
   }, [calendars, courseFilter, extractId]);
 
   const getHeaderTitle = () => {
-    if (viewMode === "month") return currentDate.format("Tháng M, YYYY");
+    if (viewMode === "month") return currentDate.format("[Tháng] M, YYYY");
     if (viewMode === "week") {
       const start = currentDate.startOf("week");
       const end = currentDate.endOf("week");

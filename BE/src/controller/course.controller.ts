@@ -580,11 +580,28 @@ export async function listTeacherCourses(req: Request, res: Response) {
       homeroomTeacherId: objectTeacherId,
     })
       .select(projection)
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const { CourseCalendar } = await import("../model/calendar.model");
+    const coursesWithProgress = await Promise.all(updatedCourses.map(async (course) => {
+      const totalScheduledSessions = await CourseCalendar.countDocuments({
+        courseId: course._id,
+      });
+      const completedSessions = await CourseCalendar.countDocuments({
+        courseId: course._id,
+        date: { $lte: new Date() }
+      });
+      return {
+        ...course,
+        totalScheduledSessions,
+        completedSessions
+      };
+    }));
 
     return res.status(200).json({
-      data: updatedCourses,
-      total: updatedCourses.length,
+      data: coursesWithProgress,
+      total: coursesWithProgress.length,
     });
   } catch (err: any) {
     console.error("List teacher courses error:", err);

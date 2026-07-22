@@ -270,9 +270,9 @@ const TeacherDashboard = () => {
                 <List sx={{ p: 0 }} className="mira-stagger">
                   {courses.slice(0, 4).map((course, index) => {
                     // Progress calculations
-                    const totalSessions = course.session || 24;
-                    const elapsedSessions = Math.min(Math.round(totalSessions * 0.4 + index * 4), totalSessions);
-                    const progressPercent = Math.round((elapsedSessions / totalSessions) * 100);
+                    const totalSessions = course.totalScheduledSessions > 0 ? course.totalScheduledSessions : (course.session || 24);
+                    const elapsedSessions = course.completedSessions || 0;
+                    const progressPercent = totalSessions > 0 ? Math.round((elapsedSessions / totalSessions) * 100) : 0;
 
                     return (
                       <ListItem
