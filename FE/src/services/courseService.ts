@@ -17,6 +17,8 @@ export interface Course {
   createdBy?: string;
   createdAt?: string;
   updatedAt?: string;
+  completedSessions?: number;
+  totalScheduledSessions?: number;
 }
 
 export interface EnrolledStudent {
