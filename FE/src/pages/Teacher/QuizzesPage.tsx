@@ -1,5 +1,6 @@
 // src/pages/Teacher/QuizzesPage.tsx
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -16,6 +17,9 @@ import {
   DialogContentText,
   IconButton,
   Slide,
+  Menu,
+  ListItemIcon,
+  ListItemText,
 } from "@mui/material";
 import type { TransitionProps } from '@mui/material/transitions';
 import {
@@ -25,6 +29,8 @@ import {
   Error as ErrorIcon,
   Warning as WarningIcon,
   Info as InfoIcon,
+  AutoAwesome as SparklesIcon,
+  MenuBook as BookIcon,
 } from "@mui/icons-material";
 import { useQuiz } from "../../hooks/useQuiz";
 import { useCourse } from "../../hooks/useCourse";
@@ -57,6 +63,9 @@ const SlideTransition = (props: TransitionProps & { children: React.ReactElement
 };
 
 const TeacherQuizzesPage: React.FC = () => {
+  const navigate = useNavigate();
+  const [createMenuAnchor, setCreateMenuAnchor] = useState<null | HTMLElement>(null);
+
   const {
     quizzes,
     loading,

@@ -2,6 +2,7 @@ import axios from "axios";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import GrammarDocument from "../model/grammarDocument.model";
 import GrammarCard from "../model/grammarCard.model";
+import { Question } from "../model/question.model";
 import mongoose from "mongoose";
 import { writeOcrResult, readOcrResult } from "../utils/uploadStorage";
 import { hybridRetrieveChunks } from "./ragSearch.service";
@@ -663,6 +664,30 @@ Biên soạn khoảng 1-3 mẫu ngữ pháp quan trọng nhất liên quan trự
       console.error("Gemini Card generator JSON parse error. Response raw:", responseText);
       throw new Error("Không thể chuyển đổi kết quả từ AI thành cấu trúc JSON thẻ ngữ pháp.");
     }
+  }
+
+  /**
+   * Giáo viên chọn mẫu ngữ pháp -> Lấy các câu hỏi đã có sẵn trong Database (0đ AI)
+   */
+  static async getExistingQuizQuestions(
+    grammarCardIds: string[]
+  ): Promise<any[]> {
+    const cards = await GrammarCard.find({ _id: { $in: grammarCardIds } });
+    if (cards.length === 0) {
+      throw new Error("Không tìm thấy các thẻ ngữ pháp tương ứng.");
+    }
+    const mongooseIds = grammarCardIds.map((id) => new mongoose.Types.ObjectId(id));
+    const questions = await Question.find({ grammarCardId: { $in: mongooseIds } }).sort({ createdAt: -1 });
+    return questions.map((q) => ({
+      grammarCardId: q.grammarCardId ? String(q.grammarCardId) : undefined,
+      questionText: q.questionText,
+      correctAnswer: q.correctAnswer,
+      answer1: q.answer1,
+      answer2: q.answer2,
+      answer3: q.answer3,
+      answer4: q.answer4,
+      explanation: q.explanation || "",
+    }));
   }
 
   /**

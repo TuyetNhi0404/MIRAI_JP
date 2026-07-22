@@ -47,6 +47,19 @@ class QuestionController {
     return res.json({ questions });
   }
 
+  async listGrammarQuestions(req: Request, res: Response) {
+    try {
+      const { level, search } = req.query;
+      const questions = await questionService.listGrammarQuestions({
+        level: typeof level === "string" ? level : undefined,
+        search: typeof search === "string" ? search : undefined,
+      });
+      return res.json({ success: true, questions });
+    } catch (e: any) {
+      return res.status(500).json({ success: false, message: e.message });
+    }
+  }
+
   async update(req: Request, res: Response) {
     const { id } = req.params;
     if (!id) return res.status(400).json({ message: "id is required" });

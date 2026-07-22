@@ -14,6 +14,7 @@ const upload = multer({ dest: uploadDir });
 
 router.get("/chapter/:chapterId", authorizeRoles("teacher"), questionController.listByChapter);
 router.get("/chapters", authorizeRoles("teacher"), questionController.listByChapters);
+router.get("/grammar-questions", authorizeRoles("teacher"), questionController.listGrammarQuestions);
 router.post("/", authorizeRoles("teacher"), questionController.create);
 router.put("/:id", authorizeRoles("teacher"), questionController.update);
 router.delete("/:id", authorizeRoles("teacher"), questionController.remove);
