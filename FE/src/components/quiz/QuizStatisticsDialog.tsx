@@ -128,10 +128,10 @@ const QuizStatisticsDialog: React.FC<QuizStatisticsDialogProps> = ({
                     <TableCell sx={{ fontWeight: 600 }}>Student</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
                     <TableCell sx={{ fontWeight: 600 }} align="center">
-                      Score
+                      Điểm (/100)
                     </TableCell>
                     <TableCell sx={{ fontWeight: 600 }} align="center">
-                      Percentage
+                      Số câu đúng
                     </TableCell>
                     <TableCell sx={{ fontWeight: 600 }} align="center">
                       Status
@@ -154,8 +154,8 @@ const QuizStatisticsDialog: React.FC<QuizStatisticsDialogProps> = ({
                       <TableRow key={index}>
                         <TableCell>{attempt.studentName}</TableCell>
                         <TableCell>{attempt.studentEmail}</TableCell>
+                        <TableCell align="center">{attempt.percentage}/100</TableCell>
                         <TableCell align="center">{attempt.score}</TableCell>
-                        <TableCell align="center">{attempt.percentage}%</TableCell>
                         <TableCell align="center">
                           <Chip
                             icon={attempt.passed ? <CheckIcon /> : <CancelIcon />}

@@ -1,6 +1,5 @@
 // src/pages/Teacher/QuizzesPage.tsx
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -17,9 +16,6 @@ import {
   DialogContentText,
   IconButton,
   Slide,
-  Menu,
-  ListItemIcon,
-  ListItemText,
 } from "@mui/material";
 import type { TransitionProps } from '@mui/material/transitions';
 import {
@@ -29,8 +25,6 @@ import {
   Error as ErrorIcon,
   Warning as WarningIcon,
   Info as InfoIcon,
-  AutoAwesome as SparklesIcon,
-  MenuBook as BookIcon,
 } from "@mui/icons-material";
 import { useQuiz } from "../../hooks/useQuiz";
 import { useCourse } from "../../hooks/useCourse";
@@ -63,9 +57,6 @@ const SlideTransition = (props: TransitionProps & { children: React.ReactElement
 };
 
 const TeacherQuizzesPage: React.FC = () => {
-  const navigate = useNavigate();
-  const [createMenuAnchor, setCreateMenuAnchor] = useState<null | HTMLElement>(null);
-
   const {
     quizzes,
     loading,
@@ -171,17 +162,16 @@ const TeacherQuizzesPage: React.FC = () => {
       };
 
       console.log('📝 Creating quiz with data:', JSON.stringify(quizData, null, 2));
-      const result = await createNewQuiz(quizData);
+      await createNewQuiz(quizData).unwrap();
 
-      if (result.type.endsWith('/fulfilled')) {
-        setCreateDialogOpen(false);
-        setEditQuiz(null);
-        showNotification('Đã tạo bài kiểm tra thành công!', 'success');
-      }
-    } catch (err) {
-      const error = err as Error;
+      setCreateDialogOpen(false);
+      setEditQuiz(null);
+      showNotification('Đã tạo bài kiểm tra thành công!', 'success');
+    } catch (err: any) {
+      const errorMsg = typeof err === 'string' ? err : err?.message || 'Tạo bài kiểm tra thất bại.';
       console.error("Failed to create quiz:", err);
-      showNotification(error.message || 'Tạo bài kiểm tra thất bại. Vui lòng kiểm tra console để biết chi tiết.', 'error');
+      showNotification(errorMsg, 'error');
+      resetError(); // Xóa error trong Redux state để không hiển thị banner lỗi đỏ ở trên màn hình
     }
   };
 
@@ -195,14 +185,15 @@ const TeacherQuizzesPage: React.FC = () => {
         createdBy: userId,
       };
 
-      await updateExistingQuiz(editQuiz._id, updateData);
+      await updateExistingQuiz(editQuiz._id, updateData).unwrap();
       setCreateDialogOpen(false);
       setEditQuiz(null);
       showNotification('Đã cập nhật bài kiểm tra thành công!', 'success');
-    } catch (err) {
-      const error = err as Error;
+    } catch (err: any) {
+      const errorMsg = typeof err === 'string' ? err : err?.message || 'Cập nhật bài kiểm tra thất bại';
       console.error("Failed to update quiz:", err);
-      showNotification(error.message || 'Cập nhật bài kiểm tra thất bại', 'error');
+      showNotification(errorMsg, 'error');
+      resetError();
     }
   };
 
@@ -215,7 +206,7 @@ const TeacherQuizzesPage: React.FC = () => {
           const userId = user?._id || (user as UserWithId)?.id;
           await removeQuiz(quizId, userId);
           closeConfirmDialog();
-          showNotification('✅ Đã xóa bài kiểm tra thành công', 'success');
+          showNotification('Đã xóa bài kiểm tra thành công', 'success');
         } catch (err) {
           const error = err as Error;
           console.error("Failed to delete quiz:", err);

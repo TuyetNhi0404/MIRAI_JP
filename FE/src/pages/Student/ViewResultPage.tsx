@@ -91,21 +91,21 @@ const ViewResultPage: React.FC = () => {
           <h2 className="text-lg font-black text-text-main m-0">{attemptDetail.quizTitle}</h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Score box */}
+            {/* Score box - hiển thị điểm trên thang 100 */}
             <div className="bg-surface-base border border-border-color p-4 rounded-2xl text-center shadow-sm flex flex-col items-center justify-center">
               <Award className="text-primary-color mb-1" size={24} />
-              <span className="text-2xl font-black text-primary-color">
-                {attemptDetail.score} <span className="text-xs text-slate-450 font-bold">/ {attemptDetail.totalQuestions}</span>
+              <span className={`text-2xl font-black ${attemptDetail.passed ? "text-emerald-600" : "text-red-500"}`}>
+                {attemptDetail.percentage} <span className="text-xs text-slate-450 font-bold">/ 100</span>
               </span>
               <span className="text-[10px] text-text-secondary font-extrabold uppercase mt-1">Điểm số</span>
             </div>
 
-            {/* Percentage box */}
+            {/* Correct answers box */}
             <div className="bg-surface-base border border-border-color p-4 rounded-2xl text-center shadow-sm flex flex-col items-center justify-center">
-              <span className={`text-2xl font-black ${attemptDetail.passed ? "text-emerald-600" : "text-red-500"}`}>
-                {attemptDetail.percentage}%
+              <span className="text-2xl font-black text-text-secondary">
+                {attemptDetail.score} <span className="text-xs font-bold">/ {attemptDetail.totalQuestions}</span>
               </span>
-              <span className="text-[10px] text-text-secondary font-extrabold uppercase mt-3">Tỷ lệ chính xác</span>
+              <span className="text-[10px] text-text-secondary font-extrabold uppercase mt-3">Số câu đúng</span>
             </div>
 
             {/* Time spent box */}

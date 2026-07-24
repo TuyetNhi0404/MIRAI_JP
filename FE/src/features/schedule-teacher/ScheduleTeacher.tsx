@@ -1,15 +1,9 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, Fragment } from 'react';
+import dayjs from 'dayjs';
 import {
   Box,
-  Paper,
   Typography,
   Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   CircularProgress,
   IconButton,
   Snackbar,
@@ -17,10 +11,8 @@ import {
   Select,
   MenuItem,
   FormControl,
-  Card,
   useMediaQuery,
   useTheme,
-  Grid,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
 import {
@@ -28,8 +20,6 @@ import {
   ChevronRight,
   Calendar,
   Clock,
-  BookOpen,
-  CalendarDays,
 } from 'lucide-react';
 
 import { teacherScheduleService } from '../../services/scheduleTeacherService';
@@ -324,102 +314,121 @@ const ScheduleTeacher = () => {
     const dateStr = toLocalDateString(date);
 
     if (!scheduleItem) {
-      return (
-        <Box
-          sx={{
-            p: 2,
-            textAlign: 'center',
-            color: '#999',
-            fontStyle: 'italic',
-            minHeight: 80,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Typography sx={{ fontSize: '0.85rem' }}>Không có lớp</Typography>
-        </Box>
-      );
+      return null;
     }
 
     const canReg = canRegister(dateStr, scheduleItem.startTime || '00:00');
     const hasRequest = scheduleItem.request?.status;
 
     return (
-      <Box sx={{ p: 1.5 }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <BookOpen size={16} color="#1976d2" />
-            <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, color: '#1976d2' }}>
+      <Box sx={{ p: 1 }}>
+        <div
+          className="mira-fade-in"
+          style={{
+            background: "#ffffff",
+            borderRadius: 8,
+            padding: "10px 12px",
+            boxShadow: "0 2px 6px rgba(0, 0, 0, 0.04)",
+            border: `1px solid #E2E8F0`,
+            borderLeft: `5px solid #B90000`,
+            color: "#1F2238",
+            display: "flex",
+            flexDirection: "column",
+            gap: 6,
+            justifyContent: "space-between",
+            minHeight: 110,
+            fontFamily: '"Comfortaa", sans-serif',
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <div 
+              style={{ 
+                fontWeight: 800, 
+                fontSize: 13, 
+                overflow: 'hidden', 
+                textOverflow: 'ellipsis', 
+                whiteSpace: 'nowrap' 
+              }}
+              title={scheduleItem.courseName}
+            >
               {scheduleItem.courseName}
-            </Typography>
-          </Box>
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#595959' }}>
+              <Clock size={12} style={{ color: '#8C8C8C' }} />
+              <span>{scheduleItem.startTime} - {scheduleItem.endTime}</span>
+            </div>
+          </div>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Clock size={14} color="#4caf50" />
-            <Typography sx={{ fontSize: '0.85rem', color: '#4caf50', fontWeight: 500 }}>
-              {scheduleItem.startTime} - {scheduleItem.endTime}
-            </Typography>
-          </Box>
-
-          <Box sx={{ mt: 1, display: 'flex', justifyContent: 'center' }}>
+          <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'center', width: '100%' }}>
             {hasRequest ? (
-              <Button
-                disabled
-                fullWidth
-                size="small"
-                variant="contained"
-                sx={{
-                  bgcolor: getStatusColor(scheduleItem.request!.status),
+              <div
+                style={{
+                  width: '100%',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  padding: "5px 6px",
+                  borderRadius: 4,
+                  textAlign: 'center',
+                  background: scheduleItem.request!.status === 'accepted' ? '#52C41A' : scheduleItem.request!.status === 'rejected' ? '#f44336' : '#FAAD14',
                   color: 'white',
-                  fontSize: '0.8rem',
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  '&.Mui-disabled': {
-                    bgcolor: getStatusColor(scheduleItem.request!.status),
-                    color: 'white'
-                  },
+                  border: `1px solid ${scheduleItem.request!.status === 'accepted' ? '#389E0D' : scheduleItem.request!.status === 'rejected' ? '#d32f2f' : '#D46B08'}`,
                 }}
               >
                 {getStatusText(scheduleItem.request!.status)}
-              </Button>
+              </div>
             ) : canReg ? (
-              <Button
-                fullWidth
-                size="small"
-                variant="contained"
-                onClick={() => handleRegisterClick(scheduleItem)}
-                sx={{
-                  bgcolor: '#1976d2',
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRegisterClick(scheduleItem);
+                }}
+                style={{
+                  width: '100%',
+                  padding: "5px 8px",
+                  borderRadius: 4,
+                  fontSize: 10,
+                  fontWeight: 800,
+                  backgroundColor: '#52C41A',
                   color: 'white',
-                  fontSize: '0.8rem',
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  '&:hover': { bgcolor: '#1565c0' },
+                  border: '1px solid #389E0D',
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.3,
+                  transition: 'all 150ms ease',
+                  boxShadow: "0 1px 3px rgba(82,196,26,0.12)",
+                }}
+                onMouseEnter={(btn) => {
+                  btn.currentTarget.style.backgroundColor = '#389E0D';
+                }}
+                onMouseLeave={(btn) => {
+                  btn.currentTarget.style.backgroundColor = '#52C41A';
                 }}
               >
                 Xin nghỉ
-              </Button>
+              </button>
             ) : (
-              <Button
-                disabled
-                fullWidth
-                size="small"
-                variant="contained"
-                sx={{
-                  bgcolor: '#424242',
+              <div
+                style={{
+                  width: '100%',
+                  fontSize: 9,
+                  fontWeight: 800,
+                  padding: "5px 6px",
+                  borderRadius: 4,
+                  background: '#B90000',
                   color: 'white',
-                  fontSize: '0.8rem',
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  '&.Mui-disabled': { bgcolor: '#424242', color: 'white' },
+                  textTransform: 'uppercase',
+                  border: '1px solid #8A0000',
+                  letterSpacing: 0.3,
+                  textAlign: 'center',
                 }}
               >
                 Hết hạn
-              </Button>
+              </div>
             )}
-          </Box>
-        </Box>
+          </div>
+        </div>
       </Box>
     );
   };
@@ -428,219 +437,351 @@ const ScheduleTeacher = () => {
     const dateStr = toLocalDateString(date);
 
     if (!scheduleItem) {
-      return (
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight={140}>
-          <Typography sx={{ color: '#f44336', fontSize: 20, fontWeight: 300 }}>—</Typography>
-        </Box>
-      );
+      return null;
     }
 
     const canReg = canRegister(dateStr, scheduleItem.startTime || '00:00');
     const hasRequest = scheduleItem.request?.status;
 
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          p: 1.5,
-          minHeight: 140,
+      <div
+        className="mira-fade-in"
+        style={{
+          background: "#ffffff",
+          borderRadius: 8,
+          padding: "10px 12px",
+          transition: "all 200ms ease",
+          boxShadow: "0 2px 6px rgba(0, 0, 0, 0.04)",
+          border: `1px solid #E2E8F0`,
+          borderLeft: `5px solid #B90000`,
+          color: "#1F2238",
+          display: "flex",
+          flexDirection: "column",
+          gap: 6,
+          flex: 1,
+          alignSelf: "stretch",
+          justifyContent: "space-between",
+          minHeight: 110,
+          fontFamily: '"Comfortaa", sans-serif',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = "translateY(-2px)";
+          e.currentTarget.style.boxShadow = "0 6px 12px rgba(0, 0, 0, 0.08)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = "translateY(0)";
+          e.currentTarget.style.boxShadow = "0 2px 6px rgba(0, 0, 0, 0.04)";
         }}
       >
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-            <BookOpen size={14} color="#1976d2" />
-            <Typography sx={{ fontSize: 11, fontWeight: 600 }}>{scheduleItem.courseName}</Typography>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-            <Clock size={14} color="#4caf50" />
-            <Typography sx={{ fontSize: 10.5, color: '#4caf50', fontWeight: 600 }}>
-              {scheduleItem.startTime} - {scheduleItem.endTime}
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-            <CalendarDays size={14} color="#1976d2" />
-            <Typography sx={{ fontSize: 10.5 }}>
-              {date.getDate().toString().padStart(2, '0')}.{(date.getMonth() + 1).toString().padStart(2, '0')}.
-              {date.getFullYear()}
-            </Typography>
-          </Box>
-        </Box>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <div 
+            style={{ 
+              fontWeight: 800, 
+              fontSize: 13, 
+              overflow: 'hidden', 
+              textOverflow: 'ellipsis', 
+              whiteSpace: 'nowrap' 
+            }}
+            title={scheduleItem.courseName}
+          >
+            {scheduleItem.courseName}
+          </div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#595959' }}>
+            <Clock size={12} style={{ color: '#8C8C8C' }} />
+            <span>{scheduleItem.startTime} - {scheduleItem.endTime}</span>
+          </div>
+        </div>
 
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            mt: 2,
-          }}
-        >
+        <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'center', width: '100%' }}>
           {hasRequest ? (
-            <Button
-              disabled
-              size="small"
-              variant="contained"
-              sx={btnStyle(getStatusColor(scheduleItem.request!.status))}
+            <div
+              style={{
+                width: '100%',
+                fontSize: 10,
+                fontWeight: 700,
+                padding: "5px 6px",
+                borderRadius: 4,
+                textAlign: 'center',
+                background: scheduleItem.request!.status === 'accepted' ? '#52C41A' : scheduleItem.request!.status === 'rejected' ? '#f44336' : '#FAAD14',
+                color: 'white',
+                border: `1px solid ${scheduleItem.request!.status === 'accepted' ? '#389E0D' : scheduleItem.request!.status === 'rejected' ? '#d32f2f' : '#D46B08'}`,
+              }}
             >
               {getStatusText(scheduleItem.request!.status)}
-            </Button>
+            </div>
           ) : canReg ? (
-            <Button
-              size="small"
-              variant="contained"
-              onClick={() => handleRegisterClick(scheduleItem)}
-              sx={btnStyle('#1976d2', true)}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRegisterClick(scheduleItem);
+              }}
+              style={{
+                width: '100%',
+                padding: "5px 8px",
+                borderRadius: 4,
+                fontSize: 10,
+                fontWeight: 800,
+                backgroundColor: '#52C41A',
+                color: 'white',
+                border: '1px solid #389E0D',
+                cursor: 'pointer',
+                textAlign: 'center',
+                textTransform: 'uppercase',
+                letterSpacing: 0.3,
+                transition: 'all 150ms ease',
+                boxShadow: "0 1px 3px rgba(82,196,26,0.12)",
+              }}
+              onMouseEnter={(btn) => {
+                btn.currentTarget.style.backgroundColor = '#389E0D';
+              }}
+              onMouseLeave={(btn) => {
+                btn.currentTarget.style.backgroundColor = '#52C41A';
+              }}
             >
               Xin nghỉ
-            </Button>
+            </button>
           ) : (
-            <Button
-              disabled
-              size="small"
-              variant="contained"
-              sx={{
-                bgcolor: '#424242',
-                color: 'white',
+            <div
+              style={{
+                width: '100%',
                 fontSize: 9,
-                textTransform: 'none',
-                fontWeight: 700,
-                px: 1,
-                py: 0.3,
-                '&.Mui-disabled': { bgcolor: '#424242', color: 'white' },
+                fontWeight: 800,
+                padding: "5px 6px",
+                borderRadius: 4,
+                background: '#B90000',
+                color: 'white',
+                textTransform: 'uppercase',
+                letterSpacing: 0.3,
+                textAlign: 'center',
+                border: '1px solid #8A0000',
               }}
             >
               Hết hạn
-            </Button>
+            </div>
           )}
-        </Box>
-      </Box>
+        </div>
+      </div>
     );
   };
 
   const renderMobileView = () => {
     return (
-      <Grid container spacing={2}>
+      <div style={{ padding: 0 }} className="mira-stagger">
         {weekDates.map((date, dayIndex) => {
           const dateStr = toLocalDateString(date);
           const dayName = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật'][dayIndex];
+          const isToday = dayjs(date).isSame(dayjs(), 'day');
+
+          const daySchedules: { period: typeof periods[0]; item: ScheduleGridItem }[] = [];
+          periods.forEach(period => {
+            const item = scheduleGrid[period.name]?.[dateStr];
+            if (item) {
+              daySchedules.push({ period, item });
+            }
+          });
 
           return (
-            <Grid item xs={12} key={dayIndex}>
-              <Card
-                elevation={3}
-                sx={{
-                  borderRadius: 2,
-                  overflow: 'hidden',
-                  border: '1px solid #e0e0e0',
+            <div
+              key={dateStr}
+              style={{
+                marginBottom: 12,
+                borderRadius: 10,
+                overflow: 'hidden',
+                border: `1px solid ${isToday ? '#B90000' : '#E2E8F0'}`,
+                background: '#ffffff',
+                transition: 'all 200ms ease',
+                boxShadow: isToday ? '0 4px 12px rgba(185, 0, 0, 0.08)' : '0 2px 4px rgba(0,0,0,0.02)',
+              }}
+            >
+              <div
+                style={{
+                  padding: '12px 16px',
+                  background: isToday
+                    ? 'linear-gradient(135deg, #B90000, #8A0000)'
+                    : '#F8FAFC',
+                  color: isToday ? 'white' : '#1F2238',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  position: 'relative',
+                  fontFamily: '"Comfortaa", sans-serif',
                 }}
               >
-                <Box
-                  sx={{
-                    bgcolor: '#B90000',
-                    color: 'white',
-                    p: 1.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <CalendarDays size={18} />
-                    <Typography sx={{ fontWeight: 600, fontSize: '0.95rem' }}>
-                      {dayName}
-                    </Typography>
-                  </Box>
-                  <Typography sx={{ fontSize: '0.85rem', fontWeight: 500 }}>
+                <div>
+                  <span style={{ fontWeight: 700, display: 'block', fontSize: 14 }}>
+                    {dayName}
+                  </span>
+                  <span style={{ fontSize: 12, opacity: isToday ? 0.9 : 0.6, fontWeight: 500 }}>
                     {date.getDate().toString().padStart(2, '0')}/{(date.getMonth() + 1).toString().padStart(2, '0')}/
                     {date.getFullYear()}
-                  </Typography>
-                </Box>
-
-                {periods.map((period, pIdx) => (
-                  <Box
-                    key={period.name}
-                    sx={{
-                      borderBottom: pIdx < periods.length - 1 ? '1px solid #e0e0e0' : 'none',
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        bgcolor: '#f5f5f5',
-                        px: 1.5,
-                        py: 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
-                      }}
-                    >
-                      <Clock size={14} color="#666" />
-                      <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: '#666' }}>
-                        {period.label} ({period.displayTime})
-                      </Typography>
-                    </Box>
-                    {renderScheduleItemMobile(scheduleGrid[period.name]?.[dateStr], date)}
-                  </Box>
-                ))}
-              </Card>
-            </Grid>
+                  </span>
+                </div>
+                <span
+                  style={{
+                    padding: '2px 8px',
+                    borderRadius: 12,
+                    fontSize: 11,
+                    background: isToday ? 'rgba(255,255,255,0.25)' : '#E2E8F0',
+                    color: isToday ? 'white' : '#64748B',
+                    fontWeight: 600,
+                  }}
+                >
+                  {daySchedules.length} ca dạy
+                </span>
+              </div>
+              <div style={{ padding: 12 }}>
+                {daySchedules.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {daySchedules.map(({ period, item }) => (
+                      <div key={item.calendarId}>
+                        <div style={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          color: '#64748B',
+                          marginBottom: 6,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          fontFamily: '"Comfortaa", sans-serif',
+                        }}>
+                          <Clock size={12} />
+                          <span>{period.label} ({period.displayTime})</span>
+                        </div>
+                        {renderScheduleItemMobile(item, date)}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ padding: '16px 8px', textAlign: 'center' }}>
+                    <span style={{ fontSize: 12, color: '#8C8C8C', fontFamily: '"Comfortaa", sans-serif' }}>
+                      Không có lịch dạy
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
           );
         })}
-      </Grid>
+      </div>
     );
   };
 
   const renderDesktopView = () => {
     return (
-      <TableContainer component={Paper} elevation={2} sx={{ maxHeight: 'calc(100vh - 300px)', overflowY: 'auto' }}>
-        <Table
-          sx={{
-            tableLayout: 'fixed',
-            borderCollapse: 'collapse',
-            '& th, & td': {
-              border: '1px solid #e0e0e0',
-            },
-          }}
-        >
-          <TableHead>
-            <TableRow sx={{ bgcolor: '#f5f5f5' }}>
-              <TableCell sx={{ fontWeight: 600, width: 120 }}>Ca học</TableCell>
-              {['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'].map((day, idx) => {
-                const date = weekDates[idx];
-                const dateStr = date ? ` (${date.getDate()}/${date.getMonth() + 1})` : '';
+      <div 
+        className="mira-fade-in" 
+        style={{ 
+          border: `1px solid #E2E8F0`, 
+          borderRadius: 12, 
+          overflow: "hidden",
+          background: "#fff",
+          width: "100%",
+          maxWidth: "100%",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.02)",
+        }}
+      >
+        <div style={{ display: "grid", gridTemplateColumns: `110px repeat(7, minmax(0, 1fr))`, width: "100%" }}>
+          {/* Row 1: Headers */}
+          <div style={{ 
+            padding: 16, 
+            borderBottom: '1px solid #E2E8F0', 
+            borderRight: '1px solid #E2E8F0', 
+            backgroundColor: '#F8FAFC', 
+            fontWeight: 600, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            fontSize: 13,
+            color: '#1F2238',
+            fontFamily: '"Comfortaa", sans-serif',
+          }}>
+            Ca học
+          </div>
+          {['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'].map((day, idx) => {
+            const date = weekDates[idx];
+            const isToday = date ? dayjs(date).isSame(dayjs(), 'day') : false;
+            const dateStr = date ? ` (${date.getDate()}/${date.getMonth() + 1})` : '';
+            return (
+              <div
+                key={idx}
+                style={{
+                  padding: 16,
+                  textAlign: "center",
+                  borderBottom: '1px solid #E2E8F0', 
+                  borderRight: '1px solid #E2E8F0', 
+                  backgroundColor: isToday ? '#FFF1F0' : '#F8FAFC',
+                  fontFamily: '"Comfortaa", sans-serif',
+                }}
+              >
+                <span style={{ 
+                  display: "block", 
+                  color: isToday ? '#B90000' : '#1F2238', 
+                  fontSize: 14, 
+                  fontWeight: 700 
+                }}>
+                  {day}
+                </span>
+                <span style={{ 
+                  color: isToday ? '#B90000' : '#64748B', 
+                  fontSize: 12, 
+                  fontWeight: 500 
+                }}>
+                  {dateStr.replace(/[()]/g, '')}
+                </span>
+              </div>
+            );
+          })}
+
+          {/* Rows for each slot/period */}
+          {periods.map((period) => (
+            <Fragment key={period.name}>
+              {/* Column Ca học */}
+              <div style={{
+                padding: 12,
+                borderBottom: '1px solid #E2E8F0', 
+                borderRight: '1px solid #E2E8F0', 
+                backgroundColor: '#F8FAFC', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                justifyContent: 'center',
+                alignItems: 'center',
+                textAlign: 'center',
+                fontFamily: '"Comfortaa", sans-serif',
+              }}>
+                <span style={{ fontSize: 13, fontWeight: 700, display: 'block', color: '#1F2238' }}>{period.label}</span>
+                <span style={{ fontSize: 10, color: '#64748B', marginTop: 4 }}>{period.displayTime}</span>
+              </div>
+
+              {/* Day cells for this period */}
+              {weekDates.map((date, _idx) => {
+                const dateStr = toLocalDateString(date);
+                const item = scheduleGrid[period.name]?.[dateStr];
+
                 return (
-                  <TableCell key={idx} align="center" sx={{ minWidth: 120 }}>
-                    <Typography sx={{ fontSize: 13, fontWeight: 600 }}>
-                      {day}{dateStr}
-                    </Typography>
-                  </TableCell>
+                  <div
+                    key={`${dateStr}-${period.name}`}
+                    style={{
+                      padding: 8,
+                      borderBottom: '1px solid #E2E8F0', 
+                      borderRight: '1px solid #E2E8F0', 
+                      minHeight: 120, 
+                      backgroundColor: 'white',
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "center",
+                      alignItems: "stretch",
+                      gap: 8,
+                    }}
+                  >
+                    {renderScheduleItemDesktop(item, date)}
+                  </div>
                 );
               })}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {periods.map(period => (
-              <TableRow key={period.name}>
-                <TableCell sx={{ fontWeight: 600, bgcolor: '#fafafa', p: 1.5, verticalAlign: 'middle' }}>
-                  <Box>
-                    <Typography sx={{ fontWeight: 700, fontSize: 13 }}>{period.label}</Typography>
-                    <Typography sx={{ fontSize: 10, color: '#666' }}>{period.displayTime}</Typography>
-                  </Box>
-                </TableCell>
-                {weekDates.map((date, idx) => {
-                  const dateStr = toLocalDateString(date);
-                  const item = scheduleGrid[period.name]?.[dateStr];
-                  return (
-                    <TableCell key={idx} sx={{ p: 0, verticalAlign: 'top' }}>
-                      {renderScheduleItemDesktop(item, date)}
-                    </TableCell>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+            </Fragment>
+          ))}
+        </div>
+      </div>
     );
   };
 
@@ -653,10 +794,7 @@ const ScheduleTeacher = () => {
   }
 
   return (
-    <Box sx={{ maxWidth: '1600px', mx: 'auto', px: isMobile ? 2 : 2, pb: 12 }}>
-      <Typography variant={isMobile ? 'h6' : 'h5'} sx={{ fontWeight: 600, mb: 2, mt: 2 }}>
-        Teaching Schedule
-      </Typography>
+    <Box sx={{ width: '100%', maxWidth: '1600px', mx: 'auto', px: isMobile ? 2 : 2, pb: 12, boxSizing: 'border-box' }}>
 
       <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 3, flexWrap: 'wrap' }}>
         <IconButton onClick={() => navigateWeek(-1)} size="small">
@@ -754,17 +892,6 @@ const ScheduleTeacher = () => {
     </Box>
   );
 };
-const btnStyle = (color: string, isActive = false) => ({
-  bgcolor: color,
-  color: 'white',
-  fontSize: 9,
-  textTransform: 'none',
-  fontWeight: 700,
-  px: 1,
-  py: 0.3,
-  '&:hover': { bgcolor: isActive ? '#1565c0' : color },
-  '&.Mui-disabled': { bgcolor: color, color: 'white' },
-});
 
 const getStatusColor = (status: RequestStatus) => {
   switch (status) {

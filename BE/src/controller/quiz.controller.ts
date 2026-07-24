@@ -51,8 +51,8 @@ class QuizController {
 
       const hasAnyChapter = useAll || Boolean(singleChapterId) || normalizedChapterIds.length > 0;
 
-      if (!title || !courseId || !hasAnyChapter || !totalQuestions) {
-        return res.status(400).json({ message: "Required information is missing" });
+      if (!title || !courseId || !hasAnyChapter || !totalQuestions || !dueDateValue) {
+        return res.status(400).json({ message: "Vui lòng nhập đầy đủ các thông tin bắt buộc (bao gồm Hạn nộp)" });
       }
 
       // Sử dụng createdBy từ body hoặc default
@@ -91,7 +91,7 @@ class QuizController {
         quiz,
       });
     } catch (error: any) {
-      return res.status(500).json({ message: error.message });
+      return res.status(400).json({ message: error.message });
     }
   }
 

@@ -563,11 +563,24 @@ class GrammarController {
   // ─── TEACHER: LƯU QUIZ VÀ CÂU HỎI VÀO KHÓA HỌC ─────────────────────────────────
   async teacherCreateQuiz(req: Request, res: Response) {
     try {
-      const { courseId, title, durationMinutes, questions } = req.body;
+      const { courseId, title, durationMinutes, dueDate, questions } = req.body;
       const userId = req.id;
 
       if (!courseId || !title || !questions || !Array.isArray(questions) || questions.length === 0) {
         return res.status(400).json({ success: false, message: "Vui lòng điền đủ tiêu đề, lớp học và câu hỏi." });
+      }
+
+      if (!dueDate) {
+        return res.status(400).json({ success: false, message: "Vui lòng chọn Hạn nộp (Due Date) cho bài kiểm tra." });
+      }
+
+      const parsedDueDate = new Date(dueDate);
+      if (isNaN(parsedDueDate.getTime())) {
+        return res.status(400).json({ success: false, message: "Hạn nộp không hợp lệ." });
+      }
+
+      if (parsedDueDate.getTime() <= Date.now()) {
+        return res.status(400).json({ success: false, message: "Hạn nộp phải lớn hơn thời gian hiện tại." });
       }
 
       const createdQuestionIds: mongoose.Types.ObjectId[] = [];
@@ -611,6 +624,7 @@ class GrammarController {
         courseId: new mongoose.Types.ObjectId(courseId),
         totalQuestions: createdQuestionIds.length,
         durationMinutes: durationMinutes || 15,
+        dueDate: parsedDueDate,
         isActive: true,
         createdBy: new mongoose.Types.ObjectId(userId),
         questions: createdQuestionIds.map((questionId, index) => ({
