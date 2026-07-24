@@ -510,6 +510,22 @@ class GrammarController {
     }
   }
 
+  // ─── TEACHER: FETCH EXISTING QUESTIONS FROM DB (0đ AI) ──────────────────────
+  async teacherFetchExistingQuestions(req: Request, res: Response) {
+    try {
+      const { grammarCardIds } = req.body;
+      if (!grammarCardIds || !Array.isArray(grammarCardIds) || grammarCardIds.length === 0) {
+        return res.status(400).json({ success: false, message: "Vui lòng chọn ít nhất một cấu trúc ngữ pháp." });
+      }
+
+      const questions = await GrammarService.getExistingQuizQuestions(grammarCardIds);
+      res.json({ success: true, questions });
+    } catch (error: any) {
+      console.error("[TeacherFetchExistingQuestions] Lỗi:", error);
+      res.status(500).json({ success: false, message: error.message || "Lỗi khi lấy câu hỏi từ Ngân hàng." });
+    }
+  }
+
   // ─── TEACHER: AUTO GENERATE MCQ QUESTIONS BY GEMINI ─────────────────────────
   async teacherGenerateQuestions(req: Request, res: Response) {
     console.log("[TeacherQuizGen] Bắt đầu gọi sinh câu hỏi. Request body:", {
@@ -557,17 +573,36 @@ class GrammarController {
       const createdQuestionIds: mongoose.Types.ObjectId[] = [];
 
       for (const q of questions) {
-        const questionDoc = await Question.create({
-          questionText: q.questionText,
-          correctAnswer: q.correctAnswer,
-          answer1: q.answer1,
-          answer2: q.answer2,
-          answer3: q.answer3,
-          answer4: q.answer4,
-          explanation: q.explanation,
-          grammarCardId: q.grammarCardId ? new mongoose.Types.ObjectId(q.grammarCardId) : undefined
-        });
-        createdQuestionIds.push(questionDoc._id as mongoose.Types.ObjectId);
+        let questionId: mongoose.Types.ObjectId;
+
+        if (q.questionId && isValidObjectId(String(q.questionId))) {
+          questionId = new mongoose.Types.ObjectId(String(q.questionId));
+        } else if (q._id && isValidObjectId(String(q._id))) {
+          questionId = new mongoose.Types.ObjectId(String(q._id));
+        } else {
+          const cardId = q.grammarCardId ? String(q.grammarCardId) : undefined;
+          const existing = await Question.findOne({
+            questionText: String(q.questionText || "").trim(),
+            ...(cardId && isValidObjectId(cardId) ? { grammarCardId: new mongoose.Types.ObjectId(cardId) } : {})
+          });
+
+          if (existing) {
+            questionId = existing._id as mongoose.Types.ObjectId;
+          } else {
+            const questionDoc = await Question.create({
+              questionText: String(q.questionText || "").trim(),
+              correctAnswer: q.correctAnswer,
+              answer1: q.answer1,
+              answer2: q.answer2,
+              answer3: q.answer3,
+              answer4: q.answer4,
+              explanation: q.explanation,
+              grammarCardId: cardId && isValidObjectId(cardId) ? new mongoose.Types.ObjectId(cardId) : undefined
+            });
+            questionId = questionDoc._id as mongoose.Types.ObjectId;
+          }
+        }
+        createdQuestionIds.push(questionId);
       }
 
       // 2. Tạo Quiz với questions nhúng (schema quiz.model)
