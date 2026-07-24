@@ -433,7 +433,7 @@ const ScheduleTeacher = () => {
                   textAlign: 'center',
                 }}
               >
-                HS tính vắng
+                Hết hạn
               </div>
             ) : (
               <div
@@ -576,15 +576,15 @@ const ScheduleTeacher = () => {
                 fontWeight: 800,
                 padding: "5px 6px",
                 borderRadius: 4,
-                background: '#D97706',
+                background: '#b4200de6',
                 color: 'white',
                 textTransform: 'uppercase',
-                border: '1px solid #B45309',
+                border: '1px solid #b42309ff',
                 letterSpacing: 0.3,
                 textAlign: 'center',
               }}
             >
-              HS tính vắng
+              Hết hạn
             </div>
           ) : (
             <div
