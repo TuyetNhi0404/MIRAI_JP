@@ -1,0 +1,26 @@
+﻿Connected to DB successfully.
+Found 24 users:
+User ID: 69b6af0f613171a4278ce117, Name: HieuTM, Email: de180818thaiminhhieu@gmail.com, Role: teacher
+User ID: 69b3d3a3c5431828cd33a337, Name: NhiBTT, Email: nhibttde180868@fpt.edu.vn, Role: admin
+User ID: 6a0a7be601a1694a59ec0995, Name: AMT, Email: bububu33233@gmail.com, Role: admin
+User ID: 6a105712d269b04241716e95, Name: minh hieu, Email: hieutmde180818@fpt.edu.vn, Role: teacher
+User ID: 6a2c1b2ab44feb177530b710, Name: Nhi TC, Email: de180868buithituyetnhi@gmail.com, Role: teacher
+User ID: 6a2f746dc09306d527530fa0, Name: MiraiTC, Email: chingchong33233@gmail.com, Role: teacher
+User ID: 6a2f8f272e635ed92aa02120, Name: L├¬  Ph╞░ß╗¢c Hß║ít, Email: hatlpde180867@fpt.edu.vn, Role: student
+User ID: 6a2f8f302e635ed92aa02132, Name: Nguyen Phu Hung, Email: hung19072004123@gmail.com, Role: student
+User ID: 6a2f8f372e635ed92aa02144, Name: Bß║úo Tr├óm, Email: uyendhmda180021@fpt.edu.vn, Role: student
+User ID: 6a30b0e9ceeb73b335f1e795, Name: Nguyen dat, Email: tandatbtqb@gmail.com, Role: student
+User ID: 6a30b1baceeb73b335f1e854, Name: nguyen tan dat, Email: khongthanhvande33233@gmail.com, Role: student
+User ID: 6a30b474ceeb73b335f1ec28, Name: Nhi Bui, Email: tuyetnhi19044.2004@gmail.com, Role: student
+User ID: 6a30c883ceeb73b335f1eee5, Name: Thai Minh Hieu, Email: thaiminhhieu2503@gmail.com, Role: student
+User ID: 6a3390bdceeb73b335f20e89, Name: Account demo, Email: abcxyz123a1000@gmail.com, Role: student
+User ID: 6a41fdc5b35b5ab335957bc6, Name: Hung, Email: hungnpde180865@fpt.edu.vn, Role: teacher
+User ID: 6a4348eab35b5ab335958c98, Name: Admin, Email: taikhoancursor@gmail.com, Role: admin
+User ID: 6a43d485800dfbf2c206e4a8, Name: Kim Tuyen, Email: kimtuyen@gmail.com, Role: student
+User ID: 6a4f4f4c1cbf6f1df2f4d535, Name: nguyen dat, Email: datntde180864@fpt.edu.vn, Role: student
+User ID: 6a4f5c53df21ef515329e193, Name: hihihi, Email: kajihusama@gmai.com, Role: student
+User ID: 6a55a6eadc48e84dd638e414, Name: Thanh Binh, Email: binh@gmail.com, Role: student
+User ID: 6a5c66bbd0e32a36c127f0ec, Name: NHi NHI, Email: nhi@123gmail.com, Role: student
+User ID: 6a5c87b7367c5af97ad8edb3, Name: nguyen tan dat, Email: dathihi@gmail.com, Role: student
+User ID: 6a5c87bd367c5af97ad8edcd, Name: dat pro 123, Email: datpro123@gmail.com, Role: student
+User ID: 6a5f99fa23012b8c2a6f2d1e, Name: test account, Email: termojack2@gmail.com, Role: student

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Modal,
   Button,
@@ -149,6 +150,54 @@ export default function ManageScheduleCalendar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const editCalendarId = searchParams.get('editCalendarId');
+  const fromLeaveRequest = searchParams.get('fromLeaveRequest') === 'true';
+
+  useEffect(() => {
+    if (editCalendarId && calendars.length > 0 && !selectedSchedule) {
+      const cal = calendars.find((c: any) => c._id === editCalendarId);
+      if (cal) {
+        setSelectedSchedule(cal);
+        const formData = {
+          courseId:  extractId(cal.courseId),
+          sessionId: extractId(cal.sessionId),
+          teacherId: extractId(cal.teacherId),
+          date:      formatDate(cal.date),
+          note:      cal.note || '',
+        };
+        editForm.resetFields();
+        editForm.setFieldsValue({
+          ...formData,
+          date: dayjs(formData.date)
+        });
+        setIsEditing(true);
+      }
+    }
+  }, [editCalendarId, calendars, selectedSchedule, editForm]);
+
+  const handleCancelOrClose = async () => {
+    if (fromLeaveRequest && selectedSchedule) {
+      try {
+        setDeleting(true);
+        await calendarAPI.delete(selectedSchedule._id);
+        refetch();
+      } catch (err) {
+        console.error('Lỗi khi xóa lịch học:', err);
+      } finally {
+        setDeleting(false);
+      }
+    }
+    setSelectedSchedule(null);
+    setIsEditing(false);
+    
+    // Clear search parameters
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete('editCalendarId');
+    newParams.delete('fromLeaveRequest');
+    setSearchParams(newParams);
+  };
+
 
   const formatDate = (date: Date | string): string => {
     const d = typeof date === 'string' ? new Date(date) : date;
@@ -264,6 +313,21 @@ export default function ManageScheduleCalendar() {
       setUpdating(true);
       setUpdateError('');
 
+      if (fromLeaveRequest) {
+        const originalTeacherId = extractId(selectedSchedule.teacherId);
+        if (values.teacherId === originalTeacherId) {
+          await calendarAPI.delete(selectedSchedule._id);
+          setSelectedSchedule(null);
+          setIsEditing(false);
+          const newParams = new URLSearchParams(searchParams);
+          newParams.delete('editCalendarId');
+          newParams.delete('fromLeaveRequest');
+          setSearchParams(newParams);
+          refetch();
+          return;
+        }
+      }
+
       await calendarAPI.update(selectedSchedule._id, {
         ...values,
         date: values.date.format('YYYY-MM-DD')
@@ -271,6 +335,10 @@ export default function ManageScheduleCalendar() {
 
       setSelectedSchedule(null);
       setIsEditing(false);
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('editCalendarId');
+      newParams.delete('fromLeaveRequest');
+      setSearchParams(newParams);
       refetch();
     } catch (err: unknown) {
       if ((err as any).errorFields) {
@@ -758,7 +826,7 @@ export default function ManageScheduleCalendar() {
 
       <Modal
         open={!!selectedSchedule}
-        onCancel={() => { setSelectedSchedule(null); setIsEditing(false); }}
+        onCancel={handleCancelOrClose}
         footer={null}
         width={460}
         centered
@@ -780,7 +848,7 @@ export default function ManageScheduleCalendar() {
                 </Text>
               </div>
               <button
-                onClick={() => { setSelectedSchedule(null); setIsEditing(false); }}
+                onClick={handleCancelOrClose}
                 style={{ width: 28, height: 28, border: 'none', background: '#F1F5F9', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748B' }}
               >
                 <X size={14} />
@@ -1079,7 +1147,7 @@ export default function ManageScheduleCalendar() {
 
                 <div style={{ display: 'flex', gap: 8, padding: '12px 20px', borderTop: '1px solid #F1F5F9' }}>
                   <Button
-                    onClick={() => setIsEditing(false)}
+                    onClick={handleCancelOrClose}
                     disabled={updating}
                     style={{ borderRadius: 8, height: 40 }}
                   >

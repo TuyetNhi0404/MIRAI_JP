@@ -3,8 +3,7 @@ import { CourseCalendar } from "../model/calendar.model";
 import { RequestStatus } from "../model/requestSchedule.model";
 
 class RequestScheduleService {
-  
-  // ✅ SERVICE: Teacher tạo request đổi lịch
+
   async createRequest({
     teacherId,
     calendarId,
@@ -15,29 +14,24 @@ class RequestScheduleService {
     reason: string;
   }) {
 
-    // 1️⃣ Lấy lịch để kiểm tra quyền + thời gian
     const calendar = await CourseCalendar.findById(calendarId);
 
     if (!calendar) {
-      throw new Error("Calendar not found.");
+      throw new Error("Không tìm thấy lịch học.");
     }
 
-    // 2️⃣ Kiểm tra teacher có phải người dạy buổi này không
     if (String(calendar.teacherId) !== String(teacherId)) {
-      throw new Error("You are not the assigned teacher for this session, cannot submit request.");
+      throw new Error("Bạn không phải là giảng viên được phân công cho buổi học này, không thể gửi yêu cầu.");
     }
-
-    // 3️⃣ Kiểm tra còn ít nhất 24h mới được gửi request
     const now = new Date().getTime();
     const classTime = new Date(calendar.date).getTime();
 
     const diffHours = (classTime - now) / (1000 * 60 * 60);
 
     if (diffHours < 24) {
-      throw new Error("Schedule change requests must be submitted at least 24 hours in advance.");
+      throw new Error("Yêu cầu thay đổi lịch học phải được gửi trước ít nhất 24 giờ.");
     }
 
-    // 4️⃣ Không cho gửi trùng request pending
     const existing = await RequestSchedule.findOne({
       calendarId,
       createdBy: teacherId,
@@ -45,10 +39,9 @@ class RequestScheduleService {
     });
 
     if (existing) {
-      throw new Error("You have already submitted a schedule change request for this session that is pending approval.");
+      throw new Error("Bạn đã gửi một yêu cầu thay đổi lịch học cho buổi học này và đang chờ duyệt.");
     }
 
-    // 5️⃣ Tạo request mới
     const request = await RequestSchedule.create({
       calendarId,
       createdBy: teacherId,

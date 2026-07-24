@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Button,
   Drawer,
@@ -26,7 +27,9 @@ const tabs = [
 export default function AddSchedule() {
   const screens = useBreakpoint();
   const isMobile = !screens.md;
-  const [activeTab, setActiveTab] = useState("add");
+  const [searchParams] = useSearchParams();
+  const editCalendarId = searchParams.get("editCalendarId");
+  const [activeTab, setActiveTab] = useState(editCalendarId ? "view" : "add");
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   const handleMobileTabSelect = (key: string) => {

@@ -12,7 +12,7 @@ export const createCalendar = async (req: Request, res: Response) => {
     const { courseId, sessionId, teacherId, date, note } = req.body;
 
     if (!courseId || !sessionId || !teacherId || !date) {
-      return res.status(400).json({ message: "Missing required information." });
+      return res.status(400).json({ message: "Thiếu thông tin bắt buộc." });
     }
 
     const inputDate = new Date(date);
@@ -21,12 +21,12 @@ export const createCalendar = async (req: Request, res: Response) => {
 
     if (hoursDiff < 24) {
       return res.status(400).json({
-        message: "Cannot create schedule. Please create the calendar at least 24 hours before the class time."
+        message: "Không thể tạo lịch học. Vui lòng tạo trước giờ học ít nhất 24 giờ."
       });
     }
 
     const course = await Course.findById(courseId);
-    if (!course) return res.status(404).json({ message: "Course not found." });
+    if (!course) return res.status(404).json({ message: "Không tìm thấy khóa học." });
     const lessonDate = new Date(date);
     if (lessonDate < new Date(course.startDate) || lessonDate > new Date(course.endDate)) {
       const format = (d: Date) => {
@@ -41,7 +41,7 @@ export const createCalendar = async (req: Request, res: Response) => {
       };
 
       return res.status(400).json({
-        message: `⚠️ Invalid lesson date.\n - Course duration:\n   ▪ Start: ${format(course.startDate)}\n   ▪ End: ${format(course.endDate)}`
+        message: `⚠️ Ngày học không hợp lệ.\n - Thời gian khóa học:\n   ▪ Bắt đầu: ${format(course.startDate)}\n   ▪ Kết thúc: ${format(course.endDate)}`
       });
     }
 
@@ -51,18 +51,18 @@ export const createCalendar = async (req: Request, res: Response) => {
 
     if (existingCalendarsCount >= course.session) {
       return res.status(400).json({
-        message: `Cannot create more sessions. This course is limited to ${course.session} sessions.`
+        message: `Không thể tạo thêm buổi học. Khóa học này giới hạn tối đa ${course.session} buổi.`
       });
     }
 
     const session = await Session.findById(sessionId);
-    if (!session) return res.status(404).json({ message: "Session not found." });
+    if (!session) return res.status(404).json({ message: "Không tìm thấy ca học." });
 
     const teacher = await User.findById(teacherId);
-    if (!teacher) return res.status(404).json({ message: "Teacher not found." });
+    if (!teacher) return res.status(404).json({ message: "Không tìm thấy giảng viên." });
 
     if (teacher.role !== "teacher") {
-      return res.status(400).json({ message: "Selected user is not a teacher." });
+      return res.status(400).json({ message: "Người dùng được chọn không phải là giảng viên." });
     }
 
     const isDuplicate = await CourseCalendar.findOne({
@@ -74,7 +74,7 @@ export const createCalendar = async (req: Request, res: Response) => {
 
     if (isDuplicate) {
       return res.status(400).json({
-        message: "Duplicate schedule detected. Please check again.",
+        message: "Trùng lặp lịch học. Vui lòng kiểm tra lại.",
       });
     }
 
@@ -86,9 +86,9 @@ export const createCalendar = async (req: Request, res: Response) => {
       note,
     });
 
-    res.status(201).json({ message: "Schedule created successfully!", data: calendar });
+    res.status(201).json({ message: "Tạo lịch học thành công!", data: calendar });
   } catch (error) {
-    res.status(500).json({ message: "Server error while creating schedule.", error });
+    res.status(500).json({ message: "Lỗi máy chủ khi tạo lịch học.", error });
   }
 };
 
@@ -108,7 +108,7 @@ export const getAllCalendars = async (req: Request, res: Response) => {
       const user = await User.findById(userId).select("email");
 
       if (!user) {
-        return res.status(404).json({ message: "User not found" });
+        return res.status(404).json({ message: "Không tìm thấy người dùng." });
       }
 
       console.log("Student email:", user.email);
@@ -210,11 +210,11 @@ export const getAllCalendars = async (req: Request, res: Response) => {
     );
 
     res.status(200).json({
-      message: "Fetched schedule list successfully.",
+      message: "Lấy danh sách lịch học thành công.",
       data: result,
     });
   } catch (error) {
-    res.status(500).json({ message: "Error while fetching schedule list.", error });
+    res.status(500).json({ message: "Lỗi khi lấy danh sách lịch học.", error });
   }
 };
 
@@ -223,26 +223,36 @@ export const updateCalendar = async (req: Request, res: Response) => {
     const { calendarId } = req.params;
     const updateData = req.body;
 
+    // Log to file
+    const fs = require("fs");
+    const path = require("path");
+    const logPath = path.join(__dirname, "../../../api_calls.log");
+    const logMsg = `[${new Date().toISOString()}] PATCH /calendars/${calendarId} called, body: ${JSON.stringify(updateData)}\n`;
+    fs.appendFileSync(logPath, logMsg);
+    console.log(`[BACKEND] updateCalendar called with calendarId: "${calendarId}"`, updateData);
+
     const calendar = await CourseCalendar.findById(calendarId);
     if (!calendar) {
-      return res.status(404).json({ message: "Schedule not found." });
+      fs.appendFileSync(logPath, `[${new Date().toISOString()}] PATCH /calendars/${calendarId} returned 404 (Not Found)\n`);
+      console.log(`[BACKEND] calendar with ID "${calendarId}" not found in DB`);
+      return res.status(404).json({ message: "Không tìm thấy lịch học." });
     }
 
     const now = new Date();
     const hoursDiff = (calendar.date.getTime() - now.getTime()) / (1000 * 60 * 60);
     if (hoursDiff < 24) {
       return res.status(400).json({
-        message: "Cannot update. Schedule can only be modified at least 24 hours before the class time.",
+        message: "Không thể cập nhật. Lịch học chỉ có thể thay đổi trước thời gian học ít nhất 24 giờ.",
       });
     }
 
     if (updateData.teacherId) {
       const teacher = await User.findById(updateData.teacherId);
       if (!teacher) {
-        return res.status(404).json({ message: "Teacher not found." });
+        return res.status(404).json({ message: "Không tìm thấy giảng viên." });
       }
       if (teacher.role !== "teacher") {
-        return res.status(400).json({ message: "Selected user is not a teacher." });
+        return res.status(400).json({ message: "Người dùng được chọn không phải là giảng viên." });
       }
     }
 
@@ -262,7 +272,7 @@ export const updateCalendar = async (req: Request, res: Response) => {
 
       if (isDuplicate) {
         return res.status(400).json({
-          message: "Duplicate schedule detected. Please check again.",
+          message: "Trùng lặp lịch học. Vui lòng kiểm tra lại.",
         });
       }
     }
@@ -282,35 +292,46 @@ export const updateCalendar = async (req: Request, res: Response) => {
     );
 
     return res.status(200).json({
-      message: "Schedule updated successfully.",
+      message: "Cập nhật lịch học thành công.",
       data: updatedCalendar,
     });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: "Server error while updating schedule.", error });
+    return res.status(500).json({ message: "Lỗi máy chủ khi cập nhật lịch học.", error });
   }
 };
 
 export const deleteCalendar = async (req: Request, res: Response) => {
   try {
     const { calendarId } = req.params;
+
+    // Log to file
+    const fs = require("fs");
+    const path = require("path");
+    const logPath = path.join(__dirname, "../../../api_calls.log");
+    const logMsg = `[${new Date().toISOString()}] DELETE /calendars/${calendarId} called\n`;
+    fs.appendFileSync(logPath, logMsg);
+    console.log(`[BACKEND] deleteCalendar called with calendarId: "${calendarId}"`);
+
     const calendar = await CourseCalendar.findById(calendarId);
 
     if (!calendar) {
-      return res.status(404).json({ message: "Schedule not found." });
+      fs.appendFileSync(logPath, `[${new Date().toISOString()}] DELETE /calendars/${calendarId} returned 404 (Not Found)\n`);
+      console.log(`[BACKEND] deleteCalendar calendar with ID "${calendarId}" not found in DB`);
+      return res.status(404).json({ message: "Không tìm thấy lịch học." });
     }
 
     if (calendar.status === "in_progress" || calendar.status === "completed") {
       return res.status(400).json({
-        message: "Cannot delete a schedule that is in progress or already completed.",
+        message: "Không thể xóa lịch học đang diễn ra hoặc đã hoàn thành.",
       });
     }
 
     await CourseCalendar.findByIdAndDelete(calendarId);
-    return res.status(200).json({ message: "Schedule deleted successfully." });
+    return res.status(200).json({ message: "Xóa lịch học thành công." });
 
   } catch (error) {
-    return res.status(500).json({ message: "Server error while deleting schedule.", error });
+    return res.status(500).json({ message: "Lỗi máy chủ khi xóa lịch học.", error });
   }
 };
 
@@ -341,7 +362,7 @@ export const getByWeek = async (req: Request, res: Response) => {
       end = new Date(endDate as string);
     }
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      return res.status(400).json({ message: "Invalid startDate or endDate." });
+      return res.status(400).json({ message: "Ngày bắt đầu hoặc ngày kết thúc không hợp lệ." });
     }
 
     const filter: any = { date: { $gte: start, $lte: end } };
@@ -358,7 +379,7 @@ export const getByWeek = async (req: Request, res: Response) => {
 
       if (enrolledCourseIds.length === 0) {
         return res.status(200).json({
-          message: "You have not enrolled in any courses.",
+          message: "Bạn chưa đăng ký khóa học nào.",
           count: 0,
           data: [],
         });
@@ -387,14 +408,14 @@ export const getByWeek = async (req: Request, res: Response) => {
     }
 
     return res.status(200).json({
-      message: `Schedule from ${start.toISOString().slice(0, 10)} to ${end.toISOString().slice(0, 10)}`,
+      message: `Lịch học từ ${start.toISOString().slice(0, 10)} to ${end.toISOString().slice(0, 10)}`,
       count: data.length,
       data,
     });
   } catch (error: any) {
     console.error("Error in getByWeek:", error);
     return res.status(500).json({
-      message: "Server error while fetching weekly schedule.",
+      message: "Lỗi máy chủ khi lấy lịch học tuần.",
       error: error.message,
     });
   }
