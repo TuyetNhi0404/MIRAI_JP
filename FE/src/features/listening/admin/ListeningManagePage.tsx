@@ -17,11 +17,15 @@ import {
   Snackbar,
   Switch,
   Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
 } from '@mui/material';
-import { Plus, Pencil, Trash2, Headphones, RefreshCw } from 'lucide-react';
+import { Plus, Pencil, Trash2, Headphones, RefreshCw, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import listeningService from '../../../services/listeningService';
 import type { ListeningContent } from '../types';
+import AudioPlayer from '../components/AudioPlayer';
 
 const LEVEL_COLORS: Record<string, string> = {
   N1: "#7B1FA2",
@@ -36,6 +40,7 @@ const ListeningManagePage = () => {
   const [contents, setContents] = useState<ListeningContent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeAudioContent, setActiveAudioContent] = useState<ListeningContent | null>(null);
   
   // Notification states
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
@@ -239,6 +244,16 @@ const ListeningManagePage = () => {
                   </TableCell>
                   <TableCell align="center">
                     <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+                      {content.audioUrl && (
+                        <IconButton
+                          size="small"
+                          onClick={() => setActiveAudioContent(content)}
+                          sx={{ color: '#2E7D32', '&:hover': { bgcolor: '#e8f5e9' } }}
+                          title="Nghe thử"
+                        >
+                          <Headphones size={15} />
+                        </IconButton>
+                      )}
                       <IconButton
                         size="small"
                         onClick={() => navigate(`/dashboard/admin/listening/${content._id}/edit`)}
@@ -275,6 +290,31 @@ const ListeningManagePage = () => {
         onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
         message={snackbar.message}
       />
+
+      {/* Audio Playback Modal */}
+      <Dialog
+        open={!!activeAudioContent}
+        onClose={() => setActiveAudioContent(null)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: '16px', p: 1 }
+        }}
+      >
+        <DialogTitle sx={{ pb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="subtitle1" fontWeight={750} sx={{ pr: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            Nghe thử: {activeAudioContent?.title}
+          </Typography>
+          <IconButton onClick={() => setActiveAudioContent(null)} size="small">
+            <X size={18} />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ p: 2, pb: 3, overflow: 'hidden' }}>
+          {activeAudioContent?.audioUrl && (
+            <AudioPlayer src={activeAudioContent.audioUrl} />
+          )}
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 };

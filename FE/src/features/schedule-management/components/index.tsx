@@ -21,6 +21,7 @@ import {
   Drawer,
   List,
   Spin,
+  App,
 } from 'antd';
 import {
   ChevronLeft,
@@ -131,6 +132,7 @@ const STATUS_CONFIG: Record<StatusType, { label: string; color: string; bg: stri
 };
 
 export default function ManageScheduleCalendar() {
+  const { message } = App.useApp();
   const screens = useBreakpoint();
   const isMobile = !screens.md;
   const isTablet = !screens.lg;
@@ -336,6 +338,7 @@ export default function ManageScheduleCalendar() {
           newParams.delete('fromLeaveRequest');
           setSearchParams(newParams);
           refetch();
+          message.warning('Lịch học này đã được xóa do giáo viên cũ nghỉ dạy và không có giáo viên mới thay thế.');
           return;
         }
       }

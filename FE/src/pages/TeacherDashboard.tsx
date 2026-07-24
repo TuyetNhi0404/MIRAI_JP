@@ -28,11 +28,106 @@ import {
   NotebookText,
   FileQuestion,
   Headphones,
-  ClipboardCheck
+  ClipboardCheck,
+  GraduationCap
 } from 'lucide-react';
+import dayjs from 'dayjs';
+import 'dayjs/locale/vi';
 import type { RootState } from '../redux/store';
 import { brandColors } from '../theme/theme';
 import { courseService, type Course } from '../services/courseService';
+
+const JP_FONT_STACK = `"Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "YuGothic", "Noto Sans JP", Meiryo, "Source Han Sans JP", sans-serif`;
+
+const SAKURA_BG_URL =
+  "https://images.unsplash.com/photo-1522383225653-ed111181a951?w=1400&auto=format&fit=crop&q=80";
+
+const SAKURA = {
+  bgTop: "#FCE4EC",
+  bgMid: "#F8C8D8",
+  bgBottom: "#F4A5BC",
+  bgDeep: "#ED8FAA",
+  ink: "#5C1A2D",
+  inkMid: "#7A3148",
+  inkSoft: "#8B4757",
+  accent: "#9E2A45",
+  divider: "rgba(92, 26, 45, 0.22)",
+  petal: "rgba(190, 60, 95, 0.55)",
+};
+
+function SakuraPetal({
+  size = 20,
+  opacity = 0.85,
+}: {
+  size?: number;
+  opacity?: number;
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      style={{ display: "block" }}
+      aria-hidden
+    >
+      <g
+        fill="rgba(255, 255, 255, 0.95)"
+        stroke="rgba(190, 60, 95, 0.45)"
+        strokeWidth="0.4"
+        opacity={opacity}
+      >
+        <ellipse cx="12" cy="7" rx="2.6" ry="4.4" />
+        <ellipse cx="12" cy="7" rx="2.6" ry="4.4" transform="rotate(72 12 12)" />
+        <ellipse cx="12" cy="7" rx="2.6" ry="4.4" transform="rotate(144 12 12)" />
+        <ellipse cx="12" cy="7" rx="2.6" ry="4.4" transform="rotate(216 12 12)" />
+        <ellipse cx="12" cy="7" rx="2.6" ry="4.4" transform="rotate(288 12 12)" />
+      </g>
+      <circle cx="12" cy="12" r="1.3" fill="#FBE38C" opacity="0.95" />
+    </svg>
+  );
+}
+
+function FallingPetals() {
+  const petals = [
+    { left: "12%", top: "12%", size: 20, duration: 10, delay: 0, rot: 12, driftX: 28, driftY: 50 },
+    { left: "38%", top: "8%", size: 16, duration: 13, delay: 1.8, rot: -22, driftX: -18, driftY: 60 },
+    { left: "62%", top: "22%", size: 18, duration: 11, delay: 0.6, rot: 28, driftX: 32, driftY: 70 },
+    { left: "78%", top: "58%", size: 14, duration: 9, delay: 2.4, rot: -8, driftX: -24, driftY: 45 },
+  ];
+  return (
+    <div
+      aria-hidden
+      style={{
+        position: "absolute",
+        inset: 0,
+        pointerEvents: "none",
+        overflow: "hidden",
+        zIndex: 0,
+      }}
+    >
+      {petals.map((p, i) => (
+        <div
+          key={i}
+          className="mira-petal-drift"
+          style={{
+            position: "absolute",
+            left: p.left,
+            top: p.top,
+            width: p.size,
+            height: p.size,
+            animationDuration: `${p.duration}s`,
+            animationDelay: `${p.delay}s`,
+            ["--drift-x" as string]: `${p.driftX}px`,
+            ["--drift-y" as string]: `${p.driftY}px`,
+            ["--start-rot" as string]: `${p.rot}deg`,
+          }}
+        >
+          <SakuraPetal size={p.size} />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 const TeacherDashboard = () => {
   const navigate = useNavigate();
@@ -86,166 +181,493 @@ const TeacherDashboard = () => {
   const totalCourses = courses.length;
   const totalStudents = courses.reduce((sum, course) => sum + (course.enrolledCount || 0), 0);
 
+  // Time-based date details
+  const today = dayjs();
+  const dayNum = today.format('DD');
+  const weekday = today.format('dd');
+  const monthYear = today.format('MM[/]YYYY');
+  const monthVi = today.format('M');
+
   return (
-    <Container maxWidth="xl" sx={{ py: 3, minHeight: '85vh' }} className="mira-fade-in-up">
-      {/* 🌟 GREETING HERO CARD */}
-      <Card
-        elevation={0}
-        sx={{
-          p: { xs: 3, md: 4 },
-          mb: 4,
-          borderRadius: '16px',
-          background: `linear-gradient(135deg, #FFFDFB 0%, ${brandColors.cream} 60%, #FFF1F0 100%)`,
-          border: `1px solid ${brandColors.borderLight}`,
-          position: 'relative',
-          overflow: 'hidden',
-          boxShadow: '0 4px 20px rgba(185, 0, 0, 0.03)',
+    <Container maxWidth="xl" sx={{ py: 3, minHeight: '85vh' }}>
+      <style>{`
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes rotateHanko {
+          0%, 100% { transform: rotate(-8deg) scale(1); }
+          50% { transform: rotate(-12deg) scale(1.03); }
+        }
+        .animate-fade-in-up {
+          animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        .anim-delay-1 { animation-delay: 0.1s; }
+        .anim-delay-2 { animation-delay: 0.2s; }
+        .anim-delay-3 { animation-delay: 0.3s; }
+        .anim-delay-4 { animation-delay: 0.4s; }
+        
+        .japan-hanko-dash {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border: 2px solid ${SAKURA.accent};
+          border-radius: 50%;
+          color: ${SAKURA.accent};
+          font-family: "Yuji Syuku", "Noto Serif JP", serif !important;
+          font-weight: 700;
+          width: 58px;
+          height: 58px;
+          font-size: 14px;
+          animation: rotateHanko 5s ease-in-out infinite;
+          box-shadow: inset 0 0 6px rgba(158, 42, 69, 0.08), 0 4px 10px rgba(158, 42, 69, 0.04);
+        }
+        .quick-access-card {
+          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+          background: #ffffff;
+        }
+        .quick-access-card:hover {
+          transform: translateY(-6px);
+          box-shadow: 0 12px 28px rgba(185, 0, 0, 0.05);
+        }
+        .quick-access-card:hover .icon-avatar {
+          transform: scale(1.15) rotate(6deg);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        }
+        .icon-avatar {
+          transition: all 0.25s ease;
+        }
+        .class-card {
+          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+          border-left: 4px solid transparent;
+        }
+        .class-card:hover {
+          transform: translateX(6px);
+          background: #FFFDFB;
+          border-left-color: #B90000;
+          box-shadow: 0 4px 16px rgba(185, 0, 0, 0.03);
+        }
+        .MuiTypography-root,
+        .MuiButton-root,
+        .MuiInputBase-root,
+        .MuiChip-root {
+          font-family: "Comfortaa", "Outfit", "Plus Jakarta Sans", sans-serif !important;
+        }
+        .mira-button-hover {
+          transition: all 0.2s ease;
+        }
+        .mira-button-hover:hover {
+          background: rgba(185, 0, 0, 0.03) !important;
+        }
+      `}</style>
+
+      {/* 🌟 PREMIUM SAKURA GREETING HERO CARD */}
+      <Box
+        className="animate-fade-in-up"
+        style={{
+          position: "relative",
+          borderRadius: 14,
+          background: `linear-gradient(115deg, ${SAKURA.bgTop} 0%, ${SAKURA.bgMid} 38%, ${SAKURA.bgBottom} 78%, ${SAKURA.bgDeep} 100%)`,
+          padding: "32px 36px",
+          marginBottom: 14,
+          overflow: "hidden",
+          color: SAKURA.ink,
+          boxShadow: "0 8px 28px -8px rgba(214, 96, 132, 0.38), 0 2px 6px -2px rgba(214, 96, 132, 0.18)",
+          minHeight: 220,
+          isolation: "isolate",
         }}
       >
-        {/* Decorative elements */}
-        <Box
-          sx={{
-            position: 'absolute',
-            top: -20,
-            right: -20,
-            width: 150,
-            height: 150,
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #FFD6A5 0%, #FFADAD 100%)',
-            opacity: 0.12,
-            zIndex: 0
-          }}
-        />
-        <Box
-          sx={{
-            position: 'absolute',
-            bottom: -50,
-            left: '30%',
-            width: 200,
-            height: 200,
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #CAFFBF 0%, #98F5E1 100%)',
-            opacity: 0.08,
-            zIndex: 0
+        {/* Background Blend Image */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundImage: `url('${SAKURA_BG_URL}')`,
+            backgroundSize: "cover",
+            backgroundPosition: "right center",
+            backgroundRepeat: "no-repeat",
+            mixBlendMode: "multiply",
+            opacity: 0.4,
+            pointerEvents: "none",
+            zIndex: 0,
           }}
         />
 
-        <Grid container spacing={3} alignItems="center" sx={{ position: 'relative', zIndex: 1 }}>
-          <Grid item xs={12} sm="auto">
-            <Avatar
-              src={avatarUrl}
-              alt={user?.name}
-              sx={{
-                width: 90,
-                height: 90,
-                boxShadow: '0px 8px 20px rgba(0, 0, 0, 0.06)',
-                border: '4px solid #ffffff',
-                mx: { xs: 'auto', sm: 'left' },
-                bgcolor: brandColors.red,
-                color: '#ffffff',
-                fontWeight: 700,
-                fontSize: '2.25rem'
+        {/* Gradient Overlay */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "linear-gradient(95deg, rgba(253, 242, 245, 0.85) 0%, rgba(253, 242, 245, 0.45) 32%, rgba(252, 228, 236, 0.1) 58%, rgba(237, 143, 170, 0.18) 100%)",
+            pointerEvents: "none",
+            zIndex: 0,
+          }}
+        />
+
+        {/* Kanji Watermark */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            right: 36,
+            top: 28,
+            fontFamily: JP_FONT_STACK,
+            fontSize: 56,
+            fontWeight: 500,
+            color: SAKURA.accent,
+            opacity: 0.16,
+            pointerEvents: "none",
+            zIndex: 0,
+            userSelect: "none",
+            lineHeight: 1,
+            letterSpacing: 0,
+          }}
+        >
+          教
+        </div>
+
+        {/* Falling Petals Engine */}
+        <FallingPetals />
+
+        <Grid container spacing={3} alignItems="center" style={{ position: "relative", zIndex: 1, height: "100%" }}>
+          <Grid item xs={12} md={8}>
+            {/* System Status Bubble */}
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: 11.5,
+                fontWeight: 500,
+                padding: "4px 10px",
+                borderRadius: 999,
+                background: "rgba(255, 255, 255, 0.78)",
+                backdropFilter: "blur(8px)",
+                marginBottom: 16,
+                color: SAKURA.accent,
+                border: "1px solid rgba(255, 255, 255, 0.6)",
+                boxShadow: "0 1px 2px 0 rgba(158, 42, 69, 0.06)",
               }}
             >
-              {user?.name ? user.name.charAt(0).toUpperCase() : 'T'}
-            </Avatar>
+              <span
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: "50%",
+                  background: "#34B35A",
+                  display: "inline-block",
+                }}
+              />
+              Hệ thống hoạt động bình thường
+            </div>
+
+            {/* Main Greeting */}
+            <Typography
+              variant="h3"
+              style={{
+                margin: 0,
+                color: SAKURA.ink,
+                fontSize: 34,
+                fontWeight: 600,
+                lineHeight: 1.1,
+                letterSpacing: -0.8,
+                fontFamily: `"Comfortaa", sans-serif`,
+              }}
+            >
+              {getGreeting()}, <span style={{ color: SAKURA.accent, fontWeight: 700 }}>Thầy/Cô {user?.name ? user.name.split(/\s+/).filter(Boolean).pop() : 'Giáo viên'}</span>!
+            </Typography>
+
+            <div
+              aria-hidden
+              style={{
+                width: 56,
+                height: 2,
+                background: SAKURA.accent,
+                margin: "16px 0 14px 0",
+                borderRadius: 1,
+                opacity: 0.85,
+              }}
+            />
+
+            {/* Custom Calligraphy Subtext */}
+            <Typography
+              style={{
+                color: SAKURA.inkMid,
+                fontSize: 14,
+                display: "block",
+                lineHeight: 1.55,
+                maxWidth: 520,
+              }}
+            >
+            {today.format("dddd, D [tháng] M, YYYY")}. Chúc các thầy cô một ngày lên lớp nhiều năng lượng và niềm vui!
+            </Typography>
           </Grid>
-          <Grid item xs={12} sm sx={{ textAlign: { xs: 'center', sm: 'left' } }}>
-            <Typography
-              variant="h4"
-              component="h1"
-              fontWeight={800}
-              sx={{ color: brandColors.ink, mb: 1, letterSpacing: '-0.5px', fontSize: { xs: '1.75rem', md: '2.25rem' } }}
+
+          {/* Calendar Widget on the Right */}
+          <Grid item xs={12} md={4} style={{ display: "flex", justifyContent: "flex-end" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "stretch",
+                gap: 0,
+                padding: "8px 0",
+                borderLeft: `1px solid ${SAKURA.divider}`,
+                paddingLeft: 28,
+                minHeight: 140,
+              }}
             >
-              {getGreeting()}, Thầy/Cô {user?.name || 'Giáo viên'}!
-            </Typography>
-            <Typography
-              variant="body1"
-              sx={{ color: brandColors.textSecondary, mb: 0.5, fontWeight: 600 }}
-            >
-              Hôm nay là {getCurrentDateString()}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" fontWeight={500}>
-              Chào mừng bạn đến với hệ thống <strong>MIRAI JAPANESE LMS</strong>. Chúc bạn có một ngày giảng dạy hiệu quả!
-            </Typography>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-end",
+                  justifyContent: "center",
+                  minWidth: 100,
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    letterSpacing: 1.6,
+                    textTransform: "uppercase",
+                    color: SAKURA.accent,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 14,
+                      height: 1.5,
+                      background: SAKURA.accent,
+                      display: "inline-block",
+                      opacity: 0.5,
+                    }}
+                  />
+                  Hôm nay
+                </span>
+                <span
+                  className="mira-num"
+                  style={{
+                    fontSize: 80,
+                    fontWeight: 700,
+                    lineHeight: 0.95,
+                    letterSpacing: -3,
+                    marginTop: 4,
+                    color: SAKURA.ink,
+                    fontFamily: '"Comfortaa", sans-serif',
+                  }}
+                >
+                  {dayNum}
+                </span>
+                <span
+                  style={{
+                    fontSize: 13,
+                    color: SAKURA.inkMid,
+                    marginTop: 6,
+                    fontWeight: 500,
+                  }}
+                >
+                  {weekday} · tháng {monthVi}
+                </span>
+                <span
+                  style={{
+                    fontSize: 11,
+                    color: SAKURA.inkSoft,
+                    marginTop: 2,
+                    letterSpacing: 0.4,
+                  }}
+                >
+                  {monthYear}
+                </span>
+              </div>
+            </div>
           </Grid>
         </Grid>
-      </Card>
+      </Box>
 
-      {/* 📊 KPI METRIC CARDS */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        {/* KPI 1: Total Classes */}
-        <Grid item xs={12} sm={6}>
-          <Card
-            className="mira-card-hover"
-            sx={{
-              borderRadius: '16px',
-              border: `1px solid ${brandColors.border}`,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.01)',
-              background: '#ffffff',
+      {/* 📊 NEW ACTIVITY / STATS STRIP */}
+      <div
+        className="animate-fade-in-up anim-delay-1"
+        style={{
+          display: "flex",
+          alignItems: "stretch",
+          background: "#ffffff",
+          border: `1px solid ${brandColors.borderLight}`,
+          borderRadius: 14,
+          padding: "12px 6px",
+          marginBottom: 20,
+          boxShadow: "0 1px 2px 0 rgba(0,0,0,0.02)",
+          overflowX: "auto",
+        }}
+      >
+        <button
+          onClick={() => navigate("/dashboard/teacher/courses")}
+          className="mira-button-hover"
+          style={{
+            flex: 1,
+            minWidth: 140,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-start",
+            justifyContent: "center",
+            padding: "4px 18px",
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+            textAlign: "left",
+          }}
+        >
+          <span
+            style={{
+              fontSize: 11,
+              color: brandColors.textSecondary,
+              fontWeight: 500,
+              letterSpacing: 0.2,
+              textTransform: "uppercase",
+              marginBottom: 6,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
             }}
           >
-            <CardContent sx={{ display: 'flex', alignItems: 'center', p: 3 }}>
-              <Avatar sx={{ bgcolor: '#FFF1F0', color: brandColors.red, width: 56, height: 56, mr: 2 }}>
-                <School fontSize="medium" />
-              </Avatar>
-              <Box>
-                <Typography variant="body2" color="text.secondary" fontWeight={600} sx={{ textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.75rem' }}>
-                  Lớp giảng dạy
-                </Typography>
-                <Typography variant="h4" fontWeight={800} color={brandColors.ink}>
-                  {loadingCourses ? <CircularProgress size={24} color="inherit" /> : totalCourses}
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* KPI 2: Total Students */}
-        <Grid item xs={12} sm={6}>
-          <Card
-            className="mira-card-hover"
-            sx={{
-              borderRadius: '16px',
-              border: `1px solid ${brandColors.border}`,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.01)',
-              background: '#ffffff',
+            <span style={{ width: 5, height: 5, borderRadius: "50%", background: brandColors.red }} />
+            Lớp giảng dạy
+          </span>
+          <span
+            style={{
+              fontSize: 22,
+              fontWeight: 600,
+              color: SAKURA.ink,
+              letterSpacing: -0.4,
+              lineHeight: 1,
+              fontFamily: '"Comfortaa", sans-serif',
             }}
           >
-            <CardContent sx={{ display: 'flex', alignItems: 'center', p: 3 }}>
-              <Avatar sx={{ bgcolor: '#FFF8F0', color: '#B90000', width: 56, height: 56, mr: 2 }}>
-                <Groups fontSize="medium" />
-              </Avatar>
-              <Box>
-                <Typography variant="body2" color="text.secondary" fontWeight={600} sx={{ textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.75rem' }}>
-                  Tổng học viên
-                </Typography>
-                <Typography variant="h4" fontWeight={800} color={brandColors.ink}>
-                  {loadingCourses ? <CircularProgress size={24} color="inherit" /> : totalStudents}
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+            {loadingCourses ? '...' : totalCourses} lớp
+          </span>
+        </button>
+
+        <div style={{ alignSelf: "center", width: 1, height: 28, background: brandColors.borderLight, flexShrink: 0 }} />
+
+        <button
+          className="mira-button-hover"
+          style={{
+            flex: 1,
+            minWidth: 140,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-start",
+            justifyContent: "center",
+            padding: "4px 18px",
+            background: "transparent",
+            border: "none",
+            cursor: "default",
+            textAlign: "left",
+          }}
+        >
+          <span
+            style={{
+              fontSize: 11,
+              color: brandColors.textSecondary,
+              fontWeight: 500,
+              letterSpacing: 0.2,
+              textTransform: "uppercase",
+              marginBottom: 6,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            <span style={{ width: 5, height: 5, borderRadius: "50%", background: brandColors.success }} />
+            Tổng học viên
+          </span>
+          <span
+            style={{
+              fontSize: 22,
+              fontWeight: 600,
+              color: SAKURA.ink,
+              letterSpacing: -0.4,
+              lineHeight: 1,
+              fontFamily: '"Comfortaa", sans-serif',
+            }}
+          >
+            {loadingCourses ? '...' : totalStudents} học viên
+          </span>
+        </button>
+
+        <div style={{ alignSelf: "center", width: 1, height: 28, background: brandColors.borderLight, flexShrink: 0 }} />
+
+        <button
+          onClick={() => navigate("/dashboard/teacher/schedule")}
+          className="mira-button-hover"
+          style={{
+            flex: 1,
+            minWidth: 140,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-start",
+            justifyContent: "center",
+            padding: "4px 18px",
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+            textAlign: "left",
+          }}
+        >
+          <span
+            style={{
+              fontSize: 11,
+              color: brandColors.textSecondary,
+              fontWeight: 500,
+              letterSpacing: 0.2,
+              textTransform: "uppercase",
+              marginBottom: 6,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            <span style={{ width: 5, height: 5, borderRadius: "50%", background: brandColors.info }} />
+            Điểm danh ca dạy
+          </span>
+          <span
+            style={{
+              fontSize: 22,
+              fontWeight: 600,
+              color: SAKURA.ink,
+              letterSpacing: -0.4,
+              lineHeight: 1,
+              fontFamily: '"Comfortaa", sans-serif',
+            }}
+          >
+            Xem lịch dạy
+          </span>
+        </button>
+      </div>
 
       {/* 💼 MAIN CONTENT GRID */}
       <Grid container spacing={3}>
         {/* LEFT COLUMN: ACTIVE CLASSES */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={6} className="animate-fade-in-up anim-delay-2">
           <Card
             sx={{
-              borderRadius: '16px',
+              borderRadius: '24px',
               border: `1px solid ${brandColors.border}`,
               height: '100%',
               minHeight: 480,
-              boxShadow: '0 4px 16px rgba(0,0,0,0.01)',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.01)',
               background: '#ffffff',
             }}
           >
             <CardContent sx={{ p: 3 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h6" fontWeight={800} color={brandColors.ink} sx={{ fontSize: '1.15rem' }}>
+                <Typography variant="h6" fontWeight={850} color={brandColors.ink} sx={{ fontSize: '1.2rem' }}>
                   Lớp học đang dạy ({courses.length})
                 </Typography>
                 <Button
@@ -267,9 +689,8 @@ const TeacherDashboard = () => {
                   <Typography variant="body1">Bạn chưa được phân công lớp học nào.</Typography>
                 </Box>
               ) : (
-                <List sx={{ p: 0 }} className="mira-stagger">
+                <List sx={{ p: 0 }}>
                   {courses.slice(0, 4).map((course, index) => {
-                    // Progress calculations
                     const totalSessions = course.session || 24;
                     const elapsedSessions = Math.min(Math.round(totalSessions * 0.4 + index * 4), totalSessions);
                     const progressPercent = Math.round((elapsedSessions / totalSessions) * 100);
@@ -278,22 +699,20 @@ const TeacherDashboard = () => {
                       <ListItem
                         key={course._id || course.id}
                         alignItems="flex-start"
+                        className="class-card"
                         sx={{
                           px: 2,
-                          py: 2,
-                          borderRadius: '12px',
+                          py: 2.5,
+                          borderRadius: '16px',
                           border: `1px solid ${brandColors.borderLight}`,
                           mb: index === courses.slice(0, 4).length - 1 ? 0 : 2,
-                          transition: 'all 0.2s ease',
-                          '&:hover': {
-                            bgcolor: '#fcfcfc',
-                            borderColor: brandColors.redLight,
-                            boxShadow: '0 4px 12px rgba(185, 0, 0, 0.02)'
-                          }
+                          bgcolor: '#ffffff',
+                          cursor: 'pointer'
                         }}
+                        onClick={() => navigate(`/dashboard/teacher/courses/${course._id || course.id}/members`)}
                       >
                         <ListItemAvatar sx={{ mt: 0.5 }}>
-                          <Avatar sx={{ bgcolor: brandColors.redSoft, color: brandColors.red, fontWeight: 700 }}>
+                          <Avatar sx={{ bgcolor: brandColors.redSoft, color: brandColors.red, fontWeight: 800 }}>
                             {course.name.charAt(0).toUpperCase()}
                           </Avatar>
                         </ListItemAvatar>
@@ -302,11 +721,11 @@ const TeacherDashboard = () => {
                           secondaryTypographyProps={{ component: 'div' }}
                           primary={
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
-                              <Typography variant="subtitle1" component="div" fontWeight={700} color={brandColors.ink}>
+                              <Typography variant="subtitle1" component="div" fontWeight={800} color={brandColors.ink}>
                                 {course.name}
                               </Typography>
-                              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
-                                Sĩ số: {course.enrolledCount}/{course.capacity} học viên
+                              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700 }}>
+                                Sĩ số: {course.enrolledCount}/{course.capacity}
                               </Typography>
                             </Box>
                           }
@@ -342,29 +761,10 @@ const TeacherDashboard = () => {
                                   />
                                 </Box>
                                 <Box sx={{ minWidth: 65, textAlign: 'right' }}>
-                                  <Typography variant="caption" color="text.secondary" fontWeight={700}>
-                                    Bài {elapsedSessions}/{totalSessions} ({progressPercent}%)
+                                  <Typography variant="caption" color="text.secondary" fontWeight={800}>
+                                    {progressPercent}% (Bài {elapsedSessions}/{totalSessions})
                                   </Typography>
                                 </Box>
-                              </Box>
-
-                              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1.5 }}>
-                                <Button
-                                  variant="outlined"
-                                  size="small"
-                                  onClick={() => navigate(`/dashboard/teacher/courses/${course._id || course.id}/members`)}
-                                  sx={{
-                                    borderColor: brandColors.border,
-                                    color: brandColors.textPrimary,
-                                    borderRadius: '8px',
-                                    textTransform: 'none',
-                                    fontWeight: 700,
-                                    fontSize: '0.75rem',
-                                    '&:hover': { borderColor: brandColors.red, color: brandColors.red, bgcolor: brandColors.redSoft }
-                                  }}
-                                >
-                                  Xem lớp học
-                                </Button>
                               </Box>
                             </Box>
                           }
@@ -379,201 +779,194 @@ const TeacherDashboard = () => {
         </Grid>
 
         {/* RIGHT COLUMN: QUICK NAV */}
-        <Grid item xs={12} md={6}>
-          {/* QUICK LINKS CARD */}
+        <Grid item xs={12} md={6} className="animate-fade-in-up anim-delay-3">
           <Card
             sx={{
-              borderRadius: '16px',
+              borderRadius: '24px',
               border: `1px solid ${brandColors.border}`,
               height: '100%',
               minHeight: 480,
-              boxShadow: '0 4px 16px rgba(0,0,0,0.01)',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.01)',
               background: '#ffffff',
             }}
           >
             <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" fontWeight={800} color={brandColors.ink} sx={{ mb: 2.5, fontSize: '1.15rem' }}>
-                Lối tắt tính năng
+              <Typography variant="h6" fontWeight={850} color={brandColors.ink} sx={{ mb: 3, fontSize: '1.2rem' }}>
+                Lối tắt tính năng nhanh
               </Typography>
 
               <Grid container spacing={2}>
-                {/* Link 1: Schedule */}
-                <Grid item xs={6}>
+                {/* 1. Lịch dạy */}
+                <Grid item xs={12} sm={6}>
                   <Box
                     onClick={() => navigate('/dashboard/teacher/schedule')}
-                    className="mira-button-hover"
+                    className="quick-access-card"
                     sx={{
-                      p: 2,
-                      borderRadius: '12px',
+                      p: 2.5,
+                      borderRadius: '16px',
                       bgcolor: '#F5F8FF',
                       color: '#2A5C91',
                       border: '1px solid #EBF1FF',
                       cursor: 'pointer',
-                      textAlign: 'center',
-                      boxShadow: '0 2px 6px rgba(42, 92, 145, 0.02)',
-                      height: 124,
                       display: 'flex',
-                      flexDirection: 'column',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      '&:hover': {
-                        borderColor: '#2A5C91',
-                        boxShadow: '0 4px 12px rgba(42, 92, 145, 0.08)'
-                      }
+                      gap: 2,
+                      height: 104,
+                      boxShadow: '0 2px 8px rgba(42, 92, 145, 0.02)'
                     }}
                   >
-                    <CalendarClock size={28} style={{ marginBottom: 8 }} />
-                    <Typography variant="body2" fontWeight={700}>Lịch dạy</Typography>
+                    <Avatar className="icon-avatar" sx={{ bgcolor: '#FFF', color: '#2A5C91', width: 44, height: 44, boxShadow: '0 2px 6px rgba(42,92,145,0.06)' }}>
+                      <CalendarClock size={20} />
+                    </Avatar>
+                    <Box sx={{ textAlign: 'left' }}>
+                      <Typography variant="subtitle2" fontWeight={800} sx={{ color: brandColors.ink }}>Lịch dạy</Typography>
+                      <Typography variant="caption" color="text.secondary" fontWeight={500} sx={{ display: 'block', lineHeight: 1.25, mt: 0.25 }}>Xem thời khóa biểu & báo nghỉ</Typography>
+                    </Box>
                   </Box>
                 </Grid>
 
-                {/* Link 2: Assignments */}
-                <Grid item xs={6}>
+                {/* 2. Bài tập */}
+                <Grid item xs={12} sm={6}>
                   <Box
                     onClick={() => navigate('/dashboard/teacher/assignments')}
-                    className="mira-button-hover"
+                    className="quick-access-card"
                     sx={{
-                      p: 2,
-                      borderRadius: '12px',
+                      p: 2.5,
+                      borderRadius: '16px',
                       bgcolor: '#F4FBF6',
                       color: '#2D7D46',
                       border: '1px solid #E8F7EC',
                       cursor: 'pointer',
-                      textAlign: 'center',
-                      boxShadow: '0 2px 6px rgba(45, 125, 70, 0.02)',
-                      height: 124,
                       display: 'flex',
-                      flexDirection: 'column',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      '&:hover': {
-                        borderColor: '#2D7D46',
-                        boxShadow: '0 4px 12px rgba(45, 125, 70, 0.08)'
-                      }
+                      gap: 2,
+                      height: 104,
+                      boxShadow: '0 2px 8px rgba(45, 125, 70, 0.02)'
                     }}
                   >
-                    <NotebookText size={28} style={{ marginBottom: 8 }} />
-                    <Typography variant="body2" fontWeight={700}>Bài tập</Typography>
+                    <Avatar className="icon-avatar" sx={{ bgcolor: '#FFF', color: '#2D7D46', width: 44, height: 44, boxShadow: '0 2px 6px rgba(45,125,70,0.06)' }}>
+                       <NotebookText size={20} />
+                    </Avatar>
+                    <Box sx={{ textAlign: 'left' }}>
+                      <Typography variant="subtitle2" fontWeight={800} sx={{ color: brandColors.ink }}>Bài tập</Typography>
+                      <Typography variant="caption" color="text.secondary" fontWeight={500} sx={{ display: 'block', lineHeight: 1.25, mt: 0.25 }}>Giao bài và chấm điểm học viên</Typography>
+                    </Box>
                   </Box>
                 </Grid>
 
-                {/* Link 3: Question Bank */}
-                <Grid item xs={6}>
+                {/* 3. Ngân hàng câu hỏi */}
+                <Grid item xs={12} sm={6}>
                   <Box
                     onClick={() => navigate('/dashboard/teacher/questions')}
-                    className="mira-button-hover"
+                    className="quick-access-card"
                     sx={{
-                      p: 2,
-                      borderRadius: '12px',
+                      p: 2.5,
+                      borderRadius: '16px',
                       bgcolor: '#FFFBF5',
                       color: '#C66900',
                       border: '1px solid #FFF1DB',
                       cursor: 'pointer',
-                      textAlign: 'center',
-                      boxShadow: '0 2px 6px rgba(198, 105, 0, 0.02)',
-                      height: 124,
                       display: 'flex',
-                      flexDirection: 'column',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      '&:hover': {
-                        borderColor: '#C66900',
-                        boxShadow: '0 4px 12px rgba(198, 105, 0, 0.08)'
-                      }
+                      gap: 2,
+                      height: 104,
+                      boxShadow: '0 2px 8px rgba(198, 105, 0, 0.02)'
                     }}
                   >
-                    <FileQuestion size={28} style={{ marginBottom: 8 }} />
-                    <Typography variant="body2" fontWeight={700}>Ngân hàng câu hỏi</Typography>
+                    <Avatar className="icon-avatar" sx={{ bgcolor: '#FFF', color: '#C66900', width: 44, height: 44, boxShadow: '0 2px 6px rgba(198,105,0,0.06)' }}>
+                      <FileQuestion size={20} />
+                    </Avatar>
+                    <Box sx={{ textAlign: 'left' }}>
+                      <Typography variant="subtitle2" fontWeight={800} sx={{ color: brandColors.ink }}>Câu hỏi</Typography>
+                      <Typography variant="caption" color="text.secondary" fontWeight={500} sx={{ display: 'block', lineHeight: 1.25, mt: 0.25 }}>Soạn câu hỏi & tài liệu thi cử</Typography>
+                    </Box>
                   </Box>
                 </Grid>
 
-                {/* Link 4: Attendance */}
-                <Grid item xs={6}>
+                {/* 4. Điểm danh */}
+                <Grid item xs={12} sm={6}>
                   <Box
                     onClick={() => navigate('/dashboard/teacher/attendance')}
-                    className="mira-button-hover"
+                    className="quick-access-card"
                     sx={{
-                      p: 2,
-                      borderRadius: '12px',
+                      p: 2.5,
+                      borderRadius: '16px',
                       bgcolor: '#FFF1F0',
                       color: brandColors.red,
                       border: `1px solid ${brandColors.redSoft}`,
                       cursor: 'pointer',
-                      textAlign: 'center',
-                      boxShadow: '0 2px 6px rgba(185, 0, 0, 0.02)',
-                      height: 124,
                       display: 'flex',
-                      flexDirection: 'column',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      '&:hover': {
-                        borderColor: brandColors.red,
-                        boxShadow: '0 4px 12px rgba(185, 0, 0, 0.08)'
-                      }
+                      gap: 2,
+                      height: 104,
+                      boxShadow: '0 2px 8px rgba(185, 0, 0, 0.02)'
                     }}
                   >
-                    <ClipboardCheck size={28} style={{ marginBottom: 8 }} />
-                    <Typography variant="body2" fontWeight={700}>Điểm danh</Typography>
+                    <Avatar className="icon-avatar" sx={{ bgcolor: '#FFF', color: brandColors.red, width: 44, height: 44, boxShadow: '0 2px 6px rgba(185,0,0,0.06)' }}>
+                      <ClipboardCheck size={20} />
+                    </Avatar>
+                    <Box sx={{ textAlign: 'left' }}>
+                      <Typography variant="subtitle2" fontWeight={800} sx={{ color: brandColors.ink }}>Điểm danh</Typography>
+                      <Typography variant="caption" color="text.secondary" fontWeight={500} sx={{ display: 'block', lineHeight: 1.25, mt: 0.25 }}>Theo dõi chuyên cần hàng ngày</Typography>
+                    </Box>
                   </Box>
                 </Grid>
 
-
-                {/* Link 6: Grammar Quiz Creator */}
-                <Grid item xs={6}>
+                {/* 5. Tạo Quiz Ngữ pháp */}
+                <Grid item xs={12} sm={6}>
                   <Box
                     onClick={() => navigate('/dashboard/teacher/grammar')}
-                    className="mira-button-hover"
+                    className="quick-access-card"
                     sx={{
-                      p: 2,
-                      borderRadius: '12px',
+                      p: 2.5,
+                      borderRadius: '16px',
                       bgcolor: '#FFFDF0',
                       color: '#A17D00',
                       border: '1px solid #FFFAC2',
                       cursor: 'pointer',
-                      textAlign: 'center',
-                      boxShadow: '0 2px 6px rgba(161, 125, 0, 0.02)',
-                      height: 124,
                       display: 'flex',
-                      flexDirection: 'column',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      '&:hover': {
-                        borderColor: '#A17D00',
-                        boxShadow: '0 4px 12px rgba(161, 125, 0, 0.08)'
-                      }
+                      gap: 2,
+                      height: 104,
+                      boxShadow: '0 2px 8px rgba(161, 125, 0, 0.02)'
                     }}
                   >
-                    <FileQuestion size={28} style={{ marginBottom: 8 }} />
-                    <Typography variant="body2" fontWeight={700}>Tạo Quiz Ngữ pháp</Typography>
+                    <Avatar className="icon-avatar" sx={{ bgcolor: '#FFF', color: '#A17D00', width: 44, height: 44, boxShadow: '0 2px 6px rgba(161,125,0,0.06)' }}>
+                      <GraduationCap size={20} />
+                    </Avatar>
+                    <Box sx={{ textAlign: 'left' }}>
+                      <Typography variant="subtitle2" fontWeight={800} sx={{ color: brandColors.ink }}>Quiz Ngữ pháp</Typography>
+                      <Typography variant="caption" color="text.secondary" fontWeight={500} sx={{ display: 'block', lineHeight: 1.25, mt: 0.25 }}>Soạn bài trắc nghiệm N5 - N1</Typography>
+                    </Box>
                   </Box>
                 </Grid>
 
-                <Grid item xs={6}>
+                {/* 6. Luyện nghe */}
+                <Grid item xs={12} sm={6}>
                   <Box
                     onClick={() => navigate('/dashboard/teacher/listening')}
-                    className="mira-button-hover"
+                    className="quick-access-card"
                     sx={{
-                      p: 2,
-                      borderRadius: '12px',
+                      p: 2.5,
+                      borderRadius: '16px',
                       bgcolor: '#F0FBFB',
                       color: '#007A7A',
                       border: '1px solid #DDF7F7',
                       cursor: 'pointer',
-                      textAlign: 'center',
-                      boxShadow: '0 2px 6px rgba(0, 122, 122, 0.02)',
-                      height: 124,
                       display: 'flex',
-                      flexDirection: 'column',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      '&:hover': {
-                        borderColor: '#007A7A',
-                        boxShadow: '0 4px 12px rgba(0, 122, 122, 0.08)'
-                      }
+                      gap: 2,
+                      height: 104,
+                      boxShadow: '0 2px 8px rgba(0, 122, 122, 0.02)'
                     }}
                   >
-                    <Headphones size={28} style={{ marginBottom: 8 }} />
-                    <Typography variant="body2" fontWeight={700}>Luyện nghe</Typography>
+                    <Avatar className="icon-avatar" sx={{ bgcolor: '#FFF', color: '#007A7A', width: 44, height: 44, boxShadow: '0 2px 6px rgba(0,122,122,0.06)' }}>
+                      <Headphones size={20} />
+                    </Avatar>
+                    <Box sx={{ textAlign: 'left' }}>
+                      <Typography variant="subtitle2" fontWeight={800} sx={{ color: brandColors.ink }}>Luyện nghe</Typography>
+                      <Typography variant="caption" color="text.secondary" fontWeight={500} sx={{ display: 'block', lineHeight: 1.25, mt: 0.25 }}>Bài nghe & học liệu âm thanh</Typography>
+                    </Box>
                   </Box>
                 </Grid>
               </Grid>
