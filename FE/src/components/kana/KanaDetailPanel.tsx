@@ -125,12 +125,6 @@ const KanaDetailPanel: React.FC<KanaDetailPanelProps> = ({ selectedChar, kanaTyp
           }}>
             {selectedChar.kana}
           </span>
-          <div style={{
-            position: 'absolute',
-            bottom: '4px',
-            right: '4px',
-            fontSize: '0.8rem',
-          }}>🔊</div>
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>

@@ -79,7 +79,6 @@ const StudentGrammarPractice: React.FC = () => {
   };
 
   const currentLevel = activeLevels[selectedLevelTab] || "";
-  const currentColors = LEVEL_COLORS[currentLevel] || { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" };
 
   return (
     <PageLayout
@@ -101,64 +100,61 @@ const StudentGrammarPractice: React.FC = () => {
           />
         </BaseCard>
       ) : (
-        <div className="space-y-6">
-          {/* Level Tabs */}
-          <div className="flex flex-wrap gap-2 border-b border-[var(--color-border-color)] pb-2">
-            {activeLevels.map((lvl, index) => {
-              const lvlColors = LEVEL_COLORS[lvl] || { bg: "bg-blue-50/50", text: "text-blue-700", border: "border-blue-250" };
-              const isSelected = selectedLevelTab === index;
-              return (
-                <button
-                  key={lvl}
-                  onClick={() => {
-                    setSelectedLevelTab(index);
-                    setFlippedCards({});
-                  }}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition border active:scale-95 ${
-                    isSelected
-                      ? `bg-[var(--color-primary-color)] border-[var(--color-primary-color)] text-white shadow-sm`
-                      : `bg-[var(--color-surface-base)] border-[var(--color-border-color)] hover:border-slate-350 text-[var(--color-text-secondary)]`
-                  }`}
-                >
-                  <span
-                    className={`px-1.5 py-0.5 rounded font-black text-[10px] ${
-                      isSelected ? "bg-white/20 text-white" : `${lvlColors.bg} ${lvlColors.text}`
-                    }`}
-                  >
-                    {lvl}
-                  </span>
-                  Lớp {lvl}
-                </button>
-              );
-            })}
-          </div>
+        <div className="space-y-4">
+          {/* Combined Compact Top Bar: Level Tabs & Progress */}
+          <BaseCard className="!p-3 bg-[var(--color-surface-base)] border border-[var(--color-border-color)] shadow-xs">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+              {/* Level Tabs */}
+              <div className="flex flex-wrap items-center gap-2">
+                {activeLevels.map((lvl, index) => {
+                  const lvlColors = LEVEL_COLORS[lvl] || { bg: "bg-blue-50/50", text: "text-blue-700", border: "border-blue-200" };
+                  const isSelected = selectedLevelTab === index;
+                  return (
+                    <button
+                      key={lvl}
+                      onClick={() => {
+                        setSelectedLevelTab(index);
+                        setFlippedCards({});
+                      }}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs transition border active:scale-95 cursor-pointer ${
+                        isSelected
+                          ? `bg-[var(--color-primary-color)] border-[var(--color-primary-color)] text-white shadow-xs`
+                          : `bg-[var(--color-bg-base)] border-[var(--color-border-color)] hover:border-slate-300 text-[var(--color-text-secondary)]`
+                      }`}
+                    >
+                      <span
+                        className={`px-1.5 py-0.5 rounded font-black text-[10px] ${
+                          isSelected ? "bg-white/20 text-white" : `${lvlColors.bg} ${lvlColors.text}`
+                        }`}
+                      >
+                        {lvl}
+                      </span>
+                      Lớp {lvl}
+                    </button>
+                  );
+                })}
+              </div>
 
-          {/* Level Progress Banner */}
-          {filteredCards.length > 0 && (
-            <BaseCard className="bg-[var(--color-bg-base)]/50 border border-[var(--color-border-color)] p-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <h4 className="text-sm font-extrabold text-[var(--color-text-main)] m-0">
-                    Tiến độ học tập cấp độ {currentLevel}
-                  </h4>
-                  <p className="text-xs text-[var(--color-text-secondary)] m-0 mt-0.5">
-                    Đã thuộc {countLearnedInCurrentLevel()} / {filteredCards.length} cấu trúc ngữ pháp
-                  </p>
-                </div>
-                <div className="flex items-center gap-3 w-full sm:w-64">
-                  <div className="flex-1 h-2 bg-[var(--color-secondary-color)] rounded-full overflow-hidden">
+              {/* Level Progress */}
+              {filteredCards.length > 0 && (
+                <div className="flex items-center gap-3 bg-[var(--color-bg-base)] px-3 py-1.5 rounded-xl border border-[var(--color-border-color)] shrink-0 self-start md:self-auto">
+                  <div className="text-xs font-semibold text-[var(--color-text-secondary)] whitespace-nowrap">
+                    Tiến độ <span className="font-extrabold text-[var(--color-text-main)]">{currentLevel}</span>:{" "}
+                    <span className="font-bold text-[var(--color-primary-color)]">{countLearnedInCurrentLevel()}</span>/{filteredCards.length}
+                  </div>
+                  <div className="w-28 sm:w-36 h-2 bg-[var(--color-secondary-color)] rounded-full overflow-hidden">
                     <div
-                      className="bg-emerald-550 h-full rounded-full transition-all duration-500"
+                      className="bg-emerald-500 h-full rounded-full transition-all duration-500"
                       style={{ width: `${(countLearnedInCurrentLevel() / filteredCards.length) * 100}%` }}
                     ></div>
                   </div>
                   <span className="text-xs font-black text-emerald-600 shrink-0">
-                    {Math.round((countLearnedInCurrentLevel() / filteredCards.length) * 100)}% Hoàn thành
+                    {Math.round((countLearnedInCurrentLevel() / filteredCards.length) * 100)}%
                   </span>
                 </div>
-              </div>
-            </BaseCard>
-          )}
+              )}
+            </div>
+          </BaseCard>
 
           {/* Cards Grid */}
           {filteredCards.length === 0 ? (

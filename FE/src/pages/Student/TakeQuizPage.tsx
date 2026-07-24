@@ -9,7 +9,6 @@ import {
   AlertTriangle,
   Lock,
   Info,
-  HelpCircle,
 } from "lucide-react";
 import { useQuiz } from "../../hooks/useQuiz";
 import { useAppSelector } from "../../hooks/hooks";
@@ -38,7 +37,6 @@ const TakeQuizPage: React.FC = () => {
     requestFullscreen,
     exitFullscreen,
     getSummary,
-    shouldAutoSubmit,
     maxViolations,
   } = useAntiCheat({
     maxViolations: 5,
@@ -61,6 +59,17 @@ const TakeQuizPage: React.FC = () => {
   // Refs
   const hasStartedMonitoring = useRef(false);
   const autoSubmitTriggered = useRef(false);
+
+  const handleAnswerChange = useCallback(
+    (questionIndex: number, answerValue: number) => {
+      if (isLocked) return;
+      setAnswers((prev) => ({
+        ...prev,
+        [questionIndex]: answerValue,
+      }));
+    },
+    [isLocked]
+  );
 
   useEffect(() => {
     if (quizId && !hasStartedMonitoring.current) {
@@ -87,52 +96,6 @@ const TakeQuizPage: React.FC = () => {
     }
   }, [currentQuiz]);
 
-  useEffect(() => {
-    if (timeLeft > 0 && !isLocked && !isSubmitting) {
-      const timer = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            void handleAutoSubmit("time_expired");
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
-      return () => clearInterval(timer);
-    }
-  }, [timeLeft, isLocked, isSubmitting]);
-
-  useEffect(() => {
-    if (shouldAutoSubmit() && !autoSubmitTriggered.current && !isSubmitting) {
-      autoSubmitTriggered.current = true;
-      setShowAutoSubmitDialog(true);
-
-      setTimeout(() => {
-        void handleAutoSubmit("max_violations");
-      }, 5000);
-    }
-  }, [shouldAutoSubmit, isSubmitting]);
-
-  const handleAnswerChange = useCallback(
-    (questionIndex: number, answerValue: number) => {
-      if (isLocked) return;
-      setAnswers((prev) => ({
-        ...prev,
-        [questionIndex]: answerValue,
-      }));
-    },
-    [isLocked]
-  );
-
-  const handleAutoSubmit = useCallback(
-    async (reason: "time_expired" | "max_violations") => {
-      if (isSubmitting) return;
-      await handleSubmitQuiz(true, reason);
-    },
-    [isSubmitting]
-  );
-
   const handleSubmitQuiz = useCallback(
     async (isAuto = false, reason?: string) => {
       if (!currentQuiz || !quizId || isSubmitting) return;
@@ -145,21 +108,33 @@ const TakeQuizPage: React.FC = () => {
       const userId = user?._id || (user as UserWithId)?.id;
 
       try {
-        await submitQuizAnswers(quizId, {
+        const result = await submitQuizAnswers(quizId, {
           answers: answerArray,
           timeSpent: timeSpentMinutes,
           studentId: userId,
           antiCheatLogs: logs,
         });
 
-        navigate("/dashboard/student/quizzes", {
-          state: {
-            message: isAuto
-              ? `Bài kiểm tra tự động nộp do: ${reason === "time_expired" ? "Hết giờ làm bài" : "Vi phạm quy chế thi nhiều lần"}`
-              : "Nộp bài kiểm tra thành công!",
-            isAutoSubmit: isAuto,
-          },
-        });
+        // Navigate to result page if we have attemptId, otherwise fall back to quizzes list
+        const attemptId = (result.payload as { attemptId?: string })?.attemptId;
+        if (attemptId) {
+          navigate(`/dashboard/student/quiz/result/${attemptId}`, {
+            state: {
+              isAutoSubmit: isAuto,
+              autoSubmitReason: reason,
+            },
+          });
+        } else {
+          navigate("/dashboard/student/quizzes", {
+            state: {
+              defaultTab: 1,
+              message: isAuto
+                ? `Bài kiểm tra tự động nộp do: ${reason === "time_expired" ? "Hết giờ làm bài" : "Vi phạm quy chế thi nhiều lần"}`
+                : "Nộp bài kiểm tra thành công!",
+              isAutoSubmit: isAuto,
+            },
+          });
+        }
       } catch (err) {
         console.error("Failed to submit quiz:", err);
         setIsSubmitting(false);
@@ -180,6 +155,110 @@ const TakeQuizPage: React.FC = () => {
       startMonitoring,
     ]
   );
+
+  const handleAutoSubmit = useCallback(
+    async (reason: "time_expired" | "max_violations") => {
+      if (isSubmitting) return;
+      await handleSubmitQuiz(true, reason);
+    },
+    [isSubmitting, handleSubmitQuiz]
+  );
+
+  // 1. Timer countdown effect
+  useEffect(() => {
+    if (timeLeft > 0 && !isLocked && !isSubmitting) {
+      const timer = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            void handleAutoSubmit("time_expired");
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [timeLeft, isLocked, isSubmitting, handleAutoSubmit]);
+
+  // 2. Auto-submit when max violations reached or locked
+  useEffect(() => {
+    const isViolated = isLocked || violationCount >= maxViolations;
+    if (isViolated && !autoSubmitTriggered.current && !isSubmitting) {
+      autoSubmitTriggered.current = true;
+      setShowAutoSubmitDialog(true);
+
+      const timer = setTimeout(() => {
+        void handleAutoSubmit("max_violations");
+      }, 2500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isLocked, violationCount, maxViolations, isSubmitting, handleAutoSubmit]);
+
+  // 3. Tab reload/close protection (beforeunload)
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!isSubmitting && hasStartedMonitoring.current) {
+        e.preventDefault();
+        e.returnValue = "Bạn đang làm bài kiểm tra. Nếu thoát, kết quả bài làm sẽ bị mất!";
+        return e.returnValue;
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isSubmitting]);
+
+  // 4. Browser back/forward button interception (popstate)
+  useEffect(() => {
+    if (isSubmitting) return;
+
+    window.history.pushState({ quizActive: true }, "", window.location.href);
+
+    const handlePopState = () => {
+      if (isSubmitting) return;
+
+      const confirmLeave = window.confirm(
+        "⚠️ BẠN ĐANG LÀM BÀI KIỂM TRA!\n\nNếu bạn rời khỏi đây, bài thi của bạn sẽ được tự động nộp ngay lập tức với các câu đã chọn.\n\nBạn có chắc chắn muốn nộp bài và rời đi không?"
+      );
+
+      if (confirmLeave) {
+        void handleAutoSubmit("max_violations");
+      } else {
+        window.history.pushState({ quizActive: true }, "", window.location.href);
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [isSubmitting, handleAutoSubmit]);
+
+  // 5. Sidebar and Header navigation click capture
+  useEffect(() => {
+    const handleNavigationClick = (e: MouseEvent) => {
+      if (isSubmitting) return;
+
+      const target = e.target as HTMLElement;
+      // Capture clicks on sidebar or header navigation elements
+      const navElement = target.closest("aside, header, .ant-layout-header");
+
+      if (navElement) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const confirmLeave = window.confirm(
+          "⚠️ BẠN ĐANG LÀM BÀI KIỂM TRA!\n\nNếu bạn chuyển sang trang khác, bài thi của bạn sẽ được tự động nộp ngay lập tức với các câu đã trả lời.\n\nBạn có chắc chắn muốn nộp bài và thoát không?"
+        );
+
+        if (confirmLeave) {
+          void handleAutoSubmit("max_violations");
+        }
+      }
+    };
+
+    document.addEventListener("click", handleNavigationClick, true); // Use capture phase
+    return () => document.removeEventListener("click", handleNavigationClick, true);
+  }, [isSubmitting, handleAutoSubmit]);
 
   const handleSubmitClick = useCallback(() => {
     if (isLocked) return;
@@ -249,6 +328,33 @@ const TakeQuizPage: React.FC = () => {
         <BaseCard>
           <div className="text-center py-12 text-text-secondary/80 text-sm font-semibold">
             Không tìm thấy thông tin đề thi.
+          </div>
+        </BaseCard>
+      </PageLayout>
+    );
+  }
+
+  const isQuizExpired = currentQuiz.dueDate ? new Date(currentQuiz.dueDate).getTime() <= Date.now() : false;
+
+  if (isQuizExpired) {
+    return (
+      <PageLayout title="Bài kiểm tra" subtitle="Trình làm bài thi trực tuyến">
+        <BaseCard className="bg-red-50 border border-red-200 p-6 text-center space-y-4">
+          <div className="flex flex-col items-center gap-2 text-red-800 font-bold text-sm">
+            <AlertTriangle size={32} className="text-red-600" />
+            <h3 className="text-base font-extrabold m-0">Bài kiểm tra đã hết hạn nộp</h3>
+            <p className="text-xs text-red-600 font-semibold max-w-md m-0">
+              Thời hạn làm bài thi này đã kết thúc. Bạn không thể thực hiện hoặc nộp bài kiểm tra này nữa.
+            </p>
+          </div>
+          <div className="pt-2">
+            <button
+              onClick={() => navigate("/dashboard/student/quizzes")}
+              className="inline-flex items-center gap-2 text-primary-color hover:underline text-xs font-extrabold transition"
+            >
+              <ArrowLeft size={16} />
+              Quay lại danh sách bài kiểm tra
+            </button>
           </div>
         </BaseCard>
       </PageLayout>

@@ -1,5 +1,5 @@
 import React from "react";
-import { UserRound, Clock, Calendar } from "lucide-react";
+import { UserRound } from "lucide-react";
 import type { SessionItem, AttendanceStatus } from "../../types/schedule.types";
 
 interface Props {
@@ -93,15 +93,6 @@ const safeNameFromUserObj = (u: unknown): string | null => {
 const looksLikeEmail = (s: string): boolean =>
   typeof s === "string" && /\S+@\S+\.\S+/.test(s);
 
-const formatDateDisplay = (dateStr: string): string => {
-  try {
-    const [year, month, day] = dateStr.split("-");
-    return `${day}/${month}/${year}`;
-  } catch {
-    return dateStr;
-  }
-};
-
 const getAttendanceStatusFromObj = (attendanceObj: unknown): AttendanceStatus => {
   if (!attendanceObj && attendanceObj !== false) return "not_yet";
   let raw: unknown = null;
@@ -126,6 +117,19 @@ const getAttendanceStatusFromObj = (attendanceObj: unknown): AttendanceStatus =>
     if (n === 0) return "absent";
   }
   return "not_yet";
+};
+
+const isAutoAbsent = (dateStr: string, endTime: string | undefined | null): boolean => {
+  if (!endTime) return false;
+  try {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const [eh, em] = endTime.trim().split(":").map(Number);
+    const sessionEnd = new Date(y, m - 1, d, eh, em, 0, 0);
+    const now = new Date();
+    return now.getTime() - sessionEnd.getTime() > 24 * 60 * 60 * 1000;
+  } catch {
+    return false;
+  }
 };
 
 const SessionCard: React.FC<Props> = ({ session, style, onClick }) => {
@@ -199,7 +203,11 @@ const SessionCard: React.FC<Props> = ({ session, style, onClick }) => {
     }
   }
 
-  const status = getAttendanceStatusFromObj(attendanceObj);
+  let status = getAttendanceStatusFromObj(attendanceObj);
+  // If session ended >24h ago and still not marked, treat as absent in UI
+  if (status === "not_yet" && session.date && isAutoAbsent(session.date, session.endTime)) {
+    status = "absent";
+  }
 
   const getChipConfig = () => {
     switch (status) {
@@ -228,16 +236,11 @@ const SessionCard: React.FC<Props> = ({ session, style, onClick }) => {
   const chipConfig = getChipConfig();
   const borderColor = getBorderColor();
 
-  const safeTrim = (v: unknown): string => (typeof v === "string" ? v.trim() : "");
-  const startTime = safeTrim(session.startTime) || (session.slotNumber && session.slotNumber <= 2 ? "09:00" : "13:00");
-  const endTime = safeTrim(session.endTime) || (session.slotNumber && session.slotNumber <= 2 ? "11:30" : "16:30");
-  const timeLabel = `${startTime} - ${endTime}`;
-  const dateDisplay = session.date ? formatDateDisplay(session.date) : "";
   const isEmpty = !session.courseName || session.courseName === "-";
 
   if (isEmpty) {
     return (
-      <div className="w-full h-[120px] flex flex-col items-center justify-center bg-slate-50/10 rounded-2xl border border-dashed border-slate-200/60 transition-all duration-300 hover:bg-slate-50/30 hover:border-slate-300/80 select-none">
+      <div className="w-full h-[100px] flex flex-col items-center justify-center bg-slate-50/10 rounded-2xl border border-dashed border-slate-200/60 transition-all duration-300 hover:bg-slate-50/30 hover:border-slate-300/80 select-none">
         <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Trống</span>
       </div>
     );
@@ -247,36 +250,24 @@ const SessionCard: React.FC<Props> = ({ session, style, onClick }) => {
     <div
       onClick={onClick}
       style={style}
-      className={`w-full h-[120px] bg-white border border-slate-100 border-l-4 ${borderColor} rounded-r-2xl rounded-l-md p-2.5 shadow-[0_1px_4px_rgba(0,0,0,0.01)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.04)] hover:-translate-y-0.5 transition-all duration-300 flex flex-col gap-1.5 ${
+      className={`w-full h-[100px] bg-white border border-slate-100 border-l-4 ${borderColor} rounded-r-xl rounded-l-sm p-3 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between ${
         onClick ? "cursor-pointer" : ""
       }`}
     >
-      <div className="space-y-0.5">
-        <h4 className="text-[10px] font-bold uppercase tracking-wide text-[#1F2238] leading-tight line-clamp-1 hover:text-blue-600 transition-colors break-words">
+      <div className="space-y-1">
+        <h4 className="text-xs font-bold uppercase tracking-wide text-[#1F2238] leading-tight line-clamp-1 hover:text-blue-600 transition-colors break-words">
           {session.courseName ?? "Chưa xác định"}
         </h4>
-        <div className="flex items-center gap-1 text-[9px] text-slate-500 font-medium">
-          <UserRound size={11} className="text-slate-400 shrink-0" />
+        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
+          <UserRound size={12} className="text-slate-400 shrink-0" />
           <span className="truncate">{teacherName}</span>
         </div>
       </div>
 
-      <div className="mt-auto space-y-1 border-t border-slate-50 pt-1.5">
-        <div className="flex items-center justify-between gap-1">
-          <div className="flex items-center gap-1 text-[9px] text-slate-600 font-bold uppercase">
-            <Clock size={11} className="text-emerald-500 shrink-0" />
-            <span>{timeLabel}</span>
-          </div>
-          <div className={`text-[8px] font-black tracking-wider px-2 py-0.5 rounded-full ${chipConfig.bg}`}>
-            {chipConfig.label}
-          </div>
+      <div className="flex items-center justify-start">
+        <div className={`text-[10px] font-black tracking-wider px-2.5 py-1 rounded-full ${chipConfig.bg}`}>
+          {chipConfig.label}
         </div>
-        {dateDisplay && (
-          <div className="flex items-center gap-1 text-[9px] text-slate-500 font-medium">
-            <Calendar size={11} className="text-blue-400 shrink-0" />
-            <span>{dateDisplay}</span>
-          </div>
-        )}
       </div>
     </div>
   );

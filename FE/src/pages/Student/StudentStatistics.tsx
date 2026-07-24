@@ -160,7 +160,7 @@ const StudentStatisticsDashboard: React.FC = () => {
 
   if (error || !course) {
     return (
-      <PageLayout title="Thống kê kết quả học tập" subtitle="Theo dõi tiến độ học tập và điểm số">
+      <PageLayout title="" subtitle="">
         <BaseCard>
           <EmptyState
             title="Bạn chưa tham gia khóa học nào"
@@ -173,7 +173,7 @@ const StudentStatisticsDashboard: React.FC = () => {
   }
 
   return (
-    <PageLayout title="Thống kê kết quả học tập" subtitle="Theo dõi tiến độ học tập và thành tích của bạn">
+    <PageLayout title="" subtitle="">
       {/* 1. Active Course Details */}
       <BaseCard className="bg-gradient-to-r from-[var(--color-surface-base)] to-[var(--color-bg-base)] border-l-4 border-[var(--color-primary-color)]">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">

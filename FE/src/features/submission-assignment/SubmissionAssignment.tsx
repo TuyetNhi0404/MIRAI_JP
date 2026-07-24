@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Search, Filter, BookOpen, ClipboardList, CheckCircle2, AlertCircle } from "lucide-react";
+import { Search, Filter, ClipboardList, CheckCircle2, AlertCircle } from "lucide-react";
 import SubmissionUploadModal from "./SubmissionUploadModal";
 import { submissionService } from "../../services/submissionService";
 import type { EnrolledCourse, AssignmentWithSubmission } from "../../types/submission.types";
@@ -150,9 +150,9 @@ const SubmissionAssignment: React.FC = () => {
 
   if (enrolledCourses.length === 0) {
     return (
-      <PageLayout title="Bài tập về nhà" subtitle="Quản lý và nộp bài tập" icon={BookOpen}>
+      <PageLayout>
         <BaseCard className="text-center py-12">
-          <h4 className="text-sm font-extrabold text-slate-800 m-0 mb-1">Bạn chưa đăng ký khóa học nào</h4>
+          <h4 className="text-sm font-extrabold text-slate-800 m-0">Bạn chưa đăng ký khóa học nào</h4>
           <p className="text-xs text-slate-400 m-0">Vui lòng đăng ký khóa học để xem và nộp bài tập</p>
         </BaseCard>
       </PageLayout>
@@ -160,11 +160,7 @@ const SubmissionAssignment: React.FC = () => {
   }
 
   return (
-    <PageLayout
-      title="Bài tập về nhà"
-      subtitle="Xem danh sách bài tập được giao, kiểm tra hạn nộp và gửi bài nộp trực tuyến"
-      icon={BookOpen}
-    >
+    <PageLayout>
       {/* Filters & Control bar */}
       <BaseCard className="!p-4 bg-slate-50/50 border-slate-150/70">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -385,6 +381,9 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({ assignment, onClick }) 
   };
 
   const submissionStatus = assignment.submission?.status || "not_submitted";
+  const isOverdue =
+    assignment.status === "closed" ||
+    (assignment.dueDate ? new Date() > new Date(assignment.dueDate) : false);
 
   const getSubmissionBadgeStyles = (status: string) => {
     switch (status) {
@@ -427,8 +426,8 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({ assignment, onClick }) 
           className="h-1 w-full"
           style={{
             background:
-              assignment.status === "closed"
-                ? "linear-gradient(90deg, #F59E0B, #D97706)"
+              isOverdue
+                ? "linear-gradient(90deg, #EF4444, #DC2626)"
                 : "linear-gradient(90deg, #10B981, #059669)",
           }}
         />
@@ -441,12 +440,16 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({ assignment, onClick }) 
               </span>
               <span
                 className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${
-                  assignment.status === "closed"
+                  isOverdue
                     ? "bg-red-50 text-red-700 border-red-100"
                     : "bg-emerald-50 text-emerald-700 border-emerald-100"
                 }`}
               >
-                {assignment.status === "closed" ? "Đã đóng" : "Đang mở"}
+                {assignment.status === "closed"
+                  ? "Đã đóng"
+                  : isOverdue
+                  ? "Đã quá hạn"
+                  : "Đang mở"}
               </span>
             </div>
             <h3 className="text-sm font-extrabold text-slate-800 leading-tight m-0 select-all hover:text-blue-650 transition">

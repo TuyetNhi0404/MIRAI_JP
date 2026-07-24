@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useQuiz } from "../../hooks/useQuiz";
 import { useAppSelector } from "../../hooks/hooks";
 import AvailableQuizzes from "../../components/quiz/AvailableQuizzes";
@@ -6,14 +7,16 @@ import QuizHistory from "../../components/quiz/QuizHistory";
 import type { QuizWithAttempt, UserWithId } from "../../types/quiz.types";
 import { PageLayout } from "../../components/ui/PageLayout";
 import { BaseCard } from "../../components/ui/BaseCard";
-import { FileQuestion, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 
 function isQuizWithAttempt(quiz: unknown): quiz is QuizWithAttempt {
   return typeof quiz === "object" && quiz !== null && "hasAttempted" in quiz;
 }
 
 const StudentQuizzesPage: React.FC = () => {
-  const [tabValue, setTabValue] = useState(0);
+  const location = useLocation();
+  const defaultTab = (location.state as { defaultTab?: number })?.defaultTab ?? 0;
+  const [tabValue, setTabValue] = useState(defaultTab);
   const user = useAppSelector((state) => state.auth.user);
 
   const { quizzes, attempts, loading, error, loadStudentQuizzes, loadStudentHistory, resetError } = useQuiz();
@@ -29,11 +32,7 @@ const StudentQuizzesPage: React.FC = () => {
   }, [loadStudentQuizzes, loadStudentHistory, user]);
 
   return (
-    <PageLayout
-      title="Bài kiểm tra"
-      subtitle="Thực hiện các bài test, quiz đánh giá năng lực học tập và kiểm tra kết quả"
-      icon={FileQuestion}
-    >
+    <PageLayout>
       {/* Error Alert */}
       {error && (
         <BaseCard className="bg-red-50 border-l-4 border-red-500 p-4 flex justify-between items-center">
@@ -47,25 +46,43 @@ const StudentQuizzesPage: React.FC = () => {
         </BaseCard>
       )}
 
-      {/* Tabs */}
-      <div className="flex bg-surface-base rounded-2xl p-1 shadow-sm border border-border-color max-w-md">
-        <button
-          onClick={() => setTabValue(0)}
-          className={`flex-1 py-2.5 text-xs font-extrabold transition flex items-center justify-center gap-2 rounded-xl ${
-            tabValue === 0 ? "bg-[var(--color-primary-color)] text-white shadow-sm" : "text-text-secondary hover:text-text-main"
-          }`}
-        >
-          Bài kiểm tra hiện có
-        </button>
-        <button
-          onClick={() => setTabValue(1)}
-          className={`flex-1 py-2.5 text-xs font-extrabold transition flex items-center justify-center gap-2 rounded-xl ${
-            tabValue === 1 ? "bg-[var(--color-primary-color)] text-white shadow-sm" : "text-text-secondary hover:text-text-main"
-          }`}
-        >
-          Kết quả của tôi
-        </button>
-      </div>
+      {/* Control Header Card */}
+      <BaseCard className="!p-3.5 bg-slate-50/60 border-slate-150/70">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          {/* Tabs */}
+          <div className="flex bg-white rounded-xl p-1 shadow-sm border border-slate-200 w-full sm:w-auto">
+            <button
+              onClick={() => setTabValue(0)}
+              className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-extrabold transition flex items-center justify-center gap-2 rounded-lg ${
+                tabValue === 0
+                  ? "bg-[var(--color-primary-color)] text-white shadow-sm"
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              Bài kiểm tra hiện có
+            </button>
+            <button
+              onClick={() => setTabValue(1)}
+              className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-extrabold transition flex items-center justify-center gap-2 rounded-lg ${
+                tabValue === 1
+                  ? "bg-[var(--color-primary-color)] text-white shadow-sm"
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              Kết quả của tôi
+            </button>
+          </div>
+
+          {/* Quick Course Info Pill */}
+          {tabValue === 0 && studentQuizzes.length > 0 && (
+            <div className="flex items-center gap-2 text-xs text-slate-500 font-bold bg-white px-3 py-1.5 rounded-xl border border-slate-200 self-start sm:self-auto">
+              <span className="text-slate-800 font-extrabold">{studentQuizzes[0].courseName || "Khóa học của tôi"}</span>
+              <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+              <span className="text-slate-500">{studentQuizzes.length} bài test</span>
+            </div>
+          )}
+        </div>
+      </BaseCard>
 
       {/* Loading Indicator */}
       {loading ? (
@@ -74,7 +91,7 @@ const StudentQuizzesPage: React.FC = () => {
           <span className="text-sm text-text-secondary font-medium">Đang tải dữ liệu bài kiểm tra...</span>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {tabValue === 0 ? (
             <AvailableQuizzes quizzes={studentQuizzes} />
           ) : (

@@ -18,8 +18,6 @@ import {
 import { PageLayout } from "../../components/ui/PageLayout";
 import { BaseCard } from "../../components/ui/BaseCard";
 import { EmptyState } from "../../components/ui/EmptyState";
-import { brandColors } from "../../theme/theme";
-import { LiftCard, MagneticButton, Stagger } from "../../components/ui/MotionPatterns";
 
 interface CourseData {
   _id?: string;
@@ -324,7 +322,8 @@ const StudentSchedulePage: React.FC = () => {
             }
           }
 
-          const sessionName = (sessionObj && typeof sessionObj === "object" ? sessionObj.sessionName : null) ?? `Slot ${slotNumber}`;
+          const sObj = sessionObj && typeof sessionObj === "object" ? (sessionObj as Record<string, unknown>) : null;
+          const sessionName = (sObj?.sessionName as string | undefined) ?? `Slot ${slotNumber}`;
 
           return {
             calendarId,
@@ -401,51 +400,8 @@ const StudentSchedulePage: React.FC = () => {
 
   return (
     <PageLayout
-      title="Lịch học của tôi"
-      subtitle="Xem và theo dõi lịch học, lịch chuyên cần của bạn theo từng tuần"
-      extra={
-        <div className="flex items-center gap-2">
-          <MagneticButton
-            strength={8}
-            className="flex items-center gap-1.5 px-3 py-2 border border-border-color rounded-xl bg-surface-base hover:bg-accent-color hover:border-primary-color text-text-main hover:text-primary-color transition active:scale-95 shrink-0 text-xs font-bold mira-press"
-            onClick={goCurrentWeek}
-            title="Quay lại tuần hiện tại"
-          >
-            Hôm nay
-          </MagneticButton>
-
-          <MagneticButton
-            strength={6}
-            className="p-2 border border-border-color rounded-xl bg-surface-base hover:bg-accent-color hover:border-primary-color text-text-main hover:text-primary-color transition active:scale-95 shrink-0 mira-press"
-            onClick={goPrevWeek}
-          >
-            <ChevronLeft size={18} />
-          </MagneticButton>
-
-          <div className="relative shrink-0">
-            <div className="!flex !flex-row !flex-nowrap !items-center gap-2 border border-transparent rounded-xl px-4 py-1.5 bg-primary-color hover:bg-primary-color-hover text-white cursor-pointer transition whitespace-nowrap shadow-sm">
-              <Calendar size={16} className="text-white/90 shrink-0" />
-              <span className="text-sm font-bold text-white select-none">
-                {weekStartString} – {weekEndString}
-              </span>
-            </div>
-            <input
-              type="date"
-              value={dayjs(weekStart).format("YYYY-MM-DD")}
-              onChange={(e) => handleDatePick(e.target.value)}
-              className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
-            />
-          </div>
-
-          <MagneticButton
-            strength={6}
-            className="p-2 border border-border-color rounded-xl bg-surface-base hover:bg-accent-color hover:border-primary-color text-text-main hover:text-primary-color transition active:scale-95 shrink-0 mira-press"
-            onClick={goNextWeek}
-          >
-            <ChevronRight size={18} />
-          </MagneticButton>
-        </div>
-      }
+      title=""
+      subtitle=""
     >
       {authRequired && (
         <BaseCard className="border-l-4 border-amber-500 bg-amber-50/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -465,56 +421,6 @@ const StudentSchedulePage: React.FC = () => {
         </BaseCard>
       )}
 
-      {/* Bento summary: 1 hero card + 3 stat tiles */}
-      <Stagger className="mb-5" delay={0.05}>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mira-stagger">
-          <LiftCard lift={3} className="mira-hover-halo rounded-xl col-span-2 md:col-span-1">
-            <div className="rounded-xl p-4 flex items-center gap-3" style={{ background: brandColors.paper, border: `1px solid ${brandColors.border}` }}>
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${brandColors.red}14`, color: brandColors.red }}>
-                <CalendarDays size={18} />
-              </div>
-              <div className="min-w-0">
-                <div className="text-[11px] uppercase tracking-wider text-text-secondary font-medium">Tuần hiện tại</div>
-                <div className="text-sm font-bold leading-tight text-text-primary">{weekStats.sessionsThisWeek} ca</div>
-              </div>
-            </div>
-          </LiftCard>
-          <LiftCard lift={2} className="mira-hover-halo rounded-xl">
-            <div className="rounded-xl p-4 flex items-center gap-3" style={{ background: brandColors.paper, border: `1px solid ${brandColors.border}` }}>
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: "#3B82F614", color: "#3B82F6" }}>
-                <BookOpen size={18} />
-              </div>
-              <div className="min-w-0">
-                <div className="text-[11px] uppercase tracking-wider text-text-secondary font-medium">Hôm nay</div>
-                <div className="text-sm font-bold leading-tight text-text-primary">{weekStats.todaySessions} ca</div>
-              </div>
-            </div>
-          </LiftCard>
-          <LiftCard lift={2} className="mira-hover-halo rounded-xl">
-            <div className="rounded-xl p-4 flex items-center gap-3" style={{ background: brandColors.paper, border: `1px solid ${brandColors.border}` }}>
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: "#10B98114", color: "#10B98114" }}>
-                <CheckCircle2 size={18} style={{ color: "#10B981" }} />
-              </div>
-              <div className="min-w-0">
-                <div className="text-[11px] uppercase tracking-wider text-text-secondary font-medium">Tỷ lệ chuyên cần</div>
-                <div className="text-sm font-bold leading-tight text-text-primary">{weekStats.attendanceRate}%</div>
-              </div>
-            </div>
-          </LiftCard>
-          <LiftCard lift={2} className="mira-hover-halo rounded-xl">
-            <div className="rounded-xl p-4 flex items-center gap-3" style={{ background: brandColors.paper, border: `1px solid ${brandColors.border}` }}>
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: "#F59E0B14", color: "#F59E0B" }}>
-                <Hourglass size={18} />
-              </div>
-              <div className="min-w-0">
-                <div className="text-[11px] uppercase tracking-wider text-text-secondary font-medium">Tổng ca đã học</div>
-                <div className="text-sm font-bold leading-tight text-text-primary">{weekStats.totalSessions}</div>
-              </div>
-            </div>
-          </LiftCard>
-        </div>
-      </Stagger>
-
       {loading ? (
         <BaseCard className="flex items-center justify-center min-h-[420px]">
           <div className="flex items-center gap-3">
@@ -525,6 +431,67 @@ const StudentSchedulePage: React.FC = () => {
       ) : (
         <div className="space-y-6">
           <BaseCard className="!p-4 relative">
+            {/* Header bar: Week navigation on left + inline stat chips filling to the right edge */}
+            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100 w-full">
+              {/* Left: Week navigation controls */}
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={goCurrentWeek}
+                  className="h-9 px-3.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 hover:border-primary-color text-text-main hover:text-primary-color transition text-xs font-bold shadow-2xs flex items-center justify-center cursor-pointer shrink-0"
+                >
+                  Hôm nay
+                </button>
+                <button
+                  onClick={goPrevWeek}
+                  className="h-9 w-9 rounded-full border border-slate-200 bg-white hover:bg-slate-50 hover:border-primary-color text-text-main hover:text-primary-color transition shadow-2xs flex items-center justify-center cursor-pointer shrink-0"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <div className="relative">
+                  <div className="h-9 px-4 rounded-full bg-primary-color hover:bg-primary-color/90 text-white cursor-pointer select-none whitespace-nowrap text-xs font-bold shadow-xs flex items-center gap-2 transition shrink-0">
+                    <Calendar size={14} className="text-white/90 shrink-0" />
+                    <span>{weekStartString} – {weekEndString}</span>
+                  </div>
+                  <input
+                    type="date"
+                    value={dayjs(weekStart).format("YYYY-MM-DD")}
+                    onChange={(e) => handleDatePick(e.target.value)}
+                    className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+                  />
+                </div>
+                <button
+                  onClick={goNextWeek}
+                  className="h-9 w-9 rounded-full border border-slate-200 bg-white hover:bg-slate-50 hover:border-primary-color text-text-main hover:text-primary-color transition shadow-2xs flex items-center justify-center cursor-pointer shrink-0"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+
+              {/* Right: Stat badges spanning nicely to the right edge */}
+              <div className="flex items-center gap-2 flex-wrap justify-start xl:justify-end flex-1">
+                <div className="h-9 px-3.5 rounded-full bg-red-50/80 border border-red-200/70 text-xs flex items-center gap-2 shrink-0">
+                  <CalendarDays size={15} className="text-red-500 shrink-0" />
+                  <span className="text-slate-600 text-xs font-medium">Tuần này:</span>
+                  <span className="font-bold text-red-700 text-xs">{weekStats.sessionsThisWeek} ca</span>
+                </div>
+                <div className="h-9 px-3.5 rounded-full bg-blue-50/80 border border-blue-200/70 text-xs flex items-center gap-2 shrink-0">
+                  <BookOpen size={15} className="text-blue-500 shrink-0" />
+                  <span className="text-slate-600 text-xs font-medium">Hôm nay:</span>
+                  <span className="font-bold text-blue-700 text-xs">{weekStats.todaySessions} ca</span>
+                </div>
+                <div className="h-9 px-3.5 rounded-full bg-emerald-50/80 border border-emerald-200/70 text-xs flex items-center gap-2 shrink-0">
+                  <CheckCircle2 size={15} className="text-emerald-500 shrink-0" />
+                  <span className="text-slate-600 text-xs font-medium">Chuyên cần:</span>
+                  <span className="font-bold text-emerald-700 text-xs">{weekStats.attendanceRate}%</span>
+                </div>
+                <div className="h-9 px-3.5 rounded-full bg-amber-50/80 border border-amber-200/70 text-xs flex items-center gap-2 shrink-0">
+                  <Hourglass size={15} className="text-amber-500 shrink-0" />
+                  <span className="text-slate-600 text-xs font-medium">Tổng ca:</span>
+                  <span className="font-bold text-amber-700 text-xs">{weekStats.totalSessions}</span>
+                </div>
+              </div>
+            </div>
+
             <ScheduleGrid items={items} weekStart={toYMD(weekStart)} sessionsList={sessionsList} />
             {items.length === 0 && (
               <div className="absolute inset-0 bg-surface-base/95 flex items-center justify-center rounded-2xl z-10 p-6">
@@ -555,7 +522,7 @@ const StudentSchedulePage: React.FC = () => {
               <li className="flex items-start gap-2">
                 <span className="w-2 h-2 rounded-full bg-slate-400 mt-1 shrink-0"></span>
                 <span>
-                  <strong className="text-text-secondary font-extrabold uppercase">CHƯA HỌC</strong>: Ca học chưa bắt đầu hoặc giáo viên chưa ghi nhận điểm danh.
+                  <strong className="text-text-secondary font-extrabold uppercase">CHƯA HỌC</strong>: Ca học chưa bắt đầu hoặc giáo viên chưa ghi nhận điểm danh. Nếu đã quá 24 giờ mà chưa điểm danh, hệ thống tự động tính là <strong className="text-red-600">Vắng mặt</strong>.
                 </span>
               </li>
             </ul>

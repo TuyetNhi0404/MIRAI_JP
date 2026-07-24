@@ -85,6 +85,15 @@ const canEditAttendance = (date: Date, startTime?: string, endTime?: string): bo
   return hoursSinceEnd <= 24;
 };
 
+// Returns true when >24h has passed since session ended → students auto-counted absent
+const isSessionAutoAbsent = (date: Date, endTime?: string): boolean => {
+  if (!endTime) return false;
+  const [endHour, endMin] = endTime.split(':').map(Number);
+  const sessionEnd = new Date(date);
+  sessionEnd.setHours(endHour, endMin, 0, 0);
+  return (new Date().getTime() - sessionEnd.getTime()) > 24 * 60 * 60 * 1000;
+};
+
 const getStatusColor = (status: AttendanceStatus): 'success' | 'error' | 'default' => {
   switch (status) {
     case AttendanceStatus.PRESENT:
@@ -159,6 +168,10 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
     ? isSessionActive(sessionDate, session.startTime, session.endTime)
     : false;
 
+  const autoAbsent = session?.endTime
+    ? isSessionAutoAbsent(sessionDate, session.endTime)
+    : false;
+
   const handleStatusUpdate = async (userId: string, newStatus: AttendanceStatus) => {
     try {
       if (!calendar?._id) return;
@@ -177,7 +190,11 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
 
   const renderMobileView = () => (
     <Box sx={{ pb: 2 }}>
-      {students.map((student: AttendanceRecord) => (
+      {students.map((student: AttendanceRecord) => {
+        const effectiveStatus = (autoAbsent && student.status === AttendanceStatus.NOT_YET)
+          ? AttendanceStatus.ABSENT
+          : student.status;
+        return (
         <Card
           key={student.attendanceId}
           sx={{
@@ -217,9 +234,9 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
                   Trạng thái
                 </Typography>
                 <Chip
-                  icon={getStatusIcon(student.status)}
-                  label={getStatusLabel(student.status)}
-                  color={getStatusColor(student.status)}
+                  icon={getStatusIcon(effectiveStatus)}
+                  label={getStatusLabel(effectiveStatus)}
+                  color={getStatusColor(effectiveStatus)}
                   size="small"
                 />
               </Box>
@@ -262,7 +279,8 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
             </Stack>
           </CardContent>
         </Card>
-      ))}
+        );
+      })}
     </Box>
   );
 
@@ -281,19 +299,23 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
           </TableRow>
         </TableHead>
         <TableBody>
-          {students.map((student: AttendanceRecord) => (
-            <TableRow key={student.attendanceId} hover>
-              <TableCell>{student.name}</TableCell>
-              <TableCell>{student.email}</TableCell>
-              <TableCell>{student.username || '-'}</TableCell>
-              <TableCell align="center">
-                <Chip
-                  icon={getStatusIcon(student.status)}
-                  label={getStatusLabel(student.status)}
-                  color={getStatusColor(student.status)}
-                  size="small"
-                />
-              </TableCell>
+          {students.map((student: AttendanceRecord) => {
+            const effectiveStatus = (autoAbsent && student.status === AttendanceStatus.NOT_YET)
+              ? AttendanceStatus.ABSENT
+              : student.status;
+            return (
+              <TableRow key={student.attendanceId} hover>
+                <TableCell>{student.name}</TableCell>
+                <TableCell>{student.email}</TableCell>
+                <TableCell>{student.username || '-'}</TableCell>
+                <TableCell align="center">
+                  <Chip
+                    icon={getStatusIcon(effectiveStatus)}
+                    label={getStatusLabel(effectiveStatus)}
+                    color={getStatusColor(effectiveStatus)}
+                    size="small"
+                  />
+                </TableCell>
               {canEdit && (
                 <TableCell align="center">
                   <Stack direction="row" spacing={1} justifyContent="center">
@@ -331,7 +353,8 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
                 </TableCell>
               )}
             </TableRow>
-          ))}
+            );
+          })}
         </TableBody>
       </Table>
     </TableContainer>
@@ -439,12 +462,14 @@ export const AttendanceDialog: React.FC<AttendanceDialogProps> = ({
 
         {/* Alerts */}
         {!canEdit && (
-          <Alert severity="warning" sx={{ mb: 3 }}>
+          <Alert severity={autoAbsent ? 'error' : 'warning'} sx={{ mb: 3 }}>
             {!session?.startTime || !session?.endTime
               ? '⚠️ Thiếu thông tin thời gian. Không thể xác định quyền điểm danh.'
               : sessionDate > new Date()
                 ? 'Ca học này chưa bắt đầu. Chỉ có thể điểm danh trong lúc học hoặc trong vòng 24 giờ sau khi kết thúc.'
-                : 'Đã quá 24 giờ kể từ khi ca học kết thúc. Không thể chỉnh sửa điểm danh nữa.'}
+                : autoAbsent
+                  ? '🔴 Đã quá 24 giờ kể từ khi ca học kết thúc. Tất cả học sinh chưa được điểm danh đã tự động được tính là VẮNG MẶT.'
+                  : 'Đã quá 24 giờ kể từ khi ca học kết thúc. Không thể chỉnh sửa điểm danh nữa.'}
           </Alert>
         )}
 

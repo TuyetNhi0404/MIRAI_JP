@@ -240,6 +240,15 @@ const ScheduleTeacher = () => {
     return hoursDiff >= 24;
   };
 
+  // Returns true when session ended > 24h ago (students auto-marked absent)
+  const isSessionExpired = (dateStr: string, endTime: string) => {
+    const now = new Date();
+    const [eh, em] = endTime.split(':').map(Number);
+    const sessionEnd = new Date(dateStr);
+    sessionEnd.setHours(eh, em, 0, 0);
+    return now.getTime() - sessionEnd.getTime() > 24 * 60 * 60 * 1000;
+  };
+
   const handleRegisterClick = (scheduleItem: ScheduleGridItem) => {
     setSelectedSchedule({
       calendarId: scheduleItem.calendarId,
@@ -408,6 +417,24 @@ const ScheduleTeacher = () => {
               >
                 Xin nghỉ
               </button>
+            ) : isSessionExpired(dateStr, scheduleItem.endTime || '00:00') ? (
+              <div
+                style={{
+                  width: '100%',
+                  fontSize: 9,
+                  fontWeight: 800,
+                  padding: "5px 6px",
+                  borderRadius: 4,
+                  background: '#D97706',
+                  color: 'white',
+                  textTransform: 'uppercase',
+                  border: '1px solid #B45309',
+                  letterSpacing: 0.3,
+                  textAlign: 'center',
+                }}
+              >
+                HS tính vắng
+              </div>
             ) : (
               <div
                 style={{
@@ -416,15 +443,15 @@ const ScheduleTeacher = () => {
                   fontWeight: 800,
                   padding: "5px 6px",
                   borderRadius: 4,
-                  background: '#B90000',
+                  background: '#64748B',
                   color: 'white',
                   textTransform: 'uppercase',
-                  border: '1px solid #8A0000',
+                  border: '1px solid #475569',
                   letterSpacing: 0.3,
                   textAlign: 'center',
                 }}
               >
-                Hết hạn
+                Đang diễn ra
               </div>
             )}
           </div>
@@ -541,6 +568,24 @@ const ScheduleTeacher = () => {
             >
               Xin nghỉ
             </button>
+          ) : isSessionExpired(dateStr, scheduleItem.endTime || '00:00') ? (
+            <div
+              style={{
+                width: '100%',
+                fontSize: 9,
+                fontWeight: 800,
+                padding: "5px 6px",
+                borderRadius: 4,
+                background: '#D97706',
+                color: 'white',
+                textTransform: 'uppercase',
+                border: '1px solid #B45309',
+                letterSpacing: 0.3,
+                textAlign: 'center',
+              }}
+            >
+              HS tính vắng
+            </div>
           ) : (
             <div
               style={{
@@ -549,15 +594,15 @@ const ScheduleTeacher = () => {
                 fontWeight: 800,
                 padding: "5px 6px",
                 borderRadius: 4,
-                background: '#B90000',
+                background: '#64748B',
                 color: 'white',
                 textTransform: 'uppercase',
+                border: '1px solid #475569',
                 letterSpacing: 0.3,
                 textAlign: 'center',
-                border: '1px solid #8A0000',
               }}
             >
-              Hết hạn
+              Đang diễn ra
             </div>
           )}
         </div>
