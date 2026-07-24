@@ -47,10 +47,6 @@ const initialState: QuizState = {
 };
 
 const getErrorMessage = (error: unknown): string => {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
   if (typeof error === 'object' && error !== null) {
     const axiosError = error as {
       response?: {
@@ -61,10 +57,20 @@ const getErrorMessage = (error: unknown): string => {
       message?: string;
     };
 
-    return axiosError.response?.data?.message || axiosError.message || 'An unknown error occurred';
+    if (axiosError.response?.data?.message) {
+      return axiosError.response.data.message;
+    }
+
+    if (axiosError.message) {
+      return axiosError.message;
+    }
   }
 
-  return 'An unknown error occurred';
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return 'Đã có lỗi xảy ra';
 };
 
 // ============================================
@@ -131,9 +137,8 @@ export const updateQuiz = createAsyncThunk(
   ) => {
     try {
       return await quizService.updateQuiz(quizId, data);
-    } catch (error) {
-      const err = error as { response?: { data?: { message?: string } } };
-      return rejectWithValue(err.response?.data?.message || "Failed to update quiz");
+    } catch (error: unknown) {
+      return rejectWithValue(getErrorMessage(error));
     }
   }
 );

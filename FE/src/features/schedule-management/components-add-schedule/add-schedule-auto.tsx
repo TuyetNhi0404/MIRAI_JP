@@ -19,7 +19,6 @@ import {
   Progress,
   Row,
   Col,
-  Grid,
 } from 'antd';
 import { Calendar, Clock, User, BookOpen, Zap, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { AxiosError } from 'axios';
@@ -29,16 +28,25 @@ import type { Course, Session, User as UserType } from '../../../types/schedule.
 import { brandColors } from '../../../theme/theme';
 
 const { Text, Title, Paragraph } = Typography;
-const { useBreakpoint } = Grid;
 
 const formSchema = z.object({
   dayOfWeek: z.array(z.string()).nonempty('Vui lòng chọn ít nhất một ngày'),
   courseId: z.string().min(1, 'Vui lòng chọn khóa học'),
-  sessionId: z.string().min(1, 'Vui lòng chọn ca học'),
+  sessionMap: z.record(z.string(), z.string()),
   teacherId: z.string().min(1, 'Vui lòng chọn giảng viên'),
   startDate: z.string().min(1, 'Vui lòng chọn ngày bắt đầu'),
   endDate: z.string().min(1, 'Vui lòng chọn ngày kết thúc'),
   note: z.string().optional(),
+}).superRefine((data, ctx) => {
+  data.dayOfWeek.forEach(day => {
+    if (!data.sessionMap?.[day]) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Vui lòng chọn ca học cho ${daysOfWeek.find(d => d.value === day)?.label || day}`,
+        path: ['sessionMap', day],
+      });
+    }
+  });
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -71,9 +79,6 @@ interface CreationResult {
 }
 
 export default function AddScheduleAuto({ onSuccess }: AddScheduleAutoProps) {
-  const screens = useBreakpoint();
-  const isMobile = !screens.md;
-  
   const { courses, sessions, users, loading: dataLoading, refetch } = useScheduleData();
   
   const [submitting, setSubmitting] = useState(false);
@@ -112,19 +117,22 @@ export default function AddScheduleAuto({ onSuccess }: AddScheduleAutoProps) {
     control,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       dayOfWeek: [],
       courseId: '',
-      sessionId: '',
+      sessionMap: {},
       teacherId: '',
       startDate: new Date().toISOString().split('T')[0],
       endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       note: '',
     },
   });
+
+  const watchedDays = watch('dayOfWeek') || [];
 
   const generateScheduleDates = (
     startDate: string,
@@ -164,7 +172,6 @@ export default function AddScheduleAuto({ onSuccess }: AddScheduleAutoProps) {
     }
 
     const selectedCourse  = activeCourses.find((c: Course)   => c._id === values.courseId);
-    const selectedSession  = sessions.find((s: Session)        => s._id === values.sessionId);
     const selectedTeacher  = users.find((t: UserType)          => t._id === values.teacherId);
 
     setConfirmModal({
@@ -172,7 +179,7 @@ export default function AddScheduleAuto({ onSuccess }: AddScheduleAutoProps) {
       values,
       dates: scheduleDates,
       course: selectedCourse,
-      session: selectedSession,
+      session: undefined,
       teacher: selectedTeacher,
     });
   };
@@ -186,10 +193,24 @@ export default function AddScheduleAuto({ onSuccess }: AddScheduleAutoProps) {
     for (let i = 0; i < scheduleDates.length; i++) {
       const date = scheduleDates[i];
       const dateStr = date.toISOString().split('T')[0];
+      
+      const dayIndex = date.getDay();
+      const dayOfWeekVal = daysOfWeek.find(d => d.dayIndex === dayIndex)?.value;
+      const sessionIdForDay = dayOfWeekVal ? values.sessionMap?.[dayOfWeekVal] : undefined;
+
+      if (!sessionIdForDay) {
+        newResults.push({
+          date: dateStr,
+          status: 'error',
+          message: 'Không tìm thấy ca học được cấu hình cho ngày này',
+        });
+        continue;
+      }
+
       try {
         await calendarAPI.create({
           courseId: values.courseId,
-          sessionId: values.sessionId,
+          sessionId: sessionIdForDay,
           teacherId: values.teacherId,
           date: dateStr,
           note: values.note || `Lịch học tạo tự động`,
@@ -350,33 +371,51 @@ export default function AddScheduleAuto({ onSuccess }: AddScheduleAutoProps) {
               </Form.Item>
             </Col>
 
-            <Col xs={24} md={12}>
-              <Form.Item 
-                label={<Space><Clock size={16} /> Ca học</Space>}
-                validateStatus={errors.sessionId ? 'error' : ''}
-                help={errors.sessionId?.message}
-                required
-              >
-                <Controller
-                  name="sessionId"
-                  control={control}
-                  render={({ field }) => (
-                    <Select
-                      {...field}
-                      placeholder="Chọn ca học"
-                      style={{ width: '100%' }}
-                      disabled={submitting}
-                    >
-                      {sessions.map((session: Session) => (
-                        <Select.Option key={session._id} value={session._id}>
-                          {session.sessionName} ({session.startTime} - {session.endTime})
-                        </Select.Option>
-                      ))}
-                    </Select>
-                  )}
-                />
-              </Form.Item>
-            </Col>
+            {watchedDays.length > 0 && (
+              <Col xs={24}>
+                <Form.Item 
+                  label={<Space><Clock size={16} /> Thiết lập ca học cho từng ngày</Space>}
+                  required
+                >
+                  <Row gutter={[16, 12]} style={{ background: '#FAF8F5', padding: '16px 16px 4px 16px', borderRadius: 12, border: '1px solid #EAE6DF', marginBottom: 16 }}>
+                    {watchedDays.map((dayValue) => {
+                      const dayObj = daysOfWeek.find(d => d.value === dayValue);
+                      const errorMsg = (errors.sessionMap as any)?.[dayValue]?.message;
+                      return (
+                        <Col xs={24} sm={12} md={8} key={dayValue}>
+                          <Form.Item
+                            label={<span style={{ fontWeight: 600, color: brandColors.red }}>{dayObj?.label}</span>}
+                            validateStatus={errorMsg ? 'error' : ''}
+                            help={errorMsg}
+                            required
+                            style={{ marginBottom: 12 }}
+                          >
+                            <Controller
+                              name={`sessionMap.${dayValue}`}
+                              control={control}
+                              render={({ field }) => (
+                                <Select
+                                  {...field}
+                                  placeholder={`Chọn ca học`}
+                                  style={{ width: '100%' }}
+                                  disabled={submitting}
+                                >
+                                  {sessions.map((session: Session) => (
+                                    <Select.Option key={session._id} value={session._id}>
+                                      {session.sessionName} ({session.startTime} - {session.endTime})
+                                    </Select.Option>
+                                  ))}
+                                </Select>
+                              )}
+                            />
+                          </Form.Item>
+                        </Col>
+                      );
+                    })}
+                  </Row>
+                </Form.Item>
+              </Col>
+            )}
 
             <Col xs={24} md={12}>
               <Form.Item 
@@ -555,21 +594,7 @@ export default function AddScheduleAuto({ onSuccess }: AddScheduleAutoProps) {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              {/* Session */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#F8FAFC', borderRadius: 10, border: '1px solid #E2E8F0' }}>
-                <div style={{ width: 32, height: 32, borderRadius: 8, background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Clock size={15} color="#D97706" />
-                </div>
-                <div>
-                  <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 500 }}>Ca học</div>
-                  <div style={{ fontWeight: 600, fontSize: 13 }}>{confirmModal.session?.sessionName}</div>
-                  {confirmModal.session?.startTime && (
-                    <div style={{ fontSize: 11, color: '#94A3B8' }}>{confirmModal.session.startTime} – {confirmModal.session.endTime}</div>
-                  )}
-                </div>
-              </div>
-
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
               {/* Teacher */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#F8FAFC', borderRadius: 10, border: '1px solid #E2E8F0' }}>
                 <div style={{ width: 32, height: 32, borderRadius: '50%', background: brandColors.red, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontWeight: 700, color: 'white', fontSize: 14 }}>
@@ -595,20 +620,25 @@ export default function AddScheduleAuto({ onSuccess }: AddScheduleAutoProps) {
               </div>
             </div>
 
-            {/* Days of week tags */}
+            {/* Days of week with sessions */}
             {confirmModal.values && (
               <div style={{ padding: '10px 14px', background: '#F8FAFC', borderRadius: 10, border: '1px solid #E2E8F0' }}>
-                <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 500, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Các thứ trong tuần</div>
-                <Space wrap size={6}>
+                <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 500, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cấu hình ca học theo thứ</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {confirmModal.values.dayOfWeek.map(v => {
                     const day = daysOfWeek.find(d => d.value === v);
+                    const sessId = confirmModal.values?.sessionMap?.[v];
+                    const sess = sessions.find((s: Session) => s._id === sessId);
                     return (
-                      <Tag key={v} style={{ borderRadius: 20, fontWeight: 600, padding: '2px 12px', background: brandColors.redSoft, border: `1px solid ${brandColors.red}20`, color: brandColors.red }}>
-                        {day?.label}
-                      </Tag>
+                      <div key={v} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13 }}>
+                        <span style={{ fontWeight: 600, color: brandColors.red }}>{day?.label}</span>
+                        <span style={{ color: '#475569', fontWeight: 500 }}>
+                          {sess ? `${sess.sessionName} (${sess.startTime} - ${sess.endTime})` : 'Chưa chọn'}
+                        </span>
+                      </div>
                     );
                   })}
-                </Space>
+                </div>
               </div>
             )}
           </div>

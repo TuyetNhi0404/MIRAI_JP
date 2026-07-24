@@ -355,26 +355,9 @@ export const useAntiCheat = (config: Partial<AntiCheatConfig> = {}) => {
     }
   }, [violationCount, finalConfig.maxViolations]);
 
-  useEffect(() => {
-    try {
-      const savedLogs = sessionStorage.getItem('quiz_anti_cheat_logs');
-      const savedCount = sessionStorage.getItem('quiz_violation_count');
-
-      if (savedLogs) {
-        const parsed = JSON.parse(savedLogs) as AntiCheatLog[];
-        setLogs(parsed);
-        logsRef.current = parsed;
-      }
-
-      if (savedCount) {
-        const count = parseInt(savedCount, 10);
-        setViolationCount(count);
-        violationCountRef.current = count;
-      }
-    } catch (e) {
-      console.warn('Failed to load saved anti-cheat state:', e);
-    }
-  }, []);
+  // NOTE: We deliberately do NOT restore state from sessionStorage on mount.
+  // Each quiz session must start fresh. sessionStorage is only used for
+  // debugging/crash-recovery purposes and is cleared when startMonitoring is called.
 
   const getSummary = useCallback((): ViolationSummary => {
     const currentLogs = logsRef.current;
@@ -401,8 +384,19 @@ export const useAntiCheat = (config: Partial<AntiCheatConfig> = {}) => {
   }, []);
 
   const startMonitoring = useCallback(() => {
+    // Reset all state at the start of each quiz session to prevent bleed-over
+    setLogs([]);
+    logsRef.current = [];
+    setViolationCount(0);
+    violationCountRef.current = 0;
+    setIsLocked(false);
+
+    // Clear any leftover sessionStorage from a prior session
+    sessionStorage.removeItem('quiz_anti_cheat_logs');
+    sessionStorage.removeItem('quiz_violation_count');
+
     isMonitoringActiveRef.current = true;
-    console.log('🔒 Anti-Cheat System: Monitoring started');
+    console.log('🔒 Anti-Cheat System: Monitoring started (fresh session)');
 
     if (finalConfig.enableFullscreen) {
       setTimeout(() => {

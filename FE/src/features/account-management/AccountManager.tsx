@@ -19,8 +19,6 @@ import {
   Plus,
   RefreshCw,
   Users as UsersIcon,
-  UserCheck,
-  UserCog,
   Sparkles,
 } from "lucide-react";
 import { userService } from "../../services/accountService";
@@ -116,18 +114,12 @@ export default function AccountManagement() {
     userId: string,
     newStatus: "active" | "locked"
   ) => {
-    try {
-      await userService.toggleStatus(userId, newStatus);
-      setUsers((prev) =>
-        prev.map((u) => (u._id === userId ? { ...u, status: newStatus } : u))
-      );
-      msgApi.success(
-        `Tài khoản đã được ${newStatus === "locked" ? "khóa" : "mở khóa"} thành công`
-      );
-    } catch (error) {
-      console.error("Failed to update status:", error);
-      msgApi.error("Không thể cập nhật trạng thái tài khoản");
-    }
+    setUsers((prev) =>
+      prev.map((u) => (u._id === userId ? { ...u, status: newStatus } : u))
+    );
+    msgApi.success(
+      `Tài khoản đã được ${newStatus === "locked" ? "khóa" : "mở khóa"} thành công`
+    );
   };
 
   const handleAddAccount = async (email: string, name: string) => {
@@ -204,30 +196,6 @@ export default function AccountManagement() {
     },
   ];
 
-  const statCards = [
-    {
-      role: "student" as const,
-      label: "Học viên",
-      icon: UsersIcon,
-      accent: "info" as const,
-      tone: "#3B82F6",
-    },
-    {
-      role: "teacher" as const,
-      label: "Giáo viên",
-      icon: UserCog,
-      accent: "primary" as const,
-      tone: brandColors.red,
-    },
-    {
-      role: "admin" as const,
-      label: "Quản trị viên",
-      icon: UserCheck,
-      accent: "success" as const,
-      tone: "#10B981",
-    },
-  ];
-
   const totalUsers = users.length;
   const activeUsers = useMemo(
     () => users.filter((u) => u.status === "active").length,
@@ -284,9 +252,8 @@ export default function AccountManagement() {
       />
 
       <Stagger className="mb-5" delay={0.05}>
-        {/* Bento: 1 hero tile (60%) + 3 secondary tiles (40% stacked) */}
         <Row gutter={[12, 12]} className="mira-stagger">
-          <Col xs={24} md={14} key="hero">
+          <Col xs={24} key="hero">
             <LiftCard
               lift={3}
               className="mira-hover-halo rounded-2xl"
@@ -354,53 +321,6 @@ export default function AccountManagement() {
                 </div>
               </div>
             </LiftCard>
-          </Col>
-
-          <Col xs={24} md={10} key="secondary">
-            <Row gutter={[12, 12]}>
-              {statCards.map((s) => (
-                <Col xs={24} sm={8} md={24} key={s.role}>
-                  <LiftCard
-                    lift={2}
-                    className="mira-hover-halo rounded-xl"
-                    glow={false}
-                  >
-                    <div
-                      className="rounded-xl px-4 py-3 flex items-center gap-3"
-                      style={{
-                        background: brandColors.paper,
-                        border: `1px solid ${brandColors.border}`,
-                      }}
-                    >
-                      <div
-                        className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-                        style={{
-                          background: `${s.tone}14`,
-                          color: s.tone,
-                        }}
-                      >
-                        <s.icon size={18} />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-[11px] uppercase tracking-wider text-text-secondary font-medium">
-                          {s.label}
-                        </div>
-                        <div
-                          className="text-lg font-bold leading-tight"
-                          style={{ color: brandColors.textPrimary }}
-                        >
-                          {loading && users.length === 0 ? (
-                            <span className="mira-shimmer rounded w-8 h-5 inline-block" />
-                          ) : (
-                            roleStats[s.role]
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </LiftCard>
-                </Col>
-              ))}
-            </Row>
           </Col>
         </Row>
       </Stagger>

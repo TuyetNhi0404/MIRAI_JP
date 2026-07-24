@@ -225,7 +225,7 @@ export const grammarService = {
   },
 
   // ─── TEACHER: SAVE QUIZ TO COURSE ─────────────────────────────────────────
-  createQuiz: async (payload: { courseId: string; title: string; durationMinutes?: number; questions: IGeneratedQuestion[] }): Promise<{ success: boolean; quizId: string }> => {
+  createQuiz: async (payload: { courseId: string; title: string; durationMinutes?: number; dueDate?: string; questions: IGeneratedQuestion[] }): Promise<{ success: boolean; quizId: string }> => {
     const res = await axiosInstance.post(`${BASE}/teacher/quiz/create`, payload);
     return res.data;
   },

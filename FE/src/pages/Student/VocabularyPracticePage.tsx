@@ -10,14 +10,10 @@ import {
   Eye,
   EyeOff,
   Brain,
-  Trophy,
-  Target,
   Volume2,
   Sparkles,
   Search,
-  BookOpen,
   HelpCircle,
-  Award,
 } from "lucide-react";
 import { vocabularyService } from "../../services/vocabulary.service";
 import type { IVocabulary } from "../../services/vocabulary.service";
@@ -351,90 +347,47 @@ const VocabularyPracticePage: React.FC = () => {
   };
 
   return (
-    <PageLayout
-      title="Ôn luyện Từ vựng"
-      subtitle="Học qua thẻ ghi nhớ thông minh (Flashcards) và tự kiểm tra bằng các bài trắc nghiệm nhanh"
-      icon={BookOpen}
-    >
-      {/* Header controls & stats */}
-      <BaseCard className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-        <div>
-          <h3 className="text-base font-extrabold text-[var(--color-text-main)] m-0">Trình học JLPT thông minh</h3>
-          <p className="text-xs text-[var(--color-text-secondary)] m-0 mt-0.5">Học tiếng Nhật mọi lúc mọi nơi từ N5 đến N1</p>
-        </div>
-
-        {mode === "flashcard" && filteredCards.length > 0 && (
-          <div className="flex gap-2 items-center">
-            {/* Show reading toggler */}
+    <PageLayout title="">
+      {/* Compact Top Bar: Mode Tabs + Filters */}
+      <BaseCard className="!p-3 bg-[var(--color-surface-base)] border-[var(--color-border-color)] shadow-xs">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          {/* Mode Tabs */}
+          <div className="flex bg-[var(--color-bg-base)] rounded-xl p-1 border border-[var(--color-border-color)] shrink-0">
             <button
-              onClick={() => setShowReading((p) => !p)}
-              title={showReading ? "Ẩn cách đọc" : "Hiện cách đọc"}
-              className={`p-2 border rounded-xl transition active:scale-95 ${
-                showReading
-                  ? "bg-[var(--color-accent-color)] border-[var(--color-primary-color)]/20 text-[var(--color-primary-color)]"
-                  : "bg-[var(--color-surface-base)] border-[var(--color-border-color)] text-[var(--color-text-secondary)] hover:text-[var(--color-primary-color)]"
+              onClick={() => {
+                setMode("flashcard");
+                resetQuiz();
+              }}
+              className={`px-4 py-1.5 text-xs font-bold transition flex items-center justify-center gap-1.5 rounded-lg ${
+                mode === "flashcard"
+                  ? "bg-[var(--color-primary-color)] text-white shadow-xs"
+                  : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)]"
               }`}
             >
-              {showReading ? <EyeOff size={16} /> : <Eye size={16} />}
+              Học Flashcard
             </button>
-
-            {/* Shuffle */}
             <button
-              onClick={handleShuffle}
-              title="Trộn từ vựng"
-              className="p-2 border border-[var(--color-border-color)] rounded-xl bg-[var(--color-surface-base)] text-[var(--color-text-secondary)] hover:text-[var(--color-primary-color)] hover:border-[var(--color-primary-color)]/20 transition active:scale-95"
+              onClick={() => {
+                setMode("quiz");
+                resetQuiz();
+              }}
+              className={`px-4 py-1.5 text-xs font-bold transition flex items-center justify-center gap-1.5 rounded-lg ${
+                mode === "quiz"
+                  ? "bg-[var(--color-primary-color)] text-white shadow-xs"
+                  : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)]"
+              }`}
             >
-              <Shuffle size={16} />
-            </button>
-
-            {/* Restart */}
-            <button
-              onClick={handleRestart}
-              title="Làm lại từ đầu"
-              className="p-2 border border-[var(--color-border-color)] rounded-xl bg-[var(--color-surface-base)] text-[var(--color-text-secondary)] hover:text-[var(--color-primary-color)] hover:border-[var(--color-primary-color)]/20 transition active:scale-95"
-            >
-              <RotateCcw size={16} />
+              Làm Trắc nghiệm
             </button>
           </div>
-        )}
-      </BaseCard>
 
-      {/* Tabs */}
-      <div className="flex bg-[var(--color-surface-base)] rounded-2xl p-1 shadow-sm border border-[var(--color-border-color)] max-w-md">
-        <button
-          onClick={() => {
-            setMode("flashcard");
-            resetQuiz();
-          }}
-          className={`flex-1 py-2.5 text-xs font-extrabold transition flex items-center justify-center gap-2 rounded-xl ${
-            mode === "flashcard" ? "bg-[var(--color-primary-color)] text-white shadow-sm" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)]"
-          }`}
-        >
-          🃏 Học Flashcard
-        </button>
-        <button
-          onClick={() => {
-            setMode("quiz");
-            resetQuiz();
-          }}
-          className={`flex-1 py-2.5 text-xs font-extrabold transition flex items-center justify-center gap-2 rounded-xl ${
-            mode === "quiz" ? "bg-[var(--color-primary-color)] text-white shadow-sm" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)]"
-          }`}
-        >
-          📝 Làm Trắc nghiệm
-        </button>
-      </div>
-
-      {/* Filters and search panel */}
-      <BaseCard className="!p-4 bg-[var(--color-bg-base)]/50 border-[var(--color-border-color)]">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-          {/* Level selector */}
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] text-[var(--color-text-secondary)]/60 font-extrabold uppercase tracking-wider">Cấp độ</span>
+          {/* Inline Filters */}
+          <div className="flex flex-wrap items-center gap-2 flex-1 justify-start lg:justify-end">
+            {/* Level selector */}
             <select
               value={selectedLevel}
               onChange={(e) => setSelectedLevel(e.target.value)}
-              className="border border-[var(--color-border-color)] rounded-xl px-3 py-2 bg-[var(--color-surface-base)] text-xs font-bold text-[var(--color-text-secondary)] focus:outline-none focus:border-[var(--color-primary-color)]"
+              className="border border-[var(--color-border-color)] rounded-xl px-3 py-1.5 bg-[var(--color-bg-base)] text-xs font-bold text-[var(--color-text-secondary)] focus:outline-none focus:border-[var(--color-primary-color)]"
             >
               <option value="">Tất cả cấp độ</option>
               {LEVELS.map((lvl) => (
@@ -443,16 +396,13 @@ const VocabularyPracticePage: React.FC = () => {
                 </option>
               ))}
             </select>
-          </div>
 
-          {/* Topic selector */}
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] text-[var(--color-text-secondary)]/60 font-extrabold uppercase tracking-wider">Chủ đề</span>
+            {/* Topic selector */}
             <select
               value={selectedTopic}
               disabled={loadingTopics}
               onChange={(e) => setSelectedTopic(e.target.value)}
-              className="border border-[var(--color-border-color)] rounded-xl px-3 py-2 bg-[var(--color-surface-base)] text-xs font-bold text-[var(--color-text-secondary)] focus:outline-none focus:border-[var(--color-primary-color)] disabled:opacity-50"
+              className="border border-[var(--color-border-color)] rounded-xl px-3 py-1.5 bg-[var(--color-bg-base)] text-xs font-bold text-[var(--color-text-secondary)] focus:outline-none focus:border-[var(--color-primary-color)] disabled:opacity-50"
             >
               <option value="">Tất cả chủ đề</option>
               {topics.map((top) => (
@@ -461,60 +411,46 @@ const VocabularyPracticePage: React.FC = () => {
                 </option>
               ))}
             </select>
-          </div>
 
-          {/* Search bar */}
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] text-[var(--color-text-secondary)]/60 font-extrabold uppercase tracking-wider">Tìm kiếm</span>
-            <div className="relative">
+            {/* Search input */}
+            <div className="relative min-w-[180px] sm:min-w-[220px]">
               <input
                 type="text"
-                placeholder="Tìm từ vựng, cách đọc, ý nghĩa..."
+                placeholder="Tìm từ vựng..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 border border-[var(--color-border-color)] rounded-xl text-xs font-semibold text-[var(--color-text-secondary)] focus:outline-none focus:border-[var(--color-primary-color)]"
+                className="w-full pl-8 pr-3 py-1.5 border border-[var(--color-border-color)] rounded-xl text-xs font-semibold text-[var(--color-text-secondary)] bg-[var(--color-bg-base)] focus:outline-none focus:border-[var(--color-primary-color)]"
               />
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]/50" />
+              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)]/50" />
             </div>
+
+            {filteredCards.length > 0 && (
+              <span className="text-[11px] bg-[var(--color-accent-color)] text-[var(--color-primary-color)] font-bold px-2.5 py-1 rounded-full whitespace-nowrap">
+                {filteredCards.length} từ
+              </span>
+            )}
           </div>
-        </div>
-
-        {/* Filter Info summary */}
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--color-border-color)] pt-3 mt-3">
-          {filteredCards.length > 0 && (
-            <span className="text-[10px] bg-[var(--color-accent-color)] text-[var(--color-primary-color)] font-black px-2.5 py-0.5 rounded-full">
-              Tìm thấy {filteredCards.length} từ vựng
-            </span>
-          )}
-
-          {mode === "flashcard" && (
-            <div className="flex gap-2 text-[9px] text-[var(--color-text-secondary)]/50 font-bold ml-auto">
-              <span>← → để chuyển</span>
-              <span>•</span>
-              <span>Phím Cách để lật</span>
-            </div>
-          )}
         </div>
       </BaseCard>
 
       {/* Loading state indicator */}
       {loading && (
-        <div className="flex flex-col items-center justify-center min-h-[300px] gap-3">
-          <div className="w-8 h-8 border-4 border-[var(--color-primary-color)] border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-sm text-[var(--color-text-secondary)] font-medium">Đang chuẩn bị bộ thẻ học...</span>
+        <div className="flex flex-col items-center justify-center min-h-[220px] gap-2">
+          <div className="w-7 h-7 border-3 border-[var(--color-primary-color)] border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-xs text-[var(--color-text-secondary)] font-medium">Đang chuẩn bị bộ thẻ học...</span>
         </div>
       )}
 
       {/* Empty state */}
       {!loading && filteredCards.length === 0 && (
-        <BaseCard className="text-center py-12">
-          <div className="max-w-md mx-auto space-y-3">
-            <div className="w-14 h-14 bg-[var(--color-bg-base)] rounded-full flex items-center justify-center mx-auto border border-[var(--color-border-color)]">
-              <BookMarked size={26} className="text-[var(--color-text-secondary)]/50" />
+        <BaseCard className="text-center py-8">
+          <div className="max-w-md mx-auto space-y-2">
+            <div className="w-12 h-12 bg-[var(--color-bg-base)] rounded-full flex items-center justify-center mx-auto border border-[var(--color-border-color)]">
+              <BookMarked size={22} className="text-[var(--color-text-secondary)]/50" />
             </div>
-            <h4 className="text-sm font-extrabold text-[var(--color-text-main)] m-0">Không tìm thấy từ vựng nào</h4>
+            <h4 className="text-xs font-extrabold text-[var(--color-text-main)] m-0">Không tìm thấy từ vựng nào</h4>
             <p className="text-xs text-[var(--color-text-secondary)]/70 m-0 leading-relaxed">
-              Không có từ vựng nào phù hợp với bộ lọc hiện tại. Vui lòng chuyển cấp độ, chủ đề hoặc thử lại từ khóa khác.
+              Vui lòng chuyển cấp độ, chủ đề hoặc thử lại từ khóa khác.
             </p>
           </div>
         </BaseCard>
@@ -524,17 +460,51 @@ const VocabularyPracticePage: React.FC = () => {
       {/* 🃏 FLASHCARD PANEL RENDER                                          */}
       {/* ────────────────────────────────────────────────────────────────── */}
       {!loading && mode === "flashcard" && filteredCards.length > 0 && (
-        <div className="flex flex-col items-center gap-6 w-full">
-          {/* Progress bar */}
+        <div className="flex flex-col items-center gap-3 w-full">
+          {/* Progress bar & Flashcard controls */}
           {!finished && (
-            <div className="w-full max-w-2xl space-y-2">
-              <div className="flex justify-between text-[10px] text-[var(--color-text-secondary)]/60 font-black uppercase tracking-wider">
+            <div className="w-full max-w-2xl space-y-1.5">
+              <div className="flex justify-between items-center text-xs text-[var(--color-text-secondary)] font-extrabold uppercase tracking-wider">
                 <span>TIẾN ĐỘ HỌC TẬP</span>
-                <span className="text-[var(--color-primary-color)]">
-                  {currentIndex + 1} / {filteredCards.length} từ
-                </span>
+
+                <div className="flex items-center gap-3">
+                  {/* Action buttons inside Flashcard area */}
+                  <div className="flex gap-1.5 items-center">
+                    <button
+                      onClick={() => setShowReading((p) => !p)}
+                      title={showReading ? "Ẩn cách đọc" : "Hiện cách đọc"}
+                      className={`p-1.5 border rounded-full transition active:scale-95 cursor-pointer ${
+                        showReading
+                          ? "bg-[var(--color-accent-color)] border-[var(--color-primary-color)]/20 text-[var(--color-primary-color)]"
+                          : "bg-[var(--color-surface-base)] border-[var(--color-border-color)] text-[var(--color-text-secondary)] hover:text-[var(--color-primary-color)]"
+                      }`}
+                    >
+                      {showReading ? <EyeOff size={15} /> : <Eye size={15} />}
+                    </button>
+
+                    <button
+                      onClick={handleShuffle}
+                      title="Trộn từ vựng"
+                      className="p-1.5 border border-[var(--color-border-color)] rounded-full bg-[var(--color-surface-base)] text-[var(--color-text-secondary)] hover:text-[var(--color-primary-color)] hover:border-[var(--color-primary-color)]/20 transition active:scale-95 cursor-pointer"
+                    >
+                      <Shuffle size={15} />
+                    </button>
+
+                    <button
+                      onClick={handleRestart}
+                      title="Làm lại từ đầu"
+                      className="p-1.5 border border-[var(--color-border-color)] rounded-full bg-[var(--color-surface-base)] text-[var(--color-text-secondary)] hover:text-[var(--color-primary-color)] hover:border-[var(--color-primary-color)]/20 transition active:scale-95 cursor-pointer"
+                    >
+                      <RotateCcw size={15} />
+                    </button>
+                  </div>
+
+                  <span className="text-[var(--color-primary-color)] font-extrabold text-xs">
+                    {currentIndex + 1} / {filteredCards.length} TỪ
+                  </span>
+                </div>
               </div>
-              <div className="w-full h-2.5 bg-[var(--color-secondary-color)] rounded-full overflow-hidden">
+              <div className="w-full h-2 bg-[var(--color-secondary-color)] rounded-full overflow-hidden">
                 <div
                   className="h-full bg-[var(--color-primary-color)] rounded-full transition-all duration-350"
                   style={{ width: `${progress}%` }}
@@ -543,12 +513,12 @@ const VocabularyPracticePage: React.FC = () => {
             </div>
           )}
 
-          {/* The Flashcard itself */}
+          {/* The Flashcard itself (Compact height) */}
           {currentCard && !finished && (
-            <div className="flex flex-col items-center gap-6 w-full">
+            <div className="flex flex-col items-center gap-3 w-full">
               <div
                 onClick={flip}
-                className="relative w-full max-w-2xl h-80 sm:h-96 [perspective:1500px] cursor-pointer active:scale-[0.99] transition-transform"
+                className="relative w-full max-w-2xl h-60 sm:h-72 [perspective:1500px] cursor-pointer active:scale-[0.99] transition-transform"
               >
                 <div
                   className="relative w-full h-full duration-550 [transform-style:preserve-3d] transition-transform"
@@ -640,11 +610,11 @@ const VocabularyPracticePage: React.FC = () => {
               </div>
 
               {/* Bottom buttons Controls */}
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 <button
                   onClick={goPrev}
                   disabled={currentIndex === 0}
-                  className="flex items-center gap-1.5 px-4 py-2.5 border border-[var(--color-border-color)] text-[var(--color-text-secondary)] hover:text-[var(--color-primary-color)] hover:border-[var(--color-primary-color)]/20 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-xs font-bold transition active:scale-95 bg-[var(--color-surface-base)] shadow-sm"
+                  className="flex items-center gap-1.5 px-4 py-2 border border-[var(--color-border-color)] text-[var(--color-text-secondary)] hover:text-[var(--color-primary-color)] hover:border-[var(--color-primary-color)]/20 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-xs font-bold transition active:scale-95 bg-[var(--color-surface-base)] shadow-xs"
                 >
                   <ChevronLeft size={16} />
                   Trước
@@ -652,14 +622,14 @@ const VocabularyPracticePage: React.FC = () => {
 
                 <button
                   onClick={flip}
-                  className="px-6 py-2.5 bg-[var(--color-primary-color)] hover:bg-[var(--color-primary-color-hover)] active:scale-95 transition text-white text-xs font-black rounded-xl shadow-md shadow-red-900/10"
+                  className="px-6 py-2 bg-[var(--color-primary-color)] hover:bg-[var(--color-primary-color-hover)] active:scale-95 transition text-white text-xs font-extrabold rounded-xl shadow-xs shadow-red-900/10"
                 >
                   Lật thẻ
                 </button>
 
                 <button
                   onClick={goNext}
-                  className="flex items-center gap-1.5 px-4 py-2.5 border border-[var(--color-border-color)] text-[var(--color-text-secondary)] hover:text-[var(--color-primary-color)] hover:border-[var(--color-primary-color)]/20 rounded-xl text-xs font-bold transition active:scale-95 bg-[var(--color-surface-base)] shadow-sm"
+                  className="flex items-center gap-1.5 px-4 py-2 border border-[var(--color-border-color)] text-[var(--color-text-secondary)] hover:text-[var(--color-primary-color)] hover:border-[var(--color-primary-color)]/20 rounded-xl text-xs font-bold transition active:scale-95 bg-[var(--color-surface-base)] shadow-xs"
                 >
                   {currentIndex >= filteredCards.length - 1 ? "Hoàn thành" : "Tiếp theo"}
                   <ChevronRight size={16} />
@@ -927,7 +897,7 @@ const VocabularyPracticePage: React.FC = () => {
                     }`}
                   >
                     {selectedAnswer === currentQuestion.correctIndex ? (
-                      <span>🎉 Chúc mừng! Câu trả lời của bạn hoàn toàn chính xác.</span>
+                      <span>Chúc mừng! Câu trả lời của bạn hoàn toàn chính xác.</span>
                     ) : (
                       <div>
                         <p className="font-extrabold m-0 text-red-800">Sai mất rồi!</p>

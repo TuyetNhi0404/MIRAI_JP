@@ -104,7 +104,7 @@ interface DashboardData {
   totalStudents: number;
 }
 
-function LoadingDots({ color = brandColors.textMuted }: { color?: string }) {
+function LoadingDots({ color = brandColors.textSecondary }: { color?: string }) {
   return (
     <span className="mira-loading-dots" style={{ color, verticalAlign: "middle" }} aria-label="đang tải">
       <i /> <i /> <i />
@@ -686,24 +686,24 @@ function ActivityStrip({
   const items: { label: string; value: React.ReactNode; onClick?: () => void; accent?: string }[] = [
     {
       label: "Yêu cầu ghi danh",
-      value: loading ? <LoadingDots color={brandColors.textMuted} /> : stats.pendingEnrollments,
+      value: loading ? <LoadingDots color={brandColors.textSecondary} /> : stats.pendingEnrollments,
       onClick: onRequestsClick,
       accent: brandColors.warning,
     },
     {
-      label: "Yêu cầu nghỉ học",
-      value: loading ? <LoadingDots color={brandColors.textMuted} /> : stats.pendingLeaves,
+      label: "Yêu cầu nghỉ làm (Slot)",
+      value: loading ? <LoadingDots color={brandColors.textSecondary} /> : stats.pendingLeaves,
       onClick: onLeavesClick,
       accent: brandColors.warning,
     },
     {
       label: "Khóa đang mở",
-      value: loading ? <LoadingDots color={brandColors.textMuted} /> : stats.activeCourses,
+      value: loading ? <LoadingDots color={brandColors.textSecondary} /> : stats.activeCourses,
       accent: brandColors.info,
     },
     {
       label: "Người dùng hoạt động",
-      value: loading ? <LoadingDots color={brandColors.textMuted} /> : stats.activeUsers,
+      value: loading ? <LoadingDots color={brandColors.textSecondary} /> : stats.activeUsers,
       accent: brandColors.success,
     },
   ];

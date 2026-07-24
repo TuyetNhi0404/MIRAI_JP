@@ -412,7 +412,7 @@ class _StudentQuizzesScreenState extends State<StudentQuizzesScreen>
                             if (quiz.dueDate != null && !isExpired) ...[
                               const SizedBox(height: 12),
                               Text(
-                                '📅 Hạn nộp: ${_formatDateTime(quiz.dueDate!.toLocal())}',
+                                'Hạn nộp: ${_formatDateTime(quiz.dueDate!.toLocal())}',
                                 style: const TextStyle(fontSize: 11, color: Colors.black38, fontWeight: FontWeight.w500),
                               ),
                             ],

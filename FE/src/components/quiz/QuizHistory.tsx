@@ -70,7 +70,7 @@ const QuizHistory: React.FC<QuizHistoryProps> = ({ attempts }) => {
                       <Award size={10} />
                       Điểm
                     </span>
-                    <span className="text-sm font-black text-[var(--color-text-main)] mt-0.5 block">{attempt.score}</span>
+                    <span className="text-sm font-black text-[var(--color-text-main)] mt-0.5 block">{attempt.percentage}/100</span>
                   </div>
                   <div>
                     <span className="flex items-center justify-center gap-1 text-[9px] font-extrabold text-[var(--color-text-secondary)]/50 uppercase">
@@ -134,7 +134,7 @@ const QuizHistory: React.FC<QuizHistoryProps> = ({ attempts }) => {
                     <span className="text-xs font-extrabold text-[var(--color-text-main)] line-clamp-1">{quizTitle}</span>
                   </td>
                   <td className="px-5 py-4 text-center">
-                    <span className="text-xs font-extrabold text-[var(--color-text-main)]">{attempt.score}</span>
+                    <span className="text-xs font-extrabold text-[var(--color-text-main)]">{attempt.percentage}/100</span>
                   </td>
                   <td className="px-5 py-4 text-center">
                     <span className={`text-xs font-black ${attempt.passed ? "text-emerald-600" : "text-red-500"}`}>

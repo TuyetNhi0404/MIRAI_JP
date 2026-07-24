@@ -3,6 +3,7 @@ import { Box, Typography, TextField, Button, Paper, Grid, MenuItem, Select, Form
 import { ArrowLeft, Save, X } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import listeningService from '../../../services/listeningService';
+import AudioPlayer from '../components/AudioPlayer';
 
 const ListeningFormPage = () => {
   const navigate = useNavigate();
@@ -26,6 +27,19 @@ const ListeningFormPage = () => {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState('');
+
+  useEffect(() => {
+    if (audioFile) {
+      const url = URL.createObjectURL(audioFile);
+      setPreviewUrl(url);
+      return () => {
+        URL.revokeObjectURL(url);
+      };
+    } else {
+      setPreviewUrl(formData.audioUrl || '');
+    }
+  }, [audioFile, formData.audioUrl]);
 
   useEffect(() => {
     if (isEditMode && id) {
@@ -249,8 +263,8 @@ const ListeningFormPage = () => {
             <FormControl fullWidth>
               <InputLabel>Nguồn âm thanh</InputLabel>
               <Select name="audioSource" value={formData.audioSource} onChange={handleChange as any} label="Nguồn âm thanh" disabled={saving || uploading}>
-                <MenuItem value="upload">Tải tệp lên (Cloudinary)</MenuItem>
-                <MenuItem value="tts">Chuyển văn bản thành giọng nói (ElevenLabs)</MenuItem>
+                <MenuItem value="upload">Tải tệp lên</MenuItem>
+                <MenuItem value="tts">Nguồn Internet</MenuItem>
               </Select>
             </FormControl>
           </Grid>
@@ -288,6 +302,15 @@ const ListeningFormPage = () => {
               />
             )}
           </Grid>
+
+          {previewUrl && (
+            <Grid item xs={12}>
+              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold', color: 'text.secondary' }}>
+                Nghe thử âm thanh:
+              </Typography>
+              <AudioPlayer src={previewUrl} />
+            </Grid>
+          )}
 
           <Grid item xs={12}>
             <TextField

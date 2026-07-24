@@ -1,7 +1,7 @@
-// src/pages/TeacherCoursesPage.tsx
+// src/pages/Teacher/TeacherCoursesPage.tsx – Premium Redesign
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, RefreshCw, Filter, CalendarDays } from 'lucide-react';
+import { Search, RefreshCw, Filter, CalendarDays, Users, BookOpen, GraduationCap, TrendingUp } from 'lucide-react';
 import {
   Box,
   Card,
@@ -15,7 +15,8 @@ import {
   IconButton,
   MenuItem,
   Menu,
-  Button
+  Button,
+  LinearProgress,
 } from '@mui/material';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
@@ -36,6 +37,39 @@ interface Course {
   enrolledCount: number;
   createdAt: string;
 }
+
+const statusConfig = {
+  not_yet: {
+    label: 'Chưa bắt đầu',
+    gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    bg: '#EEF2FF',
+    color: '#4338CA',
+    dot: '#6366F1',
+  },
+  in_progress: {
+    label: 'Đang diễn ra',
+    gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    bg: '#FFF7ED',
+    color: '#C2410C',
+    dot: '#F97316',
+  },
+  complete: {
+    label: 'Hoàn thành',
+    gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+    bg: '#ECFDF5',
+    color: '#065F46',
+    dot: '#10B981',
+  },
+};
+
+const cardAccents = [
+  { top: 'linear-gradient(135deg, #B90000 0%, #FF7875 100%)', side: '#B90000' },
+  { top: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', side: '#667eea' },
+  { top: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', side: '#f5576c' },
+  { top: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', side: '#4facfe' },
+  { top: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', side: '#43e97b' },
+  { top: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', side: '#fa709a' },
+];
 
 const TeacherCoursesPage: React.FC = () => {
   const navigate = useNavigate();
@@ -59,11 +93,7 @@ const TeacherCoursesPage: React.FC = () => {
     try {
       setLoading(true);
       setError('');
-
-      const response = await axiosInstance.get<{ data: Course[]; total: number }>(
-        '/courses/teacher/courses'
-      );
-
+      const response = await axiosInstance.get<{ data: Course[]; total: number }>('/courses/teacher/courses');
       setCourses(response.data.data || []);
     } catch (err) {
       const error = err as { response?: { data?: { message?: string } } };
@@ -74,11 +104,6 @@ const TeacherCoursesPage: React.FC = () => {
     }
   };
 
-  const handleSearch = () => {
-    setPage(1);
-  };
-
-  // Filter menu handlers
   const openFilterMenu = (e: React.MouseEvent<HTMLButtonElement>) => setFilterAnchorEl(e.currentTarget);
   const closeFilterMenu = () => setFilterAnchorEl(null);
   const applyFilter = (status: 'all' | 'not_yet' | 'in_progress' | 'complete') => {
@@ -92,15 +117,13 @@ const TeacherCoursesPage: React.FC = () => {
     navigate(`/dashboard/teacher/courses/${courseId}/members`);
   };
 
-  // Filter courses based on search and status
   const filteredCourses = courses.filter((course) => {
-    const matchesSearch = searchQuery.trim() === '' ||
+    const matchesSearch =
+      searchQuery.trim() === '' ||
       course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       course.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       course.homeroomTeacher.toLowerCase().includes(searchQuery.toLowerCase());
-
     const matchesStatus = filterStatus === 'all' || course.status === filterStatus;
-
     return matchesSearch && matchesStatus;
   });
 
@@ -108,11 +131,7 @@ const TeacherCoursesPage: React.FC = () => {
     if (!input) return '-';
     try {
       const d = new Date(input);
-      return d.toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-      });
+      return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
     } catch {
       return '-';
     }
@@ -128,374 +147,378 @@ const TeacherCoursesPage: React.FC = () => {
   const goPrev = () => setPage((p) => Math.max(1, p - 1));
   const goNext = () => setPage((p) => Math.min(totalPages, p + 1));
 
-  const mapStatus = (s: Course['status']) => {
-    if (s === 'not_yet') return { label: 'Chưa bắt đầu', color: 'error' as const };
-    if (s === 'in_progress') return { label: 'Đang diễn ra', color: 'warning' as const };
-    return { label: 'Đã hoàn thành', color: 'success' as const };
-  };
-
   return (
-    <Box sx={{ padding: '20px' }} className="mira-fade-in-up">
-      {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', flexDirection: { xs: 'column', sm: 'row' }, gap: 1.5, mb: 3 }}>
-        <Typography
-          variant={isMobile ? "h5" : "h4"}
-          sx={{
-            color: brandColors.ink,
-            fontWeight: 800,
-            fontSize: { xs: "1.5rem", sm: "2rem" },
-            letterSpacing: '-0.5px'
-          }}
-        >
-          KHÓA HỌC CỦA TÔI
-        </Typography>
-      </Box>
-
-      {/* Search + Right actions */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4, flexWrap: { xs: 'nowrap', sm: 'nowrap' } }}>
+    <Box
+      sx={{
+        p: { xs: 2, sm: 3, md: 4 },
+        maxWidth: 1440,
+        mx: 'auto',
+        width: '100%',
+        fontFamily: '"Be Vietnam Pro", "Plus Jakarta Sans", sans-serif',
+        backgroundColor: "#ffffff"
+      }}
+      className="mira-fade-in-up"
+    >
+      <Box
+        sx={{
+          display: 'flex', alignItems: 'center', gap: 1.5, mb: 4,
+          bgcolor: '#ffffff', borderRadius: '16px',
+          border: `1px solid ${brandColors.border}`,
+          p: { xs: 1.5, md: 2 },
+          boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
+        }}
+      >
         <TextField
           placeholder="Tìm kiếm khóa học..."
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+          onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <Search size={18} color="#6b7280" />
+                <Search size={18} color={brandColors.textTertiary} />
               </InputAdornment>
             ),
           }}
           sx={{
-            flex: 1,
-            minWidth: 0,
-            maxWidth: 520,
+            flex: 1, minWidth: 0,
             '& .MuiOutlinedInput-root': {
-              borderRadius: '12px',
-              backgroundColor: '#ffffff',
-              '& fieldset': {
-                borderColor: brandColors.border,
-              },
-              '&:hover fieldset': {
-                borderColor: brandColors.textTertiary,
-              },
-              '&.Mui-focused fieldset': {
-                borderColor: brandColors.red,
-                borderWidth: '2px'
-              }
-            }
+              borderRadius: '10px',
+              fontFamily: '"Be Vietnam Pro", sans-serif',
+              fontSize: '0.9rem',
+              bgcolor: brandColors.bg,
+              '& fieldset': { borderColor: 'transparent' },
+              '&:hover fieldset': { borderColor: brandColors.redLight },
+              '&.Mui-focused fieldset': { borderColor: brandColors.red, borderWidth: '2px' },
+            },
           }}
           variant="outlined"
         />
+
+        {/* Active filter chip */}
+        {filterStatus !== 'all' && (
+          <Chip
+            label={statusConfig[filterStatus].label}
+            onDelete={() => applyFilter('all')}
+            size="small"
+            sx={{
+              fontFamily: '"Be Vietnam Pro", sans-serif',
+              fontWeight: 600, fontSize: '0.78rem',
+              bgcolor: statusConfig[filterStatus].bg,
+              color: statusConfig[filterStatus].color,
+              border: `1px solid ${statusConfig[filterStatus].dot}30`,
+              flexShrink: 0,
+            }}
+          />
+        )}
+
         <IconButton
           onClick={fetchTeacherCourses}
           sx={{
-            width: { xs: 38, sm: 44 },
-            height: { xs: 38, sm: 44 },
-            borderRadius: '12px',
-            color: '#6b7280',
+            width: 42, height: 42, borderRadius: '10px',
+            color: brandColors.textSecondary,
             border: `1px solid ${brandColors.border}`,
-            backgroundColor: '#ffffff',
-            '&:hover': {
-              borderColor: brandColors.red,
-              backgroundColor: brandColors.redSoft,
-              color: brandColors.red
-            },
-            transition: 'all 0.2s ease'
+            bgcolor: brandColors.bg,
+            '&:hover': { borderColor: brandColors.red, bgcolor: brandColors.redSoft, color: brandColors.red, transform: 'rotate(180deg)' },
+            transition: 'all 0.35s ease',
+            flexShrink: 0,
           }}
         >
-          <RefreshCw size={18} />
+          <RefreshCw size={16} />
         </IconButton>
+
         <IconButton
           onClick={openFilterMenu}
           sx={{
-            width: 44,
-            height: 44,
-            borderRadius: '12px',
-            color: '#6b7280',
-            border: `1px solid ${brandColors.border}`,
-            backgroundColor: '#ffffff',
-            '&:hover': {
-              borderColor: brandColors.red,
-              backgroundColor: brandColors.redSoft,
-              color: brandColors.red
-            },
-            transition: 'all 0.2s ease'
+            width: 42, height: 42, borderRadius: '10px',
+            color: filterStatus !== 'all' ? brandColors.red : brandColors.textSecondary,
+            border: `1px solid ${filterStatus !== 'all' ? brandColors.red : brandColors.border}`,
+            bgcolor: filterStatus !== 'all' ? brandColors.redSoft : brandColors.bg,
+            '&:hover': { borderColor: brandColors.red, bgcolor: brandColors.redSoft, color: brandColors.red },
+            transition: 'all 0.2s ease',
+            flexShrink: 0,
           }}
         >
-          <Filter size={18} />
+          <Filter size={16} />
         </IconButton>
-        <Menu anchorEl={filterAnchorEl} open={Boolean(filterAnchorEl)} onClose={closeFilterMenu}>
-          <MenuItem selected={filterStatus === 'all'} onClick={() => applyFilter('all')}>Tất cả</MenuItem>
-          <MenuItem selected={filterStatus === 'not_yet'} onClick={() => applyFilter('not_yet')}>Chưa bắt đầu</MenuItem>
-          <MenuItem selected={filterStatus === 'in_progress'} onClick={() => applyFilter('in_progress')}>Đang diễn ra</MenuItem>
-          <MenuItem selected={filterStatus === 'complete'} onClick={() => applyFilter('complete')}>Đã hoàn thành</MenuItem>
+
+        <Menu
+          anchorEl={filterAnchorEl}
+          open={Boolean(filterAnchorEl)}
+          onClose={closeFilterMenu}
+          PaperProps={{
+            sx: { borderRadius: '14px', border: `1px solid ${brandColors.border}`, boxShadow: '0 8px 30px rgba(0,0,0,0.08)', minWidth: 180 }
+          }}
+        >
+          {(['all', 'not_yet', 'in_progress', 'complete'] as const).map((s) => (
+            <MenuItem
+              key={s}
+              selected={filterStatus === s}
+              onClick={() => applyFilter(s)}
+              sx={{
+                fontFamily: '"Be Vietnam Pro", sans-serif',
+                fontWeight: 500, fontSize: '0.875rem', borderRadius: '8px', mx: 0.5,
+                '&.Mui-selected': { bgcolor: brandColors.redSoft, color: brandColors.red },
+              }}
+            >
+              {s === 'all' ? 'Tất cả trạng thái' : statusConfig[s].label}
+            </MenuItem>
+          ))}
         </Menu>
       </Box>
 
-      {/* Error Message */}
+      {/* ═══ ERROR ═══ */}
       {error && (
-        <Alert severity="error" sx={{ mb: 3, borderRadius: '12px' }}>
+        <Alert severity="error" sx={{ mb: 3, borderRadius: '12px', fontFamily: '"Be Vietnam Pro", sans-serif' }}>
           {error}
         </Alert>
       )}
 
-      {/* Card list */}
+      {/* ═══ LOADING ═══ */}
       {loading ? (
-        <Box sx={{ padding: 8, textAlign: 'center', color: '#6b7280' }}>
-          <CircularProgress sx={{ mb: 2, color: brandColors.red }} />
-          <Typography variant="body1" sx={{ fontSize: '0.875rem', fontWeight: 500 }}>Đang tải danh sách khóa học...</Typography>
+        <Box sx={{ textAlign: 'center', py: 10 }}>
+          <CircularProgress sx={{ color: brandColors.red, mb: 2 }} size={36} />
+          <Typography sx={{ color: brandColors.textSecondary, fontFamily: '"Be Vietnam Pro", sans-serif', fontWeight: 500 }}>
+            Đang tải danh sách khóa học...
+          </Typography>
         </Box>
       ) : filteredCourses.length === 0 ? (
-        <Box sx={{ padding: 8, textAlign: 'center', color: '#6b7280' }}>
-          <Typography variant="body1" sx={{ fontSize: '0.875rem', fontWeight: 500 }}>
-            {searchQuery || filterStatus !== 'all'
-              ? 'Không tìm thấy khóa học nào phù hợp với bộ lọc.'
-              : 'Bạn chưa được phân công làm giáo viên chủ nhiệm cho khóa học nào.'}
+        <Box sx={{ textAlign: 'center', py: 12, bgcolor: '#fff', borderRadius: '20px', border: `2px dashed ${brandColors.border}` }}>
+          <Typography sx={{ mt: 2, color: brandColors.textSecondary, fontFamily: '"Be Vietnam Pro", sans-serif', fontWeight: 600, fontSize: '1.05rem' }}>
+            {searchQuery || filterStatus !== 'all' ? 'Không tìm thấy khóa học nào' : 'Chưa có khóa học nào'}
+          </Typography>
+          <Typography sx={{ color: brandColors.textTertiary, fontFamily: '"Be Vietnam Pro", sans-serif', fontSize: '0.875rem', mt: 0.5 }}>
+            {searchQuery || filterStatus !== 'all' ? 'Thử điều chỉnh từ khóa hoặc bộ lọc.' : 'Bạn chưa được phân công làm giáo viên chủ nhiệm cho khóa học nào.'}
           </Typography>
         </Box>
       ) : (
-        <Box
-          className="mira-stagger"
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: {
-              xs: '1fr',
-              sm: '1fr 1fr',
-              md: '1fr 1fr',
-              lg: '1fr 1fr 1fr'
-            },
-            gap: { xs: 2, sm: 2.5, md: 3 },
-            px: { xs: 1, sm: 0 }
-          }}
-        >
-          {visibleCourses.map((course) => {
-            const status = mapStatus(course.status);
-            return (
-              <Card
-                key={course._id || course.id}
-                className="mira-card-hover"
-                onClick={() => handleViewStudents(course)}
-                sx={{
-                  borderRadius: '16px',
-                  overflow: 'hidden',
-                  border: `1px solid ${brandColors.border}`,
-                  backgroundColor: '#ffffff',
-                  transition: 'all 0.3s ease',
-                  cursor: 'pointer',
-                  width: '100%',
-                  minHeight: { xs: 'auto', sm: 'auto', md: 280 },
-                  p: 0,
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.01)',
-                  '&:hover': {
-                    borderColor: brandColors.redLight,
-                  }
-                }}
-              >
-                <CardContent sx={{ p: { xs: 2, sm: 2.5, md: 3 }, position: 'relative' }}>
-                  {/* Course Name */}
-                  <Box sx={{ mb: 2 }}>
-                    <Typography
-                      variant="h6"
-                      sx={{
-                        color: brandColors.ink,
-                        fontWeight: 800,
-                        fontSize: { xs: '1rem', sm: '1.1rem', md: '1.125rem' },
-                        lineHeight: 1.4,
-                        wordBreak: 'break-word',
-                        letterSpacing: '-0.2px'
-                      }}
-                    >
-                      {course.name}
-                    </Typography>
-                  </Box>
+        <>
+          {/* Result count */}
+          <Typography sx={{ color: brandColors.textTertiary, fontFamily: '"Be Vietnam Pro", sans-serif', fontSize: '0.8rem', fontWeight: 500, mb: 2 }}>
+            Hiển thị <strong style={{ color: brandColors.ink }}>{visibleCourses.length}</strong> trong <strong style={{ color: brandColors.ink }}>{filteredCourses.length}</strong> khóa học
+          </Typography>
 
-                  {/* Divider */}
-                  <Box sx={{ height: '1px', backgroundColor: brandColors.borderLight, mb: 2 }} />
+          {/* ═══ COURSE CARDS GRID ═══ */}
+          <Box
+            className="mira-stagger"
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', lg: '1fr 1fr 1fr' },
+              gap: { xs: 2, sm: 2.5, md: 3 },
+            }}
+          >
+            {visibleCourses.map((course, idx) => {
+              const st = statusConfig[course.status];
+              const accent = cardAccents[idx % cardAccents.length];
+              const enrollPct = course.capacity > 0 ? Math.round((course.enrolledCount / course.capacity) * 100) : 0;
 
-                  {/* Info Grid */}
-                  <Box sx={{ display: 'grid', gap: 1.5 }}>
-                    {/* Homeroom Teacher */}
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <Typography variant="body2" sx={{ color: brandColors.textSecondary, fontSize: '0.875rem', fontWeight: 500 }}>
+              return (
+                <Card
+                  key={course._id || course.id}
+                  className="mira-card-hover"
+                  onClick={() => handleViewStudents(course)}
+                  sx={{
+                    borderRadius: '20px',
+                    overflow: 'hidden',
+                    border: `1px solid ${brandColors.borderLight}`,
+                    backgroundColor: '#ffffff',
+                    transition: 'all 0.35s cubic-bezier(0.4,0,0.2,1)',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+                    '&:hover': {
+                      transform: 'translateY(-6px)',
+                      boxShadow: `0 20px 50px rgba(0,0,0,0.1), 0 0 0 2px ${accent.side}30`,
+                      borderColor: `${accent.side}40`,
+                    },
+                  }}
+                >
+                  {/* Colorful top accent band */}
+                  <Box sx={{ height: 6, background: accent.top, flexShrink: 0 }} />
+
+                  <CardContent sx={{ p: { xs: 2.5, md: 3 } }}>
+                    {/* Course name + status */}
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, gap: 1 }}>
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          color: brandColors.ink,
+                          fontWeight: 800,
+                          fontSize: '1.05rem',
+                          fontFamily: '"Be Vietnam Pro", sans-serif',
+                          lineHeight: 1.3,
+                          flex: 1,
+                          wordBreak: 'break-word',
+                        }}
+                      >
+                        {course.name}
+                      </Typography>
+                      <Box
+                        sx={{
+                          display: 'flex', alignItems: 'center', gap: 0.5,
+                          px: 1.25, py: 0.4,
+                          borderRadius: '20px',
+                          bgcolor: st.bg,
+                          border: `1px solid ${st.dot}30`,
+                          flexShrink: 0,
+                        }}
+                      >
+                        <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: st.dot }} />
+                        <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: st.color, fontFamily: '"Be Vietnam Pro", sans-serif', whiteSpace: 'nowrap' }}>
+                          {st.label}
+                        </Typography>
+                      </Box>
+                    </Box>
+
+                    {/* Divider */}
+                    <Box sx={{ height: '1px', background: `linear-gradient(90deg, ${accent.side}30 0%, transparent 100%)`, mb: 2 }} />
+
+                    {/* Teacher */}
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                      <Typography sx={{ color: brandColors.textSecondary, fontSize: '0.82rem', fontFamily: '"Be Vietnam Pro", sans-serif', fontWeight: 500 }}>
                         Giáo viên chủ nhiệm
                       </Typography>
-                      <Typography variant="body2" sx={{ color: brandColors.ink, fontSize: '0.875rem', fontWeight: 700, textAlign: 'right', maxWidth: '60%' }}>
+                      <Typography sx={{ color: brandColors.ink, fontSize: '0.85rem', fontFamily: '"Be Vietnam Pro", sans-serif', fontWeight: 700 }}>
                         {course.homeroomTeacher || '-'}
                       </Typography>
                     </Box>
 
-                    {/* Session & Capacity Row */}
-                    <Box sx={{ display: 'flex', gap: 2 }}>
-                      <Box sx={{ flex: 1 }}>
-                        <Typography variant="body2" sx={{ color: brandColors.textSecondary, fontSize: '0.875rem', fontWeight: 500, mb: 0.25 }}>
-                          Ca học
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: brandColors.ink, fontSize: '0.875rem', fontWeight: 700 }}>
+                    {/* Session + Capacity */}
+                    <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                      <Box sx={{ flex: 1, p: 1.5, borderRadius: '10px', bgcolor: brandColors.bg, border: `1px solid ${brandColors.borderLight}`, textAlign: 'center' }}>
+                        <Typography sx={{ fontSize: '1.2rem', fontWeight: 800, color: brandColors.ink, fontFamily: '"Be Vietnam Pro", sans-serif', lineHeight: 1 }}>
                           {course.session ?? 0}
                         </Typography>
-                      </Box>
-                      <Box sx={{ flex: 1 }}>
-                        <Typography variant="body2" sx={{ color: brandColors.textSecondary, fontSize: '0.875rem', fontWeight: 500, mb: 0.25 }}>
-                          Sức chứa
+                        <Typography sx={{ fontSize: '0.7rem', color: brandColors.textTertiary, fontFamily: '"Be Vietnam Pro", sans-serif', fontWeight: 500, mt: 0.25 }}>
+                          Ca học
                         </Typography>
-                        <Typography variant="body2" sx={{ color: brandColors.ink, fontSize: '0.875rem', fontWeight: 700 }}>
+                      </Box>
+                      <Box sx={{ flex: 1, p: 1.5, borderRadius: '10px', bgcolor: brandColors.bg, border: `1px solid ${brandColors.borderLight}`, textAlign: 'center' }}>
+                        <Typography sx={{ fontSize: '1.2rem', fontWeight: 800, color: brandColors.ink, fontFamily: '"Be Vietnam Pro", sans-serif', lineHeight: 1 }}>
                           {course.capacity}
+                        </Typography>
+                        <Typography sx={{ fontSize: '0.7rem', color: brandColors.textTertiary, fontFamily: '"Be Vietnam Pro", sans-serif', fontWeight: 500, mt: 0.25 }}>
+                          Sức chứa
                         </Typography>
                       </Box>
                     </Box>
 
-                    {/* Enrolled */}
-                    <Box sx={{
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      p: 1.5,
-                      borderRadius: '8px',
-                      backgroundColor: brandColors.bg,
-                      border: `1px solid ${brandColors.borderLight}`
-                    }}>
-                      <Typography variant="body2" sx={{ color: brandColors.textSecondary, fontSize: '0.875rem', fontWeight: 500 }}>
-                        Đã ghi danh
-                      </Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <Typography
-                          variant="body1"
-                          sx={{
-                            color: brandColors.red,
-                            fontSize: '1rem',
-                            fontWeight: 800
-                          }}
-                        >
-                          {course.enrolledCount}
+                    {/* Enrollment progress */}
+                    <Box sx={{ mb: 2, p: 1.5, borderRadius: '12px', bgcolor: brandColors.bg, border: `1px solid ${brandColors.borderLight}` }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75 }}>
+                        <Typography sx={{ fontSize: '0.78rem', color: brandColors.textSecondary, fontFamily: '"Be Vietnam Pro", sans-serif', fontWeight: 500 }}>
+                          Đã ghi danh
                         </Typography>
-                        <Typography variant="body2" sx={{ color: brandColors.textSecondary, fontSize: '0.75rem', fontWeight: 600 }}>
-                          / {course.capacity}
+                        <Typography sx={{ fontSize: '0.85rem', fontWeight: 800, fontFamily: '"Be Vietnam Pro", sans-serif' }}>
+                          <span style={{ color: accent.side }}>{course.enrolledCount}</span>
+                          <span style={{ color: brandColors.textTertiary, fontWeight: 500, fontSize: '0.75rem' }}> / {course.capacity}</span>
                         </Typography>
                       </Box>
+                      <LinearProgress
+                        variant="determinate"
+                        value={enrollPct}
+                        sx={{
+                          height: 6, borderRadius: 3,
+                          bgcolor: `${accent.side}18`,
+                          '& .MuiLinearProgress-bar': {
+                            background: accent.top,
+                            borderRadius: 3,
+                          },
+                        }}
+                      />
+                      <Typography sx={{ fontSize: '0.68rem', color: brandColors.textTertiary, fontFamily: '"Be Vietnam Pro", sans-serif', mt: 0.5, textAlign: 'right' }}>
+                        {enrollPct}% tỷ lệ lấp đầy
+                      </Typography>
                     </Box>
 
                     {/* Dates */}
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                      {/* Start Date */}
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="body2" sx={{ color: brandColors.textSecondary, fontSize: '0.875rem', fontWeight: 500 }}>
-                          Ngày bắt đầu
-                        </Typography>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-end' }}>
-                          <CalendarDays size={14} className="text-gray-500" />
-                          <Typography variant="body2" sx={{ color: brandColors.ink, fontSize: '0.875rem', fontWeight: 600 }}>
-                            {formatDateFixed(course.startDate)}
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                      {[
+                        { label: 'Ngày bắt đầu', date: course.startDate },
+                        { label: 'Ngày kết thúc', date: course.endDate },
+                      ].map((item) => (
+                        <Box key={item.label} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Typography sx={{ color: brandColors.textSecondary, fontSize: '0.8rem', fontFamily: '"Be Vietnam Pro", sans-serif', fontWeight: 500 }}>
+                            {item.label}
                           </Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <CalendarDays size={13} color={brandColors.textTertiary} />
+                            <Typography sx={{ color: brandColors.ink, fontSize: '0.82rem', fontFamily: '"Be Vietnam Pro", sans-serif', fontWeight: 700 }}>
+                              {formatDateFixed(item.date)}
+                            </Typography>
+                          </Box>
                         </Box>
-                      </Box>
-
-                      {/* End Date */}
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="body2" sx={{ color: brandColors.textSecondary, fontSize: '0.875rem', fontWeight: 500 }}>
-                          Ngày kết thúc
-                        </Typography>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-end' }}>
-                          <CalendarDays size={14} className="text-gray-500" />
-                          <Typography variant="body2" sx={{ color: brandColors.ink, fontSize: '0.875rem', fontWeight: 600 }}>
-                            {formatDateFixed(course.endDate)}
-                          </Typography>
-                        </Box>
-                      </Box>
+                      ))}
                     </Box>
 
-                    {/* Status */}
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 1 }}>
-                      <Typography variant="body2" sx={{ color: brandColors.textSecondary, fontSize: '0.875rem', fontWeight: 500 }}>
-                        Trạng thái
+                    {/* CTA strip */}
+                    <Box sx={{ mt: 2.5, pt: 2, borderTop: `1px solid ${brandColors.borderLight}`, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                      <Typography sx={{
+                        fontSize: '0.78rem', fontWeight: 700, fontFamily: '"Be Vietnam Pro", sans-serif',
+                        color: accent.side,
+                        opacity: 0.85,
+                        letterSpacing: '0.02em',
+                      }}>
+                        Xem danh sách học viên →
                       </Typography>
-                      <Chip
-                        label={status.label}
-                        color={status.color}
-                        size="small"
-                        sx={{
-                          fontWeight: 700,
-                          fontSize: '0.75rem',
-                          height: 24,
-                          borderRadius: '6px'
-                        }}
-                      />
                     </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </Box>
-      )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </Box>
 
-      {/* Pagination (hidden on mobile) */}
-      {!isMobile && filteredCourses.length > 0 && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 5, gap: 1 }}>
-          <Button 
-            size="small" 
-            variant="outlined" 
-            onClick={goPrev} 
-            disabled={currentPage === 1} 
-            sx={{ 
-              borderRadius: '8px', 
-              minWidth: 36, 
-              color: brandColors.textPrimary,
-              borderColor: brandColors.border,
-              '&:hover': { borderColor: brandColors.red, color: brandColors.red }
-            }}
-          >
-            {'<'}
-          </Button>
-          {pagesArray.map((p) => (
-            p === currentPage ? (
-              <Box 
-                key={p} 
-                sx={{ 
-                  px: 1.5, 
-                  py: 0.5, 
-                  fontWeight: 700, 
-                  color: '#ffffff', 
-                  borderRadius: '8px', 
-                  backgroundColor: brandColors.red, 
-                  minWidth: 36, 
-                  textAlign: 'center',
-                  fontSize: '0.875rem'
-                }}
-              >
-                {p}
-              </Box>
-            ) : (
+          {/* ═══ PAGINATION ═══ */}
+          {!isMobile && filteredCourses.length > rowsPerPage && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 5, gap: 1 }}>
               <Button
-                key={p}
-                size="small"
-                variant="outlined"
-                onClick={() => setPage(p)}
-                sx={{ 
-                  borderRadius: '8px', 
-                  minWidth: 36,
-                  color: brandColors.textSecondary,
-                  borderColor: brandColors.border,
-                  '&:hover': { borderColor: brandColors.red, color: brandColors.red }
+                size="small" variant="outlined" onClick={goPrev} disabled={currentPage === 1}
+                sx={{
+                  borderRadius: '10px', minWidth: 40, height: 40,
+                  color: brandColors.textSecondary, borderColor: brandColors.border,
+                  fontFamily: '"Be Vietnam Pro", sans-serif',
+                  '&:hover': { borderColor: brandColors.red, color: brandColors.red },
                 }}
               >
-                {p}
+                ‹
               </Button>
-            )
-          ))}
-          <Button 
-            size="small" 
-            variant="outlined" 
-            onClick={goNext} 
-            disabled={currentPage === totalPages} 
-            sx={{ 
-              borderRadius: '8px', 
-              minWidth: 36,
-              color: brandColors.textPrimary,
-              borderColor: brandColors.border,
-              '&:hover': { borderColor: brandColors.red, color: brandColors.red }
-            }}
-          >
-            {'>'}
-          </Button>
-        </Box>
+              {pagesArray.map((p) =>
+                p === currentPage ? (
+                  <Box key={p} sx={{
+                    width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontWeight: 700, color: '#fff', borderRadius: '10px',
+                    background: 'linear-gradient(135deg, #B90000 0%, #FF7875 100%)',
+                    fontSize: '0.875rem', boxShadow: '0 4px 12px rgba(185,0,0,0.3)',
+                    fontFamily: '"Be Vietnam Pro", sans-serif',
+                  }}>
+                    {p}
+                  </Box>
+                ) : (
+                  <Button key={p} size="small" variant="outlined" onClick={() => setPage(p)}
+                    sx={{
+                      borderRadius: '10px', minWidth: 40, height: 40,
+                      color: brandColors.textSecondary, borderColor: brandColors.border,
+                      fontFamily: '"Be Vietnam Pro", sans-serif',
+                      '&:hover': { borderColor: brandColors.red, color: brandColors.red, bgcolor: brandColors.redSoft },
+                    }}
+                  >
+                    {p}
+                  </Button>
+                )
+              )}
+              <Button
+                size="small" variant="outlined" onClick={goNext} disabled={currentPage === totalPages}
+                sx={{
+                  borderRadius: '10px', minWidth: 40, height: 40,
+                  color: brandColors.textSecondary, borderColor: brandColors.border,
+                  fontFamily: '"Be Vietnam Pro", sans-serif',
+                  '&:hover': { borderColor: brandColors.red, color: brandColors.red },
+                }}
+              >
+                ›
+              </Button>
+            </Box>
+          )}
+        </>
       )}
     </Box>
   );

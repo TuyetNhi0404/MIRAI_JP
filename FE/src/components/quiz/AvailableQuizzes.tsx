@@ -89,22 +89,22 @@ const AvailableQuizzes: React.FC<AvailableQuizzesProps> = ({ quizzes = [] }) => 
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header filter row */}
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-        <div>
-          <h3 className="text-base font-extrabold text-[var(--color-text-main)] m-0">{courseName}</h3>
-          <p className="text-xs text-[var(--color-text-secondary)] m-0 mt-0.5">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-slate-50/60 p-3.5 rounded-2xl border border-slate-150/70">
+        <div className="flex items-center gap-3 flex-wrap">
+          <h3 className="text-sm font-extrabold text-slate-800 m-0">{courseName}</h3>
+          <span className="text-[11px] font-bold text-slate-600 bg-white border border-slate-200 px-2.5 py-1 rounded-lg">
             Tổng số: {quizzes.length} • Chưa làm:{" "}
             {quizzes.filter((q) => !q.hasAttempted && !isQuizExpired(q.dueDate)).length} • Đã hoàn thành:{" "}
             {quizzes.filter((q) => q.hasAttempted).length}
-          </p>
+          </span>
         </div>
 
         <select
           value={showCompleted ? "yes" : "no"}
           onChange={(e) => setShowCompleted(e.target.value === "yes")}
-          className="border border-[var(--color-border-color)] rounded-xl px-4 py-2 bg-[var(--color-surface-base)] text-xs font-bold text-[var(--color-text-secondary)] focus:outline-none focus:border-[var(--color-primary-color)] max-w-[200px]"
+          className="border border-slate-200 rounded-xl px-3.5 py-1.5 bg-white text-xs font-bold text-slate-700 focus:outline-none focus:border-blue-500 shadow-xs shrink-0 cursor-pointer"
         >
           <option value="no">Chỉ bài chưa làm</option>
           <option value="yes">Hiển thị tất cả</option>

@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #FFFDF9; /* Japanese Washi off-white */
+  --color-background: #FFFFFF; /* Pure White */
   --color-foreground: #1F2238;
 
   --color-card: #FFFFFF;
@@ -13,7 +13,7 @@
   --color-primary: #B90000; /* Hinomaru Red */
   --color-primary-foreground: #FFFFFF;
 
-  --color-secondary: #FFFDF9;
+  --color-secondary: #FFFFFF;
   --color-secondary-foreground: #1F2238;
 
   --color-muted: #FAF6F0;
@@ -37,7 +37,7 @@
   --color-primary-color: #B90000;
   --color-primary-color-hover: #990000;
   --color-secondary-color: #FAF6F0;
-  --color-bg-base: #FFFDF9;
+  --color-bg-base: #FFFFFF;
   --color-surface-base: #FFFFFF;
   --color-text-main: #1F2238;
   --color-text-secondary: #595959;

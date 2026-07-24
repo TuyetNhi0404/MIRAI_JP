@@ -6,6 +6,7 @@ export interface Course {
   id?: string;
   name: string;
   description?: string;
+  level?: string;
   status: 'not_yet' | 'in_progress' | 'complete';
   homeroomTeacherId?: string;
   homeroomTeacher?: string;
@@ -169,7 +170,7 @@ export const courseService = {
   getEnrolledStudents: async (id: string): Promise<EnrolledStudentsResponse> => {
     try {
       const courseMembers = await courseMemberService.getStudentsByCourse(id);
-      
+
       const students: EnrolledStudent[] = courseMembers.map((member: CourseMember) => {
         const userId = typeof member.userId === 'string' ? null : member.userId;
         const userName = userId?.name || userId?.fullName || 'Unknown';

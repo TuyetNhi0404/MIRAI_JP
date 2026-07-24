@@ -329,6 +329,7 @@ const NotificationDropdown = () => {
 
   // Handle view my created notifications
   const handleViewMyCreated = () => {
+    handleClose();
     setMyCreatedDialogOpen(true);
     fetchMyCreatedNotifications(1);
   };
@@ -481,6 +482,7 @@ const NotificationDropdown = () => {
   };
 
   const handleCreateNotification = () => {
+    handleClose();
     setCreateDialogOpen(true);
     setNotificationType("global");
     setUserSearchInput("");

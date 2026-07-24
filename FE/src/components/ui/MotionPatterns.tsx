@@ -119,6 +119,7 @@ interface MagneticButtonProps {
   className?: string;
   children: React.ReactNode;
   onClick?: () => void;
+  style?: React.CSSProperties;
 }
 
 /**
@@ -130,6 +131,7 @@ export function MagneticButton({
   className,
   children,
   onClick,
+  style,
 }: MagneticButtonProps) {
   const ref = useRef<HTMLButtonElement | null>(null);
 
@@ -167,6 +169,7 @@ export function MagneticButton({
       onMouseEnter={handleEnter}
       onClick={onClick}
       className={className}
+      style={style}
     >
       {children}
     </button>

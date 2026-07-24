@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   CheckCircle,
   XCircle,
@@ -7,6 +7,7 @@ import {
   Timer,
   Award,
   BookOpen,
+  AlertTriangle,
 } from "lucide-react";
 import { useQuiz } from "../../hooks/useQuiz";
 import { useAppSelector } from "../../hooks/hooks";
@@ -17,8 +18,16 @@ import { BaseCard } from "../../components/ui/BaseCard";
 const ViewResultPage: React.FC = () => {
   const { attemptId } = useParams<{ attemptId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const user = useAppSelector((state) => state.auth.user);
   const { attemptDetail, loading, error, loadAttemptResult } = useQuiz();
+
+  const isAutoSubmit = (location.state as { isAutoSubmit?: boolean })?.isAutoSubmit;
+  const autoSubmitReason = (location.state as { autoSubmitReason?: string })?.autoSubmitReason;
+
+  const goBackToHistory = () => {
+    navigate("/dashboard/student/quizzes", { state: { defaultTab: 1 } });
+  };
 
   useEffect(() => {
     if (attemptId) {
@@ -45,11 +54,11 @@ const ViewResultPage: React.FC = () => {
             <span>{error}</span>
           </div>
           <button
-            onClick={() => navigate("/dashboard/student/quizzes")}
+            onClick={goBackToHistory}
             className="flex items-center gap-2 text-text-secondary hover:text-primary-color text-xs font-bold transition"
           >
             <ArrowLeft size={16} />
-            Quay lại danh sách bài kiểm tra
+            Quay lại lịch sử bài làm
           </button>
         </BaseCard>
       </PageLayout>
@@ -74,14 +83,28 @@ const ViewResultPage: React.FC = () => {
       subtitle="Xem lại chi tiết điểm số, thời gian và lời giải chi tiết cho từng câu hỏi"
       icon={Award}
     >
+      {/* Auto-submit warning banner */}
+      {isAutoSubmit && (
+        <BaseCard className="bg-amber-50 border-l-4 border-amber-500 !p-4">
+          <div className="flex items-start gap-3 text-amber-800">
+            <AlertTriangle className="shrink-0 mt-0.5" size={18} />
+            <p className="text-xs font-semibold m-0 leading-relaxed">
+              ⚠️ Bài kiểm tra đã được <strong>tự động nộp</strong> do:{" "}
+              {autoSubmitReason === "time_expired" ? "Hết giờ làm bài" : "Vi phạm quy chế thi quá nhiều lần"}.
+              Kết quả dưới đây là điểm số chính thức của bạn.
+            </p>
+          </div>
+        </BaseCard>
+      )}
+
       {/* Back button row */}
       <div>
         <button
-          onClick={() => navigate("/dashboard/student/quizzes")}
+          onClick={goBackToHistory}
           className="flex items-center gap-2 text-xs font-extrabold text-primary-color hover:text-primary-color-hover transition active:scale-95 bg-surface-base border border-border-color shadow-sm rounded-xl px-4 py-2.5"
         >
           <ArrowLeft size={14} />
-          Quay lại danh sách bài kiểm tra
+          Quay lại lịch sử bài làm
         </button>
       </div>
 
@@ -91,21 +114,21 @@ const ViewResultPage: React.FC = () => {
           <h2 className="text-lg font-black text-text-main m-0">{attemptDetail.quizTitle}</h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Score box */}
+            {/* Score box - hiển thị điểm trên thang 100 */}
             <div className="bg-surface-base border border-border-color p-4 rounded-2xl text-center shadow-sm flex flex-col items-center justify-center">
               <Award className="text-primary-color mb-1" size={24} />
-              <span className="text-2xl font-black text-primary-color">
-                {attemptDetail.score} <span className="text-xs text-slate-450 font-bold">/ {attemptDetail.totalQuestions}</span>
+              <span className={`text-2xl font-black ${attemptDetail.passed ? "text-emerald-600" : "text-red-500"}`}>
+                {attemptDetail.percentage} <span className="text-xs text-slate-450 font-bold">/ 100</span>
               </span>
               <span className="text-[10px] text-text-secondary font-extrabold uppercase mt-1">Điểm số</span>
             </div>
 
-            {/* Percentage box */}
+            {/* Correct answers box */}
             <div className="bg-surface-base border border-border-color p-4 rounded-2xl text-center shadow-sm flex flex-col items-center justify-center">
-              <span className={`text-2xl font-black ${attemptDetail.passed ? "text-emerald-600" : "text-red-500"}`}>
-                {attemptDetail.percentage}%
+              <span className="text-2xl font-black text-text-secondary">
+                {attemptDetail.score} <span className="text-xs font-bold">/ {attemptDetail.totalQuestions}</span>
               </span>
-              <span className="text-[10px] text-text-secondary font-extrabold uppercase mt-3">Tỷ lệ chính xác</span>
+              <span className="text-[10px] text-text-secondary font-extrabold uppercase mt-3">Số câu đúng</span>
             </div>
 
             {/* Time spent box */}
@@ -243,11 +266,11 @@ const ViewResultPage: React.FC = () => {
       {/* Bottom return button */}
       <div className="flex justify-center pt-6">
         <button
-          onClick={() => navigate("/dashboard/student/quizzes")}
+          onClick={goBackToHistory}
           className="flex items-center gap-2 text-xs font-black text-white bg-primary-color hover:bg-primary-color-hover transition active:scale-95 shadow-sm rounded-xl px-6 py-3"
         >
           <ArrowLeft size={14} />
-          Quay lại danh sách bài kiểm tra
+          Quay lại lịch sử bài làm
         </button>
       </div>
     </PageLayout>
