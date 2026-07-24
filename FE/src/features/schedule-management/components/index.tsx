@@ -139,7 +139,7 @@ export default function ManageScheduleCalendar() {
     useScheduleData();
 
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode]       = useState<ViewMode>(isMobile ? 'day' : 'week');
+  const [viewMode, setViewMode]       = useState<ViewMode>('week');
   const [selectedSchedule, setSelectedSchedule] = useState<CalendarItem | null>(null);
   const [isEditing, setIsEditing]     = useState(false);
   const [editForm]                    = Form.useForm();
@@ -149,6 +149,7 @@ export default function ManageScheduleCalendar() {
   const [updateError, setUpdateError] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [isFromLeaveRequest, setIsFromLeaveRequest] = useState(false);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const editCalendarId = searchParams.get('editCalendarId');
@@ -159,6 +160,7 @@ export default function ManageScheduleCalendar() {
       const cal = calendars.find((c: any) => c._id === editCalendarId);
       if (cal) {
         setSelectedSchedule(cal);
+        setIsFromLeaveRequest(fromLeaveRequest);
         const formData = {
           courseId:  extractId(cal.courseId),
           sessionId: extractId(cal.sessionId),
@@ -172,12 +174,18 @@ export default function ManageScheduleCalendar() {
           date: dayjs(formData.date)
         });
         setIsEditing(true);
+
+        // Immediately consume search params to prevent query param race conditions
+        const newParams = new URLSearchParams(searchParams);
+        newParams.delete('editCalendarId');
+        newParams.delete('fromLeaveRequest');
+        setSearchParams(newParams);
       }
     }
-  }, [editCalendarId, calendars, selectedSchedule, editForm]);
+  }, [editCalendarId, calendars, selectedSchedule, editForm, fromLeaveRequest, searchParams, setSearchParams]);
 
   const handleCancelOrClose = async () => {
-    if (fromLeaveRequest && selectedSchedule) {
+    if (isFromLeaveRequest && selectedSchedule) {
       try {
         setDeleting(true);
         await calendarAPI.delete(selectedSchedule._id);
@@ -187,9 +195,11 @@ export default function ManageScheduleCalendar() {
       } finally {
         setDeleting(false);
       }
+      setViewMode('week');
     }
     setSelectedSchedule(null);
     setIsEditing(false);
+    setIsFromLeaveRequest(false);
     
     // Clear search parameters
     const newParams = new URLSearchParams(searchParams);
@@ -313,12 +323,14 @@ export default function ManageScheduleCalendar() {
       setUpdating(true);
       setUpdateError('');
 
-      if (fromLeaveRequest) {
+      if (isFromLeaveRequest) {
         const originalTeacherId = extractId(selectedSchedule.teacherId);
         if (values.teacherId === originalTeacherId) {
           await calendarAPI.delete(selectedSchedule._id);
           setSelectedSchedule(null);
           setIsEditing(false);
+          setIsFromLeaveRequest(false);
+          setViewMode('week');
           const newParams = new URLSearchParams(searchParams);
           newParams.delete('editCalendarId');
           newParams.delete('fromLeaveRequest');
@@ -335,6 +347,10 @@ export default function ManageScheduleCalendar() {
 
       setSelectedSchedule(null);
       setIsEditing(false);
+      if (isFromLeaveRequest) {
+        setViewMode('week');
+      }
+      setIsFromLeaveRequest(false);
       const newParams = new URLSearchParams(searchParams);
       newParams.delete('editCalendarId');
       newParams.delete('fromLeaveRequest');
@@ -365,6 +381,16 @@ export default function ManageScheduleCalendar() {
       await calendarAPI.delete(selectedSchedule._id);
       setSelectedSchedule(null);
       setIsEditing(false);
+      if (isFromLeaveRequest) {
+        setViewMode('week');
+      }
+      setIsFromLeaveRequest(false);
+      
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('editCalendarId');
+      newParams.delete('fromLeaveRequest');
+      setSearchParams(newParams);
+
       refetch();
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
