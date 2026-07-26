@@ -21,34 +21,34 @@ const upload = multer({
 // Cấu hình định tuyến bảo mật qua token
 router.use(verifyToken);
 
-// ─── UPLOAD & OCR ROUTES (Phase 5: admin + teacher) ─────────────────────────
+// ─── UPLOAD & OCR ROUTES (Phase 5: admin only) ─────────────────────────
 router.post(
   "/upload",
-  authorizeRoles("admin", "teacher"),
+  authorizeRoles("admin"),
   upload.single("file"),
   GrammarController.uploadDocument
 );
 router.get(
   "/documents",
-  authorizeRoles("admin", "teacher"),
+  authorizeRoles("admin"),
   GrammarController.getDocuments
 );
 // Phase 5: status endpoint cho FE poll progress
 router.get(
   "/documents/:id/status",
-  authorizeRoles("admin", "teacher"),
+  authorizeRoles("admin"),
   GrammarController.getDocumentStatus
 );
 router.delete(
   "/documents/:id",
-  authorizeRoles("admin", "teacher"),
+  authorizeRoles("admin"),
   GrammarController.deleteDocument
 );
 
-// ─── CARD CRUD & RAG AUTO-GENERATE (Phase 5: admin + teacher) ──────────────
+// ─── CARD CRUD & RAG AUTO-GENERATE (Phase 5) ──────────────
 router.post(
   "/cards/generate-draft",
-  authorizeRoles("admin", "teacher"),
+  authorizeRoles("admin"),
   GrammarController.generateDraftCards
 );
 router.get(
@@ -58,12 +58,12 @@ router.get(
 );
 router.post(
   "/cards",
-  authorizeRoles("admin", "teacher"),
+  authorizeRoles("admin"),
   GrammarController.createGrammarCard
 );
 router.put(
   "/cards/:id",
-  authorizeRoles("admin", "teacher"),
+  authorizeRoles("admin"),
   GrammarController.updateGrammarCard
 );
 router.post(
@@ -85,6 +85,11 @@ router.get(
 );
 
 // ─── TEACHER QUIZ CREATION & TRACKING ROUTES ────────────────────────────────
+router.post(
+  "/teacher/quiz/existing-questions",
+  authorizeRoles("teacher"),
+  GrammarController.teacherFetchExistingQuestions
+);
 router.post(
   "/teacher/quiz/generate-questions",
   authorizeRoles("teacher"),

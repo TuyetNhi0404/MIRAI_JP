@@ -10,8 +10,6 @@ import {
   Typography,
   Alert,
   CircularProgress,
-  Snackbar,
-  Slide,
 } from '@mui/material';
 import type { Session } from '../../types/scheduleTeacher.types';
 
@@ -38,13 +36,11 @@ const RequestModal: React.FC<RequestLeaveModalProps> = ({
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     if (open) {
       setReason('');
       setError(null);
-      setSuccess(false);
     }
   }, [open]);
 
@@ -73,10 +69,7 @@ const RequestModal: React.FC<RequestLeaveModalProps> = ({
 
     try {
       await onSubmit(reason);
-      setSuccess(true);
-      setTimeout(() => {
-        onClose();
-      }, 800);
+      onClose();
     } catch (err) {
       setError('Không thể gửi yêu cầu. Vui lòng thử lại.');
       console.error(err);
@@ -232,29 +225,6 @@ mb: 2,
           </Button>
         </DialogActions>
       </Dialog>
-
-      <Snackbar
-        open={success}
-        autoHideDuration={2500}
-        onClose={() => setSuccess(false)}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-        TransitionComponent={(props) => <Slide {...props} direction="down" />}
-      >
-        <Alert
-          onClose={() => setSuccess(false)}
-          sx={{
-            backgroundColor: '#B90000',
-            color: 'white',
-            fontWeight: 500,
-            borderRadius: 2,
-            boxShadow: '0 3px 10px rgba(236, 117, 16, 0.3)',
-            '& .MuiAlert-icon': { color: 'white' },
-          }}
-          icon={false}
-        >
-          Gửi yêu cầu xin nghỉ thành công!
-        </Alert>
-      </Snackbar>
     </>
   );
 };

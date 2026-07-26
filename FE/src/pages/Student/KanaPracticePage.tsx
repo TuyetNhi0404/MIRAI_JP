@@ -28,12 +28,8 @@ const KanaPracticePage: React.FC = () => {
       title="Luyện viết bảng chữ cái"
       subtitle="Học cách viết Hiragana và Katakana — chọn chữ cái và luyện tập nét vẽ"
       icon={PenTool}
+      extra={<KanaSelector selectedType={kanaType} onSelect={handleTypeChange} />}
     >
-      {/* Selection row */}
-      <div className="max-w-md">
-        <KanaSelector selectedType={kanaType} onSelect={handleTypeChange} />
-      </div>
-
       {/* Main 2-column layout */}
       <div className={`grid gap-6 transition-all duration-300 ${selectedChar ? "grid-cols-1 lg:grid-cols-3" : "grid-cols-1"}`}>
         {/* Left panel: character grid */}

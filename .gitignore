@@ -79,8 +79,23 @@ services/speaking-practice/.venv/
 services/speaking-practice/uploads/*
 !services/speaking-practice/uploads/.gitkeep
 services/speaking-practice/.hf_cache/
+services/melo-tts/venv/
+services/melo-tts/.venv/
+services/melo-tts/.melo-installed
+
+# Local AI model files (GGUF, whisper.cpp models, etc.)
+
+
+# whisper.cpp build artefacts (if cloned inside project)
+whisper.cpp/
+**/whisper.cpp/
+
+# Model files (very large binary blobs)
+*.gguf
 
 deploy.sh
 gsap-skills/
 taste-skill/
 req.txt
+
+fugashi-1.5.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl

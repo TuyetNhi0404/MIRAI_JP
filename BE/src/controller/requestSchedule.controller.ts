@@ -14,7 +14,7 @@ class RequestScheduleController {
       const { calendarId, reason } = req.body;
 
       if (!calendarId || !reason) {
-        return res.status(400).json({ message: "Missing calendarId or reason." });
+        return res.status(400).json({ message: "Thiếu calendarId hoặc lý do." });
       }
 
       // Gọi service xử lý logic chính
@@ -42,7 +42,7 @@ class RequestScheduleController {
       }
 
       return res.status(201).json({
-        message: "Schedule-change request submitted successfully.",
+        message: "Yêu cầu đổi lịch đã được gửi thành công.",
         data: result
       });
 
@@ -100,7 +100,7 @@ class RequestScheduleController {
       const { requestId } = req.params;
       const request = await RequestSchedule.findById(requestId).select("createdBy");
       if (!request) {
-        return res.status(404).json({ message: "Request not found." });
+        return res.status(404).json({ message: "Không tìm thấy yêu cầu." });
       }
       const updated = await RequestSchedule.findByIdAndUpdate(
         requestId,
@@ -120,11 +120,11 @@ class RequestScheduleController {
       }
 
       if (!updated) {
-        return res.status(404).json({ message: "Request not found." });
+        return res.status(404).json({ message: "Không tìm thấy yêu cầu." });
       }
 
       return res.status(200).json({
-        message: "Request approved successfully.",
+        message: "Duyệt yêu cầu thành công.",
         data: updated
       });
 
@@ -140,7 +140,7 @@ class RequestScheduleController {
       const { requestId } = req.params;
       const request = await RequestSchedule.findById(requestId).select("createdBy");
       if (!request) {
-        return res.status(404).json({ message: "Request not found." });
+        return res.status(404).json({ message: "Không tìm thấy yêu cầu." });
       }
       const updated = await RequestSchedule.findByIdAndUpdate(
         requestId,
@@ -160,11 +160,11 @@ class RequestScheduleController {
       }
 
       if (!updated) {
-        return res.status(404).json({ message: "Request not found." });
+        return res.status(404).json({ message: "Không tìm thấy yêu cầu." });
       }
 
       return res.status(200).json({
-        message: "Request rejected successfully.",
+        message: "Từ chối yêu cầu thành công.",
         data: updated
       });
 

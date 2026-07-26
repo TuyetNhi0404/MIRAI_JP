@@ -31,6 +31,7 @@ import {
   CardContent,
   Grid,
   Checkbox,
+  TablePagination,
 } from "@mui/material";
 import {
   Plus,
@@ -81,6 +82,21 @@ const AdminGrammarManagement: React.FC = () => {
   const [documents, setDocuments] = useState<IGrammarDocument[]>([]);
   const [cards, setCards] = useState<IGrammarCard[]>([]);
 
+  // Filter states
+  const [filterLevel, setFilterLevel] = useState<JLPTLevel | "">("");
+  const [searchQuery, setSearchQuery] = useState("");
+  // Phase 6: date + sort filter dùng chung cho cards & documents
+  const [dateFilter, setDateFilter] = useState<DateRangeValue>({ sortBy: "createdAt", order: "desc" });
+
+  // Pagination states
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(0);
+  }, [searchQuery, filterLevel, dateFilter, tab]);
+
   // Batch delete states
   const [selectedCardIds, setSelectedCardIds] = useState<string[]>([]);
   const [openDeleteBatchDialog, setOpenDeleteBatchDialog] = useState(false);
@@ -122,17 +138,8 @@ const AdminGrammarManagement: React.FC = () => {
     }
   };
 
-  // Filter states
-  const [filterLevel, setFilterLevel] = useState<JLPTLevel | "">("");
-  const [searchQuery, setSearchQuery] = useState("");
-  // Phase 6: date + sort filter dùng chung cho cards & documents
-  const [dateFilter, setDateFilter] = useState<DateRangeValue>({ sortBy: "createdAt", order: "desc" });
-
   // Phase 5: tổng số kết quả sau filter (để hiển thị count)
   const [totalCount, setTotalCount] = useState<number | null>(null);
-
-  // Phase 5: dropdown chọn document cho RAG (admin có thể scope về 1 tài liệu)
-  const [ragDocumentId, setRagDocumentId] = useState<string>("");
 
   // Upload States
   const [uploadFile, setUploadFile] = useState<File | null>(null);
@@ -170,14 +177,6 @@ const AdminGrammarManagement: React.FC = () => {
   const [exampleJa, setExampleJa] = useState("");
   const [exampleKana, setExampleKana] = useState("");
   const [exampleVi, setExampleVi] = useState("");
-
-  // RAG draft assistant states
-  const [ragTopic, setRagTopic] = useState("");
-  const [ragLevel, setRagLevel] = useState<JLPTLevel>("N5");
-  const [ragCenter, setRagCenter] = useState("MIRAI_CENTER");
-  const [ragLoading, setRagLoading] = useState(false);
-  const [ragDrafts, setRagDrafts] = useState<Omit<IGrammarCard, "_id" | "createdBy">[]>([]);
-  const [ragError, setRagError] = useState("");
 
   // Delete confirmations
   const [deleteDocTarget, setDeleteDocTarget] = useState<IGrammarDocument | null>(null);
@@ -227,7 +226,7 @@ const AdminGrammarManagement: React.FC = () => {
   useEffect(() => {
     if (tab === 0) {
       fetchCards();
-    } else if (tab === 1 || tab === 2) {
+    } else if (tab === 1) {
       fetchDocuments();
     }
   }, [tab, fetchCards, fetchDocuments]);
@@ -391,54 +390,7 @@ const AdminGrammarManagement: React.FC = () => {
     }
   };
 
-  // ─── RAG Generation Handlers ──────────────────────────────────────────────
-  const handleGenerateDrafts = async () => {
-    if (!ragTopic.trim()) {
-      setRagError("Vui lòng nhập chủ đề ngữ pháp cần soạn.");
-      return;
-    }
-    setRagLoading(true);
-    setRagError("");
-    setRagDrafts([]);
-
-    try {
-      const res = await grammarService.generateDraftCards(
-        ragCenter,
-        ragLevel,
-        ragTopic,
-        ragDocumentId || undefined
-      );
-      if (res.success) {
-        setRagDrafts(res.draftCards);
-        if (res.contextChunksFound === 0) {
-          setRagError("Không tìm thấy context liên quan trong tài liệu đã chọn. Hãy thử tài liệu khác hoặc bỏ chọn để dùng toàn bộ tài liệu cùng level.");
-        } else if (res.draftCards.length === 0) {
-          setRagError("AI không sinh được thẻ phù hợp. Hãy thử đổi chủ đề.");
-        }
-      }
-    } catch (err: unknown) {
-      setRagError(getAxiosErrorMessage(err, "Lỗi AI sinh bản thảo. Đảm bảo bạn đã upload tài liệu gốc phù hợp."));
-    } finally {
-      setRagLoading(false);
-    }
-  };
-
-  const handleApproveDraft = async (draft: Omit<IGrammarCard, "_id" | "createdBy">, index: number) => {
-    try {
-      const res = await grammarService.createGrammarCard({
-        ...draft,
-        centerId: ragCenter,
-        level: ragLevel
-      });
-      if (res.success) {
-        // Loại bỏ thẻ đã duyệt khỏi danh sách draft
-        setRagDrafts(prev => prev.filter((_, idx) => idx !== index));
-        fetchCards();
-      }
-    } catch (err: unknown) {
-      alert(getAxiosErrorMessage(err, "Lỗi lưu thẻ ngữ pháp được duyệt."));
-    }
-  };
+  // (RAG Generation Handlers removed)
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 } }}>
@@ -453,7 +405,7 @@ const AdminGrammarManagement: React.FC = () => {
               Thiết kế Học Ngữ pháp
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Quản lý tài liệu PDF, phân mảnh RAG, tạo câu hỏi AI và thẻ ngữ pháp JLPT N5 - N1
+              Quản lý tài liệu PDF và thẻ ngữ pháp JLPT N5 - N1 tự động
             </Typography>
           </Box>
         </Box>
@@ -491,7 +443,6 @@ const AdminGrammarManagement: React.FC = () => {
         <Tabs value={tab} onChange={(_, v) => setTab(v)} textColor="inherit" sx={{ "& .MuiTabs-indicator": { bgcolor: "#B90000" } }}>
           <Tab label="Danh sách thẻ Ngữ pháp" sx={{ fontWeight: 600 }} />
           <Tab label="Quản lý Tài liệu PDF (OCR)" sx={{ fontWeight: 600 }} />
-          <Tab label="AI Trợ lý Soạn thảo (RAG)" sx={{ fontWeight: 600 }} />
         </Tabs>
       </Box>
 
@@ -500,21 +451,27 @@ const AdminGrammarManagement: React.FC = () => {
         <Paper
           elevation={0}
           sx={{
-            p: 2,
+            p: 2.5,
             border: `1px solid ${brandColors.border}`,
-            borderRadius: "12px",
+            borderRadius: "16px",
             bgcolor: "#ffffff",
             mb: 3,
           }}
         >
-          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, alignItems: "center" }}>
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, alignItems: "center" }}>
             {tab === 0 && (
               <TextField
                 placeholder="Tìm kiếm ngữ pháp..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 size="small"
-                sx={{ width: 220 }}
+                sx={{ 
+                  width: 240,
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '8px',
+                    '&.Mui-focused fieldset': { borderColor: brandColors.red }
+                  }
+                }}
                 InputProps={{
                   startAdornment: <Search size={16} style={{ marginRight: 8, color: "#999" }} />,
                 }}
@@ -522,11 +479,17 @@ const AdminGrammarManagement: React.FC = () => {
             )}
 
             <FormControl size="small" sx={{ width: 140 }}>
-              <InputLabel>Cấp độ JLPT</InputLabel>
+              <InputLabel sx={{ '&.Mui-focused': { color: brandColors.red } }}>Cấp độ JLPT</InputLabel>
               <Select
                 label="Cấp độ JLPT"
                 value={filterLevel}
                 onChange={(e) => setFilterLevel(e.target.value as JLPTLevel | "")}
+                sx={{
+                  borderRadius: '8px',
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: brandColors.red
+                  }
+                }}
               >
                 <MenuItem value="">Tất cả</MenuItem>
                 {LEVELS.map(l => (
@@ -543,7 +506,15 @@ const AdminGrammarManagement: React.FC = () => {
                   size="small"
                   variant="outlined"
                   label={`Tổng: ${totalCount} ${tab === 0 ? "thẻ" : "tài liệu"}`}
-                  sx={{ fontWeight: 600 }}
+                  sx={{ 
+                    fontWeight: 700,
+                    borderColor: brandColors.redLight,
+                    color: brandColors.red,
+                    bgcolor: brandColors.redSoft,
+                    borderRadius: '8px',
+                    px: 1,
+                    py: 1.8
+                  }}
                 />
               </Box>
             )}
@@ -562,8 +533,9 @@ const AdminGrammarManagement: React.FC = () => {
               <Typography color="text.secondary">Chưa có thẻ ngữ pháp nào được tạo.</Typography>
             </Box>
           ) : (
-            <TableContainer>
-              <Table size="small">
+            <>
+              <TableContainer>
+                <Table size="small">
                 <TableHead>
                   <TableRow sx={{ bgcolor: "#FAFAFA" }}>
                     <TableCell padding="checkbox">
@@ -587,7 +559,7 @@ const AdminGrammarManagement: React.FC = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {cards.map((card) => {
+                  {cards.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((card) => {
                     const isItemSelected = selectedCardIds.includes(card._id);
                     return (
                       <TableRow
@@ -657,6 +629,48 @@ const AdminGrammarManagement: React.FC = () => {
                 </TableBody>
               </Table>
             </TableContainer>
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25, 50]}
+              component="div"
+              count={cards.length}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={(_, newPage) => setPage(newPage)}
+              onRowsPerPageChange={(e) => {
+                setRowsPerPage(parseInt(e.target.value, 10));
+                setPage(0);
+              }}
+              labelRowsPerPage="Số hàng mỗi trang:"
+              labelDisplayedRows={({ from, to, count }) => `${from}-${to} của ${count}`}
+              sx={{
+                "& .MuiTablePagination-toolbar": {
+                  minHeight: "52px",
+                  display: "flex",
+                  alignItems: "center",
+                },
+                "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": {
+                  margin: 0,
+                  lineHeight: 1,
+                  display: "flex",
+                  alignItems: "center",
+                },
+                "& .MuiTablePagination-select": {
+                  display: "inline-flex",
+                  alignItems: "center",
+                  paddingTop: 0,
+                  paddingBottom: 0,
+                },
+                "& .MuiTablePagination-actions": {
+                  display: "inline-flex",
+                  alignItems: "center",
+                  marginLeft: 1,
+                  "& button": {
+                    padding: "8px",
+                  }
+                }
+              }}
+            />
+          </>
           )}
         </Paper>
       )}
@@ -673,11 +687,6 @@ const AdminGrammarManagement: React.FC = () => {
                 
                 {uploadError && <Alert severity="error" sx={{ mb: 2 }}>{uploadError}</Alert>}
                 {uploadSuccess && <Alert severity="success" sx={{ mb: 2 }}>{uploadSuccess}</Alert>}
-                {trackDocId && (
-                  <Alert severity="info" sx={{ mb: 2 }}>
-                    Tiến độ xử lý tài liệu: {uploadProgress}%
-                  </Alert>
-                )}
 
                 <Box component="form" onSubmit={handleUpload} sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                   <TextField
@@ -783,149 +792,7 @@ const AdminGrammarManagement: React.FC = () => {
         </Grid>
       )}
 
-      {/* ─── TAB 2: AI DRAFT CARDS (RAG ASSISTANT) ────────────────────────────── */}
-      {tab === 2 && (
-        <Box>
-          <Card elevation={0} sx={{ border: "1px solid #f0f0f0", borderRadius: "12px", mb: 3 }}>
-            <CardContent>
-              <Typography variant="h6" fontWeight={700} gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <BrainCircuit size={20} color="#B90000" />
-                RAG Smart Draft Assistant
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Nhập chủ đề bạn muốn dạy học sinh. AI sẽ tự động truy vấn ngữ nghĩa (vector embeddings) từ tài liệu PDF bạn đã upload bên trên để tìm ngữ cảnh chính xác của trung tâm, sau đó dùng Gemini soạn thảo thẻ ngữ pháp nháp.
-              </Typography>
-              <Divider sx={{ mb: 2 }} />
-
-              {ragError && <Alert severity="error" sx={{ mb: 2 }}>{ragError}</Alert>}
-
-              <Grid container spacing={2} alignItems="center">
-                <Grid item xs={12} md={5}>
-                  <TextField
-                    label="Chủ đề ngữ pháp hoặc Mẫu câu cần soạn"
-                    fullWidth
-                    size="small"
-                    value={ragTopic}
-                    onChange={(e) => setRagTopic(e.target.value)}
-                    placeholder="Ví dụ: Cấu trúc khuyên nhủ, V-たら tốt hơn, Mẫu câu てみる"
-                  />
-                </Grid>
-                <Grid item xs={6} md={2}>
-                  <FormControl size="small" fullWidth>
-                    <InputLabel>Cấp độ JLPT</InputLabel>
-                    <Select value={ragLevel} onChange={(e) => setRagLevel(e.target.value as JLPTLevel)} label="Cấp độ JLPT">
-                      {LEVELS.map(l => (
-                        <MenuItem key={l} value={l}>{l}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={6} md={2}>
-                  <TextField
-                    label="Mã trung tâm"
-                    size="small"
-                    fullWidth
-                    value={ragCenter}
-                    onChange={(e) => setRagCenter(e.target.value)}
-                  />
-                </Grid>
-                <Grid item xs={12} md={3}>
-                  <FormControl size="small" fullWidth>
-                    <InputLabel>Nguồn tài liệu</InputLabel>
-                    <Select
-                      label="Nguồn tài liệu"
-                      value={ragDocumentId}
-                      onChange={(e) => setRagDocumentId(e.target.value as string)}
-                    >
-                      <MenuItem value="">Tất cả tài liệu cùng level</MenuItem>
-                      {documents
-                        .filter(d => d.status === "completed" && d.level === ragLevel)
-                        .map(d => (
-                          <MenuItem key={d._id} value={d._id}>
-                            {d.title} {d.scope === "shared" ? "(shared)" : ""}
-                          </MenuItem>
-                        ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12}>
-                  <Button
-                    variant="contained"
-                    fullWidth
-                    onClick={handleGenerateDrafts}
-                    disabled={ragLoading}
-                    sx={{ bgcolor: "#B90000", "&:hover": { bgcolor: "#990000" }, py: 1 }}
-                  >
-                    {ragLoading ? <CircularProgress size={20} color="inherit" /> : "Bắt đầu sinh thẻ"}
-                  </Button>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
-
-          {/* AI Output preview drafts */}
-          {ragDrafts.length > 0 && (
-            <Box>
-              <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>Bản thảo đề xuất từ AI ({ragDrafts.length})</Typography>
-              <Grid container spacing={3}>
-                {ragDrafts.map((draft, index) => (
-                  <Grid item xs={12} key={index}>
-                    <Card variant="outlined" sx={{ borderRadius: "8px", position: "relative" }}>
-                      <CardContent>
-                        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-                          <Typography variant="h6" fontWeight={700} color="#B90000">{draft.title}</Typography>
-                          <Button
-                            variant="contained"
-                            size="small"
-                            color="success"
-                            startIcon={<Check size={14} />}
-                            onClick={() => handleApproveDraft(draft, index)}
-                          >
-                            Phê duyệt & Lưu
-                          </Button>
-                        </Box>
-
-                        <Grid container spacing={2}>
-                          <Grid item xs={12} md={6}>
-                            <Typography variant="subtitle2" fontWeight={600}>Cấu trúc kết hợp:</Typography>
-                            <Typography variant="body2" sx={{ fontFamily: "monospace", p: 1, bgcolor: "#f9f9f9", borderRadius: "4px" }}>
-                              {draft.structure}
-                            </Typography>
-                          </Grid>
-                          <Grid item xs={12} md={6}>
-                            <Typography variant="subtitle2" fontWeight={600}>Nghĩa tiếng Việt:</Typography>
-                            <Typography variant="body2" sx={{ p: 1, bgcolor: "#f9f9f9", borderRadius: "4px", fontWeight: 600 }}>
-                              {draft.meaningVi}
-                            </Typography>
-                          </Grid>
-                          <Grid item xs={12}>
-                            <Typography variant="subtitle2" fontWeight={600}>Giải thích & Lưu ý sử dụng:</Typography>
-                            <Typography variant="body2" sx={{ p: 1, bgcolor: "#f9f9f9", borderRadius: "4px" }}>
-                              {draft.explanation}
-                            </Typography>
-                          </Grid>
-                          <Grid item xs={12}>
-                            <Typography variant="subtitle2" fontWeight={600}>Các câu ví dụ tiêu biểu:</Typography>
-                            <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mt: 1 }}>
-                              {draft.examples.map((ex, exIdx) => (
-                                <Box key={exIdx} sx={{ pl: 2, borderLeft: "2px solid #ccc" }}>
-                                  <Typography variant="body2" fontWeight={700}>{ex.japanese}</Typography>
-                                  <Typography variant="caption" color="text.secondary">Phiên âm: {ex.furigana}</Typography>
-                                  <Typography variant="body2" color="text.secondary">Dịch: {ex.vietnamese}</Typography>
-                                </Box>
-                              ))}
-                            </Box>
-                          </Grid>
-                        </Grid>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                ))}
-              </Grid>
-            </Box>
-          )}
-        </Box>
-      )}
+      {/* (TAB 2: AI DRAFT CARDS RAG ASSISTANT removed) */}
 
       {/* ─── MANUAL CARD DIALOG FORM ────────────────────────────────────────── */}
       <Dialog open={openCardForm} onClose={() => setOpenCardForm(false)} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: "16px" } }}>

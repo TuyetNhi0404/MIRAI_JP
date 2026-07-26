@@ -19,16 +19,16 @@ import {
   Plus,
   RefreshCw,
   Users as UsersIcon,
-  UserCheck,
-  UserCog,
+  Sparkles,
 } from "lucide-react";
 import { userService } from "../../services/accountService";
 import type { User } from "../../types/account.types";
 import { AccountLock } from "./AccountLock";
 import { AddAccountUsers } from "./AddAccountUsers";
-import { PageHeader, StatCard, StatusTag } from "../../components/ui";
+import { PageHeader, StatusTag } from "../../components/ui";
 import { Tabs, TabsList, TabsTrigger } from "../../components/ui/shadcn";
 import { brandColors } from "../../theme/theme";
+import { Stagger, LiftCard, MagneticButton } from "../../components/ui/MotionPatterns";
 
 const { Text } = Typography;
 
@@ -114,18 +114,12 @@ export default function AccountManagement() {
     userId: string,
     newStatus: "active" | "locked"
   ) => {
-    try {
-      await userService.toggleStatus(userId, newStatus);
-      setUsers((prev) =>
-        prev.map((u) => (u._id === userId ? { ...u, status: newStatus } : u))
-      );
-      msgApi.success(
-        `Tài khoản đã được ${newStatus === "locked" ? "khóa" : "mở khóa"} thành công`
-      );
-    } catch (error) {
-      console.error("Failed to update status:", error);
-      msgApi.error("Không thể cập nhật trạng thái tài khoản");
-    }
+    setUsers((prev) =>
+      prev.map((u) => (u._id === userId ? { ...u, status: newStatus } : u))
+    );
+    msgApi.success(
+      `Tài khoản đã được ${newStatus === "locked" ? "khóa" : "mở khóa"} thành công`
+    );
   };
 
   const handleAddAccount = async (email: string, name: string) => {
@@ -202,26 +196,11 @@ export default function AccountManagement() {
     },
   ];
 
-  const statCards = [
-    {
-      role: "student" as const,
-      label: "Học viên",
-      icon: UsersIcon,
-      accent: "info" as const,
-    },
-    {
-      role: "teacher" as const,
-      label: "Giáo viên",
-      icon: UserCog,
-      accent: "primary" as const,
-    },
-    {
-      role: "admin" as const,
-      label: "Quản trị viên",
-      icon: UserCheck,
-      accent: "success" as const,
-    },
-  ];
+  const totalUsers = users.length;
+  const activeUsers = useMemo(
+    () => users.filter((u) => u.status === "active").length,
+    [users]
+  );
 
   return (
     <div>
@@ -231,39 +210,120 @@ export default function AccountManagement() {
         subtitle="Quản lý tài khoản học viên, giáo viên và quản trị viên trong hệ thống"
         extra={
           <Space>
+            <div
+              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+              style={{
+                background: brandColors.cream,
+                color: brandColors.redDark,
+                fontSize: 11,
+                fontWeight: 600,
+              }}
+            >
+              <span
+                className="mira-pulse inline-block w-1.5 h-1.5 rounded-full"
+                style={{ background: brandColors.red }}
+              />
+              Đồng bộ trực tiếp
+            </div>
             <Button
               icon={<RefreshCw size={16} />}
               onClick={fetchUsers}
               loading={loading}
+              className="mira-press"
             >
               Làm mới
             </Button>
             {selectedRole !== "student" && (
-              <Button
-                type="primary"
-                icon={<Plus size={16} />}
+              <MagneticButton
+                strength={10}
+                className="inline-flex items-center gap-2 px-4 h-[38px] rounded-lg font-medium text-white mira-press"
                 onClick={() => setOpenAddModal(true)}
+                style={{
+                  background: brandColors.red,
+                  boxShadow: "0 2px 0 rgba(185, 0, 0, 0.06)",
+                }}
               >
+                <Plus size={16} />
                 Thêm {roleLabels[selectedRole]}
-              </Button>
+              </MagneticButton>
             )}
           </Space>
         }
       />
 
-      <Row gutter={[12, 12]} style={{ marginBottom: 20 }} className="mira-stagger">
-        {statCards.map((s) => (
-          <Col xs={24} sm={8} key={s.role}>
-            <StatCard
-              label={s.label}
-              value={roleStats[s.role]}
-              icon={s.icon}
-              accent={s.accent}
-              loading={loading && users.length === 0}
-            />
+      <Stagger className="mb-5" delay={0.05}>
+        <Row gutter={[12, 12]} className="mira-stagger">
+          <Col xs={24} key="hero">
+            <LiftCard
+              lift={3}
+              className="mira-hover-halo rounded-2xl"
+              glow={false}
+            >
+              <div
+                className="relative overflow-hidden rounded-2xl p-5"
+                style={{
+                  background: `linear-gradient(135deg, ${brandColors.red} 0%, ${brandColors.redDark} 100%)`,
+                  color: "#fff",
+                }}
+              >
+                {/* halo decoration */}
+                <div
+                  className="absolute -top-12 -right-12 w-44 h-44 rounded-full opacity-25"
+                  style={{
+                    background:
+                      "radial-gradient(circle, rgba(255,255,255,0.5), transparent 70%)",
+                  }}
+                />
+                <div
+                  className="absolute -bottom-16 -left-16 w-56 h-56 rounded-full opacity-15"
+                  style={{
+                    background:
+                      "radial-gradient(circle, rgba(255,255,255,0.4), transparent 70%)",
+                  }}
+                />
+
+                <div className="relative flex items-start justify-between gap-4">
+                  <div>
+                    <div
+                      className="flex items-center gap-2 mb-2 text-[11px] uppercase tracking-[0.18em] font-bold opacity-85"
+                      style={{ color: brandColors.cream }}
+                    >
+                      <Sparkles size={12} />
+                      Tổng tài khoản
+                    </div>
+                    <div
+                      className="text-[40px] leading-none font-bold tracking-tight"
+                      style={{ fontFeatureSettings: '"tnum"' }}
+                    >
+                      {loading && users.length === 0 ? (
+                        <span className="mira-shimmer rounded-md inline-block w-20 h-10 align-middle" />
+                      ) : (
+                        totalUsers
+                      )}
+                    </div>
+                    <div className="mt-2 text-xs opacity-80">
+                      Đang hoạt động{" "}
+                      <span className="font-semibold">
+                        {loading && users.length === 0 ? "—" : activeUsers}
+                      </span>{" "}
+                      / {totalUsers}
+                    </div>
+                  </div>
+                  <div
+                    className="rounded-xl p-2.5"
+                    style={{
+                      background: "rgba(255,255,255,0.18)",
+                      backdropFilter: "blur(4px)",
+                    }}
+                  >
+                    <UsersIcon size={20} />
+                  </div>
+                </div>
+              </div>
+            </LiftCard>
           </Col>
-        ))}
-      </Row>
+        </Row>
+      </Stagger>
 
       <div
         className="mira-fade-in"
@@ -333,9 +393,11 @@ export default function AccountManagement() {
       </div>
 
       <Card
+        className="mira-rise"
         style={{
-          borderRadius: 12,
+          borderRadius: 16,
           border: `1px solid ${brandColors.border}`,
+          overflow: "hidden",
         }}
         styles={{ body: { padding: 0 } }}
       >
@@ -344,6 +406,7 @@ export default function AccountManagement() {
           columns={columns}
           dataSource={filteredUsers}
           loading={loading}
+          rowClassName={() => "mira-table-row mira-lift"}
           pagination={{
             current: currentPage,
             pageSize: ITEMS_PER_PAGE,

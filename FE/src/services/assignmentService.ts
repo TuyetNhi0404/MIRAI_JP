@@ -1,5 +1,6 @@
 // src/services/assignmentService.ts - FIXED VERSION
-import axios, { AxiosError } from 'axios';
+import axiosInstance from '../api/axiosInstance';
+import { AxiosError } from 'axios';
 import { toast } from 'react-toastify';
 import type { Assignment, Course, AssignmentQueryParams, AssignmentListResponse } from '../types/assignment.types';
 
@@ -72,24 +73,7 @@ interface UpdateAssignmentResponse {
   data: RawAssignment;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL}/api`
-  : 'http://localhost:5000/api';
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  withCredentials: true,
-});
-
-api.interceptors.response.use(
-  (res) => res,
-  (err: AxiosError<ErrorResponse>) => {
-    const msg = err.response?.data?.message || 'Server connection error';
-    if (err.response?.status === 401) toast.error('Session expired, please log in again');
-    else toast.error(msg);
-    return Promise.reject(err);
-  }
-);
+const api = axiosInstance;
 
 const normalizeFileUrls = (fileUrls: string | string[] | null | undefined): string[] => {
   if (!fileUrls) return [];
@@ -100,9 +84,9 @@ const normalizeFileUrls = (fileUrls: string | string[] | null | undefined): stri
 
 const normalizeCourse = (c: RawCourse): Course => {
   const rawStatus = c.status || 'not_yet';
-  const status: "not_yet" | "in_progress" | "complete" = 
-    rawStatus === "in_progress" || rawStatus === "complete" 
-      ? rawStatus 
+  const status: "not_yet" | "in_progress" | "complete" =
+    rawStatus === "in_progress" || rawStatus === "complete"
+      ? rawStatus
       : "not_yet";
 
   return {
@@ -126,9 +110,9 @@ const normalizeCourse = (c: RawCourse): Course => {
 const normalizeAssignment = (a: RawAssignment, courseId?: string): Assignment => {
   // ✅ FIX: Properly normalize status
   const rawStatus = a.status || 'draft';
-  const status: "active" | "draft" | "closed" = 
-    rawStatus === "active" || rawStatus === "closed" 
-      ? rawStatus 
+  const status: "active" | "draft" | "closed" =
+    rawStatus === "active" || rawStatus === "closed"
+      ? rawStatus
       : "draft";
 
   const fileUrls = normalizeFileUrls(a.fileUrls);
@@ -143,19 +127,19 @@ const normalizeAssignment = (a: RawAssignment, courseId?: string): Assignment =>
     status,
     dueDate: a.dueDate || '',
     maxScore: a.maxScore || 0,
-    fileUrls, 
+    fileUrls,
     createdBy: a.createdBy || '',
     teacherName: a.teacherName || '',
     createdAt: a.createdAt || '',
     updatedAt: a.updatedAt || ''
   };
-  
+
   console.log('📦 Normalized assignment:', {
     title: normalized.title,
     fileUrls: normalized.fileUrls,
-    fileUrlsLength: normalized.fileUrls?.length || 0 
+    fileUrlsLength: normalized.fileUrls?.length || 0
   });
-  
+
   return normalized;
 };
 
@@ -175,9 +159,9 @@ export const assignmentService = {
   getAllAssignments: async (params?: Omit<AssignmentQueryParams, 'courseId'>): Promise<AssignmentListResponse> => {
     try {
       const res = await api.get<AllAssignmentsResponse>('/assignments/all', { params });
-      
+
       console.log('🔍 getAllAssignments response:', res.data);
-      
+
       const assignments = (res.data.assignments || []).map((a) => normalizeAssignment(a));
 
       return {
@@ -208,6 +192,9 @@ export const assignmentService = {
       return (res.data.assignments || []).map((a) => normalizeAssignment(a, courseId));
     } catch (e) {
       const error = e as AxiosError<ErrorResponse>;
+      if (error.response?.status === 404) {
+        return [];
+      }
       toast.error(error.response?.data?.message || 'Failed to load assignment list');
       throw e;
     }
@@ -240,7 +227,7 @@ export const assignmentService = {
       data.append('maxScore', formData.maxScore.toString());
       data.append('status', formData.status);
       if (formData.description) data.append('description', formData.description);
-      
+
       console.log('📤 Uploading files:', files.length);
       files.forEach((f, index) => {
         console.log(`  File ${index + 1}:`, f.name, f.size, f.type);
@@ -252,12 +239,12 @@ export const assignmentService = {
           'Content-Type': 'multipart/form-data',
         },
       });
-      
+
       console.log('✅ Create response:', res.data);
       console.log('📎 Uploaded fileUrls:', res.data.data?.fileUrls || res.data.uploadedFiles);
-      
+
       toast.success('Assignment created successfully');
-      
+
       return normalizeAssignment(res.data.data);
     } catch (e) {
       const error = e as AxiosError<ErrorResponse>;
@@ -290,7 +277,7 @@ export const assignmentService = {
       if (formData.maxScore) data.append('maxScore', formData.maxScore.toString());
       if (formData.status) data.append('status', formData.status);
       if (deleteFiles.length > 0) data.append('deleteFiles', JSON.stringify(deleteFiles));
-      
+
       console.log('📤 Uploading new files:', newFiles.length);
       console.log('🗑️ Deleting files:', deleteFiles.length);
       newFiles.forEach((f, index) => {
@@ -299,20 +286,20 @@ export const assignmentService = {
       });
 
       const res = await api.put<UpdateAssignmentResponse>(
-        `/assignments/update/${originalCourseId}/${idOrTitle}`, 
-        data, 
+        `/assignments/update/${originalCourseId}/${idOrTitle}`,
+        data,
         {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
         }
       );
-      
+
       console.log('✅ Update response:', res.data);
       console.log('📎 Updated fileUrls:', res.data.data?.fileUrls);
-      
+
       toast.success('Assignment updated successfully');
-      
+
       return normalizeAssignment(res.data.data);
     } catch (e) {
       const error = e as AxiosError<ErrorResponse>;

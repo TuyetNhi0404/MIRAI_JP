@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { useGSAP } from "@gsap/react";
 import { gsap } from "gsap";
+import AudioWaveSphere2D from "./AudioWaveSphere2D";
+import { isWebGLAvailable, WebGLErrorBoundary } from "./WebGLErrorBoundary";
 
 const PARTICLE_COUNT = 720;
 const FIELD_RADIUS = 0.82;
@@ -338,11 +340,11 @@ function AudioOrb({
 
       const mm = gsap.matchMedia();
       mm.add("(prefers-reduced-motion: no-preference)", () => {
-        gsap.to(fieldT, { rotationY: Math.PI * 2, duration: 60, repeat: -1, ease: "none" });
-        gsap.to(fieldT, { rotationX: Math.PI * 2, duration: 95, repeat: -1, ease: "none" });
-        gsap.to(orbitT, { rotationY: Math.PI * 2, duration: 28, repeat: -1, ease: "none" });
-        gsap.to(orbitT, { rotationX: -Math.PI * 2, duration: 44, repeat: -1, ease: "none" });
-        gsap.to(orbitT, { rotationZ: Math.PI * 2, duration: 70, repeat: -1, ease: "none" });
+        gsap.to(fieldT.rotation, { y: Math.PI * 2, duration: 60, repeat: -1, ease: "none" });
+        gsap.to(fieldT.rotation, { x: Math.PI * 2, duration: 95, repeat: -1, ease: "none" });
+        gsap.to(orbitT.rotation, { y: Math.PI * 2, duration: 28, repeat: -1, ease: "none" });
+        gsap.to(orbitT.rotation, { x: -Math.PI * 2, duration: 44, repeat: -1, ease: "none" });
+        gsap.to(orbitT.rotation, { z: Math.PI * 2, duration: 70, repeat: -1, ease: "none" });
       });
       return () => mm.revert();
     },
@@ -454,26 +456,55 @@ export default function AudioWaveSphere3D({
   colorBottom = "#B90000",
   tone = "light",
 }: AudioWaveSphere3DProps) {
+  const [webGLSupported, setWebGLSupported] = useState<boolean>(true);
+
+  useEffect(() => {
+    setWebGLSupported(isWebGLAvailable());
+  }, []);
+
   const tipColor = useMemo(() => new THREE.Color(colorBottom), [colorBottom]);
   const midColor = useMemo(() => new THREE.Color(colorMid), [colorMid]);
   const haloColor = useMemo(() => new THREE.Color(colorTop), [colorTop]);
 
+  const fallback = (
+    <AudioWaveSphere2D
+      isSpeaking={isSpeaking}
+      isResponding={isResponding}
+      audioLevel={audioLevel}
+      size={size}
+      colorTop={colorTop}
+      colorMid={colorMid}
+      colorBottom={colorBottom}
+    />
+  );
+
+  if (!webGLSupported) {
+    return fallback;
+  }
+
   return (
-    <Canvas
-      style={{ width: size, height: size, display: "block" }}
-      camera={{ position: [0, 0, 2.4], fov: 45 }}
-      dpr={[1, 2]}
-      gl={{ antialias: true, alpha: true }}
-    >
-      <AudioOrb
-        isSpeaking={isSpeaking}
-        isResponding={isResponding}
-        audioLevel={audioLevel}
-        tipColor={tipColor}
-        midColor={midColor}
-        haloColor={haloColor}
-        tone={tone}
-      />
-    </Canvas>
+    <WebGLErrorBoundary fallback={fallback}>
+      <Canvas
+        style={{ width: size, height: size, display: "block" }}
+        camera={{ position: [0, 0, 2.4], fov: 45 }}
+        dpr={[1, 2]}
+        gl={{
+          antialias: true,
+          alpha: true,
+          powerPreference: "default",
+          failIfMajorPerformanceCaveat: false,
+        }}
+      >
+        <AudioOrb
+          isSpeaking={isSpeaking}
+          isResponding={isResponding}
+          audioLevel={audioLevel}
+          tipColor={tipColor}
+          midColor={midColor}
+          haloColor={haloColor}
+          tone={tone}
+        />
+      </Canvas>
+    </WebGLErrorBoundary>
   );
 }

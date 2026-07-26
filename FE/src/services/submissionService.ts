@@ -1,3 +1,4 @@
+import axiosInstance from "../api/axiosInstance";
 import axios, { AxiosError } from "axios";
 import type {
   AssignmentListResponse,
@@ -9,40 +10,7 @@ import type {
   BackendAssignment,
 } from "../types/submission.types";
 
-const API_BASE_URL = "http://localhost:5000/api";
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
-  withCredentials: true,
-});
-
-api.interceptors.request.use(
-  (config) => {
-    console.log(" Request:", config.method?.toUpperCase(), config.url);
-    return config;
-  },
-  (error) => {
-    console.error(" Request error:", error);
-    return Promise.reject(error);
-  }
-);
-
-api.interceptors.response.use(
-  (response) => {
-    console.log(" Response:", response.config.url, response.status);
-    return response;
-  },
-  (error) => {
-    console.error(" Response error:", error.response?.status, error.response?.data);
-    if (error.response?.status === 401) {
-      console.error(" Unauthorized - Please login again");
-    }
-    return Promise.reject(error);
-  }
-);
+const api = axiosInstance;
 
 const transformEnrolledCourse = (beCourse: BackendCourse): EnrolledCourse => {
   return {

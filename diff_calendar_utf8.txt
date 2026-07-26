@@ -1,0 +1,217 @@
+﻿diff --git a/BE/src/controller/calendar.controller.ts b/BE/src/controller/calendar.controller.ts
+index 01993ba..266d1a2 100644
+--- a/BE/src/controller/calendar.controller.ts
++++ b/BE/src/controller/calendar.controller.ts
+@@ -12,7 +12,7 @@ export const createCalendar = async (req: Request, res: Response) => {
+     const { courseId, sessionId, teacherId, date, note } = req.body;
+ 
+     if (!courseId || !sessionId || !teacherId || !date) {
+-      return res.status(400).json({ message: "Missing required information." });
++      return res.status(400).json({ message: "Thiß║┐u th├┤ng tin bß║»t buß╗Öc." });
+     }
+ 
+     const inputDate = new Date(date);
+@@ -21,12 +21,12 @@ export const createCalendar = async (req: Request, res: Response) => {
+ 
+     if (hoursDiff < 24) {
+       return res.status(400).json({
+-        message: "Cannot create schedule. Please create the calendar at least 24 hours before the class time."
++        message: "Kh├┤ng thß╗â tß║ío lß╗ïch hß╗ìc. Vui l├▓ng tß║ío tr╞░ß╗¢c giß╗¥ hß╗ìc ├¡t nhß║Ñt 24 giß╗¥."
+       });
+     }
+ 
+     const course = await Course.findById(courseId);
+-    if (!course) return res.status(404).json({ message: "Course not found." });
++    if (!course) return res.status(404).json({ message: "Kh├┤ng t├¼m thß║Ñy kh├│a hß╗ìc." });
+     const lessonDate = new Date(date);
+     if (lessonDate < new Date(course.startDate) || lessonDate > new Date(course.endDate)) {
+       const format = (d: Date) => {
+@@ -41,7 +41,7 @@ export const createCalendar = async (req: Request, res: Response) => {
+       };
+ 
+       return res.status(400).json({
+-        message: `ΓÜá∩╕Å Invalid lesson date.\n - Course duration:\n   Γû¬ Start: ${format(course.startDate)}\n   Γû¬ End: ${format(course.endDate)}`
++        message: `ΓÜá∩╕Å Ng├áy hß╗ìc kh├┤ng hß╗úp lß╗ç.\n - Thß╗¥i gian kh├│a hß╗ìc:\n   Γû¬ Bß║»t ─æß║ºu: ${format(course.startDate)}\n   Γû¬ Kß║┐t th├║c: ${format(course.endDate)}`
+       });
+     }
+ 
+@@ -51,18 +51,18 @@ export const createCalendar = async (req: Request, res: Response) => {
+ 
+     if (existingCalendarsCount >= course.session) {
+       return res.status(400).json({
+-        message: `Cannot create more sessions. This course is limited to ${course.session} sessions.`
++        message: `Kh├┤ng thß╗â tß║ío th├¬m buß╗òi hß╗ìc. Kh├│a hß╗ìc n├áy giß╗¢i hß║ín tß╗æi ─æa ${course.session} buß╗òi.`
+       });
+     }
+ 
+     const session = await Session.findById(sessionId);
+-    if (!session) return res.status(404).json({ message: "Session not found." });
++    if (!session) return res.status(404).json({ message: "Kh├┤ng t├¼m thß║Ñy ca hß╗ìc." });
+ 
+     const teacher = await User.findById(teacherId);
+-    if (!teacher) return res.status(404).json({ message: "Teacher not found." });
++    if (!teacher) return res.status(404).json({ message: "Kh├┤ng t├¼m thß║Ñy giß║úng vi├¬n." });
+ 
+     if (teacher.role !== "teacher") {
+-      return res.status(400).json({ message: "Selected user is not a teacher." });
++      return res.status(400).json({ message: "Ng╞░ß╗¥i d├╣ng ─æ╞░ß╗úc chß╗ìn kh├┤ng phß║úi l├á giß║úng vi├¬n." });
+     }
+ 
+     const isDuplicate = await CourseCalendar.findOne({
+@@ -74,7 +74,7 @@ export const createCalendar = async (req: Request, res: Response) => {
+ 
+     if (isDuplicate) {
+       return res.status(400).json({
+-        message: "Duplicate schedule detected. Please check again.",
++        message: "Tr├╣ng lß║╖p lß╗ïch hß╗ìc. Vui l├▓ng kiß╗âm tra lß║íi.",
+       });
+     }
+ 
+@@ -86,9 +86,9 @@ export const createCalendar = async (req: Request, res: Response) => {
+       note,
+     });
+ 
+-    res.status(201).json({ message: "Schedule created successfully!", data: calendar });
++    res.status(201).json({ message: "Tß║ío lß╗ïch hß╗ìc th├ánh c├┤ng!", data: calendar });
+   } catch (error) {
+-    res.status(500).json({ message: "Server error while creating schedule.", error });
++    res.status(500).json({ message: "Lß╗ùi m├íy chß╗º khi tß║ío lß╗ïch hß╗ìc.", error });
+   }
+ };
+ 
+@@ -108,7 +108,7 @@ export const getAllCalendars = async (req: Request, res: Response) => {
+       const user = await User.findById(userId).select("email");
+ 
+       if (!user) {
+-        return res.status(404).json({ message: "User not found" });
++        return res.status(404).json({ message: "Kh├┤ng t├¼m thß║Ñy ng╞░ß╗¥i d├╣ng." });
+       }
+ 
+       console.log("Student email:", user.email);
+@@ -210,11 +210,11 @@ export const getAllCalendars = async (req: Request, res: Response) => {
+     );
+ 
+     res.status(200).json({
+-      message: "Fetched schedule list successfully.",
++      message: "Lß║Ñy danh s├ích lß╗ïch hß╗ìc th├ánh c├┤ng.",
+       data: result,
+     });
+   } catch (error) {
+-    res.status(500).json({ message: "Error while fetching schedule list.", error });
++    res.status(500).json({ message: "Lß╗ùi khi lß║Ñy danh s├ích lß╗ïch hß╗ìc.", error });
+   }
+ };
+ 
+@@ -225,24 +225,24 @@ export const updateCalendar = async (req: Request, res: Response) => {
+ 
+     const calendar = await CourseCalendar.findById(calendarId);
+     if (!calendar) {
+-      return res.status(404).json({ message: "Schedule not found." });
++      return res.status(404).json({ message: "Kh├┤ng t├¼m thß║Ñy lß╗ïch hß╗ìc." });
+     }
+ 
+     const now = new Date();
+     const hoursDiff = (calendar.date.getTime() - now.getTime()) / (1000 * 60 * 60);
+     if (hoursDiff < 24) {
+       return res.status(400).json({
+-        message: "Cannot update. Schedule can only be modified at least 24 hours before the class time.",
++        message: "Kh├┤ng thß╗â cß║¡p nhß║¡t. Lß╗ïch hß╗ìc chß╗ë c├│ thß╗â thay ─æß╗òi tr╞░ß╗¢c thß╗¥i gian hß╗ìc ├¡t nhß║Ñt 24 giß╗¥.",
+       });
+     }
+ 
+     if (updateData.teacherId) {
+       const teacher = await User.findById(updateData.teacherId);
+       if (!teacher) {
+-        return res.status(404).json({ message: "Teacher not found." });
++        return res.status(404).json({ message: "Kh├┤ng t├¼m thß║Ñy giß║úng vi├¬n." });
+       }
+       if (teacher.role !== "teacher") {
+-        return res.status(400).json({ message: "Selected user is not a teacher." });
++        return res.status(400).json({ message: "Ng╞░ß╗¥i d├╣ng ─æ╞░ß╗úc chß╗ìn kh├┤ng phß║úi l├á giß║úng vi├¬n." });
+       }
+     }
+ 
+@@ -262,7 +262,7 @@ export const updateCalendar = async (req: Request, res: Response) => {
+ 
+       if (isDuplicate) {
+         return res.status(400).json({
+-          message: "Duplicate schedule detected. Please check again.",
++          message: "Tr├╣ng lß║╖p lß╗ïch hß╗ìc. Vui l├▓ng kiß╗âm tra lß║íi.",
+         });
+       }
+     }
+@@ -282,12 +282,12 @@ export const updateCalendar = async (req: Request, res: Response) => {
+     );
+ 
+     return res.status(200).json({
+-      message: "Schedule updated successfully.",
++      message: "Cß║¡p nhß║¡t lß╗ïch hß╗ìc th├ánh c├┤ng.",
+       data: updatedCalendar,
+     });
+   } catch (error) {
+     console.error(error);
+-    return res.status(500).json({ message: "Server error while updating schedule.", error });
++    return res.status(500).json({ message: "Lß╗ùi m├íy chß╗º khi cß║¡p nhß║¡t lß╗ïch hß╗ìc.", error });
+   }
+ };
+ 
+@@ -297,20 +297,20 @@ export const deleteCalendar = async (req: Request, res: Response) => {
+     const calendar = await CourseCalendar.findById(calendarId);
+ 
+     if (!calendar) {
+-      return res.status(404).json({ message: "Schedule not found." });
++      return res.status(404).json({ message: "Kh├┤ng t├¼m thß║Ñy lß╗ïch hß╗ìc." });
+     }
+ 
+     if (calendar.status === "in_progress" || calendar.status === "completed") {
+       return res.status(400).json({
+-        message: "Cannot delete a schedule that is in progress or already completed.",
++        message: "Kh├┤ng thß╗â x├│a lß╗ïch hß╗ìc ─æang diß╗àn ra hoß║╖c ─æ├ú ho├án th├ánh.",
+       });
+     }
+ 
+     await CourseCalendar.findByIdAndDelete(calendarId);
+-    return res.status(200).json({ message: "Schedule deleted successfully." });
++    return res.status(200).json({ message: "X├│a lß╗ïch hß╗ìc th├ánh c├┤ng." });
+ 
+   } catch (error) {
+-    return res.status(500).json({ message: "Server error while deleting schedule.", error });
++    return res.status(500).json({ message: "Lß╗ùi m├íy chß╗º khi x├│a lß╗ïch hß╗ìc.", error });
+   }
+ };
+ 
+@@ -341,7 +341,7 @@ export const getByWeek = async (req: Request, res: Response) => {
+       end = new Date(endDate as string);
+     }
+     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+-      return res.status(400).json({ message: "Invalid startDate or endDate." });
++      return res.status(400).json({ message: "Ng├áy bß║»t ─æß║ºu hoß║╖c ng├áy kß║┐t th├║c kh├┤ng hß╗úp lß╗ç." });
+     }
+ 
+     const filter: any = { date: { $gte: start, $lte: end } };
+@@ -358,7 +358,7 @@ export const getByWeek = async (req: Request, res: Response) => {
+ 
+       if (enrolledCourseIds.length === 0) {
+         return res.status(200).json({
+-          message: "You have not enrolled in any courses.",
++          message: "Bß║ín ch╞░a ─æ─âng k├╜ kh├│a hß╗ìc n├áo.",
+           count: 0,
+           data: [],
+         });
+@@ -387,14 +387,14 @@ export const getByWeek = async (req: Request, res: Response) => {
+     }
+ 
+     return res.status(200).json({
+-      message: `Schedule from ${start.toISOString().slice(0, 10)} to ${end.toISOString().slice(0, 10)}`,
++      message: `Lß╗ïch hß╗ìc tß╗½ ${start.toISOString().slice(0, 10)} to ${end.toISOString().slice(0, 10)}`,
+       count: data.length,
+       data,
+     });
+   } catch (error: any) {
+     console.error("Error in getByWeek:", error);
+     return res.status(500).json({
+-      message: "Server error while fetching weekly schedule.",
++      message: "Lß╗ùi m├íy chß╗º khi lß║Ñy lß╗ïch hß╗ìc tuß║ºn.",
+       error: error.message,
+     });
+   }

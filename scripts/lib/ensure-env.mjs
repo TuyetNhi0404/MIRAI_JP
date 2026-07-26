@@ -14,6 +14,10 @@ export function ensureEnvFiles() {
     VITE_ENABLE_SPEAKING_PRACTICE: "true",
   });
 
+  ensureSpeakingEnvFile();
+}
+
+export function ensureSpeakingEnvFile() {
   const speakingEnv = join(speakingDir, ".env");
   const speakingExample = join(speakingDir, ".env.example");
   if (!existsSync(speakingEnv) && existsSync(speakingExample)) {

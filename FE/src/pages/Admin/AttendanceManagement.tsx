@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Alert,
   Button,
@@ -79,7 +79,6 @@ const getStatusMeta = (status?: string) => {
 export default function ManageScheduleWithAttendance() {
   const screens = useBreakpoint();
   const isMobile = !screens.md;
-  const isTablet = !screens.lg;
 
   const { calendars, sessions, loading, error: fetchError } = useScheduleData();
   const [currentDate, setCurrentDate] = useState<Dayjs>(dayjs());
@@ -90,10 +89,7 @@ export default function ManageScheduleWithAttendance() {
     useState<Calendar | null>(null);
   const [courseFilter, setCourseFilter] = useState<string>("all");
 
-  useEffect(() => {
-    if (isMobile) setViewMode("day");
-    else if (isTablet) setViewMode("week");
-  }, [isMobile, isTablet]);
+
 
   const extractId = (
     value: string | PopulatedCourse | PopulatedSession | PopulatedTeacher | undefined

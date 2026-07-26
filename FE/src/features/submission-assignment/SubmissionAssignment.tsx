@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { Search, Filter, BookOpen } from "lucide-react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { Search, Filter, ClipboardList, CheckCircle2, AlertCircle } from "lucide-react";
 import SubmissionUploadModal from "./SubmissionUploadModal";
 import { submissionService } from "../../services/submissionService";
 import type { EnrolledCourse, AssignmentWithSubmission } from "../../types/submission.types";
 import { format } from "date-fns";
 import { PageLayout } from "../../components/ui/PageLayout";
 import { BaseCard } from "../../components/ui/BaseCard";
+import { Stagger, LiftCard } from "../../components/ui/MotionPatterns";
+import { brandColors } from "../../theme/theme";
 
 interface AssignmentCardProps {
   assignment: AssignmentWithSubmission;
@@ -123,6 +125,14 @@ const SubmissionAssignment: React.FC = () => {
     return true;
   });
 
+  const assignmentStats = useMemo(() => {
+    const total = assignments.length;
+    const submitted = assignments.filter((a) => ["submitted", "graded", "late"].includes(a.submission?.status || "not_submitted")).length;
+    const graded = assignments.filter((a) => a.submission?.status === "graded").length;
+    const notSubmitted = total - submitted;
+    return { total, submitted, graded, notSubmitted };
+  }, [assignments]);
+
   useEffect(() => {
     if (selectedCourseId) {
       void fetchAssignments();
@@ -140,9 +150,9 @@ const SubmissionAssignment: React.FC = () => {
 
   if (enrolledCourses.length === 0) {
     return (
-      <PageLayout title="Bài tập về nhà" subtitle="Quản lý và nộp bài tập" icon={BookOpen}>
+      <PageLayout>
         <BaseCard className="text-center py-12">
-          <h4 className="text-sm font-extrabold text-slate-800 m-0 mb-1">Bạn chưa đăng ký khóa học nào</h4>
+          <h4 className="text-sm font-extrabold text-slate-800 m-0">Bạn chưa đăng ký khóa học nào</h4>
           <p className="text-xs text-slate-400 m-0">Vui lòng đăng ký khóa học để xem và nộp bài tập</p>
         </BaseCard>
       </PageLayout>
@@ -150,11 +160,7 @@ const SubmissionAssignment: React.FC = () => {
   }
 
   return (
-    <PageLayout
-      title="Bài tập về nhà"
-      subtitle="Xem danh sách bài tập được giao, kiểm tra hạn nộp và gửi bài nộp trực tuyến"
-      icon={BookOpen}
-    >
+    <PageLayout>
       {/* Filters & Control bar */}
       <BaseCard className="!p-4 bg-slate-50/50 border-slate-150/70">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -271,6 +277,58 @@ const SubmissionAssignment: React.FC = () => {
         </div>
       )}
 
+      {/* Bento summary: 1 hero + 3 stat tiles */}
+      {!loading && assignments.length > 0 && (
+        <Stagger className="mb-5" delay={0.05}>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mira-stagger">
+            <LiftCard lift={3} className="mira-hover-halo rounded-xl col-span-2 md:col-span-1">
+              <div className="rounded-xl p-4 flex items-center gap-3" style={{ background: brandColors.paper, border: `1px solid ${brandColors.border}` }}>
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${brandColors.red}14`, color: brandColors.red }}>
+                  <ClipboardList size={18} />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[11px] uppercase tracking-wider text-text-secondary font-medium">Tổng bài tập</div>
+                  <div className="text-sm font-bold leading-tight text-text-primary">{assignmentStats.total}</div>
+                </div>
+              </div>
+            </LiftCard>
+            <LiftCard lift={2} className="mira-hover-halo rounded-xl">
+              <div className="rounded-xl p-4 flex items-center gap-3" style={{ background: brandColors.paper, border: `1px solid ${brandColors.border}` }}>
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: "#3B82F614", color: "#3B82F6" }}>
+                  <CheckCircle2 size={18} />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[11px] uppercase tracking-wider text-text-secondary font-medium">Đã nộp</div>
+                  <div className="text-sm font-bold leading-tight text-text-primary">{assignmentStats.submitted}</div>
+                </div>
+              </div>
+            </LiftCard>
+            <LiftCard lift={2} className="mira-hover-halo rounded-xl">
+              <div className="rounded-xl p-4 flex items-center gap-3" style={{ background: brandColors.paper, border: `1px solid ${brandColors.border}` }}>
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: "#10B98114", color: "#10B98114" }}>
+                  <CheckCircle2 size={18} style={{ color: "#10B981" }} />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[11px] uppercase tracking-wider text-text-secondary font-medium">Đã chấm</div>
+                  <div className="text-sm font-bold leading-tight text-text-primary">{assignmentStats.graded}</div>
+                </div>
+              </div>
+            </LiftCard>
+            <LiftCard lift={2} className="mira-hover-halo rounded-xl">
+              <div className="rounded-xl p-4 flex items-center gap-3" style={{ background: brandColors.paper, border: `1px solid ${brandColors.border}` }}>
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: "#F59E0B14", color: "#F59E0B" }}>
+                  <AlertCircle size={18} />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[11px] uppercase tracking-wider text-text-secondary font-medium">Chưa nộp</div>
+                  <div className="text-sm font-bold leading-tight text-text-primary">{assignmentStats.notSubmitted}</div>
+                </div>
+              </div>
+            </LiftCard>
+          </div>
+        </Stagger>
+      )}
+
       {/* Assignments grid content */}
       {!loading && selectedCourseId && (
         <>
@@ -323,6 +381,9 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({ assignment, onClick }) 
   };
 
   const submissionStatus = assignment.submission?.status || "not_submitted";
+  const isOverdue =
+    assignment.status === "closed" ||
+    (assignment.dueDate ? new Date() > new Date(assignment.dueDate) : false);
 
   const getSubmissionBadgeStyles = (status: string) => {
     switch (status) {
@@ -351,31 +412,50 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({ assignment, onClick }) 
   };
 
   return (
-    <BaseCard
-      onClick={onClick}
-      className="flex flex-col justify-between hover:-translate-y-1 hover:shadow-lg hover:border-blue-400 active:scale-[0.99] transition-all cursor-pointer h-full"
+    <LiftCard
+      lift={4}
+      className="mira-hover-halo rounded-xl overflow-hidden"
+      glow={false}
     >
-      <div className="space-y-4">
-        {/* Title & Type header */}
-        <div className="space-y-1">
-          <div className="flex justify-between items-start gap-2">
-            <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
-              BÀI TẬP VỀ NHÀ
-            </span>
-            <span
-              className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${
-                assignment.status === "closed"
-                  ? "bg-red-50 text-red-700 border-red-100"
-                  : "bg-emerald-50 text-emerald-700 border-emerald-100"
-              }`}
-            >
-              {assignment.status === "closed" ? "Đã đóng" : "Đang mở"}
-            </span>
+      <BaseCard
+        onClick={onClick}
+        className="!border-0 !rounded-none flex flex-col justify-between cursor-pointer h-full"
+      >
+        {/* Top accent bar */}
+        <div
+          className="h-1 w-full"
+          style={{
+            background:
+              isOverdue
+                ? "linear-gradient(90deg, #EF4444, #DC2626)"
+                : "linear-gradient(90deg, #10B981, #059669)",
+          }}
+        />
+        <div className="space-y-4 px-5 pt-4 pb-5">
+          {/* Title & Type header */}
+          <div className="space-y-1">
+            <div className="flex justify-between items-start gap-2">
+              <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
+                BÀI TẬP VỀ NHÀ
+              </span>
+              <span
+                className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${
+                  isOverdue
+                    ? "bg-red-50 text-red-700 border-red-100"
+                    : "bg-emerald-50 text-emerald-700 border-emerald-100"
+                }`}
+              >
+                {assignment.status === "closed"
+                  ? "Đã đóng"
+                  : isOverdue
+                  ? "Đã quá hạn"
+                  : "Đang mở"}
+              </span>
+            </div>
+            <h3 className="text-sm font-extrabold text-slate-800 leading-tight m-0 select-all hover:text-blue-650 transition">
+              {assignment.title}
+            </h3>
           </div>
-          <h3 className="text-sm font-extrabold text-slate-800 leading-tight m-0 select-all hover:text-blue-650 transition">
-            {assignment.title}
-          </h3>
-        </div>
 
         {/* Course Name & Creator Info */}
         <div className="grid grid-cols-2 gap-3 text-xs border-t border-slate-100 pt-3">
@@ -424,7 +504,8 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({ assignment, onClick }) 
           </div>
         )}
       </div>
-    </BaseCard>
+      </BaseCard>
+    </LiftCard>
   );
 };
 

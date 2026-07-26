@@ -95,7 +95,6 @@ type RecordButtonProps = {
   modeIcon: ReactNode;
   onPointerDown: () => void;
   onPointerUp: () => void;
-  onPointerLeave: () => void;
 };
 
 export function RecordButton({
@@ -107,9 +106,20 @@ export function RecordButton({
   modeIcon,
   onPointerDown,
   onPointerUp,
-  onPointerLeave,
 }: RecordButtonProps) {
   const active = isRecording || isUserSpeaking;
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    e.preventDefault();
+    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    onPointerDown();
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    e.preventDefault();
+    (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+    onPointerUp();
+  };
 
   return (
     <Box
@@ -117,20 +127,9 @@ export function RecordButton({
       type="button"
       disabled={disabled}
       aria-label={label}
-      onMouseDown={(e) => {
-        e.preventDefault();
-        onPointerDown();
-      }}
-      onMouseUp={onPointerUp}
-      onMouseLeave={onPointerLeave}
-      onTouchStart={(e) => {
-        e.preventDefault();
-        onPointerDown();
-      }}
-      onTouchEnd={(e) => {
-        e.preventDefault();
-        onPointerUp();
-      }}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
       sx={{
         position: "relative",
         border: "none",

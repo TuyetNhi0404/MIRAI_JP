@@ -97,31 +97,84 @@ class _RegisterScreenState extends State<RegisterScreen> {
           showDialog(
             context: context,
             barrierDismissible: false,
-            builder: (context) => AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              title: const Row(
-                children: [
-                  Icon(Icons.check_circle_rounded, color: Colors.green, size: 28),
-                  SizedBox(width: 10),
-                  Text('Đăng ký thành công'),
-                ],
-              ),
-              content: const Text(
-                'Đăng ký khóa học của bạn đã được gửi. Vui lòng chờ quản trị viên (Admin) phê duyệt tài khoản email của bạn để đăng nhập bằng Google.',
-                style: TextStyle(height: 1.4),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop(); // pop dialog
-                    Navigator.of(context).pop(); // pop back to Get Started
-                  },
-                  child: const Text(
-                    'Đồng ý',
-                    style: TextStyle(color: Color(0xFFB90000), fontWeight: FontWeight.bold),
-                  ),
+            barrierColor: Colors.black.withOpacity(0.5),
+            builder: (context) => Dialog(
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              elevation: 0,
+              child: Padding(
+                padding: const EdgeInsets.all(28),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Success icon container
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8F5E9),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.green.withOpacity(0.3), width: 1.5),
+                      ),
+                      child: const Icon(
+                        Icons.check_circle_rounded,
+                        color: Colors.green,
+                        size: 34,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    // Title
+                    const Text(
+                      'Đăng ký thành công!',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1A1A1A),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Divider
+                    Container(
+                      height: 1,
+                      color: Colors.grey.withOpacity(0.1),
+                    ),
+                    const SizedBox(height: 16),
+                    // Message
+                    Text(
+                      'Đăng ký khóa học của bạn đã được gửi thành công. Vui lòng chờ quản trị viên phê duyệt trước khi đăng nhập bằng tài khoản Google.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        color: Colors.grey[700],
+                        height: 1.6,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    // Confirm button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).pop(); // pop dialog
+                          Navigator.of(context).pop(); // pop back to Get Started
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFB90000),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: const Text(
+                          'Đã hiểu',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           );
         }

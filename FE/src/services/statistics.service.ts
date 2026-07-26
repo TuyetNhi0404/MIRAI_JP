@@ -1,6 +1,7 @@
 
 import axios, { AxiosError } from 'axios';
 import type { AxiosResponse } from 'axios';
+import axiosInstance from '../api/axiosInstance';
 import type {
   StudentCourseStatistics,
   StudentAssignmentDetails,
@@ -9,46 +10,7 @@ import type {
 } from '../types/statistics.types';
 
 // ============= BASE AXIOS INSTANCE =============
-const API_BASE_URL = import.meta.env.VITE_API_URL 
-  ? `${import.meta.env.VITE_API_URL}/api`
-  : 'http://localhost:5000/api';
-
-const statisticsAPI = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  withCredentials: true,
-});
-
-// ============= REQUEST INTERCEPTOR =============
-statisticsAPI.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// ============= RESPONSE INTERCEPTOR =============
-statisticsAPI.interceptors.response.use(
-  (response) => response,
-  (error: AxiosError) => {
-    if (error.response?.status === 401) {
-      console.error('⚠️ Unauthorized - Token invalid or expired');
-    }
-    if (error.response?.status === 403) {
-      console.error('🚫 Forbidden - Insufficient permissions');
-    }
-    if (error.response?.status === 404) {
-      console.error('❌ Not Found:', error.config?.url);
-    }
-    if (error.response?.status === 500) {
-      console.error('❌ Server Error:', error.response?.data);
-    }
-    return Promise.reject(error);
-  }
-);
+const statisticsAPI = axiosInstance;
 
 // ============= TYPES =============
 interface CourseData {

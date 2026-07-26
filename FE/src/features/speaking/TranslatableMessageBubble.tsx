@@ -113,7 +113,19 @@ export function TranslatableMessageBubble({
       onOpen={() => void fetchTranslation()}
       slotProps={tooltipSlotProps}
     >
-      {bubble}
+      {/* Tooltip needs a real DOM element that owns hover events.  Keeping this
+          wrapper also makes translation work when a correction card is rendered
+          immediately below an incorrect user message. */}
+      <Box
+        component="span"
+        sx={{ display: "block" }}
+        onMouseEnter={() => void fetchTranslation()}
+        onFocus={() => void fetchTranslation()}
+        onTouchStart={() => void fetchTranslation()}
+        onClick={() => void fetchTranslation()}
+      >
+        {bubble}
+      </Box>
     </Tooltip>
   );
 }

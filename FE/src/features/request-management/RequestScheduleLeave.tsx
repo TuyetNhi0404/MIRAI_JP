@@ -21,6 +21,7 @@ import {
   RefreshCw,
   Eye,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { requestScheduleService } from "../../services/requestScheduleService";
 import { RequestDetailModal } from "./RequestDetailModal";
 import type { RequestSchedule, RequestStatus } from "../../types/requestSchedule.types";
@@ -30,6 +31,7 @@ import { brandColors } from "../../theme/theme";
 const { Text } = Typography;
 
 interface ApiError {
+  background?: string;
   response?: { data?: { message?: string } };
   message?: string;
 }
@@ -57,6 +59,7 @@ const STATUS_INFO: Record<
 
 export const RequestScheduleLeave: React.FC = () => {
   const { message: msgApi } = App.useApp();
+  const navigate = useNavigate();
   const [requests, setRequests] = useState<RequestSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -120,8 +123,17 @@ export const RequestScheduleLeave: React.FC = () => {
       setActionLoading(true);
       await requestScheduleService.acceptRequest(requestId);
       msgApi.success("Đã chấp nhận yêu cầu nghỉ học");
+      
+      const calendarId = typeof selectedRequest?.calendarId === "object"
+        ? selectedRequest?.calendarId?._id
+        : selectedRequest?.calendarId;
+
       fetchRequests();
       setModalOpen(false);
+
+      if (calendarId) {
+        navigate(`/dashboard/admin/schedule-management?editCalendarId=${calendarId}&fromLeaveRequest=true`);
+      }
     } catch (error) {
       const apiError = error as ApiError;
       msgApi.error(apiError.response?.data?.message || apiError.message || "Đã xảy ra lỗi");

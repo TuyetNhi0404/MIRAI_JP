@@ -134,7 +134,8 @@ const CreateQuizDialog: React.FC<CreateQuizDialogProps> = ({
   const isLoading = courses.length === 0 || chapters.length === 0;
   const isValid = formData.title &&
     formData.courseId &&
-    (formData.useAllChapters || formData.chapterIds.length > 0);
+    (formData.useAllChapters || formData.chapterIds.length > 0) &&
+    Boolean(formData.dueDate);
 
   // Get minimum datetime (current time)
   const minDateTime = new Date().toISOString().slice(0, 16);
@@ -274,8 +275,9 @@ const CreateQuizDialog: React.FC<CreateQuizDialogProps> = ({
             <Box>
               <TextField
                 fullWidth
+                required
                 type="datetime-local"
-                label="Due Date (Optional)"
+                label="Hạn nộp (Due Date)"
                 name="dueDate"
                 value={formData.dueDate}
                 onChange={handleChange}
@@ -285,10 +287,10 @@ const CreateQuizDialog: React.FC<CreateQuizDialogProps> = ({
                 inputProps={{
                   min: minDateTime,
                 }}
-                helperText="Quiz will automatically close at this time. Leave empty for no deadline."
+                helperText="Bài kiểm tra sẽ tự động đóng vào thời gian này."
               />
               <Typography variant="caption" color="textSecondary" sx={{ mt: 0.5, display: 'block' }}>
-                Tip: Set a due date to automatically close the quiz and prevent late submissions
+                Lưu ý: Bắt buộc chọn hạn nộp để hệ thống tự động khóa bài kiểm tra đúng giờ.
               </Typography>
             </Box>
           </Box>

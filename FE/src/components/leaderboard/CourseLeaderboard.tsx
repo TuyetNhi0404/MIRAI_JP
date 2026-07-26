@@ -121,52 +121,56 @@ const CourseLeaderboard: React.FC = () => {
     >
       {/* 1. Performance Card */}
       {studentRankData && (
-        <BaseCard className="border-2 border-[var(--color-primary-color)] bg-gradient-to-r from-[var(--color-surface-base)] to-[var(--color-accent-color)]/20">
-          <div className="flex items-center gap-2 mb-4 border-b border-[var(--color-primary-color)]/20 pb-3">
-            <Star className="text-[var(--color-primary-color)] fill-[var(--color-primary-color)]" size={18} />
-            <h2 className="text-base font-bold text-[var(--color-text-main)] m-0">Thành tích của bạn</h2>
+        <BaseCard className="border-2 border-[var(--color-primary-color)] bg-gradient-to-r from-[var(--color-surface-base)] to-[var(--color-accent-color)]/20 !p-4">
+          <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[var(--color-primary-color)]/20">
+            <Star className="text-[var(--color-primary-color)] fill-[var(--color-primary-color)] shrink-0" size={16} />
+            <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider m-0">Thành tích của bạn</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-[var(--color-accent-color)]/50 rounded-xl border border-[var(--color-primary-color)]/15">
-              <span className="text-xs font-bold text-[var(--color-text-secondary)] block mb-1">Xếp hạng</span>
-              <span className="text-3xl font-black text-[var(--color-primary-color)]">{getRankIcon(studentRankData.rank)}</span>
-              <span className="text-[10px] text-[var(--color-text-secondary)]/70 block mt-1">trên tổng số {studentRankData.totalStudents} học viên</span>
-            </div>
+          <div className="flex flex-col lg:flex-row items-stretch gap-3">
+            {/* Left side: Main Stats (Rank, Score, Percentile) */}
+            <div className="flex-1 grid grid-cols-3 gap-2.5">
+              <div className="text-center p-2.5 bg-[var(--color-accent-color)]/50 rounded-xl border border-[var(--color-primary-color)]/15 flex flex-col justify-center items-center">
+                <span className="text-[10px] font-bold text-[var(--color-text-secondary)] block">Xếp hạng</span>
+                <span className="text-xl font-black text-[var(--color-primary-color)] leading-none my-1">{getRankIcon(studentRankData.rank)}</span>
+                <span className="text-[9px] text-[var(--color-text-secondary)]/70 block">{studentRankData.rank}/{studentRankData.totalStudents} học viên</span>
+              </div>
 
-            <div className="text-center p-4 bg-emerald-50/30 rounded-xl border border-emerald-100">
-              <span className="text-xs font-bold text-[var(--color-text-secondary)] block mb-1">Điểm trung bình</span>
-              <span className="text-3xl font-black text-emerald-600">{formatScore(studentRankData.finalScore)}</span>
-              <div className="mt-1">
+              <div className="text-center p-2.5 bg-emerald-50/40 rounded-xl border border-emerald-100 flex flex-col justify-center items-center">
+                <span className="text-[10px] font-bold text-[var(--color-text-secondary)] block">Điểm trung bình</span>
+                <span className="text-xl font-black text-emerald-600 leading-none my-1">{formatScore(studentRankData.finalScore)}</span>
                 <span
-                  className="text-xs font-bold px-2.5 py-0.5 rounded-full text-white inline-block"
+                  className="text-[9px] font-bold px-2 py-0.5 rounded-full text-white inline-block mt-0.5"
                   style={{ backgroundColor: getGradeColor(studentRankData.grade) }}
                 >
                   Học lực: {studentRankData.grade}
                 </span>
               </div>
+
+              <div className="text-center p-2.5 bg-indigo-50/40 rounded-xl border border-indigo-100 flex flex-col justify-center items-center">
+                <span className="text-[10px] font-bold text-[var(--color-text-secondary)] block">Vượt trội</span>
+                <span className="text-xl font-black text-indigo-600 leading-none my-1">{formatScore(studentRankData.percentile)}%</span>
+                <span className="text-[9px] text-[var(--color-text-secondary)]/70 block">Cao hơn {(100 - studentRankData.percentile).toFixed(0)}%</span>
+              </div>
             </div>
 
-            <div className="text-center p-4 bg-indigo-50/30 rounded-xl border border-indigo-100">
-              <span className="text-xs font-bold text-[var(--color-text-secondary)] block mb-1">Tỷ lệ vượt trội</span>
-              <span className="text-3xl font-black text-indigo-600">{formatScore(studentRankData.percentile)}%</span>
-              <span className="text-[10px] text-[var(--color-text-secondary)]/70 block mt-1">Cao hơn {(100 - studentRankData.percentile).toFixed(1)}% học viên khác</span>
-            </div>
-          </div>
-
-          <div className="mt-4 p-4 bg-[var(--color-bg-base)] rounded-xl border border-[var(--color-border-color)]">
-            <h4 className="text-xs font-bold text-[var(--color-text-secondary)] mb-2">Chi tiết các đầu điểm đóng góp</h4>
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div>
-                <span className="text-[10px] font-semibold text-[var(--color-text-secondary)]/70 block">Chuyên cần</span>
-                <span className="text-sm font-bold text-[var(--color-primary-color)]">{formatScore(studentRankData.attendanceScore)}</span>
-              </div>
-              <div>
-                <span className="text-[10px] font-semibold text-[var(--color-text-secondary)]/70 block">Bài tập về nhà</span>
-                <span className="text-sm font-bold text-emerald-600">{formatScore(studentRankData.assignmentScore)}</span>
-              </div>
-              <div>
-                <span className="text-[10px] font-semibold text-[var(--color-text-secondary)]/70 block">Bài kiểm tra</span>
-                <span className="text-sm font-bold text-orange-600">{formatScore(studentRankData.quizScore)}</span>
+            {/* Right side: Detailed Sub-scores */}
+            <div className="lg:w-72 p-3 bg-white/90 rounded-xl border border-slate-200 flex flex-col justify-center">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2 text-center">
+                Chi tiết các đầu điểm
+              </span>
+              <div className="grid grid-cols-3 gap-1 text-center divide-x divide-slate-150">
+                <div>
+                  <span className="text-[9px] font-bold text-slate-500 block">Chuyên cần</span>
+                  <span className="text-xs font-black text-[var(--color-primary-color)] mt-0.5 block">{formatScore(studentRankData.attendanceScore)}</span>
+                </div>
+                <div>
+                  <span className="text-[9px] font-bold text-slate-500 block">Bài tập</span>
+                  <span className="text-xs font-black text-emerald-600 mt-0.5 block">{formatScore(studentRankData.assignmentScore)}</span>
+                </div>
+                <div>
+                  <span className="text-[9px] font-bold text-slate-500 block">Bài thi</span>
+                  <span className="text-xs font-black text-orange-600 mt-0.5 block">{formatScore(studentRankData.quizScore)}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -175,44 +179,44 @@ const CourseLeaderboard: React.FC = () => {
 
       {/* 2. Overview Stats */}
       {leaderboardData.statistics && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <BaseCard className="flex items-center gap-3.5 !p-4">
-            <div className="w-10 h-10 rounded-xl bg-[var(--color-accent-color)] flex items-center justify-center text-[var(--color-primary-color)] shrink-0">
-              <Users size={20} />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <BaseCard className="flex items-center gap-3 !p-2.5">
+            <div className="w-8 h-8 rounded-lg bg-[var(--color-accent-color)] flex items-center justify-center text-[var(--color-primary-color)] shrink-0">
+              <Users size={16} />
             </div>
-            <div>
-              <span className="text-[10px] font-bold text-[var(--color-text-secondary)]/70 block uppercase">Sĩ số</span>
-              <span className="text-lg font-extrabold text-[var(--color-text-main)]">{leaderboardData.statistics.totalStudents} học viên</span>
-            </div>
-          </BaseCard>
-
-          <BaseCard className="flex items-center gap-3.5 !p-4">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
-              <TrendingUp size={20} />
-            </div>
-            <div>
-              <span className="text-[10px] font-bold text-[var(--color-text-secondary)]/70 block uppercase">Trung bình lớp</span>
-              <span className="text-lg font-extrabold text-[var(--color-text-main)]">{formatScore(leaderboardData.statistics.averageScore)}</span>
+            <div className="min-w-0">
+              <span className="text-[9px] font-extrabold text-slate-400 block uppercase truncate">Sĩ số</span>
+              <span className="text-xs font-black text-slate-800">{leaderboardData.statistics.totalStudents} học viên</span>
             </div>
           </BaseCard>
 
-          <BaseCard className="flex items-center gap-3.5 !p-4">
-            <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600 shrink-0">
-              <Award size={20} />
+          <BaseCard className="flex items-center gap-3 !p-2.5">
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
+              <TrendingUp size={16} />
             </div>
-            <div>
-              <span className="text-[10px] font-bold text-[var(--color-text-secondary)]/70 block uppercase">Cao nhất</span>
-              <span className="text-lg font-extrabold text-[var(--color-text-main)]">{formatScore(leaderboardData.statistics.highestScore)}</span>
+            <div className="min-w-0">
+              <span className="text-[9px] font-extrabold text-slate-400 block uppercase truncate">Trung bình lớp</span>
+              <span className="text-xs font-black text-slate-800">{formatScore(leaderboardData.statistics.averageScore)}</span>
             </div>
           </BaseCard>
 
-          <BaseCard className="flex items-center gap-3.5 !p-4">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
-              <Target size={20} />
+          <BaseCard className="flex items-center gap-3 !p-2.5">
+            <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center text-orange-600 shrink-0">
+              <Award size={16} />
             </div>
-            <div>
-              <span className="text-[10px] font-bold text-[var(--color-text-secondary)]/70 block uppercase">Đạt chuẩn</span>
-              <span className="text-lg font-extrabold text-[var(--color-text-main)]">{leaderboardData.statistics.passRate.toFixed(1)}%</span>
+            <div className="min-w-0">
+              <span className="text-[9px] font-extrabold text-slate-400 block uppercase truncate">Cao nhất</span>
+              <span className="text-xs font-black text-slate-800">{formatScore(leaderboardData.statistics.highestScore)}</span>
+            </div>
+          </BaseCard>
+
+          <BaseCard className="flex items-center gap-3 !p-2.5">
+            <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
+              <Target size={16} />
+            </div>
+            <div className="min-w-0">
+              <span className="text-[9px] font-extrabold text-slate-400 block uppercase truncate">Đạt chuẩn</span>
+              <span className="text-xs font-black text-slate-800">{leaderboardData.statistics.passRate.toFixed(1)}%</span>
             </div>
           </BaseCard>
         </div>

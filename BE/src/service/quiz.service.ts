@@ -54,7 +54,7 @@ class QuizService {
   async getStudentIdsByCourse(courseId: string): Promise<mongoose.Types.ObjectId[]> {
     const course = await Course.findById(courseId).select("members").lean();
     if (!course) return [];
-    
+
     return (course.members || [])
       .filter(m => m.role === "student" && !m.deletedAt)
       .map(m => m.userId as unknown as mongoose.Types.ObjectId);
@@ -88,8 +88,8 @@ class QuizService {
   async createQuiz(quizData: any, createdBy: string) {
     const { chapterId, chapterIds, useAllChapters, totalQuestions } = quizData;
 
-    if (!totalQuestions) {
-      throw new Error("totalQuestions is required");
+    if (!totalQuestions || totalQuestions <= 0) {
+      throw new Error("Số lượng câu hỏi phải lớn hơn 0");
     }
 
     const useAll = Boolean(useAllChapters);
@@ -99,32 +99,27 @@ class QuizService {
     if (Array.isArray(chapterIds)) chapterIdInputs.push(...chapterIds);
     if (typeof chapterIds === "string") chapterIdInputs.push(chapterIds);
 
-    const uniqueChapterIds = [
-      ...new Set(
+    const validChapterIds = Array.from(
+      new Set(
         chapterIdInputs
           .map((id) => (typeof id === "string" ? id.trim() : ""))
-          .filter((id) => id.length > 0)
-      ),
-    ];
+          .filter((id) => mongoose.Types.ObjectId.isValid(id))
+      )
+    );
 
-    if (!useAll && uniqueChapterIds.length === 0) {
-      throw new Error("chapterId(s) or useAllChapters must be provided");
+    if (!useAll && validChapterIds.length === 0) {
+      throw new Error("Vui lòng chọn ít nhất một chương hoặc chọn lấy từ tất cả các chương");
     }
 
-    const chapterObjectIds = useAll
-      ? []
-      : uniqueChapterIds.map((id) => new mongoose.Types.ObjectId(id));
+    const chapterObjectIds = validChapterIds.map((id) => new mongoose.Types.ObjectId(id));
 
-    const questionFilter =
-      useAll || chapterObjectIds.length === 0
-        ? {}
-        : chapterObjectIds.length === 1
-          ? { chapterId: chapterObjectIds[0] }
-          : { chapterId: { $in: chapterObjectIds } };
+    const questionFilter = useAll
+      ? {}
+      : { chapterId: { $in: chapterObjectIds } };
 
     const questions = await Question.find(questionFilter);
     if (questions.length < totalQuestions) {
-      throw new Error("Not enough questions in selected chapters");
+      throw new Error(`Không đủ câu hỏi trong các chương đã chọn. Hiện có: ${questions.length} câu, Yêu cầu: ${totalQuestions} câu`);
     }
 
     const selected = this.getRandomSubset(questions, totalQuestions);
@@ -571,47 +566,102 @@ class QuizService {
     const set: any = {};
     const unset: any = {};
 
+    // Tìm quiz hiện tại để lấy thông tin chapter/totalQuestions cũ nếu không truyền mới
+    const existingQuiz = await Quiz.findOne({
+      _id: new mongoose.Types.ObjectId(quizId),
+      createdBy: new mongoose.Types.ObjectId(createdBy),
+    });
+
+    if (!existingQuiz) {
+      throw new Error("Quiz does not exist or you do not have permission to edit it");
+    }
+
     if (updateData.title !== undefined) set.title = updateData.title;
     if (updateData.description !== undefined) set.description = updateData.description;
 
-    if (updateData.chapterId !== undefined) {
-      if (updateData.chapterId) {
-        set.chapterId = new mongoose.Types.ObjectId(updateData.chapterId);
-      } else {
-        unset.chapterId = "";
-      }
-    }
-
-    if (updateData.chapterIds !== undefined) {
-      if (updateData.chapterIds === null) {
-        set.chapterIds = [];
-      } else {
-        const chapterIdInputs: string[] = Array.isArray(updateData.chapterIds)
-          ? updateData.chapterIds
-          : typeof updateData.chapterIds === "string"
-            ? [updateData.chapterIds]
-            : [];
-        const uniqueChapterIds = [
-          ...new Set(
-            chapterIdInputs
-              .map((id) => (typeof id === "string" ? id.trim() : ""))
-              .filter((id) => id.length > 0)
-          ),
-        ];
-        set.chapterIds = uniqueChapterIds.map((id) => new mongoose.Types.ObjectId(id));
-      }
-    }
-
+    let targetUseAll = existingQuiz.coversAllChapters;
     if (updateData.useAllChapters !== undefined) {
-      const useAll = Boolean(updateData.useAllChapters);
-      set.coversAllChapters = useAll;
-      if (useAll) {
+      targetUseAll = Boolean(updateData.useAllChapters);
+      set.coversAllChapters = targetUseAll;
+      if (targetUseAll) {
         unset.chapterId = "";
         set.chapterIds = [];
       }
     }
 
-    if (updateData.totalQuestions !== undefined) set.totalQuestions = updateData.totalQuestions;
+    let targetChapterObjectIds: mongoose.Types.ObjectId[] = [];
+    if (!targetUseAll) {
+      if (updateData.chapterIds !== undefined) {
+        if (updateData.chapterIds === null) {
+          set.chapterIds = [];
+        } else {
+          const chapterIdInputs: string[] = Array.isArray(updateData.chapterIds)
+            ? updateData.chapterIds
+            : typeof updateData.chapterIds === "string"
+              ? [updateData.chapterIds]
+              : [];
+          const validIds = Array.from(
+            new Set(
+              chapterIdInputs
+                .map((id) => (typeof id === "string" ? id.trim() : ""))
+                .filter((id) => mongoose.Types.ObjectId.isValid(id))
+            )
+          );
+          targetChapterObjectIds = validIds.map((id) => new mongoose.Types.ObjectId(id));
+          set.chapterIds = targetChapterObjectIds;
+        }
+      } else if (updateData.chapterId !== undefined) {
+        if (updateData.chapterId && mongoose.Types.ObjectId.isValid(updateData.chapterId)) {
+          const singleId = new mongoose.Types.ObjectId(updateData.chapterId);
+          set.chapterId = singleId;
+          targetChapterObjectIds = [singleId];
+        } else {
+          unset.chapterId = "";
+        }
+      } else {
+        // Giữ nguyên chapterIds hoặc chapterId từ quiz cũ
+        if (existingQuiz.chapterIds && existingQuiz.chapterIds.length > 0) {
+          targetChapterObjectIds = existingQuiz.chapterIds;
+        } else if (existingQuiz.chapterId) {
+          targetChapterObjectIds = [existingQuiz.chapterId];
+        }
+      }
+    }
+
+    const targetTotalQuestions = updateData.totalQuestions !== undefined
+      ? updateData.totalQuestions
+      : existingQuiz.totalQuestions;
+
+    if (targetTotalQuestions <= 0) {
+      throw new Error("Số lượng câu hỏi phải lớn hơn 0");
+    }
+
+    // Nếu có sự thay đổi về totalQuestions hoặc danh sách Chapter -> Kiểm tra số lượng và chọn lại câu hỏi
+    const isTotalQuestionsChanged = updateData.totalQuestions !== undefined && updateData.totalQuestions !== existingQuiz.totalQuestions;
+    const isChapterChanged = updateData.useAllChapters !== undefined || updateData.chapterIds !== undefined || updateData.chapterId !== undefined;
+
+    if (isTotalQuestionsChanged || isChapterChanged) {
+      const questionFilter = targetUseAll
+        ? {}
+        : { chapterId: { $in: targetChapterObjectIds } };
+
+      const availableQuestions = await Question.find(questionFilter);
+      if (availableQuestions.length < targetTotalQuestions) {
+        throw new Error(
+          `Không đủ câu hỏi trong các chương đã chọn. Hiện có: ${availableQuestions.length} câu, Yêu cầu: ${targetTotalQuestions} câu`
+        );
+      }
+
+      const selected = this.getRandomSubset(availableQuestions, targetTotalQuestions);
+      set.questions = selected.map((q, idx) => ({
+        questionId: q._id,
+        questionOrder: idx + 1,
+      }));
+      set.totalQuestions = targetTotalQuestions;
+    } else if (updateData.totalQuestions !== undefined) {
+      set.totalQuestions = updateData.totalQuestions;
+    }
+
     if (updateData.durationMinutes !== undefined) set.durationMinutes = updateData.durationMinutes;
     if (updateData.isActive !== undefined) set.isActive = updateData.isActive;
     if (updateData.dueDate !== undefined) {
@@ -620,10 +670,10 @@ class QuizService {
       } else {
         const dueDate = new Date(updateData.dueDate);
         if (isNaN(dueDate.getTime())) {
-          throw new Error("Invalid due date");
+          throw new Error("Ngày hết hạn không hợp lệ");
         }
         if (dueDate.getTime() <= Date.now()) {
-          throw new Error("Due date must be later than the current time");
+          throw new Error("Ngày hết hạn phải lớn hơn thời gian hiện tại");
         }
         set.dueDate = dueDate;
         if (updateData.isActive === undefined) {
@@ -644,10 +694,6 @@ class QuizService {
       updateOps,
       { new: true }
     );
-
-    if (!quiz) {
-      throw new Error("Quiz does not exist or you do not have permission to edit it");
-    }
 
     return quiz;
   }

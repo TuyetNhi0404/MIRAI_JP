@@ -1,8 +1,8 @@
 import type { SessionItem } from "../types/schedule.types";
 import axios from "axios";
+import axiosInstance from "../api/axiosInstance";
 
-const BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
-const api = axios.create({ baseURL: `${BASE}/api`, timeout: 10000, withCredentials: true });
+const api = axiosInstance;
 
 interface CourseData {
   _id?: string;

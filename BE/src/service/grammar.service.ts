@@ -2,6 +2,7 @@ import axios from "axios";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import GrammarDocument from "../model/grammarDocument.model";
 import GrammarCard from "../model/grammarCard.model";
+import { Question } from "../model/question.model";
 import mongoose from "mongoose";
 import { writeOcrResult, readOcrResult } from "../utils/uploadStorage";
 import { hybridRetrieveChunks } from "./ragSearch.service";
@@ -10,13 +11,13 @@ import { notifyStage } from "./grammarProgress.service";
 
 export interface OcrResponse {
   total_pages: number;
-  pages: Array<{ page_number: number; text: string }>;
+  pages: Array<{ page_number: number; text?: string; image_base64?: string }>;
 }
 
 // Setup Gemini API client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 const embeddingModel = genAI.getGenerativeModel({ model: "gemini-embedding-001" });
-// gemini-2.5-flash: có free tier, context window lớn, phù hợp xử lý văn bản dài
+// gemini-2.5-flash: fix cứng model, không dùng alias tự động
 const flashModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 // ─── Phase 1: Performance constants ─────────────────────────────────────────
@@ -84,7 +85,7 @@ class TokenBucket {
 // 10 RPM cho free tier = ~0.167 token/sec, capacity = 2 burst
 const extractBucket = new TokenBucket(2, 10 / 60);
 
-function backoffFromQuotaError(err: any): number {
+function backoffFromQuotaError(err: any, attempt = 0): number {
   try {
     const retryInfo = err?.errorDetails?.find((d: any) => d['@type']?.includes('RetryInfo'));
     if (retryInfo?.retryDelay) {
@@ -92,7 +93,8 @@ function backoffFromQuotaError(err: any): number {
       if (!isNaN(seconds)) return (seconds + 2) * 1000;
     }
   } catch { /* fallthrough */ }
-  return 30000;
+  // default backoff: exponential starting at 2s, 4s, 8s...
+  return Math.min(30000, Math.pow(2, attempt) * 2000 + Math.random() * 1000);
 }
 
 // ─── Phase 1: In-memory metrics (reset mỗi request) ────────────────────────
@@ -173,12 +175,13 @@ function splitTextIntoChunks(text: string, chunkSize = 350, chunkOverlap = 50): 
   return chunks;
 }
 
-// Helper: gọi Gemini với retry + adaptive backoff (điều chỉnh token bucket) khi gặp 503/429
+// Helper: gọi Gemini với retry + adaptive backoff. Nếu lỗi kéo dài hoặc hết lượt thử, fallback sang OpenRouter
 async function callGeminiWithRetry(
   model: any,
-  prompt: string,
+  prompt: string | any[],
   maxRetries = 4
 ): Promise<string> {
+  let lastError: any = null;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     // Acquire a token trước khi gọi (rate limit chủ động)
     await extractBucket.acquire();
@@ -188,27 +191,73 @@ async function callGeminiWithRetry(
       extractBucket.reward();
       return result.response.text().trim();
     } catch (err: any) {
-      // 404 = tên model sai / không tồn tại → không retry, báo lỗi ngay
+      lastError = err;
+      // 404 = tên model sai / không tồn tại → không retry, chuyển thẳng sang fallback/báo lỗi
       if (err?.status === 404 || (err?.message && err.message.includes('404'))) {
-        throw new Error(`[Gemini] Model không tồn tại (404). Kiểm tra lại tên model trong grammar.service.ts. Chi tiết: ${err.message}`);
+        console.warn(`[GrammarService] Gemini báo lỗi 404. Chuyển hướng sang OpenRouter...`);
+        break; // Thoát vòng lặp để xuống phần OpenRouter fallback
       }
 
       const isRetryable = err?.status === 503 || err?.status === 429 ||
         (err?.message && (err.message.includes('503') || err.message.includes('429') ||
-          err.message.includes('Service Unavailable') || err.message.includes('quota')));
+          err.message.includes('Service Unavailable') || err.message.includes('quota') ||
+          err.message.includes('high demand')));
 
       if (isRetryable && attempt < maxRetries) {
         // Penalize bucket: giảm rate để tránh 429 tiếp theo
         extractBucket.penalize();
-        const waitMs = backoffFromQuotaError(err);
-        console.warn(`[GrammarService] Gemini trả về ${err?.status || 'lỗi'}, thử lại lần ${attempt + 1}/${maxRetries} sau ${Math.round(waitMs / 1000)}s...`);
+        const waitMs = backoffFromQuotaError(err, attempt);
+        console.warn(`[GrammarService] Gemini trả về lỗi ${err?.status || '503/429'}, thử lại lần ${attempt + 1}/${maxRetries} sau ${Math.round(waitMs / 1000)}s...`);
         await new Promise(resolve => setTimeout(resolve, waitMs));
       } else {
-        throw err;
+        break; // Quá số lần thử hoặc không thể retry, chuyển sang OpenRouter
       }
     }
   }
-  throw new Error('Gemini retry exhausted');
+
+  // ─── FALLBACK TO OPENROUTER ────────────────────────────────────────────────
+  const openRouterKey = process.env.OPENROUTER_API_KEY;
+  const openRouterModel = process.env.OPENROUTER_MODEL || "google/gemini-2.5-flash";
+
+  if (openRouterKey) {
+    console.warn(`[GrammarService] Lỗi Gemini kéo dài. Đang kích hoạt Fallback OpenRouter (${openRouterModel})...`);
+    try {
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${openRouterKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "http://localhost:5000",
+          "X-Title": "Mirai Japanese LMS"
+        },
+        body: JSON.stringify({
+          model: openRouterModel,
+          messages: [{ role: "user", content: typeof prompt === "string" ? prompt : JSON.stringify(prompt) }],
+          max_tokens: 2000
+        })
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`OpenRouter API trả về HTTP ${response.status}: ${errText}`);
+      }
+
+      const data: any = await response.json();
+      const content = data.choices?.[0]?.message?.content?.trim();
+      if (content) {
+        console.log("[GrammarService] Kích hoạt fallback OpenRouter thành công!");
+        return content;
+      } else {
+        throw new Error("OpenRouter response content is empty");
+      }
+    } catch (orError: any) {
+      console.error("[GrammarService] Lỗi khi gọi OpenRouter fallback:", orError.message || orError);
+      // Ném lại lỗi gốc của Gemini nếu cả fallback cũng tèo
+      throw new Error(`[Gemini] Lỗi: ${lastError?.message || lastError}. [OpenRouter Fallback] Lỗi: ${orError.message || orError}`);
+    }
+  }
+
+  throw new Error(`[Gemini] Lỗi: ${lastError?.message || lastError}. (Không cấu hình OpenRouter API Key để fallback)`);
 }
 
 // Helper: gọi batch embedContents với retry. Một batch lỗi → fallback về embedContent lẻ
@@ -255,6 +304,12 @@ export class GrammarService {
     fileName: string
   ): Promise<OcrResponse> {
     const speakingServiceUrl = process.env.SPEAKING_SERVICE_URL || "http://127.0.0.1:8000";
+    const internalKey = process.env.SPEAKING_INTERNAL_KEY || "mirai-speaking-dev-key";
+
+    // Lấy thông tin uploader từ document để gửi x-user-id qua header
+    const doc = await GrammarDocument.findById(documentId);
+    const userId = doc?.uploadedBy ? String(doc.uploadedBy) : "system";
+
     const formData = new FormData();
     const fileBlob = new Blob([fileBuffer], { type: "application/pdf" });
     formData.append("file", fileBlob, fileName);
@@ -263,6 +318,10 @@ export class GrammarService {
     try {
       response = await axios.post(`${speakingServiceUrl}/process-pdf`, formData, {
         timeout: 600000,
+        headers: {
+          "x-speaking-internal-key": internalKey,
+          "x-user-id": userId,
+        },
       });
     } catch (axiosError: any) {
       const status = axiosError.response?.status || "Unknown status";
@@ -292,12 +351,17 @@ export class GrammarService {
     const ocrResult = await readOcrResult<OcrResponse>(documentId);
 
     const chunksToProcess: Array<{ pageNum: number; text: string }> = [];
+
+    // Nhận trực tiếp văn bản thô từ kết quả OCR của Python (EasyOCR / PyMuPDF)
     for (const page of ocrResult.pages) {
-      if (!page.text || page.text.trim().length < 10) continue;
-      for (const textChunk of splitTextIntoChunks(page.text)) {
+      const pageText = (page.text || "").trim();
+      if (!pageText || pageText.length < 10) continue;
+      
+      for (const textChunk of splitTextIntoChunks(pageText)) {
         chunksToProcess.push({ pageNum: page.page_number, text: textChunk });
       }
     }
+
     metrics.totalChunks = chunksToProcess.length;
 
     const embedStart = Date.now();
@@ -347,14 +411,16 @@ export class GrammarService {
     const ocrResult = await readOcrResult<OcrResponse>(documentId);
     const allExtractedCards: Record<string, unknown>[] = [];
     const seenTitles = new Set<string>();
+    
+    // Lọc ra các trang đã có text thô được OCR ở bước Embed
     const pages = ocrResult.pages.filter(p => p.text && p.text.trim().length > 10);
     const totalBatches = Math.ceil(pages.length / PAGES_PER_BATCH);
     const extractStart = Date.now();
 
     for (let batchIdx = 0; batchIdx < totalBatches; batchIdx++) {
       const batchPages = pages.slice(batchIdx * PAGES_PER_BATCH, (batchIdx + 1) * PAGES_PER_BATCH);
-      const batchText = batchPages.map(p => `[Trang ${p.page_number}]\n${p.text}`).join("\n\n");
       const pageRange = `${batchPages[0].page_number}-${batchPages[batchPages.length - 1].page_number}`;
+      const batchText = batchPages.map(p => `[Trang ${p.page_number}]\n${p.text}`).join("\n\n");
 
       const extractionPrompt = `
 Bạn là chuyên gia giáo dục tiếng Nhật. Dưới đây là nội dung các trang ${pageRange} từ tài liệu học tập (cấp độ: ${level}):
@@ -362,7 +428,7 @@ Bạn là chuyên gia giáo dục tiếng Nhật. Dưới đây là nội dung c
 ${batchText}
 """
 
-NHIỆM VỤ: Trích xuất TẤT CẢ các mẫu ngữ pháp tiếng Nhật trong đoạn trên.
+NHIỆM VỤ: Trích xuất TẤT CẢ các mẫu ngữ pháp tiếng Nhật có trong nội dung này.
 - Tài liệu có thể đánh số thứ tự các mẫu ngữ pháp (ví dụ: "1.", "2.", "10.", "60."). Hãy trích xuất TẤT CẢ chúng.
 - Nếu có N mẫu ngữ pháp được đánh số, hãy trả về đúng N đối tượng.
 - Nếu không tìm thấy mẫu ngữ pháp nào, trả về mảng rỗng: []
@@ -389,7 +455,9 @@ CHÚ Ý QUAN TRỌNG:
 
       metrics.cardExtractBatches++;
       try {
+        console.log(`[GrammarService] Running Text-based Grammar Extraction for pages ${pageRange} using clean OCR text...`);
         const responseText = await callGeminiWithRetry(flashModel, extractionPrompt);
+
         const jsonStart = responseText.indexOf("[");
         const jsonEnd = responseText.lastIndexOf("]");
         if (jsonStart !== -1 && jsonEnd !== -1) {
@@ -579,16 +647,7 @@ Yêu cầu biên soạn:
 Biên soạn khoảng 1-3 mẫu ngữ pháp quan trọng nhất liên quan trực tiếp đến chủ đề "${topic}". Hãy đảm bảo JSON hợp lệ, không chứa ký tự lỗi.
 `;
 
-    await extractBucket.acquire();
-    let result;
-    try {
-      result = await flashModel.generateContent(prompt);
-      extractBucket.reward();
-    } catch (err: any) {
-      if (err?.status === 429) extractBucket.penalize();
-      throw err;
-    }
-    const responseText = result.response.text().trim();
+    const responseText = await callGeminiWithRetry(flashModel, prompt);
 
     try {
       const jsonStart = responseText.indexOf("[");
@@ -605,6 +664,30 @@ Biên soạn khoảng 1-3 mẫu ngữ pháp quan trọng nhất liên quan trự
       console.error("Gemini Card generator JSON parse error. Response raw:", responseText);
       throw new Error("Không thể chuyển đổi kết quả từ AI thành cấu trúc JSON thẻ ngữ pháp.");
     }
+  }
+
+  /**
+   * Giáo viên chọn mẫu ngữ pháp -> Lấy các câu hỏi đã có sẵn trong Database (0đ AI)
+   */
+  static async getExistingQuizQuestions(
+    grammarCardIds: string[]
+  ): Promise<any[]> {
+    const cards = await GrammarCard.find({ _id: { $in: grammarCardIds } });
+    if (cards.length === 0) {
+      throw new Error("Không tìm thấy các thẻ ngữ pháp tương ứng.");
+    }
+    const mongooseIds = grammarCardIds.map((id) => new mongoose.Types.ObjectId(id));
+    const questions = await Question.find({ grammarCardId: { $in: mongooseIds } }).sort({ createdAt: -1 });
+    return questions.map((q) => ({
+      grammarCardId: q.grammarCardId ? String(q.grammarCardId) : undefined,
+      questionText: q.questionText,
+      correctAnswer: q.correctAnswer,
+      answer1: q.answer1,
+      answer2: q.answer2,
+      answer3: q.answer3,
+      answer4: q.answer4,
+      explanation: q.explanation || "",
+    }));
   }
 
   /**
@@ -643,14 +726,14 @@ Yêu cầu câu hỏi:
     "answer1": "Lựa chọn 1",
     "answer2": "Lựa chọn 2",
     "answer3": "Lựa chọn 3",
-    "answer4": "Lựa chọn 4"
+    "answer4": "Lựa chọn 4",
+    "explanation": "Dịch nghĩa câu hỏi tiếng Nhật sang tiếng Việt và giải thích ngắn gọn tại sao chọn đáp án đúng"
   }
 ]
 Sinh câu hỏi chất lượng cao, các đáp án gây nhiễu hợp lý, chỉ có một đáp án đúng nhất. Đảm bảo JSON hợp lệ.
 `;
 
-    const result = await flashModel.generateContent(prompt);
-    const responseText = result.response.text().trim();
+    const responseText = await callGeminiWithRetry(flashModel, prompt);
 
     try {
       const jsonStart = responseText.indexOf("[");

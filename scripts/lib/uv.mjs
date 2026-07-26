@@ -29,14 +29,9 @@ async function downloadFile(url, dest) {
 
 function extractArchive(archivePath, destDir) {
   mkdirSync(destDir, { recursive: true });
-  if (process.platform === "win32") {
-    execSync(
-      `powershell -NoProfile -Command "Expand-Archive -Path '${archivePath.replace(/'/g, "''")}' -DestinationPath '${destDir.replace(/'/g, "''")}' -Force"`,
-      { stdio: "inherit" },
-    );
-    return;
-  }
-  execSync(`tar -xzf "${archivePath}" -C "${destDir}"`, { stdio: "inherit" });
+  // Use the built-in `tar` on every platform (Windows 10+ ships tar.exe) to avoid
+  // PowerShell ExecutionPolicy prompts and elevated consoles.
+  execSync(`tar -xf "${archivePath}" -C "${destDir}"`, { stdio: "inherit" });
 }
 
 export async function ensureUv() {
