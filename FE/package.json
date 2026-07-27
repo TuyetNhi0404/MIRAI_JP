@@ -58,7 +58,9 @@
         "react-toastify": "^11.0.5",
         "recharts": "^3.5.0",
         "tailwind-merge": "^3.6.0",
+        "thinking-orbs": "^0.1.1",
         "three": "^0.184.0",
+        "wanakana": "^5.3.1",
         "xlsx": "^0.18.5",
         "zod": "^4.1.12"
     },

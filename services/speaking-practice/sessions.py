@@ -33,6 +33,8 @@ class StudentModel:
     confidence: float = 0.8
     mistakes: list[dict[str, Any]] = field(default_factory=list)
     grammar_mastery: dict[str, float] = field(default_factory=dict)
+    current_topic: dict[str, str] | None = None
+    known_facts: dict[str, str] = field(default_factory=dict)
 
 
 _user_sessions: dict[str, StudentModel] = {}

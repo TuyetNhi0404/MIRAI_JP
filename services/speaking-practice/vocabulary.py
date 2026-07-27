@@ -75,6 +75,6 @@ def vocabulary_result(transcript: str, answer: str, session):
     """Build a full response for a vocabulary fast-path answer."""
     session = add_history(session, transcript, answer)
     store_session(session.user_id, session)
-    audio_url = generate_audio(answer)
+    audio_url = generate_audio(answer, session.level)
     print(f"[TURN] vocabulary transcript={transcript[:240]!r} reply={answer[:240]!r} audio={bool(audio_url)}")
     return compose_response(transcript, answer, audio_url, session)

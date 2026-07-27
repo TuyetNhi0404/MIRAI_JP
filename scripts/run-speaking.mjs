@@ -72,10 +72,14 @@ function resolveModelPath() {
 
 async function askUseLocalLLM(autoDetected) {
   if (runtimeEnv.SKIP_LOCAL_LLM_PROMPT === "1") {
+    // Non-interactive: honor explicit USE_LOCAL_LLM, else auto-detect GGUF.
+    if (Object.prototype.hasOwnProperty.call(runtimeEnv, "USE_LOCAL_LLM")) {
+      return ["1", "true", "yes"].includes(String(runtimeEnv.USE_LOCAL_LLM).toLowerCase());
+    }
     return autoDetected;
   }
   if (!input.isTTY) {
-    console.log("[speaking] Không có TTY — dùng auto-detect.");
+    console.log("[speaking] Không có TTY — dùng auto-detect GGUF cho chốt cuối.");
     return autoDetected;
   }
 
@@ -84,8 +88,13 @@ async function askUseLocalLLM(autoDetected) {
     const detectedLabel = autoDetected
       ? "đã tìm thấy GGUF local"
       : "chưa có GGUF local";
+    console.log(`
+[speaking] LLM chain mặc định: Gemini → OpenRouter
+[speaking] ${detectedLabel}.
+  Y = bật local LLM làm CHỐT CUỐI (Gemini → OpenRouter → Local)
+  N = chỉ Gemini → OpenRouter, dừng (không dùng local)`);
     const answer = await rl.question(
-      `\n[speaking] ${detectedLabel}. Dùng local LLM fallback? (Y/N, mặc định ${autoDetected ? "Y" : "N"}): `,
+      `Dùng local LLM làm chốt cuối? (Y/N, mặc định ${autoDetected ? "Y" : "N"}): `,
     );
     const trimmed = answer.trim().toLowerCase();
     if (trimmed === "y" || trimmed === "yes") return true;
@@ -156,23 +165,26 @@ async function main() {
   const modelPath = resolveModelPath();
   const autoDetected = Boolean(modelPath && existsSync(modelPath));
   const useLocalLLM = await askUseLocalLLM(autoDetected);
+  const localReady = Boolean(useLocalLLM && modelPath && existsSync(modelPath));
   const localModelName = modelPath ? basename(modelPath, ".gguf") : "mirai-jp";
-  if (!autoDetected && useLocalLLM) {
-    console.log(`[speaking] Người dùng đã chọn dùng local LLM nhưng không tìm thấy GGUF.`);
+  if (useLocalLLM && !localReady) {
+    console.log(`[speaking] Đã chọn local làm chốt cuối nhưng không tìm thấy GGUF.`);
     console.log("           Chép model fine-tune vào models/ hoặc đặt LOCAL_LLM_MODEL_PATH.");
-    console.log("           Fallback qua Gemini / OpenRouter.\n");
-  } else if (autoDetected && !useLocalLLM) {
-    console.log(`[speaking] Người dùng đã chọn KHÔNG dùng local LLM. Bỏ qua llama-server.`);
-    console.log("           LLM sẽ chạy qua Gemini / OpenRouter fallback.\n");
-  } else if (useLocalLLM) {
-    console.log(`[speaking] Dùng GGUF local: ${modelPath}`);
+    console.log("           Chain sẽ chỉ còn Gemini → OpenRouter.\n");
+  } else if (!useLocalLLM) {
+    console.log(`[speaking] Local LLM TẮT — chain: Gemini → OpenRouter (dừng).`);
+    if (autoDetected) {
+      console.log("           (GGUF có sẵn nhưng bị bỏ qua theo lựa chọn của bạn.)\n");
+    } else {
+      console.log("");
+    }
   } else {
-    console.log("[speaking] Chưa có GGUF local. Bỏ qua llama-server và dùng Gemini/OpenRouter fallback.");
-    console.log("           Chép model fine-tune vào models/ hoặc đặt LOCAL_LLM_MODEL_PATH.\n");
+    console.log(`[speaking] Local LLM BẬT làm chốt cuối: ${modelPath}`);
+    console.log("           Chain: Gemini → OpenRouter → Local\n");
   }
 
-  // 1. llama-server
-  if (useLocalLLM && modelPath && existsSync(modelPath)) {
+  // 1. llama-server (only when local is enabled AND GGUF exists)
+  if (localReady) {
     if (existsSync(llamaBin)) {
       console.log("\n[speaking] Starting llama-server :8080 ...");
       const llama = spawn(llamaBin, [
@@ -186,7 +198,7 @@ async function main() {
       llama.stderr.on("data", d => process.stderr.write(`[llama] ${d}`));
       children.push(llama);
     } else {
-      console.log("[speaking] llama-server unavailable — LLM fallback to Gemini/OpenRouter");
+      console.log("[speaking] llama-server unavailable — local chốt cuối không chạy được");
     }
   }
 
@@ -230,7 +242,9 @@ async function main() {
       ELEVENLABS_API_KEY: runtimeEnv.ELEVENLABS_API_KEY || "",
       ELEVENLABS_VOICE_ID: runtimeEnv.ELEVENLABS_VOICE_ID || "",
       ELEVENLABS_MODEL_ID: runtimeEnv.ELEVENLABS_MODEL_ID || "eleven_multilingual_v2",
-      ...(useLocalLLM ? {
+      // Explicitly set so .env cannot accidentally flip the chain order.
+      USE_LOCAL_LLM: localReady ? "true" : "false",
+      ...(localReady ? {
         LOCAL_LLM_URL: "http://localhost:8080",
         LOCAL_LLM_MODEL: localModelName,
       } : {}),

@@ -6,6 +6,7 @@ export type RequestModeParams = {
   chat: ChatMessagesApi;
   setLoading: (v: boolean) => void;
   setLoadingText: (v: string) => void;
+  setTypingVisible?: (v: boolean) => void;
   setRecordDisabled: (v: boolean) => void;
   setRecordLabel: (v: string) => void;
   setIsRecording: (v: boolean) => void;
@@ -14,6 +15,7 @@ export type RequestModeParams = {
   setServiceUnavailable: (v: boolean) => void;
   setLastError: (v: string | null) => void;
   onResumeListening: () => void;
+  onTopic?: (topic: import("./useSpeakingTopics").SpeakingTopic | null) => void;
 };
 
 export type RequestModeReturn = {
@@ -24,6 +26,7 @@ export function useRequestMode(p: RequestModeParams): RequestModeReturn {
   const send = async (blob: Blob) => {
     p.setLoading(true);
     p.setRecordDisabled(true);
+    p.setTypingVisible?.(true);
     try {
       p.setLoadingText("Đang transcribe...");
       const sttForm = new FormData();
@@ -42,10 +45,14 @@ export function useRequestMode(p: RequestModeParams): RequestModeReturn {
 
       p.setLoadingText("Đang suy nghĩ...");
       const { data: replyData } = await speakingApi.post(speakingApiPath("/reply"), { transcript });
+      p.setTypingVisible?.(false);
       const { reply, audio_url, grammar_feedback, level: lv, score: sc } = replyData;
       if (lv) p.setLevel(lv);
       if (sc !== undefined) p.setScore(sc);
       if (grammar_feedback) p.chat.attachGrammarFeedback(userMsgId, grammar_feedback);
+      if (replyData.topic) {
+        p.onTopic?.(replyData.topic as import("./useSpeakingTopics").SpeakingTopic);
+      }
       if (reply) p.chat.appendMessage(reply, "system");
       if (audio_url) {
         p.setLoadingText("Đang tạo giọng nói...");
@@ -64,6 +71,7 @@ export function useRequestMode(p: RequestModeParams): RequestModeReturn {
       p.setLastError(msg);
       p.chat.appendMessage(msg, "system");
     } finally {
+      p.setTypingVisible?.(false);
       p.setLoading(false);
       p.setRecordDisabled(false);
       p.setRecordLabel("Nhấn giữ để nói");

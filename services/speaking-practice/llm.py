@@ -1,17 +1,31 @@
 """
 llm.py
 ─────────────────────────────────────────────────────────────────────────────
-LLM provider chain: Gemini → OpenRouter → Local llama.cpp (final fallback)
+LLM provider chain: Gemini → OpenRouter → (optional) Local llama.cpp
+
+Local is NEVER primary. When USE_LOCAL_LLM=true it is only the final chốt
+chặn after Gemini and OpenRouter both fail. When false, chain stops after
+OpenRouter.
+
+Timeouts (speaking UX)
+──────────────────────
+Each provider has a hard timeout; the whole chain also has LLM_CHAIN_BUDGET
+so Gemini cannot hang unbounded before fallbacks run.
 
 Env vars
 ────────
 GEMINI_API_KEY        – Gemini API key        (primary)
-OPENROUTER_API_KEY    – OpenRouter key        (fallback)
-LOCAL_LLM_URL         – llama.cpp server URL  (default: http://local-llm:11434 | final fallback)
+OPENROUTER_API_KEY    – OpenRouter key        (cloud fallback)
+LOCAL_LLM_URL         – llama.cpp server URL  (final chốt chặn, optional)
 LOCAL_LLM_MODEL       – local model name      (default: qwen3-1.7b)
+USE_LOCAL_LLM         – true = enable local as LAST fallback; false = stop after OpenRouter
 LLM_MODEL             – Gemini model          (default: gemini-3.5-flash)
 OPENROUTER_MODEL      – fallback model        (default: openai/gpt-4o-mini)
 LLM_MAX_TOKENS        – max output tokens     (default: 256)
+LLM_TIMEOUT_GEMINI    – seconds (default 12)
+LLM_TIMEOUT_OPENROUTER– seconds (default 10)
+LLM_TIMEOUT_LOCAL     – seconds (default 15)
+LLM_CHAIN_BUDGET      – total seconds for whole cascade (default 28)
 """
 
 from __future__ import annotations
@@ -23,6 +37,9 @@ import re
 import threading
 import time
 from collections import OrderedDict
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FuturesTimeout
+from typing import Callable, TypeVar
 
 import httpx
 from dotenv import load_dotenv
@@ -44,13 +61,20 @@ LOCAL_LLM_URL: str = os.getenv("LOCAL_LLM_URL", "http://local-llm:11434")
 LOCAL_LLM_MODEL: str = os.getenv("LOCAL_LLM_MODEL", "qwen3-1.7b")
 GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
 OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
-# When true: local llama.cpp is tried first, then OpenRouter, then Gemini.
-# When false (default): Gemini first, then OpenRouter. Local is never used.
+# When true: after Gemini + OpenRouter fail, try local llama.cpp as FINAL chốt chặn.
+# When false (default): Gemini → OpenRouter only (no local).
 USE_LOCAL_LLM: bool = os.getenv("USE_LOCAL_LLM", "false").lower() in {"1", "true", "yes"}
 
 LLM_MODEL: str = os.getenv("LLM_MODEL", "gemini-3.5-flash")
 OPENROUTER_MODEL: str = os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
 MAX_TOKENS: int = int(os.getenv("LLM_MAX_TOKENS", "256"))
+
+# Per-provider hard timeouts + total chain budget (speaking UX).
+# Worst-case ≈ min(sum(caps), budget) — budget stops unbounded Gemini hangs.
+LLM_TIMEOUT_GEMINI: float = float(os.getenv("LLM_TIMEOUT_GEMINI", "12"))
+LLM_TIMEOUT_OPENROUTER: float = float(os.getenv("LLM_TIMEOUT_OPENROUTER", "10"))
+LLM_TIMEOUT_LOCAL: float = float(os.getenv("LLM_TIMEOUT_LOCAL", "15"))
+LLM_CHAIN_BUDGET: float = float(os.getenv("LLM_CHAIN_BUDGET", "28"))
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 OPENROUTER_HEADERS = {
@@ -67,8 +91,11 @@ _gemini_client: genai.Client | None = (
 
 # ── Shared HTTP clients (connection pooling) ─────────────────────────────────
 
-_local_client = httpx.Client(timeout=20.0)
-_openrouter_client = httpx.Client(timeout=15.0)
+_local_client = httpx.Client(timeout=LLM_TIMEOUT_LOCAL)
+_openrouter_client = httpx.Client(timeout=LLM_TIMEOUT_OPENROUTER)
+_provider_pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix="llm-provider")
+
+_T = TypeVar("_T")
 
 # ── Sentinel exceptions ──────────────────────────────────────────────────────
 
@@ -80,6 +107,22 @@ class GeminiUnavailable(Exception):
 
 class AllProvidersExhausted(Exception):
     pass
+
+
+class ProviderTimeout(Exception):
+    """Raised when a provider exceeds its per-call or remaining chain budget."""
+
+
+def _call_with_timeout(label: str, fn: Callable[[], _T], timeout_s: float) -> _T:
+    """Hard-timeout a sync provider call (needed for Gemini which has no httpx timeout)."""
+    if timeout_s <= 0:
+        raise ProviderTimeout(f"{label} skipped — no time left in chain budget")
+    fut = _provider_pool.submit(fn)
+    try:
+        return fut.result(timeout=timeout_s)
+    except FuturesTimeout as exc:
+        print(f"[LLM] {label} timed out after {timeout_s:.1f}s")
+        raise ProviderTimeout(f"{label} timed out after {timeout_s:.1f}s") from exc
 
 
 def _max_tokens_for(messages: list[dict]) -> int:
@@ -209,33 +252,45 @@ def _openrouter_reply(messages: list[dict]) -> str:
 
 
 def get_ai_reply(messages: list[dict]) -> str:
-    if USE_LOCAL_LLM:
-        try:
-            return _local_reply(messages)
-        except Exception as e:
-            print(f"[LLM] Local failed: {e}, fallback OpenRouter")
+    """Gemini → OpenRouter → (optional) Local, with per-provider + total budget."""
+    deadline = time.monotonic() + LLM_CHAIN_BUDGET
 
-        try:
-            return _openrouter_reply(messages)
-        except Exception as e:
-            print(f"[LLM] OpenRouter failed: {e}, fallback Gemini")
-
-        try:
-            return _gemini_reply(messages)
-        except Exception as e:
-            print(f"[LLM] Gemini failed: {e}")
-            return "Tất cả API providers đều không khả dụng. Vui lòng kiểm tra API key."
+    def remaining(cap: float) -> float:
+        return max(0.0, min(cap, deadline - time.monotonic()))
 
     try:
-        return _gemini_reply(messages)
+        return _call_with_timeout(
+            "Gemini",
+            lambda: _gemini_reply(messages),
+            remaining(LLM_TIMEOUT_GEMINI),
+        )
     except Exception as e:
         print(f"[LLM] Gemini failed: {e}, fallback OpenRouter")
 
     try:
-        return _openrouter_reply(messages)
+        return _call_with_timeout(
+            "OpenRouter",
+            lambda: _openrouter_reply(messages),
+            remaining(LLM_TIMEOUT_OPENROUTER),
+        )
     except Exception as e:
-        print(f"[LLM] OpenRouter failed: {e}")
-        return "Tất cả API providers đều không khả dụng. Vui lòng kiểm tra API key."
+        if USE_LOCAL_LLM:
+            print(f"[LLM] OpenRouter failed: {e}, fallback Local (final chốt chặn)")
+        else:
+            print(f"[LLM] OpenRouter failed: {e} (local LLM disabled — stop)")
+            return "Tất cả API providers đều không khả dụng. Vui lòng kiểm tra API key."
+
+    if USE_LOCAL_LLM:
+        try:
+            return _call_with_timeout(
+                "Local",
+                lambda: _local_reply(messages),
+                remaining(LLM_TIMEOUT_LOCAL),
+            )
+        except Exception as e:
+            print(f"[LLM] Local failed: {e}")
+
+    return "Tất cả API providers đều không khả dụng. Vui lòng kiểm tra API key."
 
 
 TRANSLATE_CACHE_MAX = 200
@@ -363,11 +418,12 @@ def _openrouter_reply_short(messages: list[dict]) -> str:
 # ── Combined reply + grammar (single LLM call) ──────────────────────────────
 
 _COMBINED_SYSTEM = """You are Mirai (ミライ), a Japanese conversation coach for Vietnamese learners.
+You are a friendly conversation PARTNER, not only an interviewer.
 Given the learner's Japanese sentence and the teaching context, respond ONCE with
 ONLY valid JSON (no markdown) of this exact shape:
 
 {
-  "reply": "<Mirai's natural Japanese reply, 1-3 sentences, following all persona/level rules>",
+  "reply": "<Mirai's natural Japanese reply, following all persona/level rules>",
   "severity": "none" | "minor" | "should_fix" | "important",
   "grammar": "<grammar point as snake_case, or empty string if none>",
   "explanation": "<1-2 sentences in Vietnamese explaining any issue, or praise if correct>",
@@ -381,52 +437,201 @@ Rules:
 - severity "important": mistake blocking understanding.
 - The "reply" field is the real conversation turn and MUST obey the level/output
   limits given in the context. Do NOT put grammar lectures in "reply".
+- Write Japanese that is easy to HEAR aloud: short clauses, clear 。 endings.
+- ANSWER FIRST: If the learner asked you a question (〜か / ですか / ？ / how are you /
+  are you ~), answer as Mirai first with a real content answer
+  (e.g. 元気ですか → はい、元気です。). Do NOT reply with only the same question
+  mirrored back. After answering, you MAY add one short reciprocal question.
+- MEMORY: Read the dialogue history and known facts. NEVER re-ask something the
+  learner already answered (nationality, name, hobby, etc.). Acknowledge briefly,
+  then ask a NEW related question or continue naturally.
 - Output ONLY the JSON object."""
+
+
+# Spoken-Japanese coaching targets per JLPT band.
+# OUTPUT_TOKEN_LIMIT covers the FULL JSON envelope (reply + grammar fields),
+# not only the Japanese sentence — too-low limits truncate JSON mid-string and
+# break parsing (TTS then speaks raw JSON).
+LEVEL_SPEAKING_RULES: dict[str, str] = {
+    "N5": (
+        "[OUTPUT_TOKEN_LIMIT: 280] "
+        "In the JSON \"reply\" field only: short です/ます Japanese "
+        "(aim ≤ 28 characters; if answering a learner question, up to 2 very short "
+        "clauses like 「はい、元気です。あなたは？」 is OK). "
+        "Only N5 vocab/grammar. No compound slang, no advanced keigo. "
+        "Prefer concrete words. End with 。 so TTS can pause clearly. "
+        "If the learner asked you something, ANSWER first — never only echo their question. "
+        "If nationality/name/hobby is already in known facts or dialogue, do NOT ask again. "
+        "Keep explanation ≤ 1 short Vietnamese sentence."
+    ),
+    "N4": (
+        "[OUTPUT_TOKEN_LIMIT: 300] "
+        "In the JSON \"reply\" field only: 1 short sentence, optionally a tiny follow-up "
+        "(aim ≤ 40 Japanese characters total). Keep です/ます. Simple connectors only "
+        "(それから / でも). Clear 。 endings for listening. "
+        "If asked a question, answer first, then optionally ask back."
+    ),
+    "N3": (
+        "[OUTPUT_TOKEN_LIMIT: 340] "
+        "In the JSON \"reply\" field: 1–2 natural sentences. Everyday polite Japanese. "
+        "Still avoid long nested clauses. Answer learner questions before asking new ones."
+    ),
+    "N2": (
+        "[OUTPUT_TOKEN_LIMIT: 380] "
+        "In the JSON \"reply\" field: 1–3 natural sentences. Natural conversational pace "
+        "and richer vocab are OK. Answer first when asked."
+    ),
+    "N1": (
+        "[OUTPUT_TOKEN_LIMIT: 420] "
+        "In the JSON \"reply\" field: fluent natural Japanese (1–3 sentences). "
+        "Nuance and natural connectors are welcome. Answer first when asked."
+    ),
+}
+
+
+def _level_speaking_rules(level: str) -> str:
+    lv = (level or "N5").upper()
+    return LEVEL_SPEAKING_RULES.get(lv, LEVEL_SPEAKING_RULES["N5"])
 
 
 def get_reply_and_grammar(
     transcript: str,
     level: str,
-    history: list[str] | None = None,
+    history: list[dict] | list[str] | None = None,
     reply_messages: list[dict] | None = None,
+    topic: dict | None = None,
+    known_facts: dict[str, str] | None = None,
 ) -> tuple[str, dict]:
     """Single LLM call that returns both the conversation reply and grammar feedback."""
-    context = ""
-    if history:
-        recent = [h for h in history if h.strip()][-4:]
-        if recent:
-            context = "Recent conversation:\n" + "\n".join(f"- {h}" for h in recent) + "\n\n"
+    from memory import format_known_facts
+    from topics import topic_context_line
 
-    user_content = (
-        f"{context}"
-        f"JLPT level: {level}\n"
-        f"Learner said:\n{transcript}"
+    context = _format_history_block(history)
+    facts_block = format_known_facts(known_facts)
+    topic_line = topic_context_line(topic)
+
+    user_content = "\n".join(
+        part
+        for part in (
+            context,
+            facts_block,
+            f"JLPT level: {level}",
+            topic_line,
+            f"Learner said:\n{transcript}",
+            "Respond as Mirai. If the learner asked a question, answer it first "
+            "(do not only ask the same thing back), then continue naturally.",
+        )
+        if part
     )
     messages = [
-        {"role": "system", "content": _COMBINED_SYSTEM},
+        {
+            "role": "system",
+            "content": f"{_COMBINED_SYSTEM}\n\n{_level_speaking_rules(level)}",
+        },
         {"role": "user", "content": user_content},
     ]
 
     raw = get_ai_reply(messages)
     parsed = _parse_combined_json(raw, transcript)
+    # Hard guard: never return a JSON blob as the spoken coach line.
+    reply = parsed["reply"]
+    if _looks_like_json_blob(reply):
+        recovered = _extract_json_string_field(reply, "reply")
+        parsed["reply"] = recovered or "すみません、もう一度お願いします。"
     return parsed["reply"], parsed
 
 
-def _parse_combined_json(raw: str, fallback_original: str) -> dict:
-    import json as _json
-    import re as _re
+def _format_history_block(history: list[dict] | list[str] | None) -> str:
+    if not history:
+        return ""
 
+    lines: list[str] = []
+    # New format: list[{"role","text"}]
+    if history and isinstance(history[0], dict):
+        for item in history:
+            role = str(item.get("role", ""))
+            text = str(item.get("text", "")).strip()
+            if not text:
+                continue
+            label = "Learner" if role == "user" else "Coach"
+            lines.append(f"{label}: {text}")
+    else:
+        # Legacy: plain user-only strings
+        for text in history:  # type: ignore[assignment]
+            t = str(text).strip()
+            if t:
+                lines.append(f"Learner: {t}")
+
+    if not lines:
+        return ""
+    return "Recent dialogue (do not re-ask answered facts):\n" + "\n".join(lines)
+
+
+_JSON_STRING_FIELD_RE = re.compile(
+    r'"(?P<key>reply|severity|grammar|explanation|suggestion)"\s*:\s*"(?P<val>(?:\\.|[^"\\])*)"',
+    re.DOTALL,
+)
+
+
+def _looks_like_json_blob(text: str) -> bool:
+    t = (text or "").lstrip()
+    return t.startswith("{") and ("\"reply\"" in t or "'reply'" in t)
+
+
+def _extract_json_string_field(text: str, key: str) -> str | None:
+    """Pull a JSON string field even from truncated / invalid JSON."""
+    for match in _JSON_STRING_FIELD_RE.finditer(text or ""):
+        if match.group("key") != key:
+            continue
+        raw_val = match.group("val")
+        try:
+            # Decode JSON string escapes ("\n", "\"", etc.)
+            return json.loads(f"\"{raw_val}\"")
+        except json.JSONDecodeError:
+            return raw_val.replace('\\"', '"').replace("\\n", "\n")
+    return None
+
+
+def _parse_combined_json(raw: str, fallback_original: str) -> dict:
     text = (raw or "").strip()
-    match = _re.search(r"\{[\s\S]*\}", text)
+    # Strip markdown fences if the model wraps JSON.
+    if text.startswith("```"):
+        text = re.sub(r"^```(?:json)?\s*", "", text)
+        text = re.sub(r"\s*```$", "", text).strip()
+
+    match = re.search(r"\{[\s\S]*\}", text)
     if match:
         try:
-            data = _json.loads(match.group())
+            data = json.loads(match.group())
             if isinstance(data, dict) and data.get("reply"):
                 return _normalize_combined(data, fallback_original)
-        except _json.JSONDecodeError:
+        except json.JSONDecodeError:
             pass
 
-    # Fallback: treat the raw text as the reply, no grammar feedback.
+    # Truncated JSON: recover fields by regex instead of speaking the blob.
+    if _looks_like_json_blob(text):
+        recovered = {
+            "reply": _extract_json_string_field(text, "reply") or "",
+            "severity": _extract_json_string_field(text, "severity") or "none",
+            "grammar": _extract_json_string_field(text, "grammar") or "",
+            "explanation": _extract_json_string_field(text, "explanation") or "",
+            "suggestion": _extract_json_string_field(text, "suggestion") or fallback_original,
+        }
+        if recovered["reply"]:
+            print("[LLM] Recovered truncated JSON reply via field extract")
+            return _normalize_combined(recovered, fallback_original)
+        print("[LLM] Truncated JSON without usable reply — using safe fallback")
+        return {
+            "reply": "すみません、もう一度お願いします。",
+            "severity": "none",
+            "grammar": "",
+            "explanation": "",
+            "suggestion": fallback_original,
+        }
+
+    # Plain-text fallback (non-JSON model output).
+    if _looks_like_json_blob(text):
+        text = "すみません、もう一度お願いします。"
     return {
         "reply": text or "すみません、もう一度お願いします。",
         "severity": "none",
@@ -446,8 +651,9 @@ def _normalize_combined(data: dict, fallback_original: str) -> dict:
     reply = str(data.get("reply") or "").strip()
     if severity == "minor":
         suggestion = fallback_original
-    if not reply:
-        reply = "すみません、もう一度お願いします。"
+    if not reply or _looks_like_json_blob(reply):
+        recovered = _extract_json_string_field(reply, "reply") if reply else None
+        reply = recovered or "すみません、もう一度お願いします。"
     return {
         "reply": reply,
         "severity": severity,
