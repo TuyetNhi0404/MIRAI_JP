@@ -12,13 +12,13 @@ import type {
 // Initialize state from localStorage
 const storedUser = localStorage.getItem("user");
 const initialUser = storedUser ? JSON.parse(storedUser) : null;
-const initialAccessToken = localStorage.getItem("accessToken") || null;
-const initialRefreshToken = localStorage.getItem("refreshToken") || null;
+
+// Clean legacy tokens from localStorage if present
+localStorage.removeItem("accessToken");
+localStorage.removeItem("refreshToken");
 
 const initialState: AuthState = {
   user: initialUser,
-  accessToken: initialAccessToken,
-  refreshToken: initialRefreshToken,
   loading: false,
   error: null,
 };
@@ -134,8 +134,6 @@ const authSlice = createSlice({
     },
     forceLogout: (state) => {
       state.user = null;
-      state.accessToken = null;
-      state.refreshToken = null;
       state.error = null;
       localStorage.removeItem("user");
       localStorage.removeItem("accessToken");
@@ -164,17 +162,14 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(loginUser.fulfilled, (state, action) => {
-        const { user, accessToken, refreshToken } = action.payload;
+        const { user } = action.payload;
         state.user = user;
-        state.accessToken = accessToken;
-        state.refreshToken = refreshToken;
         state.loading = false;
         state.error = null;
 
-        // Save to cookies (now localStorage)
         localStorage.setItem("user", JSON.stringify(user));
-        localStorage.setItem("accessToken", accessToken); 
-        localStorage.setItem("refreshToken", refreshToken); 
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
@@ -187,17 +182,14 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(googleLoginUser.fulfilled, (state, action) => {
-        const { user, accessToken, refreshToken } = action.payload;
+        const { user } = action.payload;
         state.user = user;
-        state.accessToken = accessToken;
-        state.refreshToken = refreshToken;
         state.loading = false;
         state.error = null;
 
-        // Save to cookies (now localStorage)
         localStorage.setItem("user", JSON.stringify(user));
-        localStorage.setItem("accessToken", accessToken);
-        localStorage.setItem("refreshToken", refreshToken);
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
       })
       .addCase(googleLoginUser.rejected, (state, action) => {
         state.loading = false;
@@ -206,17 +198,12 @@ const authSlice = createSlice({
       })
 
       // Refresh Token
-      .addCase(refreshAccessToken.fulfilled, (state, action) => {
-        state.accessToken = action.payload.accessToken;
+      .addCase(refreshAccessToken.fulfilled, (state) => {
         state.error = null;
-        localStorage.setItem("accessToken", action.payload.accessToken);
       })
       .addCase(refreshAccessToken.rejected, (state, action) => {
         console.error("Refresh token failed:", action.payload);
-        // If refresh fails, force logout
         state.user = null;
-        state.accessToken = null;
-        state.refreshToken = null;
         state.error = action.payload as string;
         localStorage.removeItem("user");
         localStorage.removeItem("accessToken");
@@ -230,12 +217,9 @@ const authSlice = createSlice({
       })
       .addCase(logoutUser.fulfilled, (state) => {
         state.user = null;
-        state.accessToken = null;
-        state.refreshToken = null;
         state.loading = false;
         state.error = null;
 
-        // Clear cookies (now localStorage)
         localStorage.removeItem("user");
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
@@ -244,10 +228,7 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
 
-        // Even if logout fails on server, clear local state
         state.user = null;
-        state.accessToken = null;
-        state.refreshToken = null;
         localStorage.removeItem("user");
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
@@ -256,4 +237,4 @@ const authSlice = createSlice({
 });
 
 export const { setUser, clearError, forceLogout } = authSlice.actions;
-export default authSlice.reducer;
+export default authSlice.reducer;

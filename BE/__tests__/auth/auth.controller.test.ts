@@ -4,8 +4,14 @@ import cookieParser from "cookie-parser";
 import authController from "../../src/controller/auth.controller";
 import authService from "../../src/service/auth.service";
 
-// ✅ Mock toàn bộ service
+// ✅ Mock toàn bộ service và user model
 jest.mock("../../src/service/auth.service");
+jest.mock("../../src/model/user.model", () => ({
+  User: {
+    findByIdAndUpdate: jest.fn().mockResolvedValue({}),
+  },
+}));
+
 
 const app = express();
 app.use(express.json());
@@ -50,7 +56,7 @@ describe("AuthController Unit Tests", () => {
   });
 
   // 🧠 Test Login
-  it("POST /login → should return 200 and tokens", async () => {
+  it("POST /login → should return 200 and user object", async () => {
     (authService.login as jest.Mock).mockResolvedValueOnce({
       user: { email: "user@example.com" },
       accessToken: "token123",
@@ -62,8 +68,9 @@ describe("AuthController Unit Tests", () => {
       .send({ email: "user@example.com", password: "123456" });
 
     expect(res.status).toBe(200);
-    expect(res.body.accessToken).toBe("token123");
-    expect(res.body.refreshToken).toBe("refresh456");
+    expect(res.body.accessToken).toBeUndefined();
+    expect(res.body.refreshToken).toBeUndefined();
+    expect(res.body.user.email).toBe("user@example.com");
     expect(res.body.message).toBe("Login success");
   });
 
@@ -89,6 +96,7 @@ describe("AuthController Unit Tests", () => {
     const res = await request(app).post("/google").send({ token: "fake-google-token" });
 
     expect(res.status).toBe(200);
+    expect(res.body.accessToken).toBeUndefined();
     expect(res.body.user.email).toBe("google@example.com");
   });
 
@@ -104,7 +112,7 @@ describe("AuthController Unit Tests", () => {
   });
 
   // 🧠 Test Refresh Token
-  it("POST /refresh-token → should return 200 with new accessToken", async () => {
+  it("POST /refresh-token → should return 200 with success message", async () => {
     (authService.refreshToken as jest.Mock).mockResolvedValueOnce({
       accessToken: "newAccess",
       refreshToken: "newRefresh",
@@ -115,7 +123,7 @@ describe("AuthController Unit Tests", () => {
       .set("Cookie", ["refreshToken=fakeRefresh"]);
 
     expect(res.status).toBe(200);
-    expect(res.body.accessToken).toBe("newAccess");
+    expect(res.body.message).toBe("Token refreshed successfully");
   });
 
   it("POST /refresh-token → should return 401 on invalid refresh token", async () => {
@@ -139,3 +147,4 @@ describe("AuthController Unit Tests", () => {
     expect(res.body.message).toBe("Logout success");
   });
 });
+

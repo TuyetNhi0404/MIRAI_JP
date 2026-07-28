@@ -36,9 +36,10 @@ class AuthService {
   /**
    * Refresh access token using refresh token from cookie
    */
-  async refreshToken(): Promise<AxiosResponse<{ accessToken: string }>> {
+  async refreshToken(): Promise<AxiosResponse<{ message: string; accessToken?: string }>> {
     return axiosInstance.post(`${this.AUTH_ENDPOINT}/refresh-token`, {});
   }
+
 
   /**
    * Logout user and clear cookies
