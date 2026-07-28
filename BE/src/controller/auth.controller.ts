@@ -19,7 +19,7 @@ class AuthController {
       const userDoc = user as any;
 
       userDoc.lastLogin = new Date();
-      await User.findByIdAndUpdate(userDoc.id, { lastLogin: new Date() });
+      await User.findByIdAndUpdate(userDoc._id || userDoc.id, { lastLogin: new Date() });
 
       authService.saveToken(res, accessToken);
       authService.saveRefreshToken(res, refreshToken);
@@ -27,8 +27,6 @@ class AuthController {
       return res.json({
         user,
         message: "Login success",
-        accessToken: accessToken,
-        refreshToken: refreshToken,
       });
     } catch (err: any) {
       return res.status(400).json({ message: err.message });
@@ -43,7 +41,7 @@ class AuthController {
       const userDoc = user as any;
 
       userDoc.lastLogin = new Date();
-      await User.findByIdAndUpdate(userDoc.id, { lastLogin: new Date() });
+      await User.findByIdAndUpdate(userDoc._id || userDoc.id, { lastLogin: new Date() });
 
       authService.saveToken(res, accessToken);
       authService.saveRefreshToken(res, refreshToken);
@@ -51,8 +49,6 @@ class AuthController {
       return res.json({
         user,
         message: "Login success",
-        accessToken: accessToken,
-        refreshToken: refreshToken,
       });
     } catch (err: any) {
       console.error(err);
@@ -62,7 +58,7 @@ class AuthController {
 
   async refreshToken(req: Request, res: Response): Promise<Response> {
     try {
-      const oldRefreshToken = (req.cookies.refreshToken || req.body.refreshToken) as string | undefined;
+      const oldRefreshToken = (req.cookies.refreshToken || req.body?.refreshToken) as string | undefined;
       const { accessToken, refreshToken } = await authService.refreshToken(
         oldRefreshToken as string
       );
@@ -70,7 +66,7 @@ class AuthController {
       authService.saveToken(res, accessToken);
       authService.saveRefreshToken(res, refreshToken);
 
-      return res.json({ accessToken });
+      return res.json({ message: "Token refreshed successfully" });
     } catch (err: any) {
       return res.status(401).json({ message: err.message });
     }
@@ -78,7 +74,8 @@ class AuthController {
 
   async logout(req: Request, res: Response): Promise<Response> {
     try {
-      const result = await authService.logout(res);
+      const oldRefreshToken = (req.cookies?.refreshToken || req.body?.refreshToken) as string | undefined;
+      const result = await authService.logout(res, oldRefreshToken);
       return res.status(200).json(result);
     } catch (err: any) {
       return res.status(400).json({ message: err.message });
@@ -87,3 +84,4 @@ class AuthController {
 }
 
 export default new AuthController();
+

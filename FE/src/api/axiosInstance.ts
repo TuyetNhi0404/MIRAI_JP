@@ -32,22 +32,9 @@ const processQueue = (error: any = null) => {
   failedQueue = [];
 };
 
-// Request interceptor - Đọc token từ Redux Store hoặc localStorage
+// Request interceptor - Tự động đính kèm cookie qua withCredentials: true
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    let token: string | null = null;
-    try {
-      token = getStore().getState().auth.accessToken;
-    } catch (e) {
-      // Store chưa khởi tạo
-    }
-    if (!token) {
-      token = localStorage.getItem("accessToken");
-    }
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-
     // FormData must not use application/json — browser/axios needs multipart boundary
     if (typeof FormData !== "undefined" && config.data instanceof FormData) {
       if (config.headers && typeof config.headers.delete === "function") {
@@ -64,7 +51,7 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-// Response interceptor - Xử lý 401 bằng refresh token thay vì force logout
+// Response interceptor - Xử lý 401 bằng refresh token cookie thay vì force logout
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
@@ -104,44 +91,22 @@ axiosInstance.interceptors.response.use(
 
       try {
         const apiUrl = getApiOrigin();
-        let refreshTokenVal: string | null = null;
-        try {
-          refreshTokenVal = getStore().getState().auth.refreshToken;
-        } catch (e) {}
-        if (!refreshTokenVal) {
-          refreshTokenVal = localStorage.getItem("refreshToken");
-        }
-
-        const response = await axios.post(
+        await axios.post(
           `${apiUrl}/api/auth/refresh-token`,
-          { refreshToken: refreshTokenVal },
+          {},
           { withCredentials: true }
         );
 
-        if (response.data?.accessToken) {
-          const newToken = response.data.accessToken;
-          localStorage.setItem("accessToken", newToken);
-          try {
-            getStore().dispatch({
-              type: "auth/refreshAccessToken/fulfilled",
-              payload: { accessToken: newToken },
-            });
-          } catch (e) {}
+        processQueue(null);
+        isRefreshing = false;
 
-          processQueue(null);
-          isRefreshing = false;
-
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
-          return axiosInstance(originalRequest);
-        }
+        return axiosInstance(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError);
         isRefreshing = false;
 
         // Refresh thất bại → force logout
         console.error("❌ Session expired - Logging out");
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
         localStorage.removeItem("user");
         try {
           getStore().dispatch(forceLogout());
@@ -165,4 +130,4 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-export default axiosInstance;
+export default axiosInstance;

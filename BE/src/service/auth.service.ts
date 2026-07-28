@@ -3,6 +3,7 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { OAuth2Client } from "google-auth-library";
 import { User } from "../model/user.model";
+import { RefreshToken } from "../model/refreshToken.model";
 import { UserRole, UserStatus } from "../enum/user.enum";
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -28,7 +29,7 @@ class AuthService {
   saveToken(res: Response, accessToken: string): void {
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
-      secure: false,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 24 * 60 * 60 * 1000,
       path: "/",
@@ -38,7 +39,7 @@ class AuthService {
   saveRefreshToken(res: Response, refreshToken: string): void {
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: false,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
       path: "/",
@@ -57,16 +58,41 @@ class AuthService {
       throw new Error("Invalid or expired refresh token");
     }
 
+    // Check if token exists in RefreshToken collection (Active Tokens check)
+    const existingTokenDoc = await RefreshToken.findOne({ token: refreshToken });
+
+    if (!existingTokenDoc) {
+      // Refresh token reuse / compromise detected! Revoke all tokens for this user
+      if (decoded?.id) {
+        await RefreshToken.deleteMany({ userId: decoded.id });
+      }
+      throw new Error("Refresh token has been revoked or already used");
+    }
+
+    // Delete used old refresh token (Rotation)
+    await RefreshToken.deleteOne({ _id: existingTokenDoc._id });
+
     const user = await User.findById(decoded.id);
     if (!user) throw new Error("User not found");
 
+    if (user.status === UserStatus.LOCKED) {
+      throw new Error("Your account has been locked. Please contact the admin.");
+    }
+
     const newAccessToken = this.generateToken({
       id: user.id.toString(),
-      role: decoded.role,
+      role: decoded.role || user.role,
     });
     const newRefreshToken = this.generateRefreshToken({
       id: user.id.toString(),
-      role: decoded.role,
+      role: decoded.role || user.role,
+    });
+
+    // Save newly issued rotated refresh token to DB
+    await RefreshToken.create({
+      userId: user.id,
+      token: newRefreshToken,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     });
 
     return { accessToken: newAccessToken, refreshToken: newRefreshToken };
@@ -112,6 +138,13 @@ class AuthService {
       role: user.role,
     });
 
+    // Save refresh token to DB
+    await RefreshToken.create({
+      userId: user.id,
+      token: refreshToken,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    });
+
     return {
       user: {
         _id: user.id,
@@ -155,6 +188,13 @@ class AuthService {
       role: user.role,
     });
 
+    // Save refresh token to DB
+    await RefreshToken.create({
+      userId: user.id,
+      token: refreshToken,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    });
+
     return {
       user: {
         _id: user.id,
@@ -168,11 +208,14 @@ class AuthService {
     };
   }
 
-  async logout(res: Response) {
+  async logout(res: Response, refreshToken?: string) {
+    if (refreshToken) {
+      await RefreshToken.deleteOne({ token: refreshToken });
+    }
     res.clearCookie("accessToken", { path: "/" });
     res.clearCookie("refreshToken", { path: "/" });
     return { message: "Logout success" };
   }
 }
 
-export default new AuthService();
+export default new AuthService();
