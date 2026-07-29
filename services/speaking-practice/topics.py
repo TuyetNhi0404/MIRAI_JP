@@ -118,3 +118,50 @@ def next_topic_prompt(level: str = "N5") -> dict[str, str]:
     if normalized not in TOPICS_BY_LEVEL:
         normalized = "N5"
     return random.choice(TOPICS_BY_LEVEL[normalized])
+
+
+def build_topic_opening_reply(topic: dict[str, str], level: str | None = "N5") -> str:
+    """Japanese coach line that opens or switches to a topic (level-aware length)."""
+    title = (topic.get("title") or "").strip()
+    prompt_ja = (topic.get("prompt_ja") or "").strip()
+    lv = (level or "N5").upper()
+
+    if lv == "N5":
+        # Short + clear for beginners / slow TTS.
+        if title and prompt_ja:
+            return f"はい。では「{title}」です。{prompt_ja}"
+        if prompt_ja:
+            return f"はい。新しい話題です。{prompt_ja}"
+        return "はい。新しい話題にしましょう。"
+
+    if lv == "N4":
+        if title and prompt_ja:
+            return f"わかりました。では「{title}」について話しましょう。{prompt_ja}"
+        if prompt_ja:
+            return f"わかりました。新しい話題にしましょう。{prompt_ja}"
+        return "わかりました。新しい話題にしましょう。"
+
+    if title and prompt_ja:
+        return f"わかりました！では「{title}」について話しましょう。{prompt_ja}"
+    if prompt_ja:
+        return f"わかりました！では新しい話題にしましょう。{prompt_ja}"
+    return "わかりました！では新しい話題にしましょう。何について話したいですか？"
+
+
+def resolve_topic_change(level: str) -> tuple[dict[str, str], str]:
+    """Pick a new topic for the learner's level and build the coach reply."""
+    topic = next_topic_prompt(level)
+    return topic, build_topic_opening_reply(topic, level)
+
+
+def topic_context_line(topic: dict[str, str] | None) -> str:
+    if not topic:
+        return ""
+    title = topic.get("title") or ""
+    prompt_vi = topic.get("prompt_vi") or ""
+    return (
+        f"Current conversation topic: {title}"
+        + (f" ({prompt_vi})" if prompt_vi else "")
+        + ". Stay loosely on this topic, but NEVER re-ask facts already in "
+        "dialogue history / known facts. Advance the conversation."
+    )

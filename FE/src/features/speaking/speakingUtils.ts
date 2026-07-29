@@ -1,5 +1,6 @@
 import type { ChatMessage } from "./useSpeakingPractice";
 import type { CoachReview, GrammarFeedback } from "./types";
+import { toReadingLoose } from "./japaneseReading";
 
 /** Tin system ngay sau tin user (ngữ cảnh coach). */
 export function getAiReplyAfterUser(
@@ -17,26 +18,91 @@ export function getAiReplyAfterUser(
   return undefined;
 }
 
-/** So khớp đơn giản sau khi luyện nói lại (0–1). */
-export function transcriptSimilarity(a: string, b: string): number {
-  const norm = (s: string) =>
+/** Katakana → hiragana so ナンジ ≈ なんじ. */
+function katakanaToHiragana(s: string): string {
+  return s.replace(/[\u30A1-\u30F6]/g, (ch) =>
+    String.fromCharCode(ch.charCodeAt(0) - 0x60),
+  );
+}
+
+/** Normalize Japanese speech transcripts for fuzzy compare. */
+export function normalizeJapaneseTranscript(s: string): string {
+  return katakanaToHiragana(
     s
+      .normalize("NFKC")
       .toLowerCase()
-      .replace(/[\s\u3000、。！？]/g, "")
-      .trim();
-  const x = norm(a);
-  const y = norm(b);
+      .replace(/[ー−–—―]/g, "") // long vowel marks often vary in STT
+      .replace(/[\s\u3000、。！？!?,.「」『』（）()\[\]【】・…‥〜~♪★☆♥♡]/g, "")
+      .replace(/^(えーと|えっと|あの|あのう|うーん)+/g, "")
+      .trim(),
+  );
+}
+
+function levenshtein(a: string, b: string): number {
+  const m = a.length;
+  const n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  const prev = new Array<number>(n + 1);
+  const curr = new Array<number>(n + 1);
+  for (let j = 0; j <= n; j++) prev[j] = j;
+  for (let i = 1; i <= m; i++) {
+    curr[0] = i;
+    const ca = a.charCodeAt(i - 1);
+    for (let j = 1; j <= n; j++) {
+      const cost = ca === b.charCodeAt(j - 1) ? 0 : 1;
+      curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
+    }
+    for (let j = 0; j <= n; j++) prev[j] = curr[j];
+  }
+  return prev[n];
+}
+
+/** Bigram Dice coefficient — tolerant to local swaps. */
+function diceBigrams(a: string, b: string): number {
+  if (a.length < 2 || b.length < 2) return a === b ? 1 : 0;
+  const grams = (s: string) => {
+    const set = new Map<string, number>();
+    for (let i = 0; i < s.length - 1; i++) {
+      const g = s.slice(i, i + 2);
+      set.set(g, (set.get(g) || 0) + 1);
+    }
+    return set;
+  };
+  const A = grams(a);
+  const B = grams(b);
+  let overlap = 0;
+  for (const [g, c] of A) overlap += Math.min(c, B.get(g) || 0);
+  return (2 * overlap) / (a.length - 1 + (b.length - 1));
+}
+
+function pairScore(x: string, y: string): number {
   if (!x || !y) return 0;
   if (x === y) return 1;
-  if (x.includes(y) || y.includes(x)) return 0.85;
-  const longer = Math.max(x.length, y.length);
-  let matches = 0;
-  const minLen = Math.min(x.length, y.length);
-  for (let i = 0; i < minLen; i++) {
-    if (x[i] === y[i]) matches++;
+  if (x.includes(y) || y.includes(x)) {
+    const ratio = Math.min(x.length, y.length) / Math.max(x.length, y.length);
+    return Math.max(0.82, Math.min(0.98, 0.75 + ratio * 0.23));
   }
-  return matches / longer;
+  const longer = Math.max(x.length, y.length);
+  const lev = 1 - levenshtein(x, y) / longer;
+  const dice = diceBigrams(x, y);
+  return Math.max(0, Math.min(1, Math.max(lev, dice) * 0.65 + Math.min(lev, dice) * 0.35));
 }
+
+/**
+ * Fuzzy speech match (0–1). Edit distance + bigrams after JP normalize,
+ * also compares loose kana readings so 今何時ですか ≈ いまなんじですか.
+ */
+export function transcriptSimilarity(heard: string, target: string): number {
+  const x = normalizeJapaneseTranscript(heard);
+  const y = normalizeJapaneseTranscript(target);
+  if (!x || !y) return 0;
+
+  const direct = pairScore(x, y);
+  const reading = pairScore(toReadingLoose(x), toReadingLoose(y));
+  return Math.max(direct, reading);
+}
+
 
 export const SEVERITY_LABEL: Record<string, string> = {
   none: "Không lỗi",

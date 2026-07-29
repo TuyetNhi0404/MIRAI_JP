@@ -29,8 +29,10 @@ import {
   ChevronRight,
   Volume2,
   Check,
+  RefreshCw,
 } from "lucide-react";
 import AudioWaveSphere3D from "../../components/AI_animated/AudioWaveSphere3D";
+import { AiAwaitingIndicator } from "./AiAwaitingIndicator";
 import { TranslatableMessageBubble } from "./TranslatableMessageBubble";
 import { CoachSuggestionBubble } from "./CoachSuggestionBubble";
 import { NotePracticeDialog } from "./NotePracticeDialog";
@@ -73,6 +75,11 @@ const SpeakingPracticePage = () => {
     onRecordPointerDown,
     onRecordPointerUp,
     onRecordPointerLeave,
+    topics,
+    activeTopic,
+    loadingTopic,
+    startTopic,
+    shuffleTopics,
   } = useSpeakingPractice();
 
   const grammarNotes = useGrammarNotes(enabled);
@@ -322,6 +329,64 @@ const SpeakingPracticePage = () => {
             </Stack>
           </Stack>
 
+          {(topics.length > 0 || activeTopic) && (
+            <Box
+              sx={{
+                px: 2,
+                py: 1,
+                borderBottom: `1px solid ${sp.hairline}`,
+                flexShrink: 0,
+                bgcolor: sp.surfaceMuted,
+              }}
+            >
+              <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 0.75 }}>
+                <Lightbulb size={12} color={sp.brand} />
+                <Typography sx={{ fontSize: "0.68rem", fontWeight: 700, color: sp.textSoft, flex: 1 }}>
+                  {activeTopic
+                    ? `Chủ đề: ${activeTopic.title_vi || activeTopic.title}`
+                    : "Gợi ý chủ đề theo level"}
+                </Typography>
+                <Tooltip title="Đổi bộ gợi ý">
+                  <IconButton
+                    size="small"
+                    onClick={() => shuffleTopics()}
+                    disabled={loadingTopic}
+                    aria-label="Đổi gợi ý chủ đề"
+                    sx={{ p: 0.4 }}
+                  >
+                    <RefreshCw size={12} color={sp.textMuted} />
+                  </IconButton>
+                </Tooltip>
+              </Stack>
+              <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap">
+                {topics.map((t) => {
+                  const active = activeTopic?.title === t.title;
+                  return (
+                    <Chip
+                      key={`${t.title}-${t.prompt_ja}`}
+                      size="small"
+                      label={t.title_vi || t.title}
+                      clickable
+                      disabled={loadingTopic || recordDisabled}
+                      onClick={() => void startTopic(t)}
+                      sx={{
+                        height: 26,
+                        fontSize: "0.7rem",
+                        fontWeight: active ? 700 : 600,
+                        bgcolor: active ? sp.brand : "#fff",
+                        color: active ? "#fff" : sp.text,
+                        border: `1px solid ${active ? sp.brand : sp.hairline}`,
+                        "&:hover": {
+                          bgcolor: active ? sp.brandMid : "rgba(15, 23, 42, 0.04)",
+                        },
+                      }}
+                    />
+                  );
+                })}
+              </Stack>
+            </Box>
+          )}
+
           <Box
             component="section"
             aria-label="Hội thoại"
@@ -413,26 +478,7 @@ const SpeakingPracticePage = () => {
               </Box>
             ))}
 
-            {typingVisible && (
-              <Box
-                sx={{
-                  alignSelf: "flex-start",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                  px: 1.5,
-                  py: 1,
-                  bgcolor: sp.surfaceMuted,
-                  borderRadius: `${sp.radiusMd}px`,
-                  border: `1px solid ${sp.hairline}`,
-                }}
-              >
-                <CircularProgress size={12} sx={{ color: sp.brand }} thickness={5} />
-                <Typography variant="caption" sx={{ color: sp.textMuted, fontWeight: 500, fontSize: "0.75rem" }}>
-                  Mirai đang suy nghĩ
-                </Typography>
-              </Box>
-            )}
+            {typingVisible && <AiAwaitingIndicator loadingText={loadingText} />}
             <div ref={messagesEndRef} />
           </Box>
 

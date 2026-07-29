@@ -58,8 +58,10 @@ export function useMediaRecorder(p: MediaRecorderParams): MediaRecorderReturn {
 
           mr.ondataavailable = (e) => {
             if (e.data.size <= 0) return;
-            const { modeRef, audioChunksRef, isAwaitingAiRef, wsRef } = pRef.current;
-            if (modeRef.current === "stream" && wsRef.current?.readyState === WebSocket.OPEN && !isAwaitingAiRef.current) {
+            const { modeRef, audioChunksRef, wsRef } = pRef.current;
+            // Stream mode: always flush chunks while WS is open — including the
+            // final dataavailable fired during stop() — so the utterance is not truncated.
+            if (modeRef.current === "stream" && wsRef.current?.readyState === WebSocket.OPEN) {
               wsRef.current.send(e.data);
             } else if (modeRef.current === "request") {
               audioChunksRef.current.push(e.data);
@@ -84,7 +86,14 @@ export function useMediaRecorder(p: MediaRecorderParams): MediaRecorderReturn {
                 console.warn("[speaking] onstop sendRequestMode failed:", err);
               }
             } else if (wsRef.current?.readyState === WebSocket.OPEN && isAwaitingAiRef.current) {
+              // Final audio chunk is sent in ondataavailable before onstop.
               wsRef.current.send(JSON.stringify({ type: "stop_talking" }));
+            } else if (isAwaitingAiRef.current) {
+              // WS dropped mid-turn — clear awaiting so the user can retry.
+              isAwaitingAiRef.current = false;
+              pRef.current.setRecordLabel("Mất kết nối — thử nói lại");
+              pRef.current.setIsRecording(false);
+              pRef.current.onResumeListening();
             }
           };
 

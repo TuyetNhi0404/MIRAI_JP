@@ -10,15 +10,24 @@ import time
 from pathlib import Path
 from pydantic import BaseModel
 
+from dataclasses import replace
+
 from auth import authenticate_websocket, get_current_user_id
-from sessions import get_session, store_session, reset_user_session, update_score, add_history
+from sessions import get_session, store_session, reset_user_session, update_score, add_history, StudentModel
 from stt import transcribe_audio
 from llm import get_reply_and_grammar, translate_japanese_to_vietnamese
 from tts import generate_audio
 from dialogue_manager import evaluate_turn
 from composer import compose_response
-from sanitizer import is_injection, sanitize_transcript
-from topics import suggest_topics
+from sanitizer import is_injection, sanitize_transcript, filter_injection_history
+from memory import dialogue_history_entries, merge_known_facts
+from topics import (
+    suggest_topics,
+    is_topic_change_request,
+    resolve_topic_change,
+    build_topic_opening_reply,
+    format_topic_suggestion_instruction,
+)
 from vocabulary import vocabulary_answer, vocabulary_result
 from stream_handler import handle_stream
 from ws_push import registry as ws_registry
@@ -37,6 +46,31 @@ def _derive_text_confidence(grammar_feedback: dict) -> float:
     return 0.70
 
 
+def _dialogue_for_llm(session: StudentModel) -> list[dict[str, str]]:
+    """Full recent dialogue (learner + coach) for LLM memory."""
+    return dialogue_history_entries(
+        filter_injection_history(session.history),
+        max_turns=6,
+    )
+
+
+async def _finalize_topic_turn(
+    user_id: str,
+    session: StudentModel,
+    transcript: str,
+    topic: dict[str, str],
+    reply: str,
+) -> dict:
+    """Persist topic switch, TTS, and compose response (no LLM)."""
+    session = replace(session, current_topic=topic)
+    session = add_history(session, transcript, reply)
+    store_session(user_id, session)
+    audio_url = await asyncio.to_thread(generate_audio, reply, session.level)
+    result = compose_response(transcript, reply, audio_url, session)
+    result["topic_changed"] = True
+    return result
+
+
 app = FastAPI(title="MIRAI Speaking Practice")
 
 _app_started = False
@@ -48,6 +82,11 @@ async def warmup():
     if _app_started:
         return
     _app_started = True
+    from llm import USE_LOCAL_LLM
+    if USE_LOCAL_LLM:
+        print("[speaking] LLM chain: Gemini → OpenRouter → Local (final chốt chặn)")
+    else:
+        print("[speaking] LLM chain: Gemini → OpenRouter (local disabled)")
     print("[speaking] Service started")
 
     async def _cleanup_old_audio():
@@ -101,6 +140,13 @@ class TopicSuggestRequest(BaseModel):
     count: int = 5
 
 
+class StartTopicRequest(BaseModel):
+    title: str | None = None
+    title_vi: str | None = None
+    prompt_ja: str | None = None
+    prompt_vi: str | None = None
+
+
 # ── Endpoints ────────────────────────────────────────────────
 
 @app.get("/health")
@@ -143,6 +189,16 @@ async def conversation(
         if answer:
             return vocabulary_result(transcript, answer, session)
 
+        if is_topic_change_request(transcript):
+            topic, topic_reply = resolve_topic_change(session.level)
+            print(f"[TOPIC] change requested → {topic.get('title')}")
+            result = await _finalize_topic_turn(
+                user_id, session, transcript, topic, topic_reply
+            )
+            # Also push so mobile WS clients stay in sync if they were waiting.
+            await ws_registry.push(user_id, {"type": "reply", **result})
+            return {**result, "pending": False}
+
         # Show the transcript to the client immediately; run the (slow) LLM +
         # grammar + TTS pipeline in the background and push the reply over the
         # user's WebSocket connection when it is ready.
@@ -166,6 +222,7 @@ async def conversation(
             "pending": True,
             "level": session.level,
             "score": session.score,
+            "topic": session.current_topic,
         }
     finally:
         if os.path.exists(input_path):
@@ -185,12 +242,16 @@ async def _process_turn_background(
     """Run LLM + grammar + TTS off the request path and push the result via WS."""
     try:
         session = get_session(user_id)
+        session = merge_known_facts(session, transcript)
         t_llm = time.time()
         reply, grammar_feedback = await asyncio.to_thread(
             get_reply_and_grammar,
             transcript,
             level,
-            history=[h["text"] for h in session.history[-6:] if h["role"] == "user"],
+            _dialogue_for_llm(session),
+            None,
+            session.current_topic,
+            session.known_facts,
         )
         print(f"[ORCH] LLM+Grammar: {time.time() - t_llm:.2f}s sev={grammar_feedback.get('severity')} reply={reply[:240]!r}")
 
@@ -200,7 +261,7 @@ async def _process_turn_background(
         session = add_history(updated, transcript, reply)
         store_session(user_id, session)
 
-        audio_url = await asyncio.to_thread(generate_audio, reply)
+        audio_url = await asyncio.to_thread(generate_audio, reply, session.level)
         print(f"[ORCH] TTS: {time.time() - t_llm:.2f}s audio={bool(audio_url)}")
 
         result = compose_response(transcript, reply, audio_url, session, grammar_feedback, plan)
@@ -277,14 +338,25 @@ async def reply(
     if answer:
         return vocabulary_result(req.transcript, answer, session)
 
+    if is_topic_change_request(req.transcript):
+        topic, topic_reply = resolve_topic_change(session.level)
+        print(f"[TOPIC] change requested via /reply → {topic.get('title')}")
+        return await _finalize_topic_turn(
+            user_id, session, req.transcript, topic, topic_reply
+        )
+
     proxy_confidence = _derive_text_confidence({"severity": "none"})
+    session = merge_known_facts(session, req.transcript)
 
     t_llm = time.time()
     reply_text, grammar_feedback = await asyncio.to_thread(
         get_reply_and_grammar,
         req.transcript,
         session.level,
-        history=[h["text"] for h in session.history[-6:] if h["role"] == "user"],
+        _dialogue_for_llm(session),
+        None,
+        session.current_topic,
+        session.known_facts,
     )
     print(f"[ORCH] LLM+Grammar: {time.time() - t_llm:.2f}s sev={grammar_feedback.get('severity')}")
     print(f"[LLM REPLY] {reply_text[:240]!r}")
@@ -295,7 +367,7 @@ async def reply(
     session = add_history(updated, req.transcript, reply_text)
     store_session(user_id, session)
 
-    audio_url = await asyncio.to_thread(generate_audio, reply_text)
+    audio_url = await asyncio.to_thread(generate_audio, reply_text, session.level)
     print(f"[ORCH] TTS: {time.time() - t_llm:.2f}s audio={bool(audio_url)}")
 
     result = compose_response(req.transcript, reply_text, audio_url, session, grammar_feedback, plan)
@@ -320,7 +392,35 @@ async def topics_suggest(
 ):
     del user_id
     topics = suggest_topics(req.level, count=req.count)
-    return {"level": req.level.upper(), "topics": topics}
+    return {
+        "level": req.level.upper(),
+        "topics": topics,
+        "hint": format_topic_suggestion_instruction(req.level),
+    }
+
+
+@app.post("/topics/start")
+async def topics_start(
+    req: StartTopicRequest,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Start or switch to a concrete topic (from UI chip) without waiting for LLM."""
+    session = get_session(user_id)
+    if req.prompt_ja or req.title:
+        topic = {
+            "title": (req.title or "").strip() or "フリートーク",
+            "title_vi": (req.title_vi or "").strip() or "Chủ đề",
+            "prompt_ja": (req.prompt_ja or "").strip(),
+            "prompt_vi": (req.prompt_vi or "").strip(),
+        }
+        reply = build_topic_opening_reply(topic, session.level)
+    else:
+        topic, reply = resolve_topic_change(session.level)
+
+    transcript = f"[topic:{topic.get('title', '')}]"
+    result = await _finalize_topic_turn(user_id, session, transcript, topic, reply)
+    await ws_registry.push(user_id, {"type": "reply", **result})
+    return result
 
 
 # ── WebSocket streaming ──────────────────────────────────────
@@ -343,8 +443,6 @@ async def websocket_push(websocket: WebSocket):
     await ws_registry.connect(user_id, websocket)
     print(f"[WS /ws] client connected user_id={user_id!r}")
     try:
-        # Keep the connection open. We don't expect client messages; just wait
-        # until the client disconnects so we can clean up the registry.
         while True:
             await websocket.receive()
     except WebSocketDisconnect:
@@ -355,15 +453,20 @@ async def websocket_push(websocket: WebSocket):
         await ws_registry.disconnect(user_id)
 
 
-# ── Session reset ────────────────────────────────────────────
-
 @app.post("/reset")
 async def reset_session_endpoint(
     level: str = Form("N5"),
     user_id: str = Depends(get_current_user_id),
 ):
     session = reset_user_session(user_id, level)
-    return {"status": "success", "level": session.level, "score": session.score}
+    topics = suggest_topics(level, count=5)
+    return {
+        "status": "success",
+        "level": session.level,
+        "score": session.score,
+        "topics": topics,
+        "hint": format_topic_suggestion_instruction(level),
+    }
 
 
 @app.get("/audio/{filename}")

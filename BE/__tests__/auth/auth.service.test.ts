@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { OAuth2Client } from "google-auth-library";
 import { User } from "../../src/model/user.model";
+import { RefreshToken } from "../../src/model/refreshToken.model";
 
 // Mocks
 jest.mock("google-auth-library", () => {
@@ -14,6 +15,7 @@ jest.mock("google-auth-library", () => {
 jest.mock("jsonwebtoken");
 jest.mock("bcrypt");
 jest.mock("../../src/model/user.model");
+jest.mock("../../src/model/refreshToken.model");
 const mockVerify = jest.fn();
 
 import authService from "../../src/service/auth.service";
@@ -42,7 +44,7 @@ describe("AuthService", () => {
     const result = authService.generateToken({ id: "1", role: "user" });
     expect(result).toBe("fakeToken");
     expect(jwt.sign).toHaveBeenCalledWith({ id: "1", role: "user" }, "secret", {
-      expiresIn: "15m",
+      expiresIn: "1d",
     });
   });
 
@@ -70,7 +72,7 @@ describe("AuthService", () => {
 
     await expect(
       authService.register({ email: "test@example.com", password: "123456" })
-    ).rejects.toThrow("Email đã tồn tại");
+    ).rejects.toThrow("Email already exists");
   });
 
   // 🧠 login
@@ -78,6 +80,7 @@ describe("AuthService", () => {
     (User.findOne as jest.Mock).mockResolvedValue(mockUser);
     (bcrypt.compare as jest.Mock).mockResolvedValue(true);
     (jwt.sign as jest.Mock).mockReturnValue("token123");
+    (RefreshToken.create as jest.Mock).mockResolvedValue({});
 
     const result = await authService.login({
       email: "test@example.com",
@@ -87,6 +90,7 @@ describe("AuthService", () => {
     expect(result.accessToken).toBe("token123");
     expect(result.refreshToken).toBe("token123");
     expect(result.user.email).toBe("test@example.com");
+    expect(RefreshToken.create).toHaveBeenCalled();
   });
 
   it("should throw error if password is wrong", async () => {
@@ -95,7 +99,7 @@ describe("AuthService", () => {
 
     await expect(
       authService.login({ email: "test@example.com", password: "wrong" })
-    ).rejects.toThrow("Sai mật khẩu");
+    ).rejects.toThrow("Incorrect password");
   });
 
   it("should throw error if user not found", async () => {
@@ -103,19 +107,23 @@ describe("AuthService", () => {
 
     await expect(
       authService.login({ email: "none@example.com", password: "123456" })
-    ).rejects.toThrow("Không tìm thấy tài khoản");
+    ).rejects.toThrow("Account not found");
   });
 
   // 🧠 refreshToken
-  it("should generate new tokens when refresh token is valid", async () => {
+  it("should generate new tokens when refresh token is valid and in DB", async () => {
     (jwt.verify as jest.Mock).mockReturnValue({ id: "123", role: "user" });
+    (RefreshToken.findOne as jest.Mock).mockResolvedValue({ _id: "ref123" });
+    (RefreshToken.deleteOne as jest.Mock).mockResolvedValue({});
     (User.findById as jest.Mock).mockResolvedValue(mockUser);
     (jwt.sign as jest.Mock).mockReturnValue("newToken");
+    (RefreshToken.create as jest.Mock).mockResolvedValue({});
 
     const result = await authService.refreshToken("validToken");
 
     expect(result.accessToken).toBe("newToken");
     expect(result.refreshToken).toBe("newToken");
+    expect(RefreshToken.deleteOne).toHaveBeenCalledWith({ _id: "ref123" });
   });
 
   it("should throw error if refresh token invalid", async () => {
@@ -137,17 +145,13 @@ describe("AuthService", () => {
       }),
     });
 
-    (User.findOne as jest.Mock).mockResolvedValue(null);
-    (User.create as jest.Mock).mockResolvedValue({
-      ...mockUser,
-      email: "google@example.com",
-    });
-
+    (User.findOne as jest.Mock).mockResolvedValue(mockUser);
     (jwt.sign as jest.Mock).mockReturnValue("googleToken");
+    (RefreshToken.create as jest.Mock).mockResolvedValue({});
 
     const result = await authService.googleLogin("fakeGoogleToken");
 
-    expect(result.user.email).toBe("google@example.com");
+    expect(result.user.email).toBe("test@example.com");
     expect(result.accessToken).toBe("googleToken");
   });
 
@@ -160,13 +164,16 @@ describe("AuthService", () => {
   });
 
   // 🧠 logout
-  it("should clear cookies on logout", async () => {
+  it("should clear cookies on logout and delete token from DB", async () => {
     const res = { clearCookie: jest.fn() } as any;
+    (RefreshToken.deleteOne as jest.Mock).mockResolvedValue({});
 
-    const result = await authService.logout(res);
+    const result = await authService.logout(res, "someToken");
 
+    expect(RefreshToken.deleteOne).toHaveBeenCalledWith({ token: "someToken" });
     expect(res.clearCookie).toHaveBeenCalledWith("accessToken", { path: "/" });
     expect(res.clearCookie).toHaveBeenCalledWith("refreshToken", { path: "/" });
     expect(result.message).toBe("Logout success");
   });
 });
+

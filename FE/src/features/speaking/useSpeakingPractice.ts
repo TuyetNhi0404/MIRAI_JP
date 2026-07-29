@@ -6,6 +6,7 @@ import { useAudioPlayback } from "./useAudioPlayback";
 import { useSilenceDetection } from "./useSilenceDetection";
 import { useRequestMode } from "./useRequestMode";
 import { useMediaRecorder } from "./useMediaRecorder";
+import { useSpeakingTopics, type SpeakingTopic } from "./useSpeakingTopics";
 
 export type ChatMessage = {
   id: string;
@@ -52,6 +53,17 @@ export function useSpeakingPractice() {
   const [lastError, setLastError] = useState<string | null>(null);
   const [audioLevel, setAudioLevel] = useState(0);
 
+  const topicsApi = useSpeakingTopics({
+    enabled: isSpeakingPracticeEnabled,
+    level,
+    onCoachReply: (reply) => {
+      chat.appendMessage(reply, "system");
+    },
+    setLastError,
+  });
+  const setActiveTopicRef = useRef(topicsApi.setActiveTopic);
+  setActiveTopicRef.current = topicsApi.setActiveTopic;
+
   const audioPlayback = useAudioPlayback({
     onQueueEmpty: () => startRecordingTurn(),
     onAudioFinished: () => {
@@ -78,6 +90,7 @@ export function useSpeakingPractice() {
     chat,
     setLoading,
     setLoadingText,
+    setTypingVisible,
     setRecordDisabled,
     setRecordLabel,
     setIsRecording,
@@ -86,6 +99,7 @@ export function useSpeakingPractice() {
     setServiceUnavailable,
     setLastError,
     onResumeListening: () => resumeListeningAfterTurn(),
+    onTopic: (topic) => topicsApi.setActiveTopic(topic),
   });
 
   const recorder = useMediaRecorder({
@@ -111,18 +125,27 @@ export function useSpeakingPractice() {
       clearTimeout(silenceTimeoutRef.current);
       silenceTimeoutRef.current = null;
     }
+    const mr = mediaRecorderRef.current;
+    if (!mr || mr.state !== "recording") {
+      setRecordLabel("Hãy nói ngay...");
+      setTypingVisible(false);
+      return;
+    }
+    // Mark awaiting before stop so onstop sends stop_talking, but do NOT gate
+    // ondataavailable — the final chunk must still flush to the server.
     isAwaitingAiRef.current = true;
+    setLoading(true);
+    setLoadingText("Đang transcribe...");
     setRecordLabel("Đang suy nghĩ...");
     setIsRecording(false);
     setTypingVisible(true);
-    const mr = mediaRecorderRef.current;
-    if (mr?.state === "recording") {
-      try { mr.stop(); } catch {
-        isAwaitingAiRef.current = false;
-        setRecordLabel("Hãy nói ngay...");
-        setTypingVisible(false);
+    try {
+      // Nudge browsers to emit remaining buffered audio before stop().
+      if (typeof mr.requestData === "function") {
+        try { mr.requestData(); } catch { /* ignore */ }
       }
-    } else {
+      mr.stop();
+    } catch {
       isAwaitingAiRef.current = false;
       setRecordLabel("Hãy nói ngay...");
       setTypingVisible(false);
@@ -203,16 +226,40 @@ export function useSpeakingPractice() {
         let data: Record<string, unknown>;
         try { data = JSON.parse(event.data as string); } catch { return; }
         switch (data.type) {
-          case "status": setLoading(true); setLoadingText(data.message as string); setTypingVisible(true); break;
+          case "status":
+            setLoading(true);
+            setLoadingText(data.message as string);
+            setTypingVisible(true);
+            break;
           case "transcript_partial": chat.updatePartial(data.text as string); break;
           case "transcript":
-            setLoading(false); chat.clearPartial();
-            if (data.text) chat.appendMessage(data.text as string, "user", data.grammar_feedback as import("./types").GrammarFeedback);
-            else if (data.reply) chat.appendMessage(data.reply as string, "system");
+            chat.clearPartial();
+            if (data.text) {
+              chat.appendMessage(data.text as string, "user", data.grammar_feedback as import("./types").GrammarFeedback);
+              // Keep awaiting indicator through LLM until first reply token.
+              setLoading(true);
+              setLoadingText("Đang suy nghĩ...");
+              setTypingVisible(true);
+            } else if (data.reply) {
+              chat.appendMessage(data.reply as string, "system");
+              setLoading(false);
+              setTypingVisible(false);
+            }
             break;
           case "stats": if (data.level) setLevel(data.level as string); if (data.score !== undefined) setScore(data.score as number); break;
           case "grammar_feedback":
             if (data.grammar_feedback) chat.attachGrammarToLastUser(data.grammar_feedback as import("./types").GrammarFeedback);
+            break;
+          case "next_goal":
+            // Teaching plan hint from server — shown as light system cue when useful.
+            if (typeof data.next_goal === "string" && data.next_goal) {
+              console.debug("[speaking] next_goal:", data.next_goal);
+            }
+            break;
+          case "topic":
+            if (data.topic && typeof data.topic === "object") {
+              setActiveTopicRef.current(data.topic as SpeakingTopic);
+            }
             break;
           case "llm_token": setLoading(false); setTypingVisible(false); if (typeof data.text === "string") chat.appendAiToken(data.text); break;
           case "audio_chunk": if (data.url) audioPlayback.queue(data.url as string); break;
@@ -288,13 +335,19 @@ export function useSpeakingPractice() {
       chat.resetWelcome();
       setServiceUnavailable(false);
       setLastError(null);
+      topicsApi.setActiveTopic(null);
+      if (Array.isArray(data.topics)) {
+        topicsApi.applyTopics(data.topics as SpeakingTopic[]);
+      } else {
+        void topicsApi.refreshTopics(data.level || newLevel);
+      }
     } catch (err) {
       const msg = getSpeakingErrorMessage(err);
       console.error("[speaking] reset failed:", msg);
       setServiceUnavailable(msg.includes("đăng nhập") ? false : true);
       setLastError(msg);
     }
-  }, [chat.api]);
+  }, [chat.api, topicsApi.applyTopics, topicsApi.refreshTopics, topicsApi.setActiveTopic]);
 
   // ── Pointer handlers ───────────────────────────────────────
   const onRecordPointerDown = async () => {
@@ -380,5 +433,10 @@ export function useSpeakingPractice() {
     onRecordPointerDown,
     onRecordPointerUp,
     onRecordPointerLeave,
+    topics: topicsApi.topics,
+    activeTopic: topicsApi.activeTopic,
+    loadingTopic: topicsApi.loadingTopic,
+    startTopic: topicsApi.startTopic,
+    shuffleTopics: topicsApi.shuffleTopics,
   };
 }

@@ -29,4 +29,7 @@ def compose_response(
         if goal and goal != "continue_conversation":
             result["next_goal"] = goal
 
+    if session.current_topic:
+        result["topic"] = session.current_topic
+
     return result

@@ -28,8 +28,8 @@ export interface User {
 export interface AuthResponse {
   user: User;
   message: string;
-  accessToken: string;
-  refreshToken: string;
+  accessToken?: string;
+  refreshToken?: string;
 }
 
 export interface LoginCredentials {
@@ -48,8 +48,8 @@ export interface GoogleLoginPayload {
 
 export interface AuthState {
   user: User | null;
-  accessToken: string | null;
-  refreshToken: string | null;
+  accessToken?: string | null;
+  refreshToken?: string | null;
   loading: boolean;
   error: string | null;
-}
+}
