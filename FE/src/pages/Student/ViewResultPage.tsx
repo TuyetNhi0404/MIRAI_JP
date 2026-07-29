@@ -20,7 +20,7 @@ const ViewResultPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const user = useAppSelector((state) => state.auth.user);
-  const { attemptDetail, loading, error, loadAttemptResult } = useQuiz();
+  const { attemptDetail, loading, error, loadAttemptResult, resetError } = useQuiz();
 
   const isAutoSubmit = (location.state as { isAutoSubmit?: boolean })?.isAutoSubmit;
   const autoSubmitReason = (location.state as { autoSubmitReason?: string })?.autoSubmitReason;
@@ -30,13 +30,14 @@ const ViewResultPage: React.FC = () => {
   };
 
   useEffect(() => {
+    resetError();
     if (attemptId) {
       const userId = user?._id || (user as UserWithId)?.id;
       void loadAttemptResult(attemptId, userId);
     }
-  }, [attemptId, loadAttemptResult, user]);
+  }, [attemptId, loadAttemptResult, user, resetError]);
 
-  if (loading) {
+  if (loading && !attemptDetail) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
         <div className="w-10 h-10 border-4 border-primary-color border-t-transparent rounded-full animate-spin"></div>
@@ -45,7 +46,7 @@ const ViewResultPage: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (error && !attemptDetail) {
     return (
       <PageLayout title="Kết quả bài kiểm tra" subtitle="Xem phản hồi và đáp án chi tiết">
         <BaseCard className="bg-red-50 border border-red-150 p-6 space-y-4">

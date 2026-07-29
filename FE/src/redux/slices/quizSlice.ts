@@ -407,6 +407,7 @@ const quizSlice = createSlice({
       .addCase(submitQuiz.fulfilled, (state, action: PayloadAction<QuizSubmitResponse>) => {
         state.loading = false;
         state.submitResult = action.payload;
+        state.error = null;
       })
       .addCase(submitQuiz.rejected, (state, action) => {
         state.loading = false;
@@ -439,6 +440,7 @@ const quizSlice = createSlice({
       .addCase(fetchAttemptResult.fulfilled, (state, action: PayloadAction<AttemptDetailResponse>) => {
         state.loading = false;
         state.attemptDetail = action.payload;
+        state.error = null;
       })
       .addCase(fetchAttemptResult.rejected, (state, action) => {
         state.loading = false;

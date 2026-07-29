@@ -58,6 +58,7 @@ const TakeQuizPage: React.FC = () => {
 
   // Refs
   const hasStartedMonitoring = useRef(false);
+  const quizStartedForIdRef = useRef<string | null>(null);
   const autoSubmitTriggered = useRef(false);
 
   const handleAnswerChange = useCallback(
@@ -72,23 +73,29 @@ const TakeQuizPage: React.FC = () => {
   );
 
   useEffect(() => {
-    if (quizId && !hasStartedMonitoring.current) {
-      const userId = user?._id || (user as UserWithId)?.id;
+    if (!quizId || isSubmitting) return;
+    if (quizStartedForIdRef.current === quizId) return;
 
-      void beginQuiz(quizId, userId).then(() => {
-        console.log("✅ Quiz loaded, starting anti-cheat monitoring...");
-        startMonitoring();
-        hasStartedMonitoring.current = true;
-      });
-    }
+    quizStartedForIdRef.current = quizId;
+    const userId = user?._id || (user as UserWithId)?.id;
 
+    void beginQuiz(quizId, userId).then(() => {
+      console.log("✅ Quiz loaded, starting anti-cheat monitoring...");
+      startMonitoring();
+      hasStartedMonitoring.current = true;
+    }).catch((err) => {
+      console.error("Failed to start quiz:", err);
+    });
+  }, [quizId, beginQuiz, user, startMonitoring, isSubmitting]);
+
+  // Handle anti-cheat monitoring cleanup on unmount
+  useEffect(() => {
     return () => {
       if (hasStartedMonitoring.current) {
         stopMonitoring();
-        hasStartedMonitoring.current = false;
       }
     };
-  }, [quizId, beginQuiz, user, startMonitoring, stopMonitoring]);
+  }, [stopMonitoring]);
 
   useEffect(() => {
     if (currentQuiz?.durationMinutes) {
